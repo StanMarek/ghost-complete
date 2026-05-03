@@ -1244,8 +1244,30 @@ fn collect_generators(
 ) {
     for gen in generators {
         if gen.requires_js {
-            tracing::info!("skipping generator requiring JS runtime");
-            continue;
+            // Phase 4: a `requires_js` generator becomes runtime-supported when
+            // the converter classified it as `post_process` AND emitted an
+            // accompanying `script` (or `script_template`). The script runs
+            // through the existing script generator path; the JS source feeds
+            // its stdout in a post-process step inside the engine. All other
+            // shapes — `script_function`, `custom`, or any `requires_js` flag
+            // without populated `js_runtime` metadata — stay skipped because
+            // Phase 4 doesn't know how to spawn them yet.
+            let supported = matches!(
+                gen.js_runtime.as_ref().map(|rt| &rt.kind),
+                Some(JsRuntimeKind::PostProcess)
+            ) && (gen.script.is_some() || gen.script_template.is_some());
+            if !supported {
+                tracing::info!(
+                    kind = ?gen.js_runtime.as_ref().map(|rt| &rt.kind),
+                    has_script = gen.script.is_some(),
+                    has_template = gen.script_template.is_some(),
+                    "skipping requires_js generator — unsupported shape"
+                );
+                continue;
+            }
+            // Fall through: dispatch the generator down the script path so
+            // engine.rs's `run_generators` can capture stdout and feed it
+            // through the JS post-processor.
         }
         // Three-way dispatch on `generator_type`, with script fall-through
         // ONLY on the unknown-type path. A generator that names a registered

@@ -434,6 +434,7 @@ impl InputHandler {
         filesystem: bool,
         specs: bool,
         git: bool,
+        js_runtime: bool,
         generator_timeout_ms: u64,
     ) -> Self {
         // During builder phase the Arc has exactly one reference, so try_unwrap succeeds.
@@ -450,6 +451,7 @@ impl InputHandler {
                 filesystem,
                 specs,
                 git,
+                js_runtime,
             );
         Self {
             engine: Arc::new(engine),

@@ -16,6 +16,7 @@ pub mod frecency;
 pub mod fuzzy;
 pub mod git;
 pub mod history;
+pub mod js_runtime;
 pub mod json_path;
 pub mod pipeline;
 pub mod priority;

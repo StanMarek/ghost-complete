@@ -355,6 +355,13 @@ pub struct FileScan {
     /// ~55 from name-keyed dedupe), so the file walk is the source of
     /// truth for this counter until Phase 1 closes the gap.
     pub requires_js_generators_total: usize,
+    /// Subset of `requires_js_generators_total` that Phase 4 can dispatch:
+    /// generators with `js_runtime.kind = post_process` AND a populated
+    /// `script` (or `script_template`). Sourced from the same raw-JSON walk,
+    /// so this number is consistent with `requires_js_generators_total` even
+    /// when `OptionSpec.args` truncation hides generators from the
+    /// structured loader.
+    pub requires_js_generators_supported: usize,
 }
 
 /// Scan filesystem spec dirs and collect the numbers the status report
@@ -407,6 +414,15 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
     // for Phase 6.
     let file_scan = scan_spec_files(&dirs)?;
     let requires_js_generators_total = file_scan.requires_js_generators_total;
+    // Phase 4: classify every requires_js generator on disk into
+    // supported/unsupported buckets. A generator is supported when it carries
+    // `js_runtime.kind = post_process` AND ships an accompanying script (or
+    // script_template) — Phase 4 dispatches that combination through the
+    // QuickJS evaluator. Everything else (script_function, custom, missing
+    // js_runtime metadata) stays unsupported.
+    let requires_js_generators_supported = file_scan.requires_js_generators_supported;
+    let requires_js_generators_unsupported =
+        requires_js_generators_total.saturating_sub(requires_js_generators_supported);
 
     // commands_addressable: the alias index size, i.e. the number of
     // unique command keys users can type on the shell to reach a spec.
@@ -439,8 +455,8 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
         // generator is requires_js and unsupported).
         commands_nonfunctional: 0,
         requires_js_generators_total,
-        requires_js_generators_supported: 0,
-        requires_js_generators_unsupported: requires_js_generators_total,
+        requires_js_generators_supported,
+        requires_js_generators_unsupported,
         command_alias_conflicts,
         file_scan,
     })
@@ -466,6 +482,7 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
 fn scan_spec_files(dirs: &[PathBuf]) -> Result<FileScan> {
     let mut spec_files_total = 0usize;
     let mut requires_js_generators_total = 0usize;
+    let mut requires_js_generators_supported = 0usize;
 
     for dir in dirs {
         if !dir.exists() {
@@ -489,30 +506,52 @@ fn scan_spec_files(dirs: &[PathBuf]) -> Result<FileScan> {
                 Ok(v) => v,
                 Err(_) => continue,
             };
-            requires_js_generators_total += count_requires_js_in_value(&value);
+            let counts = count_requires_js_classes_in_value(&value);
+            requires_js_generators_total += counts.total;
+            requires_js_generators_supported += counts.supported;
         }
     }
 
     Ok(FileScan {
         spec_files_total,
         requires_js_generators_total,
+        requires_js_generators_supported,
     })
 }
 
-/// Walk a raw `serde_json::Value` and count every object with
-/// `"requires_js": true`. Equivalent to the jq query
-/// `[.. | objects | select(.requires_js == true)] | length`.
-/// Independent of `CompletionSpec`'s structured deserializer so the
-/// file-level scan is not subject to the same schema-side
-/// undercounting.
-fn count_requires_js_in_value(value: &serde_json::Value) -> usize {
+/// Result of walking a parsed spec to classify every `requires_js` generator
+/// into supported/unsupported buckets. `supported` is the subset of `total`.
+#[derive(Debug, Default, Clone, Copy)]
+struct JsClassCounts {
+    total: usize,
+    supported: usize,
+}
+
+/// Walk a raw `serde_json::Value` and classify every object with
+/// `"requires_js": true` according to the Phase 4 dispatch rules:
+///
+/// - `total` increments for every `requires_js: true` occurrence (matches
+///   [`count_requires_js_in_value`]).
+/// - `supported` increments only when the generator also carries
+///   `js_runtime.kind == "post_process"` AND a `script` or `script_template`
+///   array. That is the exact predicate
+///   `gc_suggest::specs::collect_generators` uses to fall through to the
+///   QuickJS dispatch path.
+///
+/// This is the doctor/status-side mirror of the runtime classification —
+/// keeping them in sync is a load-bearing invariant for the coverage
+/// counters surfaced by `status --json`.
+fn count_requires_js_classes_in_value(value: &serde_json::Value) -> JsClassCounts {
     let mut stack: Vec<&serde_json::Value> = vec![value];
-    let mut count = 0usize;
+    let mut counts = JsClassCounts::default();
     while let Some(node) = stack.pop() {
         match node {
             serde_json::Value::Object(map) => {
                 if matches!(map.get("requires_js"), Some(serde_json::Value::Bool(true))) {
-                    count += 1;
+                    counts.total += 1;
+                    if is_post_process_supported(map) {
+                        counts.supported += 1;
+                    }
                 }
                 for v in map.values() {
                     stack.push(v);
@@ -526,7 +565,33 @@ fn count_requires_js_in_value(value: &serde_json::Value) -> usize {
             _ => {}
         }
     }
-    count
+    counts
+}
+
+/// Returns true when a generator object has the shape Phase 4 can dispatch.
+/// Mirrors `collect_generators` in `gc-suggest::specs`: the JS path needs
+/// `js_runtime.kind == "post_process"` AND at least one of `script` /
+/// `script_template`.
+fn is_post_process_supported(map: &serde_json::Map<String, serde_json::Value>) -> bool {
+    let kind_is_post_process = map
+        .get("js_runtime")
+        .and_then(|v| v.as_object())
+        .and_then(|rt| rt.get("kind"))
+        .and_then(|k| k.as_str())
+        .map(|k| k == "post_process")
+        .unwrap_or(false);
+    if !kind_is_post_process {
+        return false;
+    }
+    let has_script = map
+        .get("script")
+        .map(|v| v.is_array() || v.is_string())
+        .unwrap_or(false);
+    let has_template = map
+        .get("script_template")
+        .map(|v| v.is_array() || v.is_string())
+        .unwrap_or(false);
+    has_script || has_template
 }
 
 /// Inner implementation that writes its report to `out` instead of stdout,
@@ -1609,11 +1674,13 @@ mod tests {
         assert_eq!(outcome.partially_functional, 3);
         assert_eq!(outcome.fully_functional, 4);
         assert_eq!(outcome.requires_js_generators_total, 3);
-        // Phase 4+ flips two of these to `_supported`; today every requires_js
-        // generator is still dropped at resolution time, regardless of
-        // `js_runtime` content.
-        assert_eq!(outcome.requires_js_generators_unsupported, 3);
-        assert_eq!(outcome.requires_js_generators_supported, 0);
+        // Phase 4 wires `post_process_supported` (kind = post_process WITH a
+        // populated `script`) into the QuickJS dispatch path. The other two
+        // requires_js fixtures stay unsupported: `custom_unsupported` is a
+        // Phase 5 (`Custom`) shape, and `partial_unsupported_js` predates
+        // `js_runtime` entirely.
+        assert_eq!(outcome.requires_js_generators_supported, 1);
+        assert_eq!(outcome.requires_js_generators_unsupported, 2);
 
         // js_commands lists the canonical id (filename stem) of every
         // partially-functional spec, in alphabetical order.

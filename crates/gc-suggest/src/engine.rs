@@ -8,7 +8,7 @@ use tokio::sync::Semaphore;
 
 use crate::alias::AliasStore;
 use crate::alias_expand::expand_alias_for_spec;
-use crate::cache::{CacheKey, GeneratorCache};
+use crate::cache::{hash_js_source, CacheKey, GeneratorCache};
 use crate::commands::CommandsProvider;
 use crate::env::EnvProvider;
 use crate::filesystem::FilesystemProvider;
@@ -16,11 +16,12 @@ use crate::frecency::FrecencyDb;
 use crate::fuzzy;
 use crate::git;
 use crate::history::{HistoryProvider, DEFAULT_MAX_HISTORY_ENTRIES};
+use crate::js_runtime::JsRuntimeAdapter;
 use crate::priority;
 use crate::provider::Provider;
 use crate::providers::{self, ProviderCtx, ProviderKind};
 use crate::script::{run_script, substitute_template};
-use crate::specs::{self, GeneratorSpec, SpecStore};
+use crate::specs::{self, GeneratorSpec, JsRuntimeKind, JsRuntimeSpec, SpecStore};
 use crate::ssh::SshHostCache;
 use crate::transform::execute_pipeline;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
@@ -256,6 +257,11 @@ pub struct SuggestionEngine {
     ssh_host_cache: Option<SshHostCache>,
     alias_map: AliasStore,
     generator_cache: Arc<GeneratorCache>,
+    /// Lazily-spawned QuickJS worker. Only paid for when a Phase-4
+    /// `post_process` generator (or, in later phases, a `script_function` /
+    /// `custom`) actually fires. Held in an `Arc` so per-generator tasks can
+    /// share it without taking `&self` references across `tokio::spawn`.
+    js_runtime: Arc<JsRuntimeAdapter>,
     frecency_db: FrecencyDb,
     max_results: usize,
     max_history_results: usize,
@@ -263,6 +269,12 @@ pub struct SuggestionEngine {
     providers_filesystem: bool,
     providers_specs: bool,
     providers_git: bool,
+    /// Kill switch for the JS evaluator. When `false`, every Phase-4 dispatch
+    /// path is bypassed and `requires_js` generators with `post_process`
+    /// metadata behave as if their `js_runtime` were missing — they're
+    /// dropped from the generator pool. Mirrors
+    /// `ProvidersConfig::js_runtime` from `gc-config`.
+    providers_js_runtime: bool,
 }
 
 impl SuggestionEngine {
@@ -284,6 +296,7 @@ impl SuggestionEngine {
             ssh_host_cache: SshHostCache::default_path(),
             alias_map: AliasStore::load_async(),
             generator_cache: Arc::new(GeneratorCache::new()),
+            js_runtime: Arc::new(JsRuntimeAdapter::new()),
             frecency_db: FrecencyDb::load(),
             max_results: fuzzy::DEFAULT_MAX_RESULTS,
             max_history_results: 5,
@@ -291,6 +304,7 @@ impl SuggestionEngine {
             providers_filesystem: true,
             providers_specs: true,
             providers_git: true,
+            providers_js_runtime: true,
         })
     }
 
@@ -303,6 +317,7 @@ impl SuggestionEngine {
         filesystem: bool,
         specs: bool,
         git: bool,
+        js_runtime: bool,
     ) -> Self {
         self.max_results = max_results;
         self.max_history_results = max_history_results;
@@ -310,6 +325,7 @@ impl SuggestionEngine {
         self.providers_filesystem = filesystem;
         self.providers_specs = specs;
         self.providers_git = git;
+        self.providers_js_runtime = js_runtime;
         // Reload history only if enabled
         if max_history_results > 0 {
             self.history_provider = HistoryProvider::load(DEFAULT_MAX_HISTORY_ENTRIES);
@@ -334,6 +350,7 @@ impl SuggestionEngine {
             ssh_host_cache: SshHostCache::default_path(),
             alias_map: AliasStore::empty(),
             generator_cache: Arc::new(GeneratorCache::new()),
+            js_runtime: Arc::new(JsRuntimeAdapter::new()),
             frecency_db: FrecencyDb::empty(),
             max_results: fuzzy::DEFAULT_MAX_RESULTS,
             max_history_results: 5,
@@ -341,6 +358,7 @@ impl SuggestionEngine {
             providers_filesystem: true,
             providers_specs: true,
             providers_git: true,
+            providers_js_runtime: true,
         }
     }
 
@@ -405,7 +423,7 @@ impl SuggestionEngine {
         let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_GENERATORS));
         let mut handles = Vec::new();
 
-        for gen in generators {
+        for (idx, gen) in generators.iter().enumerate() {
             // Borrow the inner GeneratorSpec once; we pass references into
             // cache-keying and transform-cloning below just like before the
             // Arc wrapper was added.
@@ -415,18 +433,55 @@ impl SuggestionEngine {
                 continue;
             }
 
-            // Check cache
+            // Phase 4: a `requires_js` post_process generator is gated on the
+            // user-controlled `[suggest.providers] js_runtime` switch. When
+            // disabled, behave as if the runtime never landed: skip the
+            // dispatch entirely. This is the documented kill-switch path —
+            // existing transform/git/file/folder generators are unaffected.
+            let js_dispatch: Option<Arc<JsRuntimeSpec>> = match (gen.requires_js, &gen.js_runtime) {
+                (true, Some(rt)) if rt.kind == JsRuntimeKind::PostProcess => {
+                    if !self.providers_js_runtime {
+                        tracing::info!(
+                            spec = %command,
+                            generator_index = idx,
+                            "js_runtime kill switch is disabled — skipping post_process generator"
+                        );
+                        continue;
+                    }
+                    Some(Arc::new(rt.clone()))
+                }
+                _ => None,
+            };
+
             let cache_cwd = gen
                 .cache
                 .as_ref()
                 .filter(|c| c.cache_by_directory)
                 .map(|_| cwd);
-            let cache_key = CacheKey::from_strings(command, &argv, cache_cwd);
 
-            if let Some(cached) = self.generator_cache.get(&cache_key) {
-                tracing::debug!("cache hit for generator {:?}", argv);
-                handles.push(tokio::spawn(async move { Ok::<_, anyhow::Error>(cached) }));
-                continue;
+            // For non-JS generators, the legacy single-key cache already holds
+            // the post-transform suggestion vector — try it first and skip the
+            // spawn entirely on a hit. JS-post-process generators can't reuse
+            // that path because two different `js_runtime.source` bodies on
+            // the same script must NOT share results; we partition them with
+            // `CacheKey::JsProcessed { source_hash }` instead.
+            if let Some(rt) = js_dispatch.as_ref() {
+                // For JS dispatch, peek the post-processed cache up front so a
+                // warm hit avoids both the script spawn AND the JS evaluation.
+                let js_key =
+                    CacheKey::js_processed(command, &argv, cache_cwd, hash_js_source(&rt.source));
+                if let Some(cached) = self.generator_cache.get(&js_key) {
+                    tracing::debug!("js post-process cache hit for generator {:?}", argv);
+                    handles.push(tokio::spawn(async move { Ok::<_, anyhow::Error>(cached) }));
+                    continue;
+                }
+            } else {
+                let suggestions_key = CacheKey::from_strings(command, &argv, cache_cwd);
+                if let Some(cached) = self.generator_cache.get(&suggestions_key) {
+                    tracing::debug!("cache hit for generator {:?}", argv);
+                    handles.push(tokio::spawn(async move { Ok::<_, anyhow::Error>(cached) }));
+                    continue;
+                }
             }
 
             let permit = Arc::clone(&semaphore);
@@ -435,6 +490,8 @@ impl SuggestionEngine {
             let cache = gen.cache.clone();
             let cache_store = Arc::clone(&self.generator_cache);
             let cmd_name = command.to_string();
+            let js_runtime = Arc::clone(&self.js_runtime);
+            let generator_index = idx;
 
             handles.push(tokio::spawn(async move {
                 let _permit = permit
@@ -443,9 +500,60 @@ impl SuggestionEngine {
                     .map_err(|e| anyhow::anyhow!("semaphore error: {e}"))?;
 
                 let argv_refs: Vec<&str> = argv.iter().map(|s| s.as_str()).collect();
-                let output = run_script(&argv_refs, &cwd, timeout_ms).await?;
 
-                let suggestions = if transforms.is_empty() {
+                // The script runs identically whether or not a JS post-process
+                // step follows. Only the cache layer and the post-processing
+                // body differ. Stdout cache is keyed by argv only — two
+                // generators with the same script share its spawn cost.
+                let stdout_key =
+                    CacheKey::from_strings(&cmd_name, &argv, cache_cwd_owned(&cache, &cwd));
+                let output: String = if let Some(cached) = cache_store.get_stdout(&stdout_key) {
+                    tracing::debug!("script stdout cache hit for {:?}", argv);
+                    cached
+                } else {
+                    let fresh = run_script(&argv_refs, &cwd, timeout_ms).await?;
+                    if let Some(ref cache_cfg) = cache {
+                        if cache_cfg.ttl_seconds > 0 {
+                            cache_store.insert_stdout(
+                                stdout_key.clone(),
+                                fresh.clone(),
+                                Duration::from_secs(cache_cfg.ttl_seconds),
+                            );
+                        }
+                    }
+                    fresh
+                };
+
+                let suggestions = if let Some(rt) = js_dispatch.as_ref() {
+                    // JS post-process: feed stdout into the QuickJS evaluator.
+                    let timeout = Duration::from_millis(rt.timeout_ms.unwrap_or(timeout_ms));
+                    let generator_id = format!("{cmd_name}#{generator_index}");
+                    match js_runtime
+                        .post_process(&rt.source, output.clone(), timeout, generator_id)
+                        .await
+                    {
+                        Ok(js_output) => js_output
+                            .suggestions
+                            .into_iter()
+                            .map(|js| Suggestion {
+                                text: js.name,
+                                description: js.description,
+                                kind: SuggestionKind::Command,
+                                source: SuggestionSource::Script,
+                                ..Default::default()
+                            })
+                            .collect(),
+                        Err(e) => {
+                            tracing::warn!(
+                                spec = %cmd_name,
+                                generator_index,
+                                error = %e,
+                                "js_runtime worker error — returning empty suggestions"
+                            );
+                            Vec::new()
+                        }
+                    }
+                } else if transforms.is_empty() {
                     // Default: split on newlines, filter empty, produce plain suggestions
                     output
                         .lines()
@@ -461,15 +569,27 @@ impl SuggestionEngine {
                     execute_pipeline(&output, &transforms).map_err(|e| anyhow::anyhow!("{e}"))?
                 };
 
-                // Cache if configured
+                // Cache if configured. The key shape depends on whether we
+                // ran a JS post-processor: JS results need their own slot
+                // namespaced by source hash, declarative results live under
+                // the legacy `Stdout` key shape.
                 if let Some(ref cache_cfg) = cache {
-                    if cache_cfg.ttl_seconds > 0 {
+                    if cache_cfg.ttl_seconds > 0 && !suggestions.is_empty() {
                         let cache_cwd = if cache_cfg.cache_by_directory {
                             Some(cwd.as_path())
                         } else {
                             None
                         };
-                        let key = CacheKey::from_strings(&cmd_name, &argv, cache_cwd);
+                        let key = if let Some(rt) = js_dispatch.as_ref() {
+                            CacheKey::js_processed(
+                                &cmd_name,
+                                &argv,
+                                cache_cwd,
+                                hash_js_source(&rt.source),
+                            )
+                        } else {
+                            CacheKey::from_strings(&cmd_name, &argv, cache_cwd)
+                        };
                         cache_store.insert(
                             key,
                             suggestions.clone(),
@@ -1142,6 +1262,18 @@ impl SuggestionEngine {
     }
 }
 
+/// Helper: resolve the cwd argument used by the cache key based on the
+/// generator's [`crate::specs::CacheConfig::cache_by_directory`] flag. Lives
+/// here rather than in `cache.rs` so the engine task body can stay
+/// borrow-checker friendly when a cwd reference is needed inside an `async
+/// move` block.
+fn cache_cwd_owned<'a>(
+    cache: &'a Option<crate::specs::CacheConfig>,
+    cwd: &'a Path,
+) -> Option<&'a Path> {
+    cache.as_ref().filter(|c| c.cache_by_directory).map(|_| cwd)
+}
+
 /// Resolve the argv for a script generator, applying template substitution if needed.
 fn resolve_script_argv(gen: &GeneratorSpec, ctx: &CommandContext) -> Vec<String> {
     if let Some(ref script) = gen.script {
@@ -1806,7 +1938,7 @@ mod tests {
         let history = HistoryProvider::from_entries(vec![]);
         let commands = CommandsProvider::from_list(vec!["git".into(), "ls".into()]);
         let engine = SuggestionEngine::with_providers(spec_store, history, commands)
-            .with_suggest_config(50, false, 5, true, true, true);
+            .with_suggest_config(50, false, 5, true, true, true, true);
 
         let ctx = make_ctx(None, vec![], "gi", 0);
         let results = engine.suggest_sync(&ctx, Path::new("/tmp"), "gi").unwrap();
