@@ -2827,12 +2827,15 @@ mod tests {
 
     #[test]
     fn embedded_specs_under_memory_budget() {
-        // Measured baseline: ~37.5 MB (37,536,540 bytes), measured 2026-04-28
-        // on 709 specs. The `estimated_heap_bytes` walk covers the whole
-        // `CompletionSpec` tree (js_source, transforms, descriptions, etc.).
-        // 64 MiB (67,108,864 bytes) gives ~1.78x headroom for spec corpus
-        // growth before requiring a deliberate budget raise.
-        const BUDGET_BYTES: usize = 64 * 1024 * 1024;
+        // Measured baseline: ~104 MiB (109,006,902 bytes), measured 2026-05-03
+        // after restoring the AWS spec (ux-8). The `estimated_heap_bytes` walk
+        // covers the whole `CompletionSpec` tree (js_source, transforms,
+        // descriptions, etc.). The AWS spec alone contributes ~67 MiB of
+        // mostly description text across 17K subcommands; that bloat is the
+        // motivation for the zstd-compression follow-up plan. 128 MiB
+        // (134,217,728 bytes) gives ~23% headroom for the gcloud/doppler/
+        // mongocli/twilio/sfdx restore PRs queued behind this one.
+        const BUDGET_BYTES: usize = 128 * 1024 * 1024;
         let spec_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
         let store = SpecStore::load_from_dir(&spec_dir).unwrap().store;
         let total: usize = store.iter().map(|(_, s)| estimated_heap_bytes(s)).sum();
