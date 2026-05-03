@@ -281,14 +281,20 @@ fn cargo_high_priority_subcommand_outranks_alphabetical_neighbour() {
 
 // ---------- AWS spec guardrails (ux-8) ----------
 //
-// The AWS spec is a 36 MB minified blob produced by `npm run convert -- --specs aws`,
-// inlining 418 service sub-specs from @withfig/autocomplete via the converter's
-// loadSpec resolver. The snapshot gate proves the artifact equals itself; these
-// tests prove the artifact has the *shape* the runtime expects.
+// The AWS spec is a 36 MB minified blob produced by `npm run convert -- --specs aws`.
+// Upstream @withfig/autocomplete ships 418 service `.js` files in `aws/`; the
+// top-level `aws.js` references 408 of them via `loadSpec`. The 9 unreferenced
+// files (alexaforbusiness, backupstorage, codestar, honeycode, macie, mobile,
+// nimble, regions, worklink) are deprecated AWS services upstream stopped
+// wiring up, so the converter does not see them. After resolution the spec
+// has 409 top-level service subcommands.
 //
-// Assertions are tolerant to upstream churn — we don't pin exact subcommand
-// counts because @withfig/autocomplete deprecates services occasionally. We
-// pin the names of services / actions / flags that are essentially immortal
+// The snapshot gate proves the artifact equals itself; these tests prove the
+// artifact has the *shape* the runtime expects.
+//
+// Assertions are tolerant to upstream churn — we don't pin the exact subcommand
+// count because @withfig/autocomplete deprecates a service or two each year.
+// We pin the names of services / actions / flags that are essentially immortal
 // in the AWS CLI (s3 cp, ec2 describe-instances, the global --profile option).
 // If any of these stop existing, somebody removed them on purpose and the
 // test should fail loudly so we notice.
@@ -304,16 +310,19 @@ fn load_aws_spec() -> gc_suggest::specs::CompletionSpec {
 
 #[test]
 fn aws_spec_top_level_has_many_service_subcommands() {
-    // The converter inlines @withfig/autocomplete's 418 service sub-specs as
-    // top-level subcommands of `aws`. We assert "lots of services" rather
-    // than an exact count so a single deprecation upstream doesn't fail CI.
+    // After loadSpec resolution the spec has 409 top-level service subcommands.
+    // We accept ±5 for upstream churn (deprecation/addition of a single
+    // service shouldn't fail CI), but a wide swing means the resolver
+    // changed behaviour and we want to notice.
     let aws = load_aws_spec();
     let count = aws.subcommands.len();
     assert!(
-        (350..=500).contains(&count),
-        "expected aws to ship in the 350..=500 service range; got {count} \
-         (if upstream pruned a lot, widen the range; if it grew past 500, \
-          revisit the binary-size budget)"
+        (404..=414).contains(&count),
+        "expected aws to ship 409 ± 5 services; got {count}. \
+         If upstream legitimately added/dropped many services, widen the \
+         range. If the count drifted by more than ±5 silently, the \
+         converter's loadSpec resolver may be dropping or duplicating \
+         services. (Original count at ux-8 land: 409.)"
     );
 }
 
@@ -376,12 +385,25 @@ fn aws_profile_option_has_native_transform_generator() {
         .iter()
         .map(gc_suggest::transform::transform_name)
         .collect();
-    for must in ["split_lines", "filter_empty"] {
+    for must in ["split_lines", "filter_empty", "trim"] {
         assert!(
             transform_names.contains(&must),
             "--profile generator must include `{must}` transform; got {transform_names:?}"
         );
     }
+    // The CHANGELOG promises directory-keyed caching on profile lookups
+    // ("aws configure list-profiles" reads ~/.aws/config which can vary
+    // per project root). Lock that in.
+    let cache = gen
+        .cache
+        .as_ref()
+        .expect("--profile generator must have a cache config");
+    assert!(
+        cache.cache_by_directory,
+        "--profile generator must have cache_by_directory: true so profile \
+         changes propagate when the user cd's into a different project. \
+         Got cache={cache:?}"
+    );
 }
 
 #[test]
@@ -501,6 +523,46 @@ fn aws_top_level_suggests_service_subcommands() {
             .iter()
             .any(|s| matches!(s.kind, SuggestionKind::FilePath | SuggestionKind::Directory)),
         "aws s3 must not leak filesystem; got {:?}",
+        result
+            .suggestions
+            .iter()
+            .map(|s| (&s.text, s.kind))
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn aws_empty_query_returns_subcommands_not_filesystem() {
+    // The PR description claims `aws <Tab>` produces a "service popup". With
+    // 409 services the default result limit caps the visible window, so the
+    // *contents* are alphabetical-first ("accessanalyzer", "account",
+    // "acm", …), but the user-facing invariant is: the popup is full of
+    // subcommands and contains zero filesystem entries. Lock that.
+    let engine = build_engine();
+    let buffer = "aws ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let subcmd_count = result
+        .suggestions
+        .iter()
+        .filter(|s| s.kind == SuggestionKind::Subcommand)
+        .count();
+    assert!(
+        subcmd_count >= 30,
+        "aws <empty query> should surface dozens of service subcommands \
+         (the result-limit cap is in this neighbourhood); got {subcmd_count}: {:?}",
+        result
+            .suggestions
+            .iter()
+            .map(|s| (&s.text, s.kind))
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        !result
+            .suggestions
+            .iter()
+            .any(|s| matches!(s.kind, SuggestionKind::FilePath | SuggestionKind::Directory)),
+        "aws <empty query> must not leak filesystem entries; got {:?}",
         result
             .suggestions
             .iter()

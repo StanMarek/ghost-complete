@@ -9,11 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Restored AWS CLI completion spec. All 418 service subcommands (`s3`,
+- Restored AWS CLI completion spec. 409 service subcommands (`s3`,
   `ec2`, `iam`, `lambda`, …) now offer static subcommand and flag
-  completion (17 139 subcommands, 99 537 options total). The `--profile`
-  option uses a native `split_lines + filter_empty + trim` transform on
-  `aws configure list-profiles` with directory-keyed caching. The
+  completion — 17 139 subcommands, 99 537 options total. (Upstream
+  `@withfig/autocomplete` ships 418 service `.js` files, but only 408
+  of them are reachable via `loadSpec` from the top-level `aws.js`;
+  the 9 unreferenced services — `alexaforbusiness`, `backupstorage`,
+  `codestar`, `honeycode`, `macie`, `mobile`, `nimble`, `regions`,
+  `worklink` — are deprecated AWS services that upstream stopped
+  wiring up, so the converter does not see them.) The `--profile`
+  option uses a native `split_lines + filter_empty + trim` transform
+  on `aws configure list-profiles` with directory-keyed caching. The
   remaining 1 843 dynamic generators (instance/region/bucket/role
   enumeration) ship as `requires_js: true` and stay deferred to the
   long-running requires-js plan; static completions work today.
