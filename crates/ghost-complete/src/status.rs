@@ -682,7 +682,9 @@ struct SpecCounts {
     /// owned that key (DuplicateName / NameMatchesOtherStem) or a stem
     /// lost to a higher-precedence source dir (DirectoryPrecedence).
     /// Each conflict carries source-dir + alias diagnostics in
-    /// `SpecStore::conflicts()`; doctor renders them in detail.
+    /// `SpecStore::conflicts()`. A user-facing per-conflict breakdown
+    /// in `ghost-complete doctor` will land in Phase 7; today this
+    /// count is the only signal users see for the conflict set.
     command_alias_conflicts: usize,
 }
 

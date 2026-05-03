@@ -707,8 +707,12 @@ fn load_dir_into_entries(dir: &Path) -> Result<(Vec<PendingSpec>, Vec<String>)> 
 /// state. Two passes:
 ///   1. Register every filename stem. Stems are the canonical id and
 ///      always take precedence over `name` aliases. A stem already
-///      owned by an earlier directory is rejected with a
-///      DirectoryPrecedence conflict.
+///      owned by an earlier directory's same filename is rejected with
+///      a `DirectoryPrecedence` conflict; a stem that collides with a
+///      different file's previously-registered `name` alias is rejected
+///      with `NameMatchesOtherStem` (from the inverted perspective —
+///      the new file's stem matches what an existing file's name claim
+///      already owns).
 ///   2. Register `CompletionSpec.name` aliases for entries whose name
 ///      differs from the stem. Aliases yield to stems unconditionally;
 ///      a name that collides with another spec's stem is rejected with
@@ -747,15 +751,35 @@ fn register_entries(
         } = ps;
 
         if let Some(existing) = by_alias.get(&filename_stem) {
+            // Distinguish two cases:
+            //   - Same filename in two configured dirs (the user-override
+            //     scenario) — earlier dir wins, classify as
+            //     DirectoryPrecedence.
+            //   - The new file's stem collides with a different file's
+            //     already-registered alias (the existing entry came from
+            //     a different filename — typically its `name` claim or
+            //     even its stem under an unrelated path). The losing
+            //     spec is still addressable by ITS stem only if no other
+            //     entry owns that stem; in this branch it doesn't, so
+            //     the file is dropped. Classify as NameMatchesOtherStem
+            //     so Phase 7 doctor diagnostics can render the right
+            //     hint (rename one of the files / drop a `name` claim).
+            let kind = if existing.filename_stem == filename_stem {
+                AliasConflictKind::DirectoryPrecedence
+            } else {
+                AliasConflictKind::NameMatchesOtherStem
+            };
             tracing::debug!(
                 stem = %filename_stem,
+                existing_stem = %existing.filename_stem,
                 existing_dir = %existing.source_dir.display(),
                 losing_dir = %source_dir.display(),
-                "spec stem already registered — skipping (directory precedence)"
+                kind = ?kind,
+                "spec stem already registered — skipping"
             );
             conflicts.push(AliasConflict {
                 alias: filename_stem.clone(),
-                kind: AliasConflictKind::DirectoryPrecedence,
+                kind,
                 winner: AliasOwner {
                     filename_stem: existing.filename_stem.clone(),
                     source_dir: existing.source_dir.clone(),
@@ -3589,6 +3613,80 @@ mod tests {
         // losing its only stem).
         assert_eq!(store.entries().len(), 1);
         assert_eq!(store.aliases_count(), 1);
+    }
+
+    #[test]
+    fn phase1_cross_dir_stem_matches_earlier_name_alias_is_not_directory_precedence() {
+        // Cross-dir name-vs-stem collision: dir1 owns the `kubectl`
+        // alias via foo.json's `name: "kubectl"` claim, then dir2's
+        // kubectl.json arrives whose stem is the same string.
+        //
+        // The two files have DIFFERENT filename stems (`foo` vs
+        // `kubectl`), so this is NOT the user-override scenario —
+        // classifying it as DirectoryPrecedence would mislead doctor
+        // (Phase 7) into telling the user one dir is shadowing another
+        // when in reality it's a name-claim collision. Correct kind is
+        // NameMatchesOtherStem (from the inverted perspective: the new
+        // file's stem matches what the earlier file's name already
+        // owns).
+        let dir1 = tempfile::TempDir::new().unwrap();
+        let dir2 = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir1.path().join("foo.json"),
+            r#"{"name": "kubectl", "subcommands": [{"name": "from-foo"}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            dir2.path().join("kubectl.json"),
+            r#"{"name": "kubectl", "subcommands": [{"name": "from-kubectl"}]}"#,
+        )
+        .unwrap();
+
+        let result =
+            SpecStore::load_from_dirs(&[dir1.path().to_path_buf(), dir2.path().to_path_buf()])
+                .unwrap();
+        let store = &result.store;
+
+        // dir1's foo.json wins both stems it touches: `foo` (its own)
+        // and `kubectl` (its declared name). dir2's kubectl.json is
+        // rejected: its stem `kubectl` is already owned by foo.json's
+        // name alias, so it has nothing addressable left.
+        assert_eq!(
+            store.get("foo").unwrap().subcommands[0].name,
+            "from-foo",
+            "dir1 foo.json must address by its own stem"
+        );
+        assert_eq!(
+            store.get("kubectl").unwrap().subcommands[0].name,
+            "from-foo",
+            "dir1's name claim wins because it loaded first"
+        );
+
+        let conflicts = store.conflicts();
+        assert_eq!(
+            conflicts.len(),
+            1,
+            "expected one conflict, got {conflicts:?}"
+        );
+        let c = &conflicts[0];
+        assert_eq!(c.alias, "kubectl");
+        assert_eq!(
+            c.kind,
+            AliasConflictKind::NameMatchesOtherStem,
+            "different filename stems must classify as NameMatchesOtherStem, \
+             not DirectoryPrecedence — distinct files in distinct dirs are \
+             not the user-override scenario"
+        );
+        assert_eq!(c.winner.filename_stem, "foo");
+        assert_eq!(c.winner.source_dir, dir1.path());
+        assert_eq!(c.loser.filename_stem, "kubectl");
+        assert_eq!(c.loser.source_dir, dir2.path());
+
+        // dir2's kubectl.json is dropped entirely — the only entry is
+        // dir1's foo.json.
+        assert_eq!(store.entries().len(), 1);
+        // Aliases: `foo` stem + `kubectl` name = 2.
+        assert_eq!(store.aliases_count(), 2);
     }
 
     #[test]

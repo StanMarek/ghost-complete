@@ -480,7 +480,10 @@ addressability path it had. Conflicts come in three flavours:
 
 Run `ghost-complete status --json` to see the current
 `commands_addressable` count and `command_alias_conflicts` total.
-Run `ghost-complete doctor` for a per-conflict breakdown.
+Phase 7 will surface per-conflict diagnostics in `ghost-complete doctor`;
+today, the count is reported in `status --json` under
+`command_alias_conflicts` and the structured list lives on
+`SpecStore::conflicts()` for in-process consumers.
 
 ## Validation
 
