@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Restored AWS CLI completion spec. All 418 service subcommands (`s3`,
+  `ec2`, `iam`, `lambda`, …) now offer static subcommand and flag
+  completion (17 139 subcommands, 99 537 options total). The `--profile`
+  option uses a native `split_lines + filter_empty + trim` transform on
+  `aws configure list-profiles` with directory-keyed caching. The
+  remaining 1 843 dynamic generators (instance/region/bucket/role
+  enumeration) ship as `requires_js: true` and stay deferred to the
+  long-running requires-js plan; static completions work today.
 - Popup navigation: PageUp, PageDown, Home, and End jump by page or to the
   ends while the popup is visible.
 - Local-project completion providers for `make` targets, `npm run` scripts,
@@ -26,6 +34,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of bundled specs; e.g. `git archive --format=` now suggests `tar`/`zip`,
   `tar --atime-preserve` suggests `replace`/`system`. See
   [ADR 0004](docs/adr/0004-static-arg-suggestions.md).
+
+### Changed
+
+- Binary-size CI ceiling raised from 30 MB to 110 MB to admit the AWS
+  spec. Per-PR delta budget unchanged at 2 MB. The release binary now
+  measures ~102 MB; the embedded-spec heap test budget rose from 64 MiB
+  to 128 MiB. zstd-compressing the embedded JSON corpus is the next
+  size-reclaim work and would drop the binary back near the original
+  ceiling — tracked as a separate spec, not bundled here so neither
+  change becomes unreviewable.
 
 ## [0.10.0] - 2026-04-26
 

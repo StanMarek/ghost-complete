@@ -16,21 +16,21 @@ Four CI gates live in `.github/workflows/ci.yml`. Three were introduced in Phase
 
 **Purpose:** enforces two independent size constraints on the release binary:
 
-1. **Absolute ceiling (30 MB)** — the binary must not exceed 30 MB. This limit is fixed. Raising it requires an explicit plan amendment.
+1. **Absolute ceiling (110 MB)** — the binary must not exceed 110 MB. Raising it requires an explicit plan amendment. The ceiling moved from 30 MB to 110 MB in `ux-8` to admit the AWS completion spec; zstd-compressing embedded specs (a separate plan) is the principled reclaim path that should drop the binary back near the original ceiling.
 2. **Per-phase delta budget (default +2 MB)** — the binary must not have grown by more than `PHASE_BUDGET` (set to `2MB` in the job env) since the size recorded in [`benchmarks/binary-size-baseline.txt`](../benchmarks/binary-size-baseline.txt).
 
 **Failure modes:**
 
-- Absolute ceiling failure: binary size exceeds 30 MB.
+- Absolute ceiling failure: binary size exceeds 110 MB.
 - Delta budget failure: binary grew by more than `PHASE_BUDGET` since the baseline was recorded.
 
-**Status today:** production-live and **passing**. Phase 4 T8 landed the binary-size intervention (minified embedded specs + stripped `js_source`); the release binary is ~28.4 MB, under the 30 MB absolute ceiling. See [`docs/phase-4-binary-size-findings.md`](./phase-4-binary-size-findings.md) for the attribution breakdown. Ready to add to branch protection.
+**Status today:** production-live and **passing**. Phase 4 T8 landed the original binary-size intervention (minified embedded specs + stripped `js_source`) which dropped the binary to ~28.4 MB, under the original 30 MB ceiling. The `ux-8` AWS spec restoration brought the binary to ~102 MB; the ceiling moved to 110 MB to match plus headroom. See [`docs/phase-4-binary-size-findings.md`](./phase-4-binary-size-findings.md) for the original phase-4 attribution and the `ux-8` PR for the AWS-restoration delta. Ready to add to branch protection.
 
 **How to debug locally:**
 
 ```bash
 cargo build --release
-scripts/check-binary-size.sh --absolute-max 30MB
+scripts/check-binary-size.sh --absolute-max 110MB
 scripts/check-binary-size.sh --delta-max 2MB
 ```
 
@@ -155,9 +155,9 @@ These checks are added **alongside** any existing required checks (e.g. `Check`,
 
 ## FAQ
 
-**"Why is the ceiling 30 MB?"**
+**"Why is the ceiling 110 MB?"**
 
-The 30 MB ceiling was set during the requires-js-specs initiative as the target the binary needed to reach after specs were trimmed. Phase 4 T8 landed the intervention (minified embedded specs + stripped `js_source`) and the release binary now sits at ~28.4 MB, under budget. The delta budget (`PHASE_BUDGET=2MB`) handles the near-term constraint — "don't grow from the current baseline". These are two independent checks; both must pass.
+The 30 MB ceiling was set during the requires-js-specs initiative as the target the binary needed to reach after specs were trimmed. Phase 4 T8 landed the intervention (minified embedded specs + stripped `js_source`) and the release binary stabilised at ~28.4 MB, under budget. In `ux-8` the AWS spec was restored: 418 inlined service sub-specs carrying ~28 MB of upstream description text, which `include_str!` roundtrips into ~2× `__const` data. The release binary moved to ~102 MB; the ceiling moved to 110 MB to match plus ~8% headroom. The delta budget (`PHASE_BUDGET=2MB`) still handles the near-term constraint — "don't grow from the current baseline". These are two independent checks; both must pass. zstd-compressing embedded specs is tracked as a follow-on plan; landing it should let the ceiling drop back near the original 30 MB level.
 
 **"Can I skip a gate on a specific PR?"**
 
