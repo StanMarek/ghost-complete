@@ -89,6 +89,17 @@ fn make_engine() -> SuggestionEngine {
     SuggestionEngine::with_providers(store, history, commands)
 }
 
+fn engine_from_spec_json(filename: &str, spec_json: &str) -> SuggestionEngine {
+    let temp = tempfile::tempdir().expect("tempdir");
+    std::fs::write(temp.path().join(filename), spec_json).expect("write spec fixture");
+    let store = SpecStore::load_from_dir(temp.path())
+        .expect("fixture spec loads")
+        .store;
+    let history = HistoryProvider::from_entries(Vec::new());
+    let commands = CommandsProvider::from_list(Vec::new());
+    SuggestionEngine::with_providers(store, history, commands)
+}
+
 fn script_function_generator(source: &str) -> Arc<GeneratorSpec> {
     Arc::new(GeneratorSpec {
         generator_type: None,
@@ -165,6 +176,34 @@ async fn phase5_script_function_descriptor_form() {
 }
 
 #[tokio::test]
+async fn phase5_script_function_can_read_fig_context_aliases() {
+    let home = std::env::var("HOME").expect("HOME should be set in test environment");
+    let cwd = tempfile::tempdir().expect("tempdir");
+    let expected_cwd = cwd.path().to_string_lossy().into_owned();
+    let gen = script_function_generator(
+        "(tokens, ctx) => ({ \
+            command: 'printf', \
+            args: [ \
+                '%s\\n%s\\n', \
+                'cwd:' + ctx.currentWorkingDirectory, \
+                'home:' + ctx.environmentVariables.HOME, \
+            ], \
+        })",
+    );
+    let engine = make_engine();
+    let ctx = make_ctx("phase5-test", Vec::new(), "");
+    let results = engine
+        .run_generators(&[gen], &ctx, cwd.path(), 5_000)
+        .await
+        .expect("dispatch");
+    let names: Vec<String> = results.iter().map(|s| s.text.clone()).collect();
+    assert_eq!(
+        names,
+        vec![format!("cwd:{expected_cwd}"), format!("home:{home}")]
+    );
+}
+
+#[tokio::test]
 async fn phase5_script_function_invalid_argv_yields_empty() {
     // Returning a number is invalid — the runtime emits InvalidArgv and
     // the engine surfaces zero suggestions.
@@ -183,8 +222,8 @@ async fn phase5_custom_uses_host_runner() {
     // Custom generator runs `printf foo\\nbar` via the host runner
     // binding and turns the lines into suggestions.
     let source = "async (tokens, run, ctx) => { \
-        const out = await run(['sh', '-c', 'printf \"foo\\\\nbar\\\\n\"']); \
-        return out.split('\\n').filter(Boolean).map(name => ({ name })); \
+        const { stdout } = await run(['sh', '-c', 'printf \"foo\\\\nbar\\\\n\"']); \
+        return stdout.split('\\n').filter(Boolean).map(name => ({ name })); \
     }";
     let gen = custom_generator(source);
     let engine = make_engine();
@@ -217,6 +256,77 @@ async fn phase5_custom_can_read_cwd_and_tokens() {
     let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
     assert!(names.contains(&"cwd:/phase5-cwd"), "got: {names:?}");
     assert!(names.contains(&"tokens:phase5-test,sub"), "got: {names:?}",);
+}
+
+#[tokio::test]
+async fn phase5_custom_can_read_fig_context_aliases() {
+    let home = std::env::var("HOME").expect("HOME should be set in test environment");
+    let source = "async (tokens, run, ctx) => [ \
+        { name: 'cwd:' + ctx.currentWorkingDirectory }, \
+        { name: 'home:' + ctx.environmentVariables.HOME }, \
+    ]";
+    let gen = custom_generator(source);
+    let engine = make_engine();
+    let ctx = make_ctx("phase5-test", Vec::new(), "");
+    let results = engine
+        .run_generators(&[gen], &ctx, Path::new("/phase5-cwd"), 5_000)
+        .await
+        .expect("dispatch");
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert!(names.contains(&"cwd:/phase5-cwd"), "got: {names:?}");
+    assert!(
+        names.contains(&format!("home:{home}").as_str()),
+        "got: {names:?}",
+    );
+}
+
+#[tokio::test]
+async fn phase5_suggest_sync_schedules_requires_js_custom_generator() {
+    let home = std::env::var("HOME").expect("HOME should be set in test environment");
+    let engine = engine_from_spec_json(
+        "phase5-sync-custom.json",
+        r#"{
+            "name": "phase5-sync-custom",
+            "args": [{
+                "name": "target",
+                "generators": [{
+                    "requires_js": true,
+                    "js_runtime": {
+                        "kind": "custom",
+                        "source": "async (tokens, run, ctx) => [{ name: 'cwd:' + ctx.currentWorkingDirectory }, { name: 'home:' + ctx.environmentVariables.HOME }]"
+                    }
+                }]
+            }]
+        }"#,
+    );
+    let ctx = make_ctx("phase5-sync-custom", Vec::new(), "");
+
+    let result = engine
+        .suggest_sync(&ctx, Path::new("/phase5-cwd"), "phase5-sync-custom ")
+        .expect("suggest_sync");
+
+    assert_eq!(
+        result.script_generators.len(),
+        1,
+        "suggest_sync must schedule supported requires_js custom generators"
+    );
+    assert!(result.script_generators[0].requires_js);
+
+    let dynamic = engine
+        .run_generators(
+            &result.script_generators,
+            &ctx,
+            Path::new("/phase5-cwd"),
+            5_000,
+        )
+        .await
+        .expect("dispatch");
+    let names: Vec<&str> = dynamic.iter().map(|s| s.text.as_str()).collect();
+    assert!(names.contains(&"cwd:/phase5-cwd"), "got: {names:?}");
+    assert!(
+        names.contains(&format!("home:{home}").as_str()),
+        "got: {names:?}",
+    );
 }
 
 #[tokio::test]
@@ -287,8 +397,8 @@ async fn phase5_custom_aws_describe_regions_corpus_fixture() {
     // the same JSON-parse → field-extract pattern.
     let source = "async (tokens, run, ctx) => { \
         const aws_json = '{\"Regions\":[{\"RegionName\":\"us-east-1\"},{\"RegionName\":\"eu-west-1\"}]}'; \
-        const out = await run(['sh', '-c', 'printf %s ' + JSON.stringify(aws_json)]); \
-        const parsed = JSON.parse(out); \
+        const { stdout } = await run(['sh', '-c', 'printf %s ' + JSON.stringify(aws_json)]); \
+        const parsed = JSON.parse(stdout); \
         return parsed.Regions.map(r => ({ name: r.RegionName })); \
     }";
     let gen = custom_generator(source);
@@ -307,8 +417,8 @@ async fn phase5_custom_kubectl_get_pods_corpus_fixture() {
     // kubectl-style spec: `kubectl get pods -o name` would produce one
     // line per pod. The custom generator splits and surfaces each one.
     let source = "async (tokens, run, ctx) => { \
-        const out = await run(['sh', '-c', 'printf \"pod/web-1\\\\npod/web-2\\\\npod/api-1\\\\n\"']); \
-        return out.split('\\n').filter(Boolean).map(name => ({ name })); \
+        const { stdout } = await run(['sh', '-c', 'printf \"pod/web-1\\\\npod/web-2\\\\npod/api-1\\\\n\"']); \
+        return stdout.split('\\n').filter(Boolean).map(name => ({ name })); \
     }";
     let gen = custom_generator(source);
     let engine = make_engine();
@@ -326,8 +436,8 @@ async fn phase5_custom_docker_images_corpus_fixture() {
     // docker-style spec: `docker images --format` would emit a list.
     // We exercise the same shape via printf for hermeticity.
     let source = "async (tokens, run, ctx) => { \
-        const out = await run(['sh', '-c', 'printf \"alpine:3.18\\\\nubuntu:22.04\\\\n\"']); \
-        return out.split('\\n').filter(Boolean).map(name => ({ name })); \
+        const { stdout } = await run(['sh', '-c', 'printf \"alpine:3.18\\\\nubuntu:22.04\\\\n\"']); \
+        return stdout.split('\\n').filter(Boolean).map(name => ({ name })); \
     }";
     let gen = custom_generator(source);
     let engine = make_engine();

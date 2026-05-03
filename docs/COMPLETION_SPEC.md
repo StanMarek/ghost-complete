@@ -214,7 +214,7 @@ Some Fig specs contain generators that require JavaScript execution. As of UX-9 
 | `js_runtime.kind` | Behaviour | Status |
 |-------------------|-----------|--------|
 | `post_process`    | Run `script` (or `script_template`) as a normal script generator, then pass stdout through the JS function in `js_runtime.source`. The function returns the suggestion list. | Active (UX-9 Phase 4). |
-| `script_function` | Evaluate `js_runtime.source` to produce an `argv`, spawn it, then post-process the resulting stdout through the same source. | Active (UX-9 Phase 5). |
+| `script_function` | Evaluate `js_runtime.source` to produce an `argv`, spawn that argv, then parse stdout with the generator transforms or default line splitting. | Active (UX-9 Phase 5). |
 | `custom`          | No script — `js_runtime.source` is an async function that returns suggestions directly (the Fig `custom: async () => [...]` shape). | Active (UX-9 Phase 5). |
 
 | Field | Type | Required | Description |

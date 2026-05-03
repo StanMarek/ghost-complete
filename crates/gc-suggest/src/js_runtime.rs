@@ -238,9 +238,13 @@ fn build_script_function_program(source: &str) -> String {
     format!(
         "(function() {{ \
            const __src = ({src}); \
+           const __cwd = typeof currentWorkingDirectory !== 'undefined' ? currentWorkingDirectory : ''; \
+           const __env = typeof environmentVariables !== 'undefined' ? environmentVariables : {{}}; \
            const __ctx = {{ \
-             cwd: typeof currentWorkingDirectory !== 'undefined' ? currentWorkingDirectory : '', \
-             env: typeof environmentVariables !== 'undefined' ? environmentVariables : {{}}, \
+             cwd: __cwd, \
+             currentWorkingDirectory: __cwd, \
+             env: __env, \
+             environmentVariables: __env, \
              currentToken: typeof currentToken !== 'undefined' ? currentToken : '', \
              previousToken: typeof previousToken !== 'undefined' ? previousToken : '', \
              tokens: typeof tokens !== 'undefined' ? tokens : [], \
@@ -266,9 +270,13 @@ fn build_custom_program(source: &str) -> String {
     format!(
         "(function() {{ \
            const __src = ({src}); \
+           const __cwd = typeof currentWorkingDirectory !== 'undefined' ? currentWorkingDirectory : ''; \
+           const __env = typeof environmentVariables !== 'undefined' ? environmentVariables : {{}}; \
            const __ctx = {{ \
-             cwd: typeof currentWorkingDirectory !== 'undefined' ? currentWorkingDirectory : '', \
-             env: typeof environmentVariables !== 'undefined' ? environmentVariables : {{}}, \
+             cwd: __cwd, \
+             currentWorkingDirectory: __cwd, \
+             env: __env, \
+             environmentVariables: __env, \
              currentToken: typeof currentToken !== 'undefined' ? currentToken : '', \
              previousToken: typeof previousToken !== 'undefined' ? previousToken : '', \
              tokens: typeof tokens !== 'undefined' ? tokens : [], \

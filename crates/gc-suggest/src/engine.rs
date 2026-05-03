@@ -916,7 +916,7 @@ impl SuggestionEngine {
         let generators: Vec<_> = resolution
             .script_generators
             .into_iter()
-            .filter(|g| !g.requires_js)
+            .filter(|g| is_supported_script_generator(g))
             .collect();
         self.run_generators(&generators, ctx, cwd, timeout_ms).await
     }
@@ -1188,7 +1188,7 @@ impl SuggestionEngine {
         // Script generators are dispatched asynchronously by the caller.
         let script_generators: Vec<_> = script_generators
             .into_iter()
-            .filter(|g| !g.requires_js)
+            .filter(|g| is_supported_script_generator(g))
             .collect();
 
         let suggestions = self.rank_with_history(ctx, cwd, buffer, candidates, true);
@@ -1398,6 +1398,21 @@ fn resolve_script_argv(gen: &GeneratorSpec, ctx: &CommandContext) -> Vec<String>
         return substitute_template(template, prev_token, current_token);
     }
     Vec::new()
+}
+
+fn is_supported_script_generator(gen: &GeneratorSpec) -> bool {
+    if !gen.requires_js {
+        return true;
+    }
+
+    match gen.js_runtime.as_ref() {
+        Some(rt) if rt.kind == JsRuntimeKind::PostProcess => {
+            gen.script.is_some() || gen.script_template.is_some()
+        }
+        Some(rt) if rt.kind == JsRuntimeKind::ScriptFunction => !rt.source.trim().is_empty(),
+        Some(rt) if rt.kind == JsRuntimeKind::Custom => !rt.source.trim().is_empty(),
+        _ => false,
+    }
 }
 
 /// Pack the parsed command line into the host-API context for a Phase 5

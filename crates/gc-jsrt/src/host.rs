@@ -29,14 +29,15 @@
 //! # Recursion cap
 //!
 //! `executeShellCommand` is metered by [`MAX_SHELL_CALLS_PER_EVALUATION`].
-//! The first six calls succeed/fail per the runner's verdict; the
-//! seventh raises a JS exception with diagnostic
+//! The first five calls succeed/fail per the runner's verdict; the
+//! sixth raises a JS exception with diagnostic
 //! [`crate::JsDiagnosticCode::ShellCommandLimitExceeded`].
 //!
 //! # Synchronous semantics
 //!
 //! JS sees `executeShellCommand` as a synchronous function returning a
-//! string of stdout. Spec authors typically do
+//! Fig-compatible result object with `stdout`, `stderr`, and `exitCode`.
+//! Spec authors typically do
 //! `await executeShellCommand(...)`, which works fine: awaiting a
 //! non-Promise returns the value as-is. We don't wrap in a Promise to
 //! keep the worker thread (which is a regular OS thread, not a tokio
@@ -44,9 +45,10 @@
 //! inside the runner without worrying about nesting two async
 //! interpreters.
 
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use rquickjs::function::{Constructor, Rest};
 use rquickjs::prelude::Func;
@@ -61,6 +63,8 @@ use crate::types::{JsRuntimeInput, ShellRunError, ShellRunner};
 /// in a single completion turn; 5 covers padding for branches that
 /// fan out by configuration step.
 pub const MAX_SHELL_CALLS_PER_EVALUATION: usize = 5;
+
+const DEFAULT_SHELL_TIMEOUT_MS: u64 = 5_000;
 
 /// Per-evaluation accounting for `executeShellCommand`. Created fresh
 /// in `run_job` and shared (via `Arc`) with the host closure.
@@ -163,6 +167,7 @@ pub(crate) fn install_host_api<'js>(
     ctx: &Ctx<'js>,
     input: &JsRuntimeInput,
     state: Arc<HostState>,
+    shell_deadline: Instant,
 ) -> rquickjs::Result<()> {
     let globals: Object<'js> = ctx.globals();
 
@@ -187,8 +192,14 @@ pub(crate) fn install_host_api<'js>(
     // ---- executeShellCommand binding ------------------------------------
     let runner = input.shell_runner.clone();
     let allow_shell_command = input.allow_shell_command;
-    let exec_fn: Function<'js> =
-        build_execute_shell_command(ctx, runner, allow_shell_command, state.clone())?;
+    let exec_fn: Function<'js> = build_execute_shell_command(
+        ctx,
+        runner,
+        allow_shell_command,
+        state.clone(),
+        input.cwd.clone(),
+        shell_deadline,
+    )?;
 
     // ---- Build the canonical __ghost object ------------------------------
     let ghost = Object::new(ctx.clone())?;
@@ -241,19 +252,18 @@ pub(crate) fn install_host_api<'js>(
 /// runner. The thread-bounded counter caps total calls per evaluation
 /// at [`MAX_SHELL_CALLS_PER_EVALUATION`].
 ///
-/// Returns a JS string of stdout on success; throws on any error path
-/// so JS code can branch on `try`/`catch` if desired.
+/// Returns a Fig-compatible result object on success; throws on any
+/// error path so JS code can branch on `try`/`catch` if desired.
 fn build_execute_shell_command<'js>(
     ctx: &Ctx<'js>,
     runner: Option<Arc<dyn ShellRunner>>,
     allow_shell_command: bool,
     state: Arc<HostState>,
+    default_cwd: PathBuf,
+    shell_deadline: Instant,
 ) -> rquickjs::Result<Function<'js>> {
-    // Default cwd / timeout used when JS doesn't override via the second
-    // argument. Picked to mirror the engine's `script::run_script`
-    // defaults so behaviour matches between Class A and Class B/C.
-    const DEFAULT_TIMEOUT_MS: u64 = 5_000;
-    let default_cwd = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"));
+    // Default timeout is clamped per call by the remaining JS budget so
+    // a native shell run cannot outlive its owning evaluation.
 
     Function::new(
         ctx.clone(),
@@ -285,8 +295,8 @@ fn build_execute_shell_command<'js>(
             let opts_arg = iter.next();
             let (cwd_override, timeout_override) = parse_exec_options(&ctx, opts_arg.as_ref());
 
-            let cwd = cwd_override.unwrap_or_else(|| default_cwd.clone());
-            let timeout = Duration::from_millis(timeout_override.unwrap_or(DEFAULT_TIMEOUT_MS));
+            let mut cwd = cwd_override.unwrap_or_else(|| default_cwd.clone());
+            let mut timeout_override = timeout_override;
 
             let Some(ref runner) = runner else {
                 return Err(throw_with_code(
@@ -298,6 +308,7 @@ fn build_execute_shell_command<'js>(
 
             let result = if let Some(s) = cmd_arg.as_string() {
                 let s = s.to_string()?;
+                let timeout = bounded_shell_timeout(timeout_override, shell_deadline);
                 if allow_shell_command {
                     runner.run_string(&s, &cwd, timeout)
                 } else {
@@ -330,39 +341,65 @@ fn build_execute_shell_command<'js>(
                         "argv array must have at least one element",
                     ));
                 }
+                let timeout = bounded_shell_timeout(timeout_override, shell_deadline);
                 runner.run_argv(&argv, &cwd, timeout)
             } else if let Some(obj) = cmd_arg.as_object() {
                 // Fig also supports `{ command: "...", args: [...] }`
                 // descriptors. We accept both `command` (single
                 // executable name) and `args` (rest of argv).
-                let executable: String = match obj.get::<_, Value<'js>>("command") {
-                    Ok(v) => match v.as_string() {
-                        Some(s) => s.to_string()?,
-                        None => String::new(),
-                    },
-                    Err(_) => String::new(),
-                };
+                let (descriptor_cwd, descriptor_timeout) = parse_exec_options(&ctx, Some(&cmd_arg));
+                if let Some(descriptor_cwd) = descriptor_cwd {
+                    cwd = descriptor_cwd;
+                }
+                if descriptor_timeout.is_some() {
+                    timeout_override = descriptor_timeout;
+                }
                 let mut argv: Vec<String> = Vec::new();
-                if !executable.is_empty() {
-                    argv.push(executable);
-                }
-                if let Ok(v) = obj.get::<_, Value<'js>>("args") {
-                    if let Some(args_arr) = v.as_array() {
-                        for i in 0..args_arr.len() {
-                            let elem: Value<'js> = args_arr.get(i)?;
-                            if let Some(s) = elem.as_string() {
-                                argv.push(s.to_string()?);
-                            }
-                        }
-                    }
-                }
-                if argv.is_empty() {
+                let command_value: Value<'js> = obj.get("command").map_err(|_| {
+                    throw_with_code(
+                        &ctx,
+                        "ShellCommandFailed",
+                        "structured command descriptor requires command",
+                    )
+                })?;
+                let Some(command) = command_value.as_string() else {
                     return Err(throw_with_code(
                         &ctx,
                         "ShellCommandFailed",
-                        "structured command descriptor produced empty argv",
+                        "structured command descriptor command is not a string",
+                    ));
+                };
+                let command = command.to_string()?;
+                if command.is_empty() {
+                    return Err(throw_with_code(
+                        &ctx,
+                        "ShellCommandFailed",
+                        "structured command descriptor command must not be empty",
                     ));
                 }
+                argv.push(command);
+                if obj.contains_key("args").unwrap_or(false) {
+                    let v: Value<'js> = obj.get("args")?;
+                    let Some(args_arr) = v.as_array() else {
+                        return Err(throw_with_code(
+                            &ctx,
+                            "ShellCommandFailed",
+                            "structured command descriptor args is not an array",
+                        ));
+                    };
+                    for i in 0..args_arr.len() {
+                        let elem: Value<'js> = args_arr.get(i)?;
+                        let Some(s) = elem.as_string() else {
+                            return Err(throw_with_code(
+                                &ctx,
+                                "ShellCommandFailed",
+                                &format!("structured command descriptor args[{i}] is not a string"),
+                            ));
+                        };
+                        argv.push(s.to_string()?);
+                    }
+                }
+                let timeout = bounded_shell_timeout(timeout_override, shell_deadline);
                 runner.run_argv(&argv, &cwd, timeout)
             } else {
                 return Err(throw_with_code(
@@ -390,12 +427,19 @@ fn build_execute_shell_command<'js>(
                 }
             };
 
-            // Return the stdout string. The string return matches
-            // Fig's most common documented signature; specs that
-            // need stderr should branch on the thrown error.
-            output.stdout.as_str().into_js(&ctx)
+            let result_obj = Object::new(ctx.clone())?;
+            result_obj.set("stdout", output.stdout.as_str())?;
+            result_obj.set("stderr", output.stderr.as_str())?;
+            result_obj.set("exitCode", output.exit_code)?;
+            Ok(result_obj.into_value())
         },
     )
+}
+
+fn bounded_shell_timeout(requested_timeout_ms: Option<u64>, deadline: Instant) -> Duration {
+    let requested = Duration::from_millis(requested_timeout_ms.unwrap_or(DEFAULT_SHELL_TIMEOUT_MS));
+    let remaining = deadline.saturating_duration_since(Instant::now());
+    requested.min(remaining)
 }
 
 /// Parse the optional options descriptor that JS may pass as the second

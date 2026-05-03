@@ -263,7 +263,7 @@ fn run_job(
         // jobs. PostProcess jobs do not need them — but installing
         // unconditionally is cheap (a few property sets on a fresh
         // context) and gives spec authors a consistent surface.
-        if let Err(e) = install_host_api(&ctx, &job.input, host_state.clone()) {
+        if let Err(e) = install_host_api(&ctx, &job.input, host_state.clone(), job.deadline) {
             return JsRuntimeOutput::empty_with(JsDiagnostic {
                 code: JsDiagnosticCode::Exception,
                 message: format!("could not install host API: {e}"),
@@ -378,28 +378,87 @@ fn normalize_argv<'js>(_ctx: &rquickjs::Ctx<'js>, value: Value<'js>) -> JsRuntim
     }
 
     if let Some(obj) = value.as_object() {
-        let executable: String = match obj.get::<_, Value<'js>>("command") {
-            Ok(v) => match v.as_string() {
-                Some(s) => s.to_string().unwrap_or_default(),
-                None => String::new(),
-            },
-            Err(_) => String::new(),
-        };
         let mut argv: Vec<String> = Vec::new();
-        if !executable.is_empty() {
-            argv.push(executable);
+        if obj.contains_key("command").unwrap_or(false) {
+            let v: Value<'js> = match obj.get("command") {
+                Ok(v) => v,
+                Err(e) => {
+                    output.diagnostics.push(JsDiagnostic {
+                        code: JsDiagnosticCode::InvalidArgv,
+                        message: format!("structured argv command read failed: {e}"),
+                    });
+                    return output;
+                }
+            };
+            let Some(s) = v.as_string() else {
+                output.diagnostics.push(JsDiagnostic {
+                    code: JsDiagnosticCode::InvalidArgv,
+                    message: "structured argv command is not a string".into(),
+                });
+                return output;
+            };
+            match s.to_string() {
+                Ok(s) if !s.is_empty() => argv.push(s),
+                Ok(_) => {
+                    output.diagnostics.push(JsDiagnostic {
+                        code: JsDiagnosticCode::InvalidArgv,
+                        message: "structured argv command must not be empty".into(),
+                    });
+                    return output;
+                }
+                Err(e) => {
+                    output.diagnostics.push(JsDiagnostic {
+                        code: JsDiagnosticCode::InvalidArgv,
+                        message: format!("structured argv command decode failed: {e}"),
+                    });
+                    return output;
+                }
+            }
         }
-        if let Ok(v) = obj.get::<_, Value<'js>>("args") {
-            if let Some(args_arr) = v.as_array() {
-                for i in 0..args_arr.len() {
-                    let elem: Value<'js> = match args_arr.get(i) {
-                        Ok(e) => e,
-                        Err(_) => continue,
-                    };
-                    if let Some(s) = elem.as_string() {
-                        if let Ok(s) = s.to_string() {
-                            argv.push(s);
-                        }
+        if obj.contains_key("args").unwrap_or(false) {
+            let v: Value<'js> = match obj.get("args") {
+                Ok(v) => v,
+                Err(e) => {
+                    output.diagnostics.push(JsDiagnostic {
+                        code: JsDiagnosticCode::InvalidArgv,
+                        message: format!("structured argv args read failed: {e}"),
+                    });
+                    return output;
+                }
+            };
+            let Some(args_arr) = v.as_array() else {
+                output.diagnostics.push(JsDiagnostic {
+                    code: JsDiagnosticCode::InvalidArgv,
+                    message: "structured argv args is not an array".into(),
+                });
+                return output;
+            };
+            for i in 0..args_arr.len() {
+                let elem: Value<'js> = match args_arr.get(i) {
+                    Ok(e) => e,
+                    Err(e) => {
+                        output.diagnostics.push(JsDiagnostic {
+                            code: JsDiagnosticCode::InvalidArgv,
+                            message: format!("structured argv args[{i}] read failed: {e}"),
+                        });
+                        return output;
+                    }
+                };
+                let Some(s) = elem.as_string() else {
+                    output.diagnostics.push(JsDiagnostic {
+                        code: JsDiagnosticCode::InvalidArgv,
+                        message: format!("structured argv args[{i}] is not a string"),
+                    });
+                    return output;
+                };
+                match s.to_string() {
+                    Ok(s) => argv.push(s),
+                    Err(e) => {
+                        output.diagnostics.push(JsDiagnostic {
+                            code: JsDiagnosticCode::InvalidArgv,
+                            message: format!("structured argv args[{i}] decode failed: {e}"),
+                        });
+                        return output;
                     }
                 }
             }
@@ -458,10 +517,13 @@ fn classify_error(
     match err {
         CaughtError::Exception(exc) => {
             let msg = exc.message().unwrap_or_else(|| "<no message>".into());
-            JsRuntimeOutput::empty_with(JsDiagnostic {
-                code: JsDiagnosticCode::Exception,
-                message: msg,
-            })
+            let code = exc
+                .as_object()
+                .get::<_, String>("code")
+                .ok()
+                .and_then(|code| diagnostic_code_from_host_error(&code))
+                .unwrap_or(JsDiagnosticCode::Exception);
+            JsRuntimeOutput::empty_with(JsDiagnostic { code, message: msg })
         }
         CaughtError::Value(value) => {
             // Non-Error throws (e.g. `throw "boom"`) come back as a raw value.
@@ -486,5 +548,15 @@ fn classify_error(
             code: JsDiagnosticCode::Exception,
             message: format!("rquickjs error: {other}"),
         }),
+    }
+}
+
+fn diagnostic_code_from_host_error(code: &str) -> Option<JsDiagnosticCode> {
+    match code {
+        "ShellCommandStringDenied" => Some(JsDiagnosticCode::ShellCommandStringDenied),
+        "ShellCommandLimitExceeded" => Some(JsDiagnosticCode::ShellCommandLimitExceeded),
+        "ShellCommandFailed" => Some(JsDiagnosticCode::ShellCommandFailed),
+        "UnsupportedHostApi" => Some(JsDiagnosticCode::UnsupportedHostApi),
+        _ => None,
     }
 }

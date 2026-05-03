@@ -862,6 +862,51 @@ mod tests {
         );
     }
 
+    #[test]
+    fn validate_strict_fails_on_missing_js_runtime_in_second_option_arg() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        write_spec(
+            &spec_dir,
+            "option_args.json",
+            r#"{
+                "name": "option-args",
+                "options": [{
+                    "name": ["--format"],
+                    "args": [
+                        {
+                            "name": "first",
+                            "generators": [{
+                                "requires_js": true,
+                                "js_runtime": {"kind":"custom","source":"()=>[]"}
+                            }]
+                        },
+                        {
+                            "name": "second",
+                            "generators": [{"requires_js": true}]
+                        }
+                    ]
+                }]
+            }"#,
+        );
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        let outcome =
+            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        assert!(
+            outcome.counts.warnings > 0,
+            "strict mode must warn on missing js_runtime in option args array"
+        );
+        assert!(outcome.strict_failed);
+        let txt = String::from_utf8_lossy(&out);
+        assert!(
+            txt.contains("requires_js=true without js_runtime"),
+            "expected missing js_runtime warning: {txt}"
+        );
+    }
+
     /// Phase 7: a spec with `requires_js: true` and a properly populated
     /// `js_runtime` block does NOT flip strict_failed. Companion test to
     /// `validate_strict_fails_on_missing_js_runtime` so a regression can

@@ -109,6 +109,16 @@ fn make_engine() -> SuggestionEngine {
     SuggestionEngine::with_providers(store, history, commands)
 }
 
+fn fixture_engine() -> SuggestionEngine {
+    let fixture_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/ux9");
+    let store = SpecStore::load_from_dir(&fixture_dir)
+        .expect("ux9 fixture specs load")
+        .store;
+    let history = HistoryProvider::from_entries(Vec::new());
+    let commands = CommandsProvider::from_list(Vec::new());
+    SuggestionEngine::with_providers(store, history, commands)
+}
+
 fn engine_with_js_disabled() -> SuggestionEngine {
     make_engine().with_suggest_config(50, true, 5, true, true, true, false)
 }
@@ -138,6 +148,30 @@ fn post_process_generator(script: &[&str], source: &str) -> Arc<GeneratorSpec> {
         corrected_in: None,
         template: None,
     })
+}
+
+#[tokio::test]
+async fn phase4_suggest_sync_returns_supported_requires_js_post_process_fixture() {
+    let engine = fixture_engine();
+    let ctx = make_ctx("post-process-supported", vec!["names"], "");
+
+    let result = engine
+        .suggest_sync(&ctx, Path::new("/tmp"), "post-process-supported names ")
+        .expect("suggest_sync");
+
+    assert_eq!(
+        result.script_generators.len(),
+        1,
+        "suggest_sync must schedule supported requires_js post_process generators"
+    );
+    assert!(result.script_generators[0].requires_js);
+
+    let dynamic = engine
+        .run_generators(&result.script_generators, &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch");
+    let names: Vec<&str> = dynamic.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(names, vec!["hello world"]);
 }
 
 #[tokio::test]

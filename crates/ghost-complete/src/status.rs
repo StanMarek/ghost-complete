@@ -493,12 +493,10 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
     // and double-count the requires_js generators. UX-9 fix-up.
     let file_scan = scan_spec_files(&store)?;
     let requires_js_generators_total = file_scan.requires_js_generators_total;
-    // Phase 4: classify every requires_js generator on disk into
-    // supported/unsupported buckets. A generator is supported when it carries
-    // `js_runtime.kind = post_process` AND ships an accompanying script (or
-    // script_template) — Phase 4 dispatches that combination through the
-    // QuickJS evaluator. Everything else (script_function, custom, missing
-    // js_runtime metadata) stays unsupported.
+    // Phase 5: classify every requires_js generator on disk into
+    // supported/unsupported buckets. `post_process` requires non-empty
+    // source plus an accompanying script/script_template; `script_function`
+    // and `custom` require non-empty source.
     let requires_js_generators_supported = file_scan.requires_js_generators_supported;
     let requires_js_generators_unsupported =
         requires_js_generators_total.saturating_sub(requires_js_generators_supported);

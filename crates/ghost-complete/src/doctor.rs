@@ -1147,6 +1147,51 @@ mod tests {
     }
 
     #[test]
+    fn doctor_fails_when_second_option_arg_runtime_metadata_missing() {
+        // Fig permits option args as an array. The doctor check must inspect
+        // more than the first element so converter regressions in later option
+        // args do not ship silently.
+        let (store, _dir) = store_from_json_fixtures(&[(
+            "option-args.json",
+            r#"{
+                "name": "option-args",
+                "options": [{
+                    "name": ["--format"],
+                    "args": [
+                        {
+                            "name": "first",
+                            "generators": [{
+                                "requires_js": true,
+                                "js_runtime": {"kind":"custom","source":"()=>[]"}
+                            }]
+                        },
+                        {
+                            "name": "second",
+                            "generators": [{"requires_js": true}]
+                        }
+                    ]
+                }]
+            }"#,
+        )]);
+        let result = check_embedded_runtime_metadata_for_store(&store);
+        assert!(
+            matches!(result.severity, Severity::Fail),
+            "expected Fail, got message: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("missing js_runtime metadata"),
+            "got: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("option-args"),
+            "must name affected spec: {}",
+            result.message
+        );
+    }
+
+    #[test]
     fn doctor_fails_when_runtime_source_empty() {
         // js_runtime present but source is whitespace — the converter
         // dropped the body. Same severity as missing entirely.

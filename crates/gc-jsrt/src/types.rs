@@ -75,11 +75,10 @@ pub enum ShellRunError {
 /// budget is bounded by the same wall-clock timeout that gates the
 /// outer JS interpreter.
 ///
-/// The `argv_only` flag is propagated from the spec's
-/// `js_runtime.allow_shell_command`. When true, the runner accepts only
-/// the argv form (a `&[String]` of length ≥ 1); shell-string passthrough
-/// is denied at the trait boundary so a downstream implementation can't
-/// accidentally weaken the policy.
+/// The host layer enforces `js_runtime.allow_shell_command` before it
+/// calls [`Self::run_string`]. [`Self::run_argv`] is always argv-only,
+/// and the default [`Self::run_string`] implementation denies
+/// shell-string commands unless a runner explicitly opts in.
 pub trait ShellRunner: Send + Sync {
     /// Execute a shell command in argv form. Implementations MUST exec
     /// via an argv array (no `sh -c`), use the supplied `cwd`, and

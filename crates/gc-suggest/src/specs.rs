@@ -205,7 +205,7 @@ where
     }
 }
 
-/// Deserialize option `args` as either a single object or an array (taking the first).
+/// Deserialize option `args` as either a single object or an array.
 fn deserialize_option_args<'de, D>(
     deserializer: D,
 ) -> std::result::Result<Option<ArgSpec>, D::Error>
@@ -221,9 +221,28 @@ where
 
     match Option::<OneOrMany>::deserialize(deserializer)? {
         Some(OneOrMany::One(single)) => Ok(Some(single)),
-        Some(OneOrMany::Many(vec)) => Ok(vec.into_iter().next()),
+        Some(OneOrMany::Many(vec)) => Ok(merge_option_args(vec)),
         None => Ok(None),
     }
+}
+
+fn merge_option_args(args: Vec<ArgSpec>) -> Option<ArgSpec> {
+    let mut iter = args.into_iter();
+    let mut merged = iter.next()?;
+    for arg in iter {
+        if merged.name.is_none() {
+            merged.name = arg.name;
+        }
+        if merged.description.is_none() {
+            merged.description = arg.description;
+        }
+        merged.generators.extend(arg.generators);
+        if merged.template.is_none() {
+            merged.template = arg.template;
+        }
+        merged.suggestions.extend(arg.suggestions);
+    }
+    Some(merged)
 }
 
 /// Deserialize an `Option<JsRuntimeSpec>` and wrap it in `Arc` so the

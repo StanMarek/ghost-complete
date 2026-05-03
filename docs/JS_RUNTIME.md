@@ -9,28 +9,27 @@ self-contained dependency target — `gc-suggest` calls into it via the
 
 ## Status
 
-Phase 3 (committed): runtime foundation, bounded sandbox, output
-normalization, kill switch on the config schema.
+Phase 5 is active. The runtime foundation, bounded sandbox, output
+normalization, engine dispatch, cache partitioning, and provider kill
+switch are wired into the suggestion path.
 
-Phase 4 (next): `gc-suggest` engine dispatch for `JsRuntimeKind::PostProcess`.
-
-Phase 5 (planned): `JsRuntimeKind::ScriptFunction` and
-`JsRuntimeKind::Custom` dispatch.
-
-The dispatch wiring is gated on `[suggest.providers] js_runtime` in
-`config.toml`. Default is `true` — flipping it has no observable
-effect today (Phase 3) and starts gating real work in Phase 4.
+`gc-suggest` dispatches all populated `js_runtime.kind` variants:
+`post_process`, `script_function`, and `custom`. The dispatch wiring
+is gated on `[suggest.providers] js_runtime` in `config.toml`.
+Default is `true`. Setting it to `false` skips JS-backed generators
+without disabling static spec data such as subcommands, options, and
+argument hints.
 
 ## Class A / B / C distinctions
 
 The 180 `requires_js` specs split into three runtime classes,
 mirrored by [`JsRuntimeKind`](../crates/gc-suggest/src/specs.rs):
 
-| Class | Kind             | Pattern                                            | Phase |
-| ----- | ---------------- | -------------------------------------------------- | ----- |
-| A     | `PostProcess`    | `script: [...]` + `postProcess: out => [...]`      | 4     |
-| B     | `ScriptFunction` | `script: (tokens) => [...args]`                    | 5     |
-| C     | `Custom`         | `custom: async (tokens) => [{name, description?}]` | 5     |
+| Class | Kind             | Pattern                                            | Status |
+| ----- | ---------------- | -------------------------------------------------- | ------ |
+| A     | `PostProcess`    | `script: [...]` + `postProcess: out => [...]`      | Active |
+| B     | `ScriptFunction` | `script: (tokens) => [...args]`                    | Active |
+| C     | `Custom`         | `custom: async (tokens) => [{name, description?}]` | Active |
 
 All three reduce to the same `JsWorker.evaluate(program, input,
 deadline)` primitive — only the input shape and call-site differ.
@@ -138,14 +137,15 @@ failures the engine cannot recover from (`WorkerDead`, `Internal`).
 
 ## Cache key composition
 
-Phase 3 does not yet cache JS evaluations — caching is part of the
-Phase 4 dispatch wiring. The intended composition (subject to the
-Phase 4 review):
-
-```
-("js_runtime", spec_id, generator_index, kind, hash(source),
- hash(input.stdout), hash(input.tokens), input.cwd)
-```
+JS-backed generator results are cached with runtime-specific
+partitions so two generators that share an argv but use different JS
+sources cannot share post-processed suggestions. `post_process` and
+`script_function` suggestion caches are keyed by the command, resolved
+argv, optional cache directory, and a hash of the JS source namespaced
+by runtime kind. Their raw stdout cache remains keyed by the resolved
+argv. `custom` generators have no argv; their suggestion cache keys
+the command, optional cache directory, JS source, and token
+fingerprint.
 
 `cache_by_directory` in the spec's `cache` block continues to apply
 unchanged.
@@ -157,13 +157,12 @@ unchanged.
 js_runtime = false   # disable the JS evaluator entirely
 ```
 
-Effect by phase:
-
-- Phase 3: no observable effect (the engine doesn't dispatch yet).
-- Phase 4+: when `false`, `requires_js` generators short-circuit to
-  the legacy "skipped" code path — no QuickJS spawn, no eval. Static
-  spec data (subcommands, options, argument hints) continues to
-  work.
+When `false`, `requires_js` generators with a populated `js_runtime`
+shape (`post_process`, `script_function`, or `custom`) short-circuit
+to the skipped path. The engine does not spawn the backing script for
+JS-backed post-process generators and does not evaluate QuickJS for
+any JS-backed generator. Static spec data (subcommands, options,
+argument hints) continues to work.
 
 The flag is read at engine builder time (same convention as
 `max_results` / `generator_timeout_ms`), so changes require a proxy
