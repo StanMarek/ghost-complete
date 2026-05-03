@@ -1558,7 +1558,8 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
         let outcome = scan_specs(Some(cfg.to_str().unwrap())).unwrap();
 
-        // The active fixture set, after Phase 1 stem-keying:
+        // The active fixture set, after Phase 1 stem-keying and Phase 2
+        // activating the two formerly-parked js_runtime fixtures:
         //   static_only.json                    → stem `static_only`, name `static-only`,
         //                                          fully functional, 0 requires_js
         //   partial_unsupported_js.json         → stem `partial_unsupported_js`,
@@ -1574,34 +1575,56 @@ mod tests {
         //                                          second surfaces a DuplicateName
         //                                          conflict but stays addressable
         //                                          via its stem.
+        //   post_process_supported.json (Phase 2) → stem `post_process_supported`,
+        //                                          name `post-process-supported`,
+        //                                          partially functional, 1 requires_js
+        //                                          (js_runtime.kind = post_process;
+        //                                          Phase 4 wires runtime evaluation,
+        //                                          today still skipped).
+        //   custom_unsupported.json (Phase 2)   → stem `custom_unsupported`,
+        //                                          name `custom-unsupported`,
+        //                                          partially functional, 1 requires_js
+        //                                          (js_runtime.kind = custom;
+        //                                          Phase 5 wires runtime evaluation,
+        //                                          today still skipped).
         //
-        // file_scan sees all 5 files; SpecStore now keeps all 5 entries
-        // because filename stems are unique. commands_addressable counts
-        // the 5 stems plus 4 non-conflicting name aliases (`static-only`,
-        // `partial-unsupported-js`, `alias-target`, `duplicate`).
-        assert_eq!(outcome.file_scan.spec_files_total, 5);
+        // file_scan sees all 7 files; SpecStore keeps all 7 entries (filename
+        // stems unique). commands_addressable counts the 7 stems plus 6
+        // non-conflicting name aliases (`static-only`, `partial-unsupported-js`,
+        // `alias-target`, `duplicate`, `post-process-supported`,
+        // `custom-unsupported`).
+        assert_eq!(outcome.file_scan.spec_files_total, 7);
         assert_eq!(
-            outcome.fs_specs, 5,
+            outcome.fs_specs, 7,
             "Phase 1: every committed file is a unique entry"
         );
         assert_eq!(
-            outcome.commands_addressable, 9,
-            "5 stems + 4 non-conflicting name aliases (one duplicate name rejected)"
+            outcome.commands_addressable, 13,
+            "7 stems + 6 non-conflicting name aliases (one duplicate name rejected)"
         );
         assert_eq!(
             outcome.command_alias_conflicts, 1,
             "duplicate_name_b loses the `duplicate` alias to duplicate_name_a"
         );
-        assert_eq!(outcome.partially_functional, 1);
+        assert_eq!(outcome.partially_functional, 3);
         assert_eq!(outcome.fully_functional, 4);
-        assert_eq!(outcome.requires_js_generators_total, 1);
-        assert_eq!(outcome.requires_js_generators_unsupported, 1);
+        assert_eq!(outcome.requires_js_generators_total, 3);
+        // Phase 4+ flips two of these to `_supported`; today every requires_js
+        // generator is still dropped at resolution time, regardless of
+        // `js_runtime` content.
+        assert_eq!(outcome.requires_js_generators_unsupported, 3);
         assert_eq!(outcome.requires_js_generators_supported, 0);
 
         // js_commands lists the canonical id (filename stem) of every
-        // partially-functional spec. Stem `partial_unsupported_js` is
-        // what users actually type on the shell.
-        assert_eq!(outcome.js_commands, vec!["partial_unsupported_js"]);
+        // partially-functional spec, in alphabetical order.
+        assert_eq!(
+            outcome.js_commands,
+            vec![
+                "custom_unsupported",
+                "partial_unsupported_js",
+                "post_process_supported",
+            ]
+        );
     }
 
     #[test]

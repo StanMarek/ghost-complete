@@ -266,7 +266,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              }
             }
           ]
         },
@@ -488,7 +491,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  }
                 }
               ]
             },
@@ -498,7 +504,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  }
                 }
               ]
             }
@@ -681,7 +690,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  }
                 }
               ]
             },
@@ -691,7 +703,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  }
                 }
               ]
             }
@@ -956,7 +971,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "r=>{let i=r.findIndex(o=>o===\"pods\"||o.includes(\"pods/\")||o===\"pod\"||o.includes(\"pod/\"));return[\"kubectl\",\"get\",r[i].includes(\"/\")?r[i]:`${r[i]} + ${r[i+1]}`,\"-o\",\"json\"]}"
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "r=>{let i=r.findIndex(o=>o===\"pods\"||o.includes(\"pods/\")||o===\"pod\"||o.includes(\"pod/\"));return[\"kubectl\",\"get\",r[i].includes(\"/\")?r[i]:`${r[i]} + ${r[i+1]}`,\"-o\",\"json\"]}"
+                }
               }
             ]
           }
@@ -1081,7 +1099,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  }
                 }
               ]
             },
@@ -1091,7 +1112,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  }
                 }
               ]
             }
@@ -1392,7 +1416,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              }
             }
           ]
         },
@@ -1402,7 +1429,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              }
             }
           ]
         }
@@ -1735,7 +1765,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-clusters\"]:[\"kubectl\",\"config\",\"get-clusters\"]}"
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-clusters\"]:[\"kubectl\",\"config\",\"get-clusters\"]}"
+                }
               }
             ]
           }
@@ -1748,7 +1781,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-contexts\",\"-o\",\"name\"]:[\"kubectl\",\"config\",\"get-contexts\",\"-o\",\"name\"]}"
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-contexts\",\"-o\",\"name\"]:[\"kubectl\",\"config\",\"get-contexts\",\"-o\",\"name\"]}"
+                }
               }
             ]
           }
@@ -1815,7 +1851,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-contexts\",\"-o\",\"name\"]:[\"kubectl\",\"config\",\"get-contexts\",\"-o\",\"name\"]}"
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-contexts\",\"-o\",\"name\"]:[\"kubectl\",\"config\",\"get-contexts\",\"-o\",\"name\"]}"
+                }
               }
             ]
           }
@@ -1833,7 +1872,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-contexts\",\"-o\",\"name\"]:[\"kubectl\",\"config\",\"get-contexts\",\"-o\",\"name\"]}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-contexts\",\"-o\",\"name\"]:[\"kubectl\",\"config\",\"get-contexts\",\"-o\",\"name\"]}"
+                  }
                 }
               ]
             },
@@ -1960,7 +2002,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-contexts\",\"-o\",\"name\"]:[\"kubectl\",\"config\",\"get-contexts\",\"-o\",\"name\"]}"
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-contexts\",\"-o\",\"name\"]:[\"kubectl\",\"config\",\"get-contexts\",\"-o\",\"name\"]}"
+                }
               }
             ]
           }
@@ -2080,7 +2125,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-clusters\"]:[\"kubectl\",\"config\",\"get-clusters\"]}"
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-clusters\"]:[\"kubectl\",\"config\",\"get-clusters\"]}"
+                }
               }
             ]
           }
@@ -2100,7 +2148,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-contexts\",\"-o\",\"name\"]:[\"kubectl\",\"config\",\"get-contexts\",\"-o\",\"name\"]}"
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-contexts\",\"-o\",\"name\"]:[\"kubectl\",\"config\",\"get-contexts\",\"-o\",\"name\"]}"
+                }
               }
             ]
           },
@@ -3301,7 +3352,10 @@
                 "generators": [
                   {
                     "requires_js": true,
-                    "js_source": "()=>n.typeWithoutName(\"cronjob\")"
+                    "js_runtime": {
+                      "kind": "script_function",
+                      "source": "()=>n.typeWithoutName(\"cronjob\")"
+                    }
                   }
                 ]
               }
@@ -4069,7 +4123,10 @@
                 "generators": [
                   {
                     "requires_js": true,
-                    "js_source": "()=>n.typeWithoutName(\"roles\")"
+                    "js_runtime": {
+                      "kind": "script_function",
+                      "source": "()=>n.typeWithoutName(\"roles\")"
+                    }
                   }
                 ]
               }
@@ -5392,7 +5449,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              }
             }
           ]
         },
@@ -5402,7 +5462,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              }
             }
           ]
         }
@@ -5471,7 +5534,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              }
             }
           ]
         },
@@ -5481,7 +5547,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              }
             }
           ]
         }
@@ -5781,7 +5850,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              }
             }
           ]
         },
@@ -5791,7 +5863,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              }
             }
           ]
         }
@@ -5824,7 +5899,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "r=>{let i=r.findIndex(o=>o===\"pods\"||o.includes(\"pods/\")||o===\"pod\"||o.includes(\"pod/\"));return[\"kubectl\",\"get\",r[i].includes(\"/\")?r[i]:`${r[i]} + ${r[i+1]}`,\"-o\",\"json\"]}"
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "r=>{let i=r.findIndex(o=>o===\"pods\"||o.includes(\"pods/\")||o===\"pod\"||o.includes(\"pod/\"));return[\"kubectl\",\"get\",r[i].includes(\"/\")?r[i]:`${r[i]} + ${r[i+1]}`,\"-o\",\"json\"]}"
+                }
               }
             ]
           }
@@ -6161,7 +6239,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              }
             }
           ]
         },
@@ -6171,7 +6252,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              }
             }
           ]
         }
@@ -6372,7 +6456,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              }
             }
           ]
         },
@@ -6382,7 +6469,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              }
             }
           ]
         }
@@ -6666,7 +6756,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              }
             }
           ]
         },
@@ -6676,7 +6769,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              }
             }
           ]
         }
@@ -6796,7 +6892,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              }
             }
           ]
         },
@@ -6806,7 +6905,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              }
             }
           ]
         }
@@ -6965,7 +7067,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              }
             }
           ]
         },
@@ -6975,7 +7080,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              }
             }
           ]
         }
@@ -7011,7 +7119,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              }
             }
           ]
         },
@@ -7021,7 +7132,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              }
             }
           ]
         },
@@ -8396,7 +8510,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+              }
             }
           ]
         },
@@ -8406,7 +8523,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+              }
             }
           ]
         }
@@ -8606,7 +8726,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  }
                 }
               ]
             },
@@ -8616,7 +8739,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  }
                 }
               ]
             },
@@ -8766,7 +8892,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  }
                 }
               ]
             },
@@ -8776,7 +8905,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  }
                 }
               ]
             },
@@ -8948,7 +9080,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  }
                 }
               ]
             },
@@ -8958,7 +9093,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  }
                 }
               ]
             }
@@ -9104,7 +9242,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  }
                 }
               ]
             },
@@ -9114,7 +9255,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  }
                 }
               ]
             },
@@ -9255,7 +9399,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  }
                 }
               ]
             },
@@ -9265,7 +9412,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  }
                 }
               ]
             }
@@ -9417,7 +9567,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
+                  }
                 }
               ]
             },
@@ -9427,7 +9580,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
+                  }
                 }
               ]
             }

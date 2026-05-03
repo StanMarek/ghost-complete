@@ -17,7 +17,10 @@
               "-l"
             ],
             "requires_js": true,
-            "js_source": "e=>e.match(/\\w+/g)?.map(i=>({name:i,description:`Send ${i} instead of TERM`,icon:\"fig://icon?type=string\"}))"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>e.match(/\\w+/g)?.map(i=>({name:i,description:`Send ${i} instead of TERM`,icon:\"fig://icon?type=string\"}))"
+            }
           }
         ]
       }

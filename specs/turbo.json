@@ -247,7 +247,10 @@
               "until [[ ( -f turbo.json || $PWD = '/' ) ]]; do cd ..; done; cat turbo.json"
             ],
             "requires_js": true,
-            "js_source": "e=>{let t;try{t=JSON.parse(e)}catch(i){return console.error(i),[]}return Object.entries(t.pipeline).map(([i,o])=>{let a=[];return\"dependsOn\"in o&&a.push(`depends on ${o.dependsOn.map(s=>`'${s}'`).join(\", \")}`),\"outputs\"in o&&a.push(`outputs ${o.outputs.map(s=>`'${s}'`).join(\", \")}`),{name:i,description:a.length>0?\"Task: \"+a.join(\", \"):\"Task\",icon:ne}})}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t;try{t=JSON.parse(e)}catch(i){return console.error(i),[]}return Object.entries(t.pipeline).map(([i,o])=>{let a=[];return\"dependsOn\"in o&&a.push(`depends on ${o.dependsOn.map(s=>`'${s}'`).join(\", \")}`),\"outputs\"in o&&a.push(`outputs ${o.outputs.map(s=>`'${s}'`).join(\", \")}`),{name:i,description:a.length>0?\"Task: \"+a.join(\", \"):\"Task\",icon:ne}})}"
+            }
           }
         ]
       }

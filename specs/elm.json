@@ -87,7 +87,10 @@
               "https://package.elm-lang.org/search.json"
             ],
             "requires_js": true,
-            "js_source": "o=>JSON.parse(o).map(e=>({name:e.name,description:e.summary}))",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>JSON.parse(o).map(e=>({name:e.name,description:e.summary}))"
+            },
             "cache": {
               "ttl_seconds": 259200
             }

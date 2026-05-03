@@ -403,6 +403,64 @@ pub struct CacheConfig {
     pub cache_by_directory: bool,
 }
 
+/// Categorises a [`JsRuntimeSpec`] so the runtime dispatch path can pick the
+/// correct evaluator. Mirrors the three Fig generator shapes that survive into
+/// runtime JS:
+///
+/// - `PostProcess` — the converter saw a `script` + `postProcess` pair whose
+///   post-process body could not be lowered to a declarative transform. The
+///   script runs as a normal script generator and stdout is fed through the JS
+///   function in `source` to produce suggestions.
+/// - `ScriptFunction` — Fig's `script: (...) => [...]` shape: the JS body
+///   evaluates to an `argv` array which is then spawned.
+/// - `Custom` — Fig's `custom: async (...) => [...]` shape: the JS body
+///   returns suggestions directly without any subprocess invocation.
+///
+/// Phase 2 stores this metadata at load time but does not yet evaluate it;
+/// Phase 4+ wire the runtime dispatch path.
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum JsRuntimeKind {
+    PostProcess,
+    ScriptFunction,
+    Custom,
+}
+
+/// Selector for which input the runtime feeds to a [`JsRuntimeSpec`]'s JS
+/// function. Optional: when omitted, the runtime defaults to `Stdout` for
+/// `PostProcess` and `Argv` otherwise.
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum JsRuntimeInput {
+    Stdout,
+    Argv,
+}
+
+/// Runtime JS metadata for generators that need QuickJS evaluation.
+///
+/// Phase 2 stores this at load time but does not yet execute it; the dispatch
+/// path that honours [`JsRuntimeSpec`] in preference to the legacy `requires_js`
+/// short-circuit is wired in Phase 4 (`PostProcess`) and Phase 5
+/// (`ScriptFunction` / `Custom`).
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct JsRuntimeSpec {
+    pub kind: JsRuntimeKind,
+    pub source: String,
+    /// Optional input feed selector (default: stdout for `post_process`; argv
+    /// otherwise).
+    #[serde(default)]
+    pub input: Option<JsRuntimeInput>,
+    /// Optional per-generator timeout override.
+    #[serde(default)]
+    pub timeout_ms: Option<u64>,
+    /// When `true`, allows shell-string command execution from `script_function`
+    /// or `custom` generators. Defaults to `false`. Required only for any
+    /// audited shipped spec needing string-based shell.
+    #[serde(default)]
+    pub allow_shell_command: bool,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct GeneratorSpec {
@@ -416,6 +474,10 @@ pub struct GeneratorSpec {
     #[serde(default)]
     pub requires_js: bool,
     pub js_source: Option<String>,
+    /// Runtime JS metadata for generators that need QuickJS evaluation.
+    /// Phase 2 stores this at load time; Phase 4+ wire the dispatch path
+    /// that honours it in preference to the legacy `requires_js` short-circuit.
+    pub js_runtime: Option<JsRuntimeSpec>,
     /// Release tag recording when a silently-mis-converted generator was corrected.
     /// Persists in the spec across regenerations so downstream consumers can
     /// enumerate and surface the affected specs on upgrade.
@@ -1439,10 +1501,14 @@ pub fn estimated_heap_bytes(spec: &CompletionSpec) -> usize {
             .unwrap_or(0);
         // 180 specs carry inline JS source; this is the largest single field.
         let js = opt_string_heap(&g.js_source);
+        // Phase 2: js_runtime.source replaces js_source for newly-converted
+        // specs. Account for both during the migration so the heap estimate
+        // doesn't undercount specs that already carry the runtime metadata.
+        let js_runtime = g.js_runtime.as_ref().map(|jr| jr.source.len()).unwrap_or(0);
         let tmpl = opt_string_heap(&g.template);
         let transforms_vec = g.transforms.capacity() * std::mem::size_of::<Transform>();
         let transforms_inner: usize = g.transforms.iter().map(transform_heap).sum();
-        gt + script + script_tmpl + js + tmpl + transforms_vec + transforms_inner
+        gt + script + script_tmpl + js + js_runtime + tmpl + transforms_vec + transforms_inner
     }
     fn arg_spec_heap(arg: &ArgSpec) -> usize {
         let name = opt_string_heap(&arg.name);
@@ -2016,6 +2082,234 @@ mod tests {
         // field. Ensure the default is None so every existing spec parses.
         let gen: GeneratorSpec = serde_json::from_str(r#"{"type": "git_branches"}"#).unwrap();
         assert!(gen.corrected_in.is_none());
+    }
+
+    #[test]
+    fn test_deserialize_js_runtime_post_process() {
+        // Phase 2 (UX-9): the post_process kind covers requires_js generators
+        // whose post-process body could not be lowered to declarative
+        // transforms. The script still runs natively; stdout is fed through
+        // the JS source.
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{
+                "requires_js": true,
+                "script": ["echo", "hi"],
+                "js_runtime": {
+                    "kind": "post_process",
+                    "source": "out => [{ name: out }]"
+                }
+            }"#,
+        )
+        .unwrap();
+        assert!(gen.requires_js);
+        let jr = gen.js_runtime.expect("js_runtime should parse");
+        assert_eq!(jr.kind, JsRuntimeKind::PostProcess);
+        assert_eq!(jr.source, "out => [{ name: out }]");
+        assert!(jr.input.is_none(), "input defaults are kind-specific");
+        assert!(jr.timeout_ms.is_none(), "timeout_ms defaults to None");
+        assert!(
+            !jr.allow_shell_command,
+            "allow_shell_command defaults to false"
+        );
+    }
+
+    #[test]
+    fn test_deserialize_js_runtime_script_function() {
+        // Phase 2 (UX-9): the script_function kind covers Fig's
+        // `script: (...) => [...]` shape — the JS body evaluates to an argv
+        // array that the runtime then spawns.
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{
+                "requires_js": true,
+                "js_runtime": {
+                    "kind": "script_function",
+                    "source": "(ctx) => [\"echo\", ctx.tokens[0]]"
+                }
+            }"#,
+        )
+        .unwrap();
+        assert!(gen.requires_js);
+        let jr = gen.js_runtime.expect("js_runtime should parse");
+        assert_eq!(jr.kind, JsRuntimeKind::ScriptFunction);
+        assert!(jr.source.contains("ctx.tokens"));
+    }
+
+    #[test]
+    fn test_deserialize_js_runtime_custom() {
+        // Phase 2 (UX-9): the custom kind covers Fig's
+        // `custom: async (...) => [...]` shape — no script, the JS body
+        // returns suggestions directly.
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{
+                "requires_js": true,
+                "js_runtime": {
+                    "kind": "custom",
+                    "source": "async () => [{ name: 'a' }, { name: 'b' }]"
+                }
+            }"#,
+        )
+        .unwrap();
+        assert!(gen.requires_js);
+        let jr = gen.js_runtime.expect("js_runtime should parse");
+        assert_eq!(jr.kind, JsRuntimeKind::Custom);
+        assert!(jr.source.contains("async"));
+    }
+
+    #[test]
+    fn test_deserialize_js_runtime_with_optional_fields() {
+        // Phase 2 (UX-9): all four optional fields populate together.
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{
+                "requires_js": true,
+                "js_runtime": {
+                    "kind": "post_process",
+                    "source": "x => x",
+                    "input": "stdout",
+                    "timeout_ms": 5000,
+                    "allow_shell_command": true
+                }
+            }"#,
+        )
+        .unwrap();
+        let jr = gen.js_runtime.expect("js_runtime should parse");
+        assert_eq!(jr.kind, JsRuntimeKind::PostProcess);
+        assert_eq!(jr.input, Some(JsRuntimeInput::Stdout));
+        assert_eq!(jr.timeout_ms, Some(5000));
+        assert!(jr.allow_shell_command);
+
+        // The argv input variant must also parse — covers script_function
+        // and custom whose default input is argv.
+        let gen2: GeneratorSpec = serde_json::from_str(
+            r#"{
+                "requires_js": true,
+                "js_runtime": {
+                    "kind": "script_function",
+                    "source": "() => ['x']",
+                    "input": "argv"
+                }
+            }"#,
+        )
+        .unwrap();
+        assert_eq!(
+            gen2.js_runtime.as_ref().and_then(|jr| jr.input.clone()),
+            Some(JsRuntimeInput::Argv)
+        );
+    }
+
+    #[test]
+    fn test_deserialize_js_runtime_unknown_kind_rejected() {
+        // Phase 2 (UX-9): JsRuntimeKind is a closed enum (no serde(other)).
+        // An unknown kind must hard-fail deserialization so a typo'd
+        // converter emission can't sneak past load-time validation.
+        let bad = r#"{
+            "requires_js": true,
+            "js_runtime": {
+                "kind": "bogus",
+                "source": "..."
+            }
+        }"#;
+        let err = serde_json::from_str::<GeneratorSpec>(bad).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("bogus")
+                || msg.contains("variant")
+                || msg.contains("expected")
+                || msg.contains("unknown"),
+            "deserialization should fail with a variant-rejection error: {msg}"
+        );
+    }
+
+    #[test]
+    fn test_deserialize_js_runtime_unknown_field_rejected() {
+        // js_runtime carries deny_unknown_fields too, so a future converter
+        // emitting a stray key here trips the schema rather than silently
+        // dropping the metadata.
+        let bad = r#"{
+            "requires_js": true,
+            "js_runtime": {
+                "kind": "post_process",
+                "source": "x => x",
+                "extra_field": true
+            }
+        }"#;
+        let err = serde_json::from_str::<GeneratorSpec>(bad).unwrap_err();
+        assert!(
+            err.to_string().contains("extra_field") || err.to_string().contains("unknown field"),
+            "expected unknown-field error: {err}"
+        );
+    }
+
+    #[test]
+    fn test_phase2_corpus_has_js_runtime_for_requires_js() {
+        // Phase 2 (UX-9) corpus invariant: after the converter regen, every
+        // requires_js generator in the embedded corpus must carry a populated
+        // `js_runtime` object. The plan target is "at least 1000 generators
+        // with requires_js: true have js_runtime populated"; today's regen
+        // produces ~3641, so this is a comfortable lower bound that still
+        // catches a regression where the converter silently stops emitting
+        // the metadata.
+        const MIN_REQUIRES_JS_WITH_RUNTIME: usize = 1000;
+
+        fn count(v: &serde_json::Value) -> (usize, usize) {
+            // (requires_js_total, with_js_runtime)
+            match v {
+                serde_json::Value::Object(map) => {
+                    let mut total = 0;
+                    let mut with_rt = 0;
+                    let is_gen =
+                        matches!(map.get("requires_js"), Some(serde_json::Value::Bool(true)));
+                    if is_gen {
+                        total += 1;
+                        if matches!(map.get("js_runtime"), Some(serde_json::Value::Object(_))) {
+                            with_rt += 1;
+                        }
+                    }
+                    for child in map.values() {
+                        let (t, r) = count(child);
+                        total += t;
+                        with_rt += r;
+                    }
+                    (total, with_rt)
+                }
+                serde_json::Value::Array(arr) => {
+                    let mut total = 0;
+                    let mut with_rt = 0;
+                    for child in arr {
+                        let (t, r) = count(child);
+                        total += t;
+                        with_rt += r;
+                    }
+                    (total, with_rt)
+                }
+                _ => (0, 0),
+            }
+        }
+
+        let mut total_requires_js = 0;
+        let mut total_with_runtime = 0;
+        for (name, body) in crate::embedded::EMBEDDED_SPECS {
+            let v: serde_json::Value = serde_json::from_str(body)
+                .unwrap_or_else(|e| panic!("embedded spec {name} is not valid JSON: {e}"));
+            let (t, r) = count(&v);
+            total_requires_js += t;
+            total_with_runtime += r;
+        }
+        assert!(
+            total_with_runtime >= MIN_REQUIRES_JS_WITH_RUNTIME,
+            "embedded corpus invariant violated: only {total_with_runtime} requires_js \
+             generators have js_runtime populated (out of {total_requires_js} total). \
+             After Phase 2 every requires_js generator emitted by the converter should \
+             carry js_runtime. Lower bound is {MIN_REQUIRES_JS_WITH_RUNTIME}."
+        );
+        // Strict correctness: every requires_js in the embedded corpus
+        // should now carry js_runtime (the converter emits it for all three
+        // shapes — post_process, script_function, custom). Drift here means
+        // a hand-edited spec or a converter regression.
+        assert_eq!(
+            total_with_runtime, total_requires_js,
+            "every requires_js generator in the embedded corpus must carry js_runtime; \
+             saw {total_with_runtime}/{total_requires_js}"
+        );
     }
 
     #[test]
@@ -2891,6 +3185,13 @@ mod tests {
             "cache": {"ttl_seconds": 60, "cache_by_directory": true},
             "requires_js": false,
             "js_source": "module.exports = {}",
+            "js_runtime": {
+                "kind": "post_process",
+                "source": "out => out.split('\\n').map(name => ({ name }))",
+                "input": "stdout",
+                "timeout_ms": 5000,
+                "allow_shell_command": false
+            },
             "_corrected_in": "v0.10.0",
             "template": "filepaths"
         }"#;
@@ -2899,6 +3200,11 @@ mod tests {
         assert_eq!(gen.transforms.len(), 1);
         assert_eq!(gen.corrected_in.as_deref(), Some("v0.10.0"));
         assert_eq!(gen.template.as_deref(), Some("filepaths"));
+        let jr = gen.js_runtime.as_ref().expect("js_runtime should parse");
+        assert_eq!(jr.kind, JsRuntimeKind::PostProcess);
+        assert_eq!(jr.input, Some(JsRuntimeInput::Stdout));
+        assert_eq!(jr.timeout_ms, Some(5000));
+        assert!(!jr.allow_shell_command);
     }
 
     #[test]

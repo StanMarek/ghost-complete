@@ -32,7 +32,10 @@
             "-l"
           ],
           "requires_js": true,
-          "js_source": "e=>[...e.matchAll(a)].map(n=>({name:n[2]}))"
+          "js_runtime": {
+            "kind": "post_process",
+            "source": "e=>[...e.matchAll(a)].map(n=>({name:n[2]}))"
+          }
         }
       ]
     }

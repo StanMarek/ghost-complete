@@ -15,7 +15,10 @@
               "list"
             ],
             "requires_js": true,
-            "js_source": "i=>Array.from(i.matchAll(/^\\[(.+?)\\]$/gm)).map(e=>({name:e[1],description:`Use profile \"${e[1]}\"`}))"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "i=>Array.from(i.matchAll(/^\\[(.+?)\\]$/gm)).map(e=>({name:e[1],description:`Use profile \"${e[1]}\"`}))"
+            }
           }
         ]
       }

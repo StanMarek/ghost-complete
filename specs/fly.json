@@ -77,7 +77,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                    }
                   }
                 ]
               },
@@ -125,7 +128,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                    }
                   }
                 ]
               },
@@ -161,7 +167,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -201,7 +210,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -255,7 +267,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -356,7 +371,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -395,7 +413,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -434,7 +455,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -473,7 +497,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -513,7 +540,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -550,7 +580,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -593,7 +626,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -639,7 +675,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -679,7 +718,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -718,7 +760,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -758,7 +803,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -805,7 +853,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -843,7 +894,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -929,7 +983,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -1038,7 +1095,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -1077,7 +1137,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -1116,7 +1179,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -1155,7 +1221,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -1192,7 +1261,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -1256,7 +1328,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                }
               }
             ]
           },
@@ -1294,7 +1369,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -1331,7 +1409,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -1370,7 +1451,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -1547,7 +1631,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -1580,7 +1667,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                }
               }
             ]
           },
@@ -1650,7 +1740,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -1694,7 +1787,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -1758,7 +1854,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -1801,7 +1900,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -1841,7 +1943,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -1895,7 +2000,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -1951,7 +2059,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -2000,7 +2111,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -2049,7 +2163,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -2089,7 +2206,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -2128,7 +2248,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -2165,7 +2288,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -2254,7 +2380,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                }
               }
             ]
           }
@@ -2307,7 +2436,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -2372,7 +2504,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -2422,7 +2557,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                    }
                   }
                 ]
               },
@@ -2462,7 +2600,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -2501,7 +2642,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -2548,7 +2692,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -2595,7 +2742,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -2758,7 +2908,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                    }
                   }
                 ]
               }
@@ -2827,7 +2980,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -2866,7 +3022,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -2906,7 +3065,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -2966,7 +3128,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -3005,7 +3170,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                }
               }
             ]
           },
@@ -3041,7 +3209,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -3140,7 +3311,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -3193,7 +3367,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                }
               }
             ]
           },
@@ -3255,7 +3432,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -3330,7 +3510,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -3488,7 +3671,10 @@
                           "--json"
                         ],
                         "requires_js": true,
-                        "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                        "js_runtime": {
+                          "kind": "post_process",
+                          "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                        }
                       }
                     ]
                   }
@@ -3530,7 +3716,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -3587,7 +3776,10 @@
                           "--json"
                         ],
                         "requires_js": true,
-                        "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                        "js_runtime": {
+                          "kind": "post_process",
+                          "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                        }
                       }
                     ]
                   }
@@ -3631,7 +3823,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -3664,7 +3859,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                }
               }
             ]
           },
@@ -3704,7 +3902,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -3752,7 +3953,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -3791,7 +3995,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -3831,7 +4038,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -3880,7 +4090,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -3926,7 +4139,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -3965,7 +4181,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -4022,7 +4241,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -4070,7 +4292,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -4118,7 +4343,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -4158,7 +4386,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -4213,7 +4444,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -4256,7 +4490,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -4301,7 +4538,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -4341,7 +4581,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -4386,7 +4629,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -4429,7 +4675,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -4473,7 +4722,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -4607,7 +4859,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -4650,7 +4905,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                }
               }
             ]
           }
@@ -4744,7 +5002,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>{let t=JSON.parse(o);return Object.entries(t).sort(([n,i],[r,p])=>n==\"personal\"?-1:r==\"personal\"?1:i.localeCompare(p)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                }
               }
             ]
           }
@@ -4808,7 +5069,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -4847,7 +5111,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -4887,7 +5154,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -4932,7 +5202,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }
@@ -5019,7 +5292,10 @@
                       "--json"
                     ],
                     "requires_js": true,
-                    "js_source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "o=>JSON.parse(o).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    }
                   }
                 ]
               }

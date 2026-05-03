@@ -17,7 +17,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(s,o,l)=>{let c=s[s.length-1];if(c===\"\")return[];let n=e&&e.length>0?`+keywords:${e.join(\",\")}`:\"\",p=[\"-s\",\"-H\",\"Accept: application/json\",n?`https://api.npms.io/v2/search?size=20&q=${c}${n}`:`https://api.npms.io/v2/search/suggestions?q=${c}&size=20`],h=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${c.slice(0,-1)}`],b=r=>o({command:\"curl\",args:r[r.length-1]===\"@\"?h:p}),t=c.startsWith(\"@\")?N(c)>1:c.includes(\"@\");try{let r=JSON.parse((await b(c)).stdout);if(t){let w=Object.entries(r[\"dist-tags\"]||{}).map(([x,M])=>({name:x,description:M}));return w.push(...Object.keys(r.versions).map(x=>({name:x})).reverse()),w}return(n?r.results:r).map(w=>({name:w.package.name,description:w.package.description}))}catch(r){return console.error({error:r}),[]}}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(s,o,l)=>{let c=s[s.length-1];if(c===\"\")return[];let n=e&&e.length>0?`+keywords:${e.join(\",\")}`:\"\",p=[\"-s\",\"-H\",\"Accept: application/json\",n?`https://api.npms.io/v2/search?size=20&q=${c}${n}`:`https://api.npms.io/v2/search/suggestions?q=${c}&size=20`],h=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${c.slice(0,-1)}`],b=r=>o({command:\"curl\",args:r[r.length-1]===\"@\"?h:p}),t=c.startsWith(\"@\")?N(c)>1:c.includes(\"@\");try{let r=JSON.parse((await b(c)).stdout);if(t){let w=Object.entries(r[\"dist-tags\"]||{}).map(([x,M])=>({name:x,description:M}));return w.push(...Object.keys(r.versions).map(x=>({name:x})).reverse()),w}return(n?r.results:r).map(w=>({name:w.package.name,description:w.package.description}))}catch(r){return console.error({error:r}),[]}}"
+                }
               }
             ]
           }
@@ -353,7 +356,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -374,7 +380,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -395,7 +404,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -416,7 +428,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -437,7 +452,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -458,7 +476,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -975,7 +996,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -996,7 +1020,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -1017,7 +1044,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -1038,7 +1068,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -1059,7 +1092,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -1080,7 +1116,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -1155,7 +1194,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -1176,7 +1218,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -1197,7 +1242,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -1218,7 +1266,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -1239,7 +1290,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }
@@ -1260,7 +1314,10 @@
                   "until [[ -f rush.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat rush.json"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){let s=[];try{if(!e)return s;let o=JSON.parse(P(e.trim()));for(let l of o.projects)s.push({name:l.packageName,description:\"Projects\"})}catch(o){console.log(\"generate project suggestion fail: \",o)}return s}"
+                }
               }
             ]
           }

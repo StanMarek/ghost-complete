@@ -28,7 +28,10 @@
           "until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json"
         ],
         "requires_js": true,
-        "js_source": "function(e,[n]){if(e.trim()==\"\")return[];try{let i=JSON.parse(e),s=i.scripts,t=i.fig||{};if(s)return Object.entries(s).map(([o,r])=>{let d=n===\"yarn\"?\"fig://icon?type=yarn\":\"fig://icon?type=npm\",m=t[o];return{name:o,icon:d,description:r,priority:51,...m}})}catch(i){console.error(i)}return[]}",
+        "js_runtime": {
+          "kind": "post_process",
+          "source": "function(e,[n]){if(e.trim()==\"\")return[];try{let i=JSON.parse(e),s=i.scripts,t=i.fig||{};if(s)return Object.entries(s).map(([o,r])=>{let d=n===\"yarn\"?\"fig://icon?type=yarn\":\"fig://icon?type=npm\",m=t[o];return{name:o,icon:d,description:r,priority:51,...m}})}catch(i){console.error(i)}return[]}"
+        },
         "cache": {
           "cache_by_directory": true
         }

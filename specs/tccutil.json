@@ -158,7 +158,10 @@
             "mdfind kMDItemContentTypeTree=com.apple.application-bundle -onlyin /Applications | while read line; do echo $(mdls -name kMDItemCFBundleIdentifier -r \"$line\") $line; done"
           ],
           "requires_js": true,
-          "js_source": "s=>{let e=new Map(s.split(`\n`).map(n=>{let o=n.indexOf(\" \");return[n.slice(0,o),n.slice(o+1)]}));e.delete(\"(null)\");let i=[];for(let[n,o]of e.entries())i.push({name:n,description:o,icon:`fig://${o}`});return i}",
+          "js_runtime": {
+            "kind": "post_process",
+            "source": "s=>{let e=new Map(s.split(`\n`).map(n=>{let o=n.indexOf(\" \");return[n.slice(0,o),n.slice(o+1)]}));e.delete(\"(null)\");let i=[];for(let[n,o]of e.entries())i.push({name:n,description:o,icon:`fig://${o}`});return i}"
+          },
           "cache": {}
         }
       ]

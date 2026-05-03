@@ -1,9 +1,13 @@
 //! Preprocess embedded completion specs at build time.
 //!
-//! Reads every `../../specs/*.json`, drops the runtime-unused `js_source`
-//! field from generators, serialises the result compactly (no
-//! pretty-print whitespace) into `$OUT_DIR/specs-min/`, and writes an
-//! `embedded_specs.rs` include that the `embedded` module `include!`s.
+//! Reads every `../../specs/*.json`, drops any straggler `js_source`
+//! field from generators (a no-op for newly-converted specs since UX-9
+//! Phase 2 — the converter now emits `js_runtime.source` directly and
+//! `js_source` is not produced — but kept defensively so a stale
+//! user-installed spec doesn't pollute the embedded format), serialises
+//! the result compactly (no pretty-print whitespace) into
+//! `$OUT_DIR/specs-min/`, and writes an `embedded_specs.rs` include that
+//! the `embedded` module `include!`s.
 //!
 //! The on-disk `specs/` directory stays unchanged — tests, fixtures,
 //! and the converter keep reading the human-readable pretty-printed
@@ -15,10 +19,11 @@
 //! baked 21 MB of pretty-printed JSON directly via `include_str!`, which
 //! landed as ~42 MB of `__const` data in the release binary (each
 //! whitespace byte round-trips verbatim through rustc). Minifying drops
-//! that to ~11 MB of source bytes, and stripping `js_source` (a
-//! diagnostic-only field on `requires_js: true` generators) trims another
-//! ~435 KB. The runtime loader does not care about whitespace or
-//! `js_source`, so this is a pure size win with no behavior change.
+//! that to ~11 MB of source bytes. Stripping the legacy `js_source` field
+//! used to trim another ~435 KB; UX-9 Phase 2 restored the JS source on
+//! `js_runtime.source` (so the runtime can evaluate it) — that data is
+//! retained in the binary but stripping `js_source` at the same depth
+//! still costs nothing and keeps the embed format clean.
 //!
 //! ## Invariants
 //!
@@ -28,6 +33,10 @@
 //! - `_corrected_in` is intentionally NOT stripped — it is consumed at
 //!   runtime by `ghost-complete doctor` to surface generators that
 //!   previously mis-converted.
+//! - `js_runtime` is intentionally NOT stripped — Phase 4+ will read the
+//!   `source` field at runtime to drive the QuickJS evaluator. The
+//!   post-strip assertion below catches a regression where a future
+//!   stripper accidentally walks into `js_runtime`.
 //! - If a spec is not valid JSON, we bail loudly rather than silently
 //!   emit the broken source — a malformed spec in the binary would
 //!   manifest as a load-time parse error with no hint why.
@@ -80,14 +89,19 @@ fn main() {
     // read_dir's filesystem-specific enumeration).
     specs.sort_by(|a, b| a.0.cmp(&b.0));
 
-    // Process each spec: parse, strip js_source, re-serialise compactly.
+    // Process each spec: parse, strip any legacy js_source straggler,
+    // assert js_runtime.source survives the strip, re-serialise compactly.
     let mut entries: Vec<(String, PathBuf)> = Vec::with_capacity(specs.len());
     for (name, src_path) in &specs {
         let src = fs::read_to_string(src_path)
             .unwrap_or_else(|e| panic!("read {}: {e}", src_path.display()));
         let mut value: serde_json::Value = serde_json::from_str(&src)
             .unwrap_or_else(|e| panic!("parse {}: {e}", src_path.display()));
-        strip_js_source(&mut value);
+        strip_legacy_js_source(&mut value);
+        // Sanity: the strip must NOT have touched js_runtime.source. Phase 4+
+        // will read this field at runtime; an accidental strip would
+        // silently disable JS-driven generators across the corpus.
+        assert_js_runtime_source_preserved(&value, src_path);
         let minified = serde_json::to_string(&value)
             .unwrap_or_else(|e| panic!("serialize {}: {e}", src_path.display()));
 
@@ -122,17 +136,56 @@ fn main() {
     writeln!(f, "];").unwrap();
 }
 
-fn strip_js_source(v: &mut serde_json::Value) {
+/// Strip the legacy `js_source` field from generators in-place.
+///
+/// Since UX-9 Phase 2 the converter no longer emits `js_source` (it has been
+/// replaced by structured `js_runtime.source` metadata that the runtime can
+/// actually consume). This stripper is now defensive: if a user-installed
+/// spec carries a stale `js_source` field — for example, copied from an older
+/// converter run before Phase 2 — drop it so the embedded format stays
+/// consistent. For freshly-converted specs this is a no-op.
+fn strip_legacy_js_source(v: &mut serde_json::Value) {
     match v {
         serde_json::Value::Object(map) => {
             map.remove("js_source");
             for (_, child) in map.iter_mut() {
-                strip_js_source(child);
+                strip_legacy_js_source(child);
             }
         }
         serde_json::Value::Array(arr) => {
             for child in arr.iter_mut() {
-                strip_js_source(child);
+                strip_legacy_js_source(child);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Walk the spec tree and panic if any `js_runtime` object lacks a non-empty
+/// string `source` field. Belt-and-braces against a future strip pass that
+/// accidentally walks into the runtime metadata: the runtime can't drive a
+/// generator with no source body, so an undetected strip would silently
+/// regress every JS-driven generator in the embedded corpus.
+fn assert_js_runtime_source_preserved(v: &serde_json::Value, path: &std::path::Path) {
+    match v {
+        serde_json::Value::Object(map) => {
+            if let Some(serde_json::Value::Object(jr)) = map.get("js_runtime") {
+                match jr.get("source") {
+                    Some(serde_json::Value::String(s)) if !s.is_empty() => {}
+                    other => panic!(
+                        "{}: js_runtime.source missing or empty after strip pass — got {:?}",
+                        path.display(),
+                        other
+                    ),
+                }
+            }
+            for child in map.values() {
+                assert_js_runtime_source_preserved(child, path);
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            for child in arr {
+                assert_js_runtime_source_preserved(child, path);
             }
         }
         _ => {}

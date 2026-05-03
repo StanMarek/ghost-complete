@@ -546,7 +546,10 @@
               "--format=json"
             ],
             "requires_js": true,
-            "js_source": "t=>JSON.parse(t).map(n=>({name:n.spec.hostname,description:`Access expires: ${n.metadata.expires}`}))"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "t=>JSON.parse(t).map(n=>({name:n.spec.hostname,description:`Access expires: ${n.metadata.expires}`}))"
+            }
           }
         ]
       }
@@ -577,7 +580,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -598,7 +604,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -742,7 +751,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -763,7 +775,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -903,7 +918,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -924,7 +942,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -1064,7 +1085,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -1085,7 +1109,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -1225,7 +1252,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -1246,7 +1276,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -1384,7 +1417,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -1405,7 +1441,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -1549,7 +1588,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -1570,7 +1612,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -1710,7 +1755,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -1731,7 +1779,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -1869,7 +1920,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -1890,7 +1944,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -2034,7 +2091,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -2055,7 +2115,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -2195,7 +2258,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -2216,7 +2282,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -2356,7 +2425,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -2377,7 +2449,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -2517,7 +2592,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -2538,7 +2616,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -2678,7 +2759,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -2699,7 +2783,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -2839,7 +2926,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -2860,7 +2950,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -2998,7 +3091,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -3019,7 +3115,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -3159,7 +3258,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -3180,7 +3282,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -3320,7 +3425,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -3341,7 +3449,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -3481,7 +3592,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -3502,7 +3616,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -3642,7 +3759,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -3663,7 +3783,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -3803,7 +3926,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -3824,7 +3950,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -3964,7 +4093,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -3985,7 +4117,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -4125,7 +4260,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -4146,7 +4284,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -4286,7 +4427,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -4307,7 +4451,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -4447,7 +4594,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -4468,7 +4618,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -4612,7 +4765,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -4633,7 +4789,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -4773,7 +4932,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -4794,7 +4956,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -4934,7 +5099,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -4955,7 +5123,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -5095,7 +5266,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -5116,7 +5290,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -5254,7 +5431,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -5275,7 +5455,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -5419,7 +5602,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -5440,7 +5626,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -5580,7 +5769,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -5601,7 +5793,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -5741,7 +5936,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -5762,7 +5960,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -5902,7 +6103,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -5923,7 +6127,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -6063,7 +6270,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -6084,7 +6294,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -6222,7 +6435,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -6243,7 +6459,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -6387,7 +6606,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -6408,7 +6630,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -6548,7 +6773,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -6569,7 +6797,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -6709,7 +6940,10 @@
                       "--format=json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    }
                   }
                 ]
               }
@@ -6730,7 +6964,10 @@
                       "json"
                     ],
                     "requires_js": true,
-                    "js_source": "t=>[JSON.parse(t).active.username]"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    }
                   }
                 ]
               }
@@ -6868,7 +7105,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -6889,7 +7129,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -7029,7 +7272,10 @@
                   "--format=json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                }
               }
             ]
           }
@@ -7050,7 +7296,10 @@
                   "json"
                 ],
                 "requires_js": true,
-                "js_source": "t=>[JSON.parse(t).active.username]"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                }
               }
             ]
           }
@@ -7188,7 +7437,10 @@
               "--format=json"
             ],
             "requires_js": true,
-            "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+            }
           }
         ]
       }
@@ -7209,7 +7461,10 @@
               "json"
             ],
             "requires_js": true,
-            "js_source": "t=>[JSON.parse(t).active.username]"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "t=>[JSON.parse(t).active.username]"
+            }
           }
         ]
       }

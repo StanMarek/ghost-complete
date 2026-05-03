@@ -236,7 +236,7 @@ Some Fig specs contain generators that require JavaScript execution. Ghost Compl
 | `timeout_ms` | integer | No | Per-generator override of the global JS execution timeout. |
 | `allow_shell_command` | boolean | No | Default `false`. When `true`, the runtime allows passing a shell-string (rather than `argv`) to `executeShellCommand` for Class B/C generators. Required only for explicitly-audited shipped specs. |
 
-Until Phase 4 ships, treat any spec with `requires_js: true` as having that generator dropped, irrespective of `js_runtime` content. The metadata fields are reserved and parsed by the schema starting in Phase 2 so converter pipelines can already populate them; the field shape is subject to change until Phase 8 lands.
+Until Phase 4 ships, treat any spec with `requires_js: true` as having that generator dropped, irrespective of `js_runtime` content. The metadata is now parsed by the schema (UX-9 Phase 2): the converter populates `js_runtime` on every `requires_js` generator it emits — `kind: "post_process"` for postProcess bodies the matcher cannot lower to declarative transforms, `kind: "script_function"` for Fig's `script: (...) => [...]` shape, and `kind: "custom"` for `custom: async () => [...]`. The schema accepts the field today; runtime dispatch lands in Phase 4 (post_process) and Phase 5 (script_function / custom). The field shape may still tighten before Phase 8 ships.
 
 #### Available Templates
 

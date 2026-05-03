@@ -222,7 +222,10 @@
           "--abbrev-commit"
         ],
         "requires_js": true,
-        "js_source": "(e,c)=>{if(e.startsWith(\"fatal:\"))return[];(e.startsWith(\"warning:\")||e.startsWith(\"error:\"))&&(e=e.slice(e.indexOf(`\n`)+1));let i=c.pop();return[...e.split(`\n`).map(t=>{let n=t.indexOf(\" \"),s=t.slice(0,n);return{name:s,insertValue:s+(i?.includes(\"..\")?\"\":\"..\"),icon:\"fig://icon?type=node\",description:t.slice(n+1),priority:1}}),{name:\"HEAD\",insertValue:\"HEAD\"+(i?.includes(\"..\")?\"\":\"..\"),icon:\"fig://icon?type=node\",description:\"The current commit\",priority:5}]}"
+        "js_runtime": {
+          "kind": "post_process",
+          "source": "(e,c)=>{if(e.startsWith(\"fatal:\"))return[];(e.startsWith(\"warning:\")||e.startsWith(\"error:\"))&&(e=e.slice(e.indexOf(`\n`)+1));let i=c.pop();return[...e.split(`\n`).map(t=>{let n=t.indexOf(\" \"),s=t.slice(0,n);return{name:s,insertValue:s+(i?.includes(\"..\")?\"\":\"..\"),icon:\"fig://icon?type=node\",description:t.slice(n+1),priority:1}}),{name:\"HEAD\",insertValue:\"HEAD\"+(i?.includes(\"..\")?\"\":\"..\"),icon:\"fig://icon?type=node\",description:\"The current commit\",priority:5}]}"
+        }
       }
     ]
   }

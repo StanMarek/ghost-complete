@@ -248,7 +248,10 @@
               "--json"
             ],
             "requires_js": true,
-            "js_source": "n=>Object.values(JSON.parse(n).Peer).map(e=>({name:`${e.DNSName.split(\".\")[0]}${s??\"\"}`,displayName:e.HostName,description:e.OS}))"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "n=>Object.values(JSON.parse(n).Peer).map(e=>({name:`${e.DNSName.split(\".\")[0]}${s??\"\"}`,displayName:e.HostName,description:e.OS}))"
+            }
           }
         ]
       }
@@ -461,7 +464,10 @@
                     "--json"
                   ],
                   "requires_js": true,
-                  "js_source": "n=>Object.values(JSON.parse(n).Peer).map(e=>({name:`${e.DNSName.split(\".\")[0]}${s??\"\"}`,displayName:e.HostName,description:e.OS}))"
+                  "js_runtime": {
+                    "kind": "post_process",
+                    "source": "n=>Object.values(JSON.parse(n).Peer).map(e=>({name:`${e.DNSName.split(\".\")[0]}${s??\"\"}`,displayName:e.HostName,description:e.OS}))"
+                  }
                 },
                 {
                   "template": "filepaths"

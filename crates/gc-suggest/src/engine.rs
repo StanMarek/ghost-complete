@@ -208,6 +208,7 @@ mod sync_result_tests {
             cache: None,
             requires_js: false,
             js_source: None,
+            js_runtime: None,
             corrected_in: None,
             template: None,
         })
@@ -2207,6 +2208,7 @@ mod tests {
             cache: None,
             requires_js: false,
             js_source: None,
+            js_runtime: None,
             corrected_in: None,
             template: None,
         };
@@ -2225,6 +2227,7 @@ mod tests {
             cache: None,
             requires_js: false,
             js_source: None,
+            js_runtime: None,
             corrected_in: None,
             template: None,
         };

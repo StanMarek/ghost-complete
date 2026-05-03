@@ -308,10 +308,19 @@ function normalizeName(name) {
 
 /**
  * Normalize a name to always be an array (for options).
+ *
+ * Drops null/undefined entries — Fig's `name:["-H",,"--hostname"]` shape uses
+ * a sparse-array hole between aliases, which `JSON.stringify` renders as
+ * `null` and which our Rust loader rejects with `invalid type: null,
+ * expected a string`. The previous converter happened to dodge this by
+ * never running on an upstream spec with a hole; the Phase 2 regen surfaced
+ * `next.json` and `pnpx.json` as failing parses because of it.
  */
 function normalizeNameArray(name) {
   if (Array.isArray(name)) {
-    return name.map(String);
+    return name
+      .filter((n) => n !== null && n !== undefined && n !== '')
+      .map(String);
   }
   return [String(name)];
 }

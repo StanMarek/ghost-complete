@@ -15,7 +15,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/repository/plugins`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Plugin name\",priority:76,icon:\"fig://icon?type=package\",...n}))}"
+                  "js_runtime": {
+                    "kind": "custom",
+                    "source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/repository/plugins`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Plugin name\",priority:76,icon:\"fig://icon?type=package\",...n}))}"
+                  }
                 }
               ]
             },
@@ -105,7 +108,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/repository/plugins`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Plugin name\",priority:76,icon:\"fig://icon?type=package\",...n}))}"
+              "js_runtime": {
+                "kind": "custom",
+                "source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/repository/plugins`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Plugin name\",priority:76,icon:\"fig://icon?type=package\",...n}))}"
+              }
             }
           ]
         },
@@ -215,7 +221,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "e=>[\"asdf\",\"list-all\",e[e.length-2]]"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "e=>[\"asdf\",\"list-all\",e[e.length-2]]"
+              }
             }
           ]
         }
@@ -247,7 +256,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              }
             }
           ]
         }
@@ -299,7 +311,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              }
             }
           ]
         }
@@ -313,7 +328,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/shims`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Shim name\",priority:76,icon:\"fig://icon?type=command\",...n}))}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/shims`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Shim name\",priority:76,icon:\"fig://icon?type=command\",...n}))}"
+            }
           }
         ]
       }
@@ -342,7 +360,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              }
             }
           ]
         }
@@ -372,7 +393,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              }
             }
           ]
         }
@@ -402,7 +426,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              }
             }
           ]
         }
@@ -433,7 +460,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              }
             }
           ]
         }
@@ -469,7 +499,10 @@
               "generators": [
                 {
                   "requires_js": true,
-                  "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+                  }
                 }
               ]
             }
@@ -518,7 +551,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              }
             }
           ]
         }
@@ -549,7 +585,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              }
             }
           ]
         }
@@ -563,7 +602,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/shims`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Shim name\",priority:76,icon:\"fig://icon?type=command\",...n}))}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/shims`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Shim name\",priority:76,icon:\"fig://icon?type=command\",...n}))}"
+            }
           }
         ]
       },
@@ -577,7 +619,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/shims`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Shim name\",priority:76,icon:\"fig://icon?type=command\",...n}))}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/shims`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Shim name\",priority:76,icon:\"fig://icon?type=command\",...n}))}"
+            }
           }
         ]
       }
@@ -613,7 +658,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              "js_runtime": {
+                "kind": "script_function",
+                "source": "e=>[\"asdf\",\"list\",e[e.length-2]]"
+              }
             }
           ]
         }
@@ -631,7 +679,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/shims`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Shim name\",priority:76,icon:\"fig://icon?type=command\",...n}))}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/shims`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Shim name\",priority:76,icon:\"fig://icon?type=command\",...n}))}"
+                }
               }
             ]
           }
@@ -646,7 +697,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/shims`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Shim name\",priority:76,icon:\"fig://icon?type=command\",...n}))}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(r,e,i)=>{let{stdout:o}=await e({command:\"ls\",args:[\"-1\",`${i.environmentVariables.HOME}/.asdf/shims`]});return o.split(`\n`).map(m=>({name:`${m}`,description:\"Shim name\",priority:76,icon:\"fig://icon?type=command\",...n}))}"
+            }
           }
         ]
       }

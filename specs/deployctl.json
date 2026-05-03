@@ -61,7 +61,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "(p,y,O)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:h}=O,x=(f=(0,g.getCurrentInsertedDirectory)(u??b,h,O))!==null&&f!==void 0?f:\"/\";try{let P=yield y({command:\"ls\",args:[\"-1ApL\"],cwd:x}),X=R(P.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let A of X)if(A){let D=A.endsWith(\"/\")?\"folders\":\"filepaths\";(D===\"filepaths\"&&c!==\"only\"||D===\"folders\"&&c!==\"never\")&&q.push({type:D===\"filepaths\"?\"file\":\"folder\",name:A,insertValue:A,isDangerous:_,context:{templateType:D}})}return S(v(q))}catch{return[]}})"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "(p,y,O)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:h}=O,x=(f=(0,g.getCurrentInsertedDirectory)(u??b,h,O))!==null&&f!==void 0?f:\"/\";try{let P=yield y({command:\"ls\",args:[\"-1ApL\"],cwd:x}),X=R(P.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let A of X)if(A){let D=A.endsWith(\"/\")?\"folders\":\"filepaths\";(D===\"filepaths\"&&c!==\"only\"||D===\"folders\"&&c!==\"never\")&&q.push({type:D===\"filepaths\"?\"file\":\"folder\",name:A,insertValue:A,isDangerous:_,context:{templateType:D}})}return S(v(q))}catch{return[]}})"
+            }
           }
         ]
       }
@@ -80,7 +83,10 @@
               "https://cdn.deno.land/deploy/meta/versions.json"
             ],
             "requires_js": true,
-            "js_source": "e=>{let t=JSON.parse(e);return t.versions.map(n=>({name:n,icon:n===t.latest?\"\\u2B50\\uFE0F\":\"\\u{1F995}\"}))}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=JSON.parse(e);return t.versions.map(n=>({name:n,icon:n===t.latest?\"\\u2B50\\uFE0F\":\"\\u{1F995}\"}))}"
+            },
             "cache": {
               "ttl_seconds": 86400
             }

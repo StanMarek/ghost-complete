@@ -6,13 +6,17 @@ offline. The converted JSON lives under [`specs/`](../specs/) (~74 MB on disk
 since the AWS spec was restored in `ux-8`) and is embedded into the binary at
 build time via `include_str!`, so the shipped `ghost-complete` has zero
 runtime spec-fetch cost and no network dependency. The embed is produced by
-[`crates/gc-suggest/build.rs`](../crates/gc-suggest/build.rs), which strips the
-runtime-unused `js_source` field and minifies each spec before `include_str!`
-bakes it into the binary — minified embedded corpus is ~47 MB and the release
-binary measures ~102 MB (under the 110 MB CI ceiling enforced by
+[`crates/gc-suggest/build.rs`](../crates/gc-suggest/build.rs), which minifies
+each spec and defensively strips any straggler `js_source` field before
+`include_str!` bakes it into the binary. Since UX-9 Phase 2 the converter no
+longer emits `js_source` at all — runtime-needed JS is preserved on
+`js_runtime.source` (a structured object the build pipeline retains untouched).
+Stale user-installed specs from older converter versions are still tolerated:
+the embed pass drops their `js_source` so the embedded format stays uniform.
+The release binary measures ~102 MB (under the 110 MB CI ceiling enforced by
 [`docs/ci-gates.md`](./ci-gates.md#binary-size-gate); zstd-compressing the
-embedded corpus is the queued reclaim path). On-disk `specs/*.json`
-remain pretty-printed; only the binary-embedded copies are minified.
+embedded corpus is the queued reclaim path). On-disk `specs/*.json` remain
+pretty-printed; only the binary-embedded copies are minified.
 
 **Non-goal:** embedding a JavaScript runtime. Upstream specs sometimes include
 inline JS generators (`postProcess`, `custom`, `trigger`); we either rewrite
@@ -48,10 +52,12 @@ Stages:
    touching converter logic — the Rust `cargo test` suite does not cover it.
 3. **`specs/*.json`** — committed, pretty-printed output. Snapshot-diff CI gate
    guards against silent large-scale regeneration drift.
-4. **`crates/gc-suggest/build.rs`** — strips the runtime-unused `js_source`
-   field from every generator and minifies the JSON into `OUT_DIR` so
-   `include_str!` bakes a compact copy into the binary. Hand-editing the
-   embed list (or bypassing `build.rs`) would break the binary-size gate.
+4. **`crates/gc-suggest/build.rs`** — minifies each spec into `OUT_DIR` so
+   `include_str!` bakes a compact copy into the binary. Drops any legacy
+   `js_source` field defensively (post-Phase 2 the converter no longer emits
+   it; structured `js_runtime.source` survives untouched and is asserted
+   present at the same depth). Hand-editing the embed list (or bypassing
+   `build.rs`) would break the binary-size gate.
 5. **Rust binary** — `crates/gc-suggest/src/specs.rs` deserializes via serde
    at load time. Unknown generator types log a `warn!` and are skipped.
 

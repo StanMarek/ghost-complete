@@ -38,7 +38,10 @@
                 "--list"
               ],
               "requires_js": true,
-              "js_source": "s=>Array.from(new Set(s.split(`\n`))).map(e=>({name:e,description:`NAMESPACE ${e}`}))"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "s=>Array.from(new Set(s.split(`\n`))).map(e=>({name:e,description:`NAMESPACE ${e}`}))"
+              }
             }
           ]
         },
@@ -63,7 +66,10 @@
             "--list"
           ],
           "requires_js": true,
-          "js_source": "s=>Array.from(new Set(s.split(`\n`))).map(e=>({name:e,description:`NAMESPACE ${e}`}))"
+          "js_runtime": {
+            "kind": "post_process",
+            "source": "s=>Array.from(new Set(s.split(`\n`))).map(e=>({name:e,description:`NAMESPACE ${e}`}))"
+          }
         }
       ]
     },

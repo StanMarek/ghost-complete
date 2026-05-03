@@ -433,7 +433,10 @@
                   "if command -v gh > /dev/null; then       gh api -H \"Accept: application/vnd.github+json\" /repos/rust-lang/rust/releases;     else       curl -sfL -H \"Accept: application/vnd.github+json\" https://api.github.com/repos/rust-lang/rust/releases;     fi"
                 ],
                 "requires_js": true,
-                "js_source": "o=>{if(o===\"\")return[];let t=JSON.parse(o);return[{name:\"stable\"},{name:\"beta\"},{name:\"nightly\"},...t.map(n=>({name:n.tag_name,description:`${n.name} - ${new Date(n.published_at).toLocaleDateString()}`}))]}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>{if(o===\"\")return[];let t=JSON.parse(o);return[{name:\"stable\"},{name:\"beta\"},{name:\"nightly\"},...t.map(n=>({name:n.tag_name,description:`${n.name} - ${new Date(n.published_at).toLocaleDateString()}`}))]}"
+                },
                 "cache": {
                   "ttl_seconds": 3600
                 }

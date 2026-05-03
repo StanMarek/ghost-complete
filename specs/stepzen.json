@@ -49,7 +49,10 @@
                   "schemas"
                 ],
                 "requires_js": true,
-                "js_source": "t=>{try{return JSON.parse(t).map(e=>({name:e,description:\"StepZen endpoint\"}))}catch{return[]}}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>{try{return JSON.parse(t).map(e=>({name:e,description:\"StepZen endpoint\"}))}catch{return[]}}"
+                }
               }
             ]
           }
@@ -92,7 +95,10 @@
               "https://api.github.com/repos/steprz/stepzen-schemas/contents"
             ],
             "requires_js": true,
-            "js_source": "t=>{try{return JSON.parse(t).filter(e=>e.type==\"dir\"&&!e.name.startsWith(\".\")).map(e=>({name:e.name,description:\"Stepzen schema\",icon:\"\\u{1F4E6}\"}))}catch{return[]}}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "t=>{try{return JSON.parse(t).filter(e=>e.type==\"dir\"&&!e.name.startsWith(\".\")).map(e=>({name:e.name,description:\"Stepzen schema\",icon:\"\\u{1F4E6}\"}))}catch{return[]}}"
+            }
           }
         ]
       }

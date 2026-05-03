@@ -33,7 +33,10 @@
               "--all"
             ],
             "requires_js": true,
-            "js_source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+            }
           }
         ]
       }
@@ -70,7 +73,10 @@
               "--all"
             ],
             "requires_js": true,
-            "js_source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+            }
           }
         ]
       }
@@ -130,7 +136,10 @@
               "--all"
             ],
             "requires_js": true,
-            "js_source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+            }
           }
         ]
       }
@@ -166,7 +175,10 @@
               "--all"
             ],
             "requires_js": true,
-            "js_source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+            }
           }
         ]
       }
@@ -296,7 +308,10 @@
                 "--all"
               ],
               "requires_js": true,
-              "js_source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+              }
             }
           ]
         },
@@ -305,7 +320,10 @@
           "generators": [
             {
               "requires_js": true,
-              "js_source": "(m,g,w)=>ue(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,v.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let E=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Y=W(E.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let I of Y)if(I){let M=I.endsWith(\"/\")?\"folders\":\"filepaths\";(M===\"filepaths\"&&d!==\"only\"||M===\"folders\"&&d!==\"never\")&&q.push({type:M===\"filepaths\"?\"file\":\"folder\",name:I,insertValue:I,isDangerous:b,context:{templateType:M}})}return S(h(q))}catch{return[]}})"
+              "js_runtime": {
+                "kind": "custom",
+                "source": "(m,g,w)=>ue(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,v.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let E=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Y=W(E.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let I of Y)if(I){let M=I.endsWith(\"/\")?\"folders\":\"filepaths\";(M===\"filepaths\"&&d!==\"only\"||M===\"folders\"&&d!==\"never\")&&q.push({type:M===\"filepaths\"?\"file\":\"folder\",name:I,insertValue:I,isDangerous:b,context:{templateType:M}})}return S(h(q))}catch{return[]}})"
+              }
             }
           ]
         }
@@ -343,7 +361,10 @@
                 "--all"
               ],
               "requires_js": true,
-              "js_source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+              }
             }
           ]
         },
@@ -471,7 +492,10 @@
           "--all"
         ],
         "requires_js": true,
-        "js_source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+        "js_runtime": {
+          "kind": "post_process",
+          "source": "function(e){let n=new Set,t=e.split(`\n`).slice(1);for(let i of t){n.add(i);let r=i.split(\".\");n.add(r[0]+\".\"+r[1]),n.add(r[0])}return Array.from(n).map(i=>({name:[i,`v${i}`],description:`Node.js ${i}`}))}"
+        }
       }
     ]
   }

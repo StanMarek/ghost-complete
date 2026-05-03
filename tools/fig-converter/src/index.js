@@ -218,15 +218,19 @@ function walkGenerators(obj, callback) {
  * 1. Native generator map (git branch → git_branches)
  * 2. script + postProcess → pattern match → transforms
  * 3. script + splitOn → transforms
- * 4. script (function) → requires_js
- * 5. custom → requires_js
+ * 4. script (function) → js_runtime.kind = "script_function"
+ * 5. custom → js_runtime.kind = "custom"
  * 6. Template-only → pass through
+ *
+ * Exported (since UX-9 Phase 2) so the converter test suite can pin the
+ * native-first / requires_js / js_runtime emission seams without spinning
+ * up the upstream loader for a full spec.
  *
  * @param {object} gen - Intermediate generator from static-converter
  * @param {string} specName - The spec name
  * @returns {object} Final Ghost Complete generator
  */
-function processGenerator(gen, specName) {
+export function processGenerator(gen, specName) {
   if (!gen || typeof gen !== 'object') return gen;
 
   // Case: custom async generator — try a native rewrite first, then
@@ -236,8 +240,8 @@ function processGenerator(gen, specName) {
   // there is no `script` array to key on at all. The strip-on-rewrite
   // contract holds: a successful native match returns the bare native
   // gen (plus optional cache), dropping `_custom`, `_customSource`,
-  // `requires_js`, `js_source`, `script`, and `script_template` along
-  // with every other internal marker.
+  // `requires_js`, `js_source`, `js_runtime`, `script`, and
+  // `script_template` along with every other internal marker.
   if (gen._custom) {
     const native = matchNativeFromJsSource(specName, gen._customSource);
     if (native) {
@@ -245,8 +249,12 @@ function processGenerator(gen, specName) {
       if (gen.cache) result.cache = gen.cache;
       return result;
     }
+    // Phase 2 (UX-9): emit `js_runtime.kind = "custom"` carrying the
+    // function source. The runtime layer activates this in Phase 5.
     const result = { requires_js: true };
-    if (gen._customSource) result.js_source = gen._customSource;
+    if (gen._customSource) {
+      result.js_runtime = { kind: 'custom', source: gen._customSource };
+    }
     return result;
   }
 
@@ -261,8 +269,12 @@ function processGenerator(gen, specName) {
       if (gen.cache) result.cache = gen.cache;
       return result;
     }
+    // Phase 2 (UX-9): emit `js_runtime.kind = "script_function"` carrying
+    // the function source. The runtime layer activates this in Phase 5.
     const result = { requires_js: true };
-    if (gen._scriptSource) result.js_source = gen._scriptSource;
+    if (gen._scriptSource) {
+      result.js_runtime = { kind: 'script_function', source: gen._scriptSource };
+    }
     return result;
   }
 
@@ -283,7 +295,16 @@ function processGenerator(gen, specName) {
 
       if (match.requires_js) {
         result.requires_js = true;
-        if (match.js_source) result.js_source = match.js_source;
+        // Phase 2 (UX-9): when the matcher couldn't lower postProcess to
+        // declarative transforms but DID extract a usable JS body, attach
+        // it as `js_runtime.kind = "post_process"`. The runtime layer
+        // (Phase 4) executes the script and feeds stdout through this
+        // function. When `match.js_source` is empty the matcher had no
+        // usable body to preserve; emit just `requires_js: true` so the
+        // runtime knows there is no JS to evaluate (today's behaviour).
+        if (match.js_source) {
+          result.js_runtime = { kind: 'post_process', source: match.js_source };
+        }
         // Propagate the _corrected_in marker set by the matcher for the
         // specific bug-class paths (substring/slice, JSON.parse
         // unresolvable-field). Passed through cleanGenerator via its
