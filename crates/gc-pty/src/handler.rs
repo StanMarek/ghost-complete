@@ -2031,6 +2031,16 @@ impl InputHandler {
 
         if viewport_scrolls > 0 {
             self.last_trigger_fingerprint = None;
+            // Shell-side viewport scrolls move the parser's cursor_row
+            // independently of any overlay-induced scrolling. The cached
+            // overlay_scroll_deficit was relative to the pre-scroll cursor
+            // position; once the parser tracks the new shell scrolls, the
+            // deficit no longer maps to anything meaningful. Drop it so the
+            // next popup recomputes from a clean state. The next CPR sync at
+            // a prompt boundary would do this anyway, but resetting eagerly
+            // avoids one frame of misposition between the scroll and the
+            // sync.
+            self.overlay_scroll_deficit = 0;
         }
 
         if display_dirty
@@ -2043,6 +2053,16 @@ impl InputHandler {
             let cleanup_ticket = self.overlay_write_ticket();
             self.commit_overlay_write(cleanup_ticket);
         }
+    }
+
+    /// Drop the cached overlay scroll deficit. Called from the proxy's CPR
+    /// dispatch when a response arrives whose coordinates we cannot reconcile
+    /// with our cached screen dimensions even after re-querying the terminal
+    /// size — at that point the deficit is meaningless and continuing to
+    /// accumulate it would push subsequent popups further off the actual
+    /// cursor row.
+    pub fn invalidate_overlay_scroll_deficit(&mut self) {
+        self.overlay_scroll_deficit = 0;
     }
 
     fn dismiss(&mut self, stdout: &mut dyn Write) {
@@ -4052,7 +4072,17 @@ mod tests {
     }
 
     #[test]
-    fn test_terminal_scroll_preserves_existing_overlay_scroll_deficit_when_hidden() {
+    fn test_terminal_scroll_resets_overlay_scroll_deficit_when_hidden() {
+        // Shell-side viewport scrolls move the parser's cursor independently
+        // of the overlay's bookkeeping. Once a shell scroll lands, the
+        // cached deficit no longer corresponds to any real cursor offset
+        // (parser saturates at the bottom while the real cursor advances),
+        // and carrying it forward causes the next popup to render above the
+        // actual cursor row — the bug captured in the
+        // `codex/fix-terminal-rendering-corruption` log evidence
+        // (`row=79 col=1 screen_rows=35`). Resetting eagerly is the
+        // recovery path; a real CPR sync at the next prompt boundary
+        // would do the same thing one frame later.
         let mut handler = make_handler();
         handler.overlay_scroll_deficit = 3;
         let mut buf = Vec::new();
@@ -4060,7 +4090,15 @@ mod tests {
         handler.handle_terminal_output(&mut buf, false, 2);
 
         assert!(buf.is_empty());
-        assert_eq!(handler.overlay_scroll_deficit, 3);
+        assert_eq!(handler.overlay_scroll_deficit, 0);
+    }
+
+    #[test]
+    fn test_invalidate_overlay_scroll_deficit_clears_cached_value() {
+        let mut handler = make_handler();
+        handler.overlay_scroll_deficit = 7;
+        handler.invalidate_overlay_scroll_deficit();
+        assert_eq!(handler.overlay_scroll_deficit, 0);
     }
 
     #[test]

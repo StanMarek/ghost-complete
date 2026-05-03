@@ -91,7 +91,22 @@ pub fn popup_additional_scroll_deficit(
     }
 
     let border_pad: u16 = if theme.borders { 2 } else { 0 };
-    let adj_cursor_row = cursor_row.saturating_sub(prior_deficit);
+    // A prior_deficit at or above cursor_row implies the real cursor sat at
+    // or above row 0, which is impossible while the cursor is on screen.
+    // The cached value is therefore stale (e.g. CPR sync failed because
+    // screen dimensions diverged) and merely clamping it would still give
+    // total_deficit == cursor_row, collapse final_cursor_row to 0, and
+    // render the popup at row 1 over prior scrollback. Discard it instead
+    // and treat this render as fresh — anchored to cursor_row, scrolling
+    // only the room actually needed below. Same guard mirrored in
+    // `render_popup` and `render_feedback_only_popup`; keep all three in
+    // sync.
+    let effective_prior = if prior_deficit >= cursor_row {
+        0
+    } else {
+        prior_deficit
+    };
+    let adj_cursor_row = cursor_row.saturating_sub(effective_prior);
 
     if suggestions.is_empty() {
         let base_height = 1 + border_pad;
@@ -257,8 +272,20 @@ pub fn render_popup(
         };
     };
 
-    // Adjust cursor for prior scroll (parser doesn't know about our scrolling)
-    let adj_cursor_row = cursor_row.saturating_sub(prior_deficit);
+    // See `popup_additional_scroll_deficit` for the rationale: a
+    // prior_deficit at or above cursor_row is logically impossible (would
+    // place the real cursor above row 0). When that happens the cached
+    // deficit is stale and clamping it would still pin the popup to row 1.
+    // Discard it and recompute as a fresh render — the popup re-anchors to
+    // the actual cursor position, doing whatever new viewport scroll is
+    // needed below. The next CPR sync corrects state; until then we render
+    // correctly from frame one.
+    let effective_prior = if prior_deficit >= cursor_row {
+        0
+    } else {
+        prior_deficit
+    };
+    let adj_cursor_row = cursor_row.saturating_sub(effective_prior);
 
     // Indicator occupies exactly 1 row; bordered case shifts bottom border down by 1.
     let space_below = screen_rows.saturating_sub(adj_cursor_row.saturating_add(1));
@@ -266,7 +293,7 @@ pub fn render_popup(
     let loading_extra_deficit: u16 = if feedback.reserves_row() { 1 } else { 0 };
     let total_height_needed = visible_count + border_pad + loading_extra_deficit;
     let new_deficit = total_height_needed.saturating_sub(space_below);
-    let total_deficit = prior_deficit.saturating_add(new_deficit);
+    let total_deficit = effective_prior.saturating_add(new_deficit);
     let final_cursor_row = cursor_row.saturating_sub(total_deficit);
 
     let use_sync = matches!(
@@ -531,10 +558,18 @@ fn render_feedback_only_popup(
     let effective_max_w = max_width.min(screen_cols).max(min_width);
     let width = min_width.min(effective_max_w);
     let base_height = 1 + border_pad;
-    let adj_cursor_row = cursor_row.saturating_sub(prior_deficit);
+    // Mirror the discard logic in `render_popup`: when prior_deficit >=
+    // cursor_row the cached value is stale and would pin the indicator at
+    // row 1 even after clamping. Drop it and recompute fresh.
+    let effective_prior = if prior_deficit >= cursor_row {
+        0
+    } else {
+        prior_deficit
+    };
+    let adj_cursor_row = cursor_row.saturating_sub(effective_prior);
     let space_below = screen_rows.saturating_sub(adj_cursor_row.saturating_add(1));
     let new_deficit = base_height.saturating_sub(space_below);
-    let total_deficit = prior_deficit.saturating_add(new_deficit);
+    let total_deficit = effective_prior.saturating_add(new_deficit);
     let final_cursor_row = cursor_row.saturating_sub(total_deficit);
     let start_row = final_cursor_row + 1;
     let start_col = if cursor_col + width > screen_cols {
@@ -1684,31 +1719,137 @@ mod tests {
     }
 
     #[test]
-    fn test_render_saturates_cumulative_scroll_deficit() {
+    fn test_render_pins_popup_to_cursor_when_prior_deficit_exceeds_cursor_row() {
+        // Regression for the codex/fix-terminal-rendering-corruption bug:
+        // when CPR sync fails (e.g. cached screen_rows is stale and the
+        // terminal reports a row past it), `overlay_scroll_deficit` is
+        // never reset and accumulates past `cursor_row`. The previous
+        // saturating math (and even a naive clamp to cursor_row) collapsed
+        // `final_cursor_row` to 0 and rendered the popup at row 1, smeared
+        // across prior scrollback. A pathological prior_deficit must be
+        // discarded entirely so the popup re-anchors directly below the
+        // current cursor row (start_row == cursor_row + 1 with plenty of
+        // space below, or scrolled appropriately if not).
         let mut buf = Vec::new();
-        let suggestions: Vec<Suggestion> = (0..25)
-            .map(|i| make(&format!("item{i}"), None, SuggestionKind::Command))
-            .collect();
+        let suggestions = make_suggestions(); // 3 items
         let state = OverlayState::new();
-
+        let cursor_row = 10u16;
         let layout = render_popup(
             &mut buf,
             &suggestions,
             &state,
-            22,
+            cursor_row,
             0,
             24,
             80,
-            25,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &bordered_theme(),
+            // Wildly stale prior_deficit, much larger than cursor_row —
+            // this is what the production log captured before the fix.
+            500,
+            FeedbackKind::None,
+            &ghostty_profile(),
+        );
+        assert_eq!(
+            layout.start_row,
+            cursor_row + 1,
+            "popup must re-anchor below cursor when prior_deficit is stale; \
+             got start_row={} cursor_row={cursor_row}",
+            layout.start_row
+        );
+        assert_eq!(
+            layout.scroll_deficit, 0,
+            "stale prior_deficit must be discarded (no scroll required since cursor_row=10 \
+             on screen=24 has plenty of room below); got scroll_deficit={}",
+            layout.scroll_deficit
+        );
+    }
+
+    #[test]
+    fn test_render_discards_prior_deficit_equal_to_cursor_row() {
+        // Boundary case: prior_deficit == cursor_row implies the real
+        // cursor sat at row 0. The cached value can't be distinguished from
+        // a stale one of equal magnitude, so we err on the side of
+        // discarding — the cost is one extra scroll-via-newline pass on the
+        // rare legitimate case (real cursor at top of screen), which is
+        // strictly better than the row-1 popup failure on the common stale
+        // case (deficit accumulated under a missed CPR sync).
+        let mut buf = Vec::new();
+        let suggestions = make_suggestions();
+        let state = OverlayState::new();
+        let cursor_row = 8u16;
+        let layout = render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            cursor_row,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &bordered_theme(),
+            cursor_row, // == cursor_row exactly
+            FeedbackKind::None,
+            &ghostty_profile(),
+        );
+        assert_eq!(
+            layout.start_row,
+            cursor_row + 1,
+            "prior_deficit == cursor_row is treated as stale — popup anchors below cursor"
+        );
+    }
+
+    #[test]
+    fn test_render_discards_pathological_prior_deficit_and_recomputes_fresh() {
+        // u16::MAX prior_deficit is impossible — the real cursor cannot be
+        // 65535 rows above the parser's view. The render path discards the
+        // stale value entirely and recomputes scroll_deficit from scratch
+        // based on the actual room available below cursor_row. This is what
+        // pulls the popup back under the cursor instead of plastering it at
+        // row 1, which is the production regression mode.
+        let mut buf = Vec::new();
+        let suggestions: Vec<Suggestion> = (0..5)
+            .map(|i| make(&format!("item{i}"), None, SuggestionKind::Command))
+            .collect();
+        let state = OverlayState::new();
+
+        let cursor_row = 22u16;
+        let layout = render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            cursor_row,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             &bordered_theme(),
             u16::MAX,
-            FeedbackKind::Loading { frame: 0 },
+            FeedbackKind::None,
             &ghostty_profile(),
         );
 
-        assert_eq!(layout.scroll_deficit, u16::MAX);
+        // 5 items + 2 borders = 7 rows needed; cursor=22 on screen=24 leaves
+        // 1 row below, so new_deficit = 6. After discarding the stale
+        // u16::MAX prior, total_deficit = 6, final_cursor_row = 16,
+        // start_row = 17 — clearly anchored below cursor, not at row 1.
+        assert_eq!(
+            layout.scroll_deficit, 6,
+            "scroll_deficit recomputed from current cursor_row, ignoring stale prior; got {}",
+            layout.scroll_deficit
+        );
+        assert_eq!(
+            layout.start_row,
+            cursor_row - 6 + 1,
+            "popup must anchor one row below the (re-adjusted) cursor; got start_row={}",
+            layout.start_row
+        );
     }
 
     #[test]

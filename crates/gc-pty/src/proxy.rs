@@ -327,14 +327,76 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                                 );
                                 state.set_cursor_from_report(r, c);
                             } else {
-                                let (screen_rows, screen_cols) = state.screen_dimensions();
-                                tracing::warn!(
-                                    row = r,
-                                    col = c,
-                                    screen_rows,
-                                    screen_cols,
-                                    "CPR coordinates out of screen bounds — ignoring"
-                                );
+                                // Cached screen dimensions are stale (e.g. a
+                                // SIGWINCH was missed or the proxy was
+                                // launched into a tty whose size later
+                                // changed without a kernel notification).
+                                // Re-query the real terminal size and update
+                                // the parser, then re-validate. If the new
+                                // size accommodates the report, accept it
+                                // and let the deficit reset on the next
+                                // trigger. Otherwise drop the stale deficit
+                                // anyway — accumulating it under a wrong
+                                // size makes the popup drift further with
+                                // every render.
+                                let (old_rows, old_cols) = state.screen_dimensions();
+                                let recovered = match get_terminal_size() {
+                                    Ok(size) if (size.rows, size.cols) != (old_rows, old_cols) => {
+                                        state.update_dimensions(size.rows, size.cols);
+                                        // Only the parser dimensions are
+                                        // updated here — `master` lives in
+                                        // the outer task and the PTY-resize
+                                        // path is owned by the SIGWINCH
+                                        // handler. Updating the parser is
+                                        // sufficient to unblock CPR
+                                        // validation and stop the popup
+                                        // from drifting; the shell-side
+                                        // PTY size will reconcile on the
+                                        // next real SIGWINCH. The next
+                                        // popup render that uses the new
+                                        // dimensions only writes through
+                                        // the terminal (not the PTY), so
+                                        // there is no hard correctness
+                                        // dependency on the PTY size for
+                                        // this branch.
+                                        tracing::warn!(
+                                            old_rows,
+                                            old_cols,
+                                            new_rows = size.rows,
+                                            new_cols = size.cols,
+                                            "CPR row/col exceeded cached screen — re-queried \
+                                             terminal size and updated parser dimensions"
+                                        );
+                                        if state.validate_cpr_coordinates(r, c) {
+                                            state.set_cursor_from_report(r, c);
+                                            true
+                                        } else {
+                                            false
+                                        }
+                                    }
+                                    Ok(_) => false,
+                                    Err(e) => {
+                                        tracing::warn!(
+                                            "failed to re-query terminal size on CPR mismatch: {e}"
+                                        );
+                                        false
+                                    }
+                                };
+                                if !recovered {
+                                    let (screen_rows, screen_cols) = state.screen_dimensions();
+                                    tracing::warn!(
+                                        row = r,
+                                        col = c,
+                                        screen_rows,
+                                        screen_cols,
+                                        "CPR coordinates out of screen bounds — dropping \
+                                         stale overlay scroll deficit defensively"
+                                    );
+                                    drop(p);
+                                    if let Ok(mut h) = handler_for_stdin.lock() {
+                                        h.invalidate_overlay_scroll_deficit();
+                                    }
+                                }
                             }
                         }
                         CprAction::ForwardToPty(r, c) => {
