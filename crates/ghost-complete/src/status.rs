@@ -4,7 +4,10 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use gc_suggest::spec_dirs::resolve_spec_dirs;
-use gc_suggest::specs::{ArgSpec, CompletionSpec, GeneratorSpec, OptionSpec, SubcommandSpec};
+use gc_suggest::specs::{
+    AliasConflict, AliasConflictKind, ArgSpec, CompletionSpec, GeneratorSpec, OptionSpec,
+    SubcommandSpec,
+};
 use gc_suggest::SpecStore;
 use serde::{Deserialize, Serialize};
 
@@ -331,12 +334,74 @@ pub struct StatusOutcome {
     pub requires_js_generators_supported: usize,
     pub requires_js_generators_unsupported: usize,
     pub command_alias_conflicts: usize,
+    /// Per-conflict details surfaced from `SpecStore::conflicts()`.
+    /// Phase 7 surfaces the structured list to text + JSON output so users
+    /// can spot specs whose declared `name` was rejected.
+    pub command_alias_conflict_details: Vec<AliasConflictRecord>,
+    /// JS runtime kill switch state (`suggest.providers.js_runtime`).
+    /// Phase 7 surfaces this so users can see at-a-glance whether their
+    /// requires_js generators will run.
+    pub js_runtime_enabled: bool,
     /// File-level scan results — independent of the loader-level index so
     /// any divergence between `spec_files_total` and the loader's entry
     /// count remains visible. After Phase 1 the entry count equals
     /// `spec_files_total` (every committed file becomes an entry; no
     /// silent loss to name-keyed dedupe).
     pub file_scan: FileScan,
+}
+
+/// Serialised view of a single [`AliasConflict`]. Distinct from the
+/// `gc_suggest::specs::AliasConflict` type because that one is not
+/// `Serialize` (it owns winner/loser tuples that aren't part of a stable
+/// JSON contract). This struct carries only the fields the JSON consumer
+/// needs.
+#[derive(Debug, Clone, Serialize)]
+pub struct AliasConflictRecord {
+    /// The contended alias.
+    pub alias: String,
+    /// Conflict kind as a snake_case string for stable JSON output.
+    pub kind: String,
+    /// Filename stem of the spec that won the alias.
+    pub winner_stem: String,
+    /// Source dir of the winner.
+    pub winner_dir: String,
+    /// `CompletionSpec.name` declared by the winner. Useful for surfacing
+    /// the actual conflict target (e.g. winner stem `kubectl` declared
+    /// `name: kubectl` while loser `kubecolor.json` also declared
+    /// `name: kubectl`).
+    pub winner_name: String,
+    /// Filename stem of the spec that lost the alias.
+    pub loser_stem: String,
+    /// Source dir of the loser.
+    pub loser_dir: String,
+    /// `CompletionSpec.name` declared by the loser.
+    pub loser_name: String,
+}
+
+impl AliasConflictRecord {
+    fn from_conflict(c: &AliasConflict) -> Self {
+        Self {
+            alias: c.alias.clone(),
+            kind: alias_conflict_kind_str(&c.kind).to_string(),
+            winner_stem: c.winner.filename_stem.clone(),
+            winner_dir: c.winner.source_dir.display().to_string(),
+            winner_name: c.winner.spec_name.clone(),
+            loser_stem: c.loser.filename_stem.clone(),
+            loser_dir: c.loser.source_dir.display().to_string(),
+            loser_name: c.loser.spec_name.clone(),
+        }
+    }
+}
+
+/// Stable snake_case rendering for `AliasConflictKind`. Keeps the JSON
+/// schema decoupled from the Rust enum's `Debug` representation so
+/// renaming a variant doesn't accidentally break consumers.
+fn alias_conflict_kind_str(kind: &AliasConflictKind) -> &'static str {
+    match kind {
+        AliasConflictKind::DuplicateName => "duplicate_name",
+        AliasConflictKind::NameMatchesOtherStem => "name_matches_other_stem",
+        AliasConflictKind::DirectoryPrecedence => "directory_precedence",
+    }
 }
 
 /// File-level scan, populated independently from the runtime loader index.
@@ -355,13 +420,21 @@ pub struct FileScan {
     /// ~55 from name-keyed dedupe), so the file walk is the source of
     /// truth for this counter until Phase 1 closes the gap.
     pub requires_js_generators_total: usize,
-    /// Subset of `requires_js_generators_total` that Phase 4 can dispatch:
-    /// generators with `js_runtime.kind = post_process` AND a populated
-    /// `script` (or `script_template`). Sourced from the same raw-JSON walk,
-    /// so this number is consistent with `requires_js_generators_total` even
-    /// when `OptionSpec.args` truncation hides generators from the
-    /// structured loader.
+    /// Subset of `requires_js_generators_total` that the engine can dispatch
+    /// after Phase 5 — generators carrying any of the three supported
+    /// `js_runtime.kind` shapes (post_process+script, script_function,
+    /// custom). Sourced from the same raw-JSON walk so this number is
+    /// consistent with `requires_js_generators_total` even when
+    /// `OptionSpec.args` truncation hides generators from the structured
+    /// loader.
     pub requires_js_generators_supported: usize,
+    /// Class breakdown of `requires_js_generators_supported`. The three
+    /// per-kind fields sum to `requires_js_generators_supported`. Status
+    /// schema 1.2 surfaces this as
+    /// `requires_js_generators_supported_by_kind`.
+    pub requires_js_generators_supported_post_process: usize,
+    pub requires_js_generators_supported_script_function: usize,
+    pub requires_js_generators_supported_custom: usize,
 }
 
 /// Scan filesystem spec dirs and collect the numbers the status report
@@ -441,7 +514,14 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
     // a duplicate `name` across files, a `name` that crashed into
     // another file's stem, or a stem that lost to a higher-precedence
     // dir.
-    let command_alias_conflicts = store.conflicts().len();
+    let conflicts = store.conflicts();
+    let command_alias_conflicts = conflicts.len();
+    let command_alias_conflict_details = conflicts
+        .iter()
+        .map(AliasConflictRecord::from_conflict)
+        .collect();
+
+    let js_runtime_enabled = config.suggest.providers.js_runtime;
 
     Ok(StatusOutcome {
         fs_specs,
@@ -464,6 +544,8 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
         requires_js_generators_supported,
         requires_js_generators_unsupported,
         command_alias_conflicts,
+        command_alias_conflict_details,
+        js_runtime_enabled,
         file_scan,
     })
 }
@@ -493,15 +575,13 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
 /// loader's behavior). A malformed file is also skipped (its requires_js
 /// count is unknowable).
 fn scan_spec_files(store: &SpecStore) -> Result<FileScan> {
-    let mut spec_files_total = 0usize;
-    let mut requires_js_generators_total = 0usize;
-    let mut requires_js_generators_supported = 0usize;
+    let mut scan = FileScan::default();
 
     for (_stem, path) in store.canonical_paths() {
         if !path.exists() {
             continue;
         }
-        spec_files_total += 1;
+        scan.spec_files_total += 1;
         let contents = match std::fs::read_to_string(&path) {
             Ok(c) => c,
             Err(_) => continue,
@@ -511,39 +591,48 @@ fn scan_spec_files(store: &SpecStore) -> Result<FileScan> {
             Err(_) => continue,
         };
         let counts = count_requires_js_classes_in_value(&value);
-        requires_js_generators_total += counts.total;
-        requires_js_generators_supported += counts.supported;
+        scan.requires_js_generators_total += counts.total;
+        scan.requires_js_generators_supported += counts.supported;
+        scan.requires_js_generators_supported_post_process += counts.post_process;
+        scan.requires_js_generators_supported_script_function += counts.script_function;
+        scan.requires_js_generators_supported_custom += counts.custom;
     }
 
-    Ok(FileScan {
-        spec_files_total,
-        requires_js_generators_total,
-        requires_js_generators_supported,
-    })
+    Ok(scan)
 }
 
 /// Result of walking a parsed spec to classify every `requires_js` generator
-/// into supported/unsupported buckets. `supported` is the subset of `total`.
-#[derive(Debug, Default, Clone, Copy)]
+/// into supported/unsupported buckets. `supported` is the subset of `total`,
+/// further broken down by `js_runtime.kind` class.
+#[derive(Debug, Default, Clone, Copy, Serialize)]
 struct JsClassCounts {
     total: usize,
     supported: usize,
+    /// `requires_js` generators whose `js_runtime.kind == post_process`
+    /// AND that carry an accompanying `script` / `script_template`. These
+    /// are dispatched through the QuickJS post-process pipeline.
+    post_process: usize,
+    /// `requires_js` generators whose `js_runtime.kind == script_function`.
+    /// JS body evaluates to an `argv` array, then spawned.
+    script_function: usize,
+    /// `requires_js` generators whose `js_runtime.kind == custom`. JS body
+    /// returns suggestions directly without a subprocess.
+    custom: usize,
 }
 
 /// Walk a raw `serde_json::Value` and classify every object with
-/// `"requires_js": true` according to the Phase 4 dispatch rules:
+/// `"requires_js": true` according to the Phase 4-5 dispatch rules:
 ///
-/// - `total` increments for every `requires_js: true` occurrence (matches
-///   [`count_requires_js_in_value`]).
-/// - `supported` increments only when the generator also carries
-///   `js_runtime.kind == "post_process"` AND a `script` or `script_template`
-///   array. That is the exact predicate
-///   `gc_suggest::specs::collect_generators` uses to fall through to the
-///   QuickJS dispatch path.
+/// - `total` increments for every `requires_js: true` occurrence.
+/// - `supported` increments when the generator carries supportable
+///   `js_runtime` metadata. The class-specific fields
+///   (`post_process` / `script_function` / `custom`) are mutually exclusive
+///   counters that sum to `supported`.
 ///
-/// This is the doctor/status-side mirror of the runtime classification —
-/// keeping them in sync is a load-bearing invariant for the coverage
-/// counters surfaced by `status --json`.
+/// This is the doctor/status-side mirror of the runtime classification in
+/// `gc_suggest::specs::collect_generators` — keeping them in sync is a
+/// load-bearing invariant for the coverage counters surfaced by
+/// `status --json`.
 fn count_requires_js_classes_in_value(value: &serde_json::Value) -> JsClassCounts {
     let mut stack: Vec<&serde_json::Value> = vec![value];
     let mut counts = JsClassCounts::default();
@@ -552,8 +641,13 @@ fn count_requires_js_classes_in_value(value: &serde_json::Value) -> JsClassCount
             serde_json::Value::Object(map) => {
                 if matches!(map.get("requires_js"), Some(serde_json::Value::Bool(true))) {
                     counts.total += 1;
-                    if is_post_process_supported(map) {
+                    if let Some(kind) = supported_kind(map) {
                         counts.supported += 1;
+                        match kind {
+                            SupportedKind::PostProcess => counts.post_process += 1,
+                            SupportedKind::ScriptFunction => counts.script_function += 1,
+                            SupportedKind::Custom => counts.custom += 1,
+                        }
                     }
                 }
                 for v in map.values() {
@@ -571,18 +665,24 @@ fn count_requires_js_classes_in_value(value: &serde_json::Value) -> JsClassCount
     counts
 }
 
-/// Returns true when a generator object has the shape the runtime
-/// can dispatch.
+/// Internal enum used to count supported generators by class while
+/// keeping a single classifier as the source of truth.
+#[derive(Debug, Clone, Copy)]
+enum SupportedKind {
+    PostProcess,
+    ScriptFunction,
+    Custom,
+}
+
+/// Returns the supported `js_runtime.kind` class when a generator object has
+/// the shape the runtime can dispatch, or `None` otherwise.
 ///
 /// Mirrors `collect_generators` in `gc-suggest::specs`. After Phase 5
 /// the engine handles all three `js_runtime.kind` variants:
 ///   * `post_process` requires an accompanying `script` / `script_template`.
 ///   * `script_function` and `custom` only need a non-empty `source`.
-fn is_post_process_supported(map: &serde_json::Map<String, serde_json::Value>) -> bool {
-    let runtime = match map.get("js_runtime").and_then(|v| v.as_object()) {
-        Some(r) => r,
-        None => return false,
-    };
+fn supported_kind(map: &serde_json::Map<String, serde_json::Value>) -> Option<SupportedKind> {
+    let runtime = map.get("js_runtime").and_then(|v| v.as_object())?;
     let kind = runtime
         .get("kind")
         .and_then(|k| k.as_str())
@@ -603,10 +703,15 @@ fn is_post_process_supported(map: &serde_json::Map<String, serde_json::Value>) -
                 .get("script_template")
                 .map(|v| v.is_array() || v.is_string())
                 .unwrap_or(false);
-            (has_script || has_template) && source_non_empty
+            if (has_script || has_template) && source_non_empty {
+                Some(SupportedKind::PostProcess)
+            } else {
+                None
+            }
         }
-        "script_function" | "custom" => source_non_empty,
-        _ => false,
+        "script_function" if source_non_empty => Some(SupportedKind::ScriptFunction),
+        "custom" if source_non_empty => Some(SupportedKind::Custom),
+        _ => None,
     }
 }
 
@@ -651,6 +756,88 @@ fn run_status_inner(
         )?;
     }
 
+    // Coverage / dynamic-generator / addressability / runtime sections
+    // (Phase 7). Always rendered — even when zero specs are loaded — so
+    // users running on a fresh box see what classification each metric
+    // means. The text format intentionally mirrors `status --json` field
+    // names so users can move between the two views without re-learning
+    // labels.
+    let nonfunctional = outcome.commands_nonfunctional;
+    writeln!(out, "\nCoverage:")?;
+    writeln!(
+        out,
+        "  Fully functional:           {} commands",
+        outcome.fully_functional
+    )?;
+    writeln!(
+        out,
+        "  Partially functional:       {} commands  (have requires_js generators)",
+        outcome.partially_functional
+    )?;
+    writeln!(
+        out,
+        "  Nonfunctional:              {} commands",
+        nonfunctional
+    )?;
+
+    writeln!(out, "\nDynamic generators (requires_js):")?;
+    writeln!(
+        out,
+        "  Total:                      {}",
+        outcome.requires_js_generators_total
+    )?;
+    writeln!(
+        out,
+        "  Supported (post_process):   {}",
+        outcome
+            .file_scan
+            .requires_js_generators_supported_post_process
+    )?;
+    writeln!(
+        out,
+        "  Supported (script_function):{}",
+        outcome
+            .file_scan
+            .requires_js_generators_supported_script_function
+    )?;
+    writeln!(
+        out,
+        "  Supported (custom):         {}",
+        outcome.file_scan.requires_js_generators_supported_custom
+    )?;
+    writeln!(
+        out,
+        "  Unsupported:                {}",
+        outcome.requires_js_generators_unsupported
+    )?;
+
+    let unique_entries = outcome.file_scan.spec_files_total;
+    writeln!(out, "\nCommand addressability:")?;
+    writeln!(out, "  Unique entries:             {}", unique_entries)?;
+    writeln!(
+        out,
+        "  Aliases:                    {}",
+        outcome.commands_addressable
+    )?;
+    writeln!(
+        out,
+        "  Conflicts:                  {}  (filename/name mismatches that lose)",
+        outcome.command_alias_conflicts
+    )?;
+
+    writeln!(out, "\nJS runtime:")?;
+    if outcome.js_runtime_enabled {
+        writeln!(
+            out,
+            "  Status: \x1b[32menabled\x1b[0m (suggest.providers.js_runtime = true)"
+        )?;
+    } else {
+        writeln!(
+            out,
+            "  Status: \x1b[33mdisabled\x1b[0m \u{2014} set suggest.providers.js_runtime = true to re-enable"
+        )?;
+    }
+
     if !outcome.js_commands.is_empty() {
         writeln!(
             out,
@@ -691,7 +878,16 @@ fn run_status_inner_with_trend(
 ///       `file_scan` block. All additions are purely additive — old
 ///       fields keep their meaning so existing JSON consumers still
 ///       parse the output unchanged.
-const STATUS_SCHEMA_VERSION: &str = "1.1";
+/// 1.2 — UX-9 Phase 7: serialises individual alias conflict records as
+///       a structured `command_alias_conflict_details` array (each entry
+///       is an object with `alias`, `kind`, `winner`, `loser`), splits
+///       `requires_js_generators_supported` into a per-kind class
+///       breakdown under `requires_js_generators_supported_by_kind`
+///       (`post_process`, `script_function`, `custom`), and surfaces
+///       the `js_runtime` kill switch under a top-level `js_runtime`
+///       block (`enabled: bool`). All additions are purely additive —
+///       1.1 consumers still parse 1.2 output unchanged.
+const STATUS_SCHEMA_VERSION: &str = "1.2";
 
 /// The shape emitted by `ghost-complete status --json`. Defining this as a
 /// `#[derive(Serialize)]` struct rather than inline `json!` macros fails
@@ -708,7 +904,18 @@ struct StatusReport {
     /// alongside `spec_counts` so consumers can distinguish a
     /// loader-deduped count from a raw file count.
     file_scan: FileScan,
+    /// Phase 7 (schema 1.2): JS runtime kill switch state. Reflects
+    /// `suggest.providers.js_runtime`. `enabled = false` means the
+    /// engine will not dispatch any requires_js generators even if their
+    /// metadata is fully populated.
+    js_runtime: JsRuntimeStatus,
     coverage_trend: Option<CoverageTrend>,
+}
+
+/// Schema 1.2 block for the JS runtime kill switch state.
+#[derive(Debug, Serialize)]
+struct JsRuntimeStatus {
+    enabled: bool,
 }
 
 /// Counters surfaced under `spec_counts`. UX-9 Phase 0 adds the new
@@ -763,10 +970,30 @@ struct SpecCounts {
     /// owned that key (DuplicateName / NameMatchesOtherStem) or a stem
     /// lost to a higher-precedence source dir (DirectoryPrecedence).
     /// Each conflict carries source-dir + alias diagnostics in
-    /// `SpecStore::conflicts()`. A user-facing per-conflict breakdown
-    /// in `ghost-complete doctor` will land in Phase 7; today this
-    /// count is the only signal users see for the conflict set.
+    /// `SpecStore::conflicts()`. The structured per-conflict breakdown
+    /// is exposed under `command_alias_conflict_details` (Phase 7,
+    /// schema 1.2); this count remains in 1.1 for backwards compat.
     command_alias_conflicts: usize,
+    /// Per-conflict structured details (schema 1.2). Each entry is an
+    /// object with `alias`, `kind`, `winner_*`, `loser_*` fields.
+    /// `kind` is one of `duplicate_name`, `name_matches_other_stem`,
+    /// `directory_precedence`. Always present (empty when no
+    /// conflicts).
+    command_alias_conflict_details: Vec<AliasConflictRecord>,
+    /// Class breakdown of `requires_js_generators_supported` by
+    /// `js_runtime.kind` (schema 1.2). Three numeric fields:
+    /// `post_process` (post_process+script lowering),
+    /// `script_function`, `custom`. Sums to
+    /// `requires_js_generators_supported`.
+    requires_js_generators_supported_by_kind: SupportedByKind,
+}
+
+/// Schema 1.2 block: per-class breakdown of supported requires_js generators.
+#[derive(Debug, Serialize)]
+struct SupportedByKind {
+    post_process: usize,
+    script_function: usize,
+    custom: usize,
 }
 
 #[derive(Debug, Serialize)]
@@ -859,8 +1086,21 @@ fn run_status_json(
             requires_js_generators_supported: outcome.requires_js_generators_supported,
             requires_js_generators_unsupported: outcome.requires_js_generators_unsupported,
             command_alias_conflicts: outcome.command_alias_conflicts,
+            command_alias_conflict_details: outcome.command_alias_conflict_details.clone(),
+            requires_js_generators_supported_by_kind: SupportedByKind {
+                post_process: outcome
+                    .file_scan
+                    .requires_js_generators_supported_post_process,
+                script_function: outcome
+                    .file_scan
+                    .requires_js_generators_supported_script_function,
+                custom: outcome.file_scan.requires_js_generators_supported_custom,
+            },
         },
         file_scan: outcome.file_scan.clone(),
+        js_runtime: JsRuntimeStatus {
+            enabled: outcome.js_runtime_enabled,
+        },
         coverage_trend,
     };
 
@@ -1458,7 +1698,7 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.1");
+        assert_eq!(parsed["schema_version"], "1.2");
         assert!(
             parsed["spec_counts"].is_object(),
             "spec_counts must be an object"
@@ -1488,6 +1728,36 @@ mod tests {
         );
         assert!(parsed["file_scan"]["spec_files_total"].is_number());
         assert!(parsed["file_scan"]["requires_js_generators_total"].is_number());
+        // UX-9 Phase 7 additions — schema 1.2.
+        assert!(
+            parsed["spec_counts"]["command_alias_conflict_details"].is_array(),
+            "command_alias_conflict_details must be an array (1.2)"
+        );
+        assert!(
+            parsed["spec_counts"]["requires_js_generators_supported_by_kind"].is_object(),
+            "requires_js_generators_supported_by_kind must be an object (1.2)"
+        );
+        assert!(
+            parsed["spec_counts"]["requires_js_generators_supported_by_kind"]["post_process"]
+                .is_number()
+        );
+        assert!(
+            parsed["spec_counts"]["requires_js_generators_supported_by_kind"]["script_function"]
+                .is_number()
+        );
+        assert!(
+            parsed["spec_counts"]["requires_js_generators_supported_by_kind"]["custom"].is_number()
+        );
+        assert!(
+            parsed["js_runtime"].is_object(),
+            "js_runtime top-level block must be present in 1.2"
+        );
+        assert!(parsed["js_runtime"]["enabled"].is_boolean());
+        assert!(parsed["file_scan"]["requires_js_generators_supported_post_process"].is_number());
+        assert!(
+            parsed["file_scan"]["requires_js_generators_supported_script_function"].is_number()
+        );
+        assert!(parsed["file_scan"]["requires_js_generators_supported_custom"].is_number());
         assert_eq!(
             parsed["spec_counts"]["parse_error_details"]
                 .as_array()
@@ -1584,8 +1854,8 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        // Schema 1.1 surfaces every new counter as a numeric value.
-        assert_eq!(parsed["schema_version"], "1.1");
+        // Schema 1.2 surfaces every new counter as a numeric value.
+        assert_eq!(parsed["schema_version"], "1.2");
         let counts = &parsed["spec_counts"];
         assert_eq!(
             counts["commands_addressable"].as_u64().unwrap(),
@@ -1949,5 +2219,255 @@ mod tests {
             msg.contains("malformed") || msg.contains("baseline"),
             "expected a parse-side error mentioning the baseline, got:\n{msg}"
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // UX-9 Phase 7 — text-mode coverage sections + JSON 1.2 alias conflicts.
+    // -------------------------------------------------------------------------
+
+    /// Phase 7: text mode renders the new Coverage / Dynamic generators /
+    /// Command addressability / JS runtime sections with the right counts.
+    #[test]
+    fn status_text_mode_renders_coverage_section() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        // One static spec + one with a supported post_process generator
+        // + one with an unsupported requires_js (no js_runtime). Yields:
+        //   fully_functional: 1
+        //   partially_functional: 2
+        //   total: 2 generators
+        //   supported: 1 (post_process)
+        //   unsupported: 1
+        std::fs::write(
+            spec_dir.join("static.json"),
+            r#"{"name":"static","subcommands":[{"name":"go"}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            spec_dir.join("post.json"),
+            r#"{
+                "name": "post",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "script": ["cmd"],
+                        "requires_js": true,
+                        "js_runtime": {"kind":"post_process","source":"() => []"}
+                    }]
+                }]
+            }"#,
+        )
+        .unwrap();
+        std::fs::write(
+            spec_dir.join("legacy.json"),
+            r#"{
+                "name": "legacy",
+                "args": [{
+                    "name": "x",
+                    "generators": [{"requires_js": true, "js_source": "(()=>[])"}]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        run_status_inner(Some(cfg.to_str().unwrap()), &mut out).unwrap();
+        let txt = String::from_utf8_lossy(&out);
+
+        // Coverage section
+        assert!(
+            txt.contains("Coverage:"),
+            "expected Coverage header, got:\n{txt}"
+        );
+        assert!(
+            txt.contains("Fully functional:           1 commands"),
+            "expected fully functional count line, got:\n{txt}"
+        );
+        assert!(
+            txt.contains("Partially functional:       2 commands"),
+            "expected partially functional count line, got:\n{txt}"
+        );
+        assert!(
+            txt.contains("Nonfunctional:              0 commands"),
+            "expected nonfunctional count line, got:\n{txt}"
+        );
+
+        // Dynamic generators section
+        assert!(
+            txt.contains("Dynamic generators (requires_js):"),
+            "expected dynamic generators header, got:\n{txt}"
+        );
+        assert!(
+            txt.contains("Total:                      2"),
+            "expected dynamic-generator total, got:\n{txt}"
+        );
+        assert!(
+            txt.contains("Supported (post_process):   1"),
+            "expected post_process count, got:\n{txt}"
+        );
+        assert!(
+            txt.contains("Unsupported:                1"),
+            "expected unsupported count, got:\n{txt}"
+        );
+
+        // Command addressability
+        assert!(
+            txt.contains("Command addressability:"),
+            "expected addressability header, got:\n{txt}"
+        );
+        assert!(
+            txt.contains("Unique entries:             3"),
+            "expected unique entries count, got:\n{txt}"
+        );
+
+        // JS runtime
+        assert!(
+            txt.contains("JS runtime:"),
+            "expected JS runtime header, got:\n{txt}"
+        );
+        assert!(
+            txt.contains("enabled"),
+            "default config is enabled, got:\n{txt}"
+        );
+    }
+
+    /// Phase 7: when the kill switch is off, text output names the disabled
+    /// state and points at the config key to flip back on.
+    #[test]
+    fn status_text_mode_shows_disabled_runtime() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        let cfg_path = tmp.path().join("config.toml");
+        let body = format!(
+            "[paths]\nspec_dirs = [\"{}\"]\n[suggest.providers]\njs_runtime = false\n",
+            spec_dir.display().to_string().replace('\\', "\\\\")
+        );
+        std::fs::write(&cfg_path, body).unwrap();
+
+        let mut out = Vec::new();
+        run_status_inner(Some(cfg_path.to_str().unwrap()), &mut out).unwrap();
+        let txt = String::from_utf8_lossy(&out);
+
+        assert!(
+            txt.contains("disabled"),
+            "expected `disabled` token in JS runtime section, got:\n{txt}"
+        );
+        assert!(
+            txt.contains("suggest.providers.js_runtime = true"),
+            "expected pointer at the config key, got:\n{txt}"
+        );
+    }
+
+    /// Phase 7 (schema 1.2): JSON output exposes the structured alias
+    /// conflict list and the per-kind breakdown.
+    #[test]
+    fn status_json_v12_includes_alias_conflicts_breakdown() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        // Two specs declaring the same `name` — the second loses the
+        // duplicate alias and surfaces a `DuplicateName` conflict.
+        std::fs::write(spec_dir.join("a.json"), r#"{"name": "duplicate"}"#).unwrap();
+        std::fs::write(spec_dir.join("b.json"), r#"{"name": "duplicate"}"#).unwrap();
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        let txt = String::from_utf8_lossy(&out);
+        let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
+
+        assert_eq!(parsed["schema_version"], "1.2");
+        let details = parsed["spec_counts"]["command_alias_conflict_details"]
+            .as_array()
+            .expect("command_alias_conflict_details must be an array");
+        assert_eq!(details.len(), 1, "expected one conflict, got {details:?}");
+        let entry = &details[0];
+        assert_eq!(entry["alias"], "duplicate");
+        assert_eq!(entry["kind"], "duplicate_name");
+        // Either spec stem may win depending on dir-walk order; both are
+        // valid as long as winner != loser.
+        assert_ne!(entry["winner_stem"], entry["loser_stem"]);
+
+        // Per-kind breakdown is present even when zero supported.
+        let by_kind = &parsed["spec_counts"]["requires_js_generators_supported_by_kind"];
+        assert_eq!(by_kind["post_process"].as_u64().unwrap(), 0);
+        assert_eq!(by_kind["script_function"].as_u64().unwrap(), 0);
+        assert_eq!(by_kind["custom"].as_u64().unwrap(), 0);
+
+        // js_runtime kill switch surfaces (default true).
+        assert_eq!(
+            parsed["js_runtime"]["enabled"],
+            serde_json::Value::Bool(true)
+        );
+    }
+
+    /// Phase 7 (schema 1.2): the per-kind breakdown sums to
+    /// `requires_js_generators_supported`, including non-trivial mixes.
+    #[test]
+    fn status_json_v12_per_kind_breakdown_sums() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        // One post_process + one script_function + one custom + one
+        // unsupported. Total 4, supported 3 (1+1+1).
+        std::fs::write(
+            spec_dir.join("a.json"),
+            r#"{"name":"a","args":[{"name":"x","generators":[{
+                "script": ["cmd"],
+                "requires_js": true,
+                "js_runtime": {"kind":"post_process","source":"()=>[]"}
+            }]}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            spec_dir.join("b.json"),
+            r#"{"name":"b","args":[{"name":"x","generators":[{
+                "requires_js": true,
+                "js_runtime": {"kind":"script_function","source":"()=>[]"}
+            }]}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            spec_dir.join("c.json"),
+            r#"{"name":"c","args":[{"name":"x","generators":[{
+                "requires_js": true,
+                "js_runtime": {"kind":"custom","source":"()=>[]"}
+            }]}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            spec_dir.join("d.json"),
+            r#"{"name":"d","args":[{"name":"x","generators":[{
+                "requires_js": true
+            }]}]}"#,
+        )
+        .unwrap();
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        let parsed: serde_json::Value =
+            serde_json::from_str(&String::from_utf8_lossy(&out)).unwrap();
+
+        let counts = &parsed["spec_counts"];
+        assert_eq!(counts["requires_js_generators_total"].as_u64().unwrap(), 4);
+        assert_eq!(
+            counts["requires_js_generators_supported"].as_u64().unwrap(),
+            3
+        );
+        assert_eq!(
+            counts["requires_js_generators_unsupported"]
+                .as_u64()
+                .unwrap(),
+            1
+        );
+
+        let by = &counts["requires_js_generators_supported_by_kind"];
+        assert_eq!(by["post_process"].as_u64().unwrap(), 1);
+        assert_eq!(by["script_function"].as_u64().unwrap(), 1);
+        assert_eq!(by["custom"].as_u64().unwrap(), 1);
     }
 }

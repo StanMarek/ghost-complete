@@ -3,10 +3,71 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use gc_suggest::parse_spec_checked_and_sanitized;
 use gc_suggest::spec_dirs::resolve_spec_dirs;
-use gc_suggest::specs::{validate_spec_generators, CompletionSpec, SubcommandSpec};
+use gc_suggest::specs::{
+    validate_spec_generators, ArgSpec, CompletionSpec, GeneratorSpec, OptionSpec, SubcommandSpec,
+};
 use serde::Serialize;
 
 use crate::sanitize::sanitize_for_terminal;
+
+/// Phase 7 (UX-9): walk a parsed spec and emit warnings for every
+/// `requires_js: true` generator that lacks `js_runtime` metadata (or whose
+/// `js_runtime.source` is empty). These are not produced by the standard
+/// `validate_spec_generators` (which focuses on transform-pipeline shape)
+/// but are surfaced via `--strict` so converter regressions cannot land
+/// silently.
+fn collect_missing_js_runtime_warnings(spec: &CompletionSpec) -> Vec<String> {
+    let mut warnings = Vec::new();
+    fn missing(g: &GeneratorSpec) -> bool {
+        if !g.requires_js {
+            return false;
+        }
+        match g.js_runtime.as_ref() {
+            None => true,
+            Some(rt) => rt.source.trim().is_empty(),
+        }
+    }
+
+    fn walk_args(args: &[ArgSpec], path: &str, warnings: &mut Vec<String>) {
+        for (i, a) in args.iter().enumerate() {
+            for (j, g) in a.generators.iter().enumerate() {
+                if missing(g) {
+                    warnings.push(format!(
+                        "{path}/args[{i}]/generators[{j}]: requires_js=true without js_runtime metadata"
+                    ));
+                }
+            }
+        }
+    }
+
+    fn walk_opts(opts: &[OptionSpec], path: &str, warnings: &mut Vec<String>) {
+        for (i, o) in opts.iter().enumerate() {
+            if let Some(arg) = o.args.as_ref() {
+                for (j, g) in arg.generators.iter().enumerate() {
+                    if missing(g) {
+                        warnings.push(format!(
+                            "{path}/options[{i}]/args/generators[{j}]: requires_js=true without js_runtime metadata"
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
+    fn walk_subs(subs: &[SubcommandSpec], path: &str, warnings: &mut Vec<String>) {
+        for (i, s) in subs.iter().enumerate() {
+            let p = format!("{path}/subcommands[{i}]");
+            walk_args(&s.args, &p, warnings);
+            walk_opts(&s.options, &p, warnings);
+            walk_subs(&s.subcommands, &p, warnings);
+        }
+    }
+
+    walk_args(&spec.args, "$", &mut warnings);
+    walk_opts(&spec.options, "$", &mut warnings);
+    walk_subs(&spec.subcommands, "$", &mut warnings);
+    warnings
+}
 
 /// One NDJSON row describing a single spec. The `ok` field is `true` only
 /// when parsing succeeded AND the spec surfaced zero generator warnings —
@@ -68,7 +129,12 @@ fn count_spec_items(spec: &CompletionSpec) -> (usize, usize) {
     (subcommands, options)
 }
 
-fn validate_dir(dir: &Path, json: bool, out: &mut dyn std::io::Write) -> Result<ValidateCounts> {
+fn validate_dir(
+    dir: &Path,
+    json: bool,
+    strict: bool,
+    out: &mut dyn std::io::Write,
+) -> Result<ValidateCounts> {
     let mut counts = ValidateCounts::default();
 
     if !dir.exists() {
@@ -157,7 +223,16 @@ fn validate_dir(dir: &Path, json: bool, out: &mut dyn std::io::Write) -> Result<
         match parse_spec_checked_and_sanitized(&contents) {
             Ok(mut spec) => {
                 let (subs, opts) = count_spec_items(&spec);
-                let warnings = validate_spec_generators(&mut spec);
+                let mut warnings = validate_spec_generators(&mut spec);
+                // Phase 7 (UX-9): in --strict mode, surface specs with
+                // requires_js generators that are missing js_runtime
+                // metadata. The check is strict-only because today's corpus
+                // is fully populated; a non-strict invocation should not
+                // suddenly start warning on every existing on-disk spec
+                // that hasn't yet been re-converted.
+                if strict {
+                    warnings.extend(collect_missing_js_runtime_warnings(&spec));
+                }
                 if json {
                     // In JSON mode: ok=true only when parse succeeded AND zero
                     // warnings. Warnings flip ok to false so `jq 'select(.ok
@@ -260,7 +335,7 @@ pub fn run_validate_specs_inner(
                 sanitize_for_terminal(&dir.display().to_string())
             )?;
         }
-        let dir_counts = validate_dir(dir, json, out)?;
+        let dir_counts = validate_dir(dir, json, strict, out)?;
         counts.valid += dir_counts.valid;
         counts.failed += dir_counts.failed;
         counts.warnings += dir_counts.warnings;
@@ -491,7 +566,7 @@ mod tests {
         let tmp = tempfile::TempDir::new().unwrap();
         write_spec(tmp.path(), "ok.json", r#"{"name":"ok"}"#);
         let mut buf: Vec<u8> = Vec::new();
-        validate_dir(tmp.path(), false, &mut buf).unwrap();
+        validate_dir(tmp.path(), false, false, &mut buf).unwrap();
         buf.flush().unwrap();
         let txt = String::from_utf8_lossy(&buf);
         assert!(txt.contains("ok.json"), "got: {txt}");
@@ -737,5 +812,117 @@ mod tests {
         assert!(!txt.contains("WARN"), "got: {txt}");
         assert!(!txt.contains("FAIL"), "got: {txt}");
         assert!(!txt.contains("specs valid"), "got: {txt}");
+    }
+
+    /// Phase 7 (UX-9): in `--strict` mode a spec with `requires_js: true`
+    /// but no `js_runtime` metadata flips `strict_failed`. Catches a
+    /// converter regression where the regen would silently drop the
+    /// metadata field.
+    #[test]
+    fn validate_strict_fails_on_missing_js_runtime() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        write_spec(
+            &spec_dir,
+            "missing.json",
+            r#"{
+                "name": "missing",
+                "args": [{
+                    "name": "x",
+                    "generators": [{"requires_js": true}]
+                }]
+            }"#,
+        );
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        // Non-strict mode: no warning, no strict_failed.
+        let mut out = Vec::new();
+        let outcome =
+            run_validate_specs_inner(Some(cfg.to_str().unwrap()), false, false, &mut out).unwrap();
+        assert_eq!(
+            outcome.counts.warnings, 0,
+            "non-strict mode must not warn on missing js_runtime"
+        );
+        assert!(!outcome.strict_failed);
+
+        // Strict mode: at least one warning + strict_failed=true.
+        let mut out = Vec::new();
+        let outcome =
+            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        assert!(
+            outcome.counts.warnings > 0,
+            "strict mode must surface a warning for missing js_runtime"
+        );
+        assert!(outcome.strict_failed);
+        let txt = String::from_utf8_lossy(&out);
+        assert!(
+            txt.contains("requires_js=true without js_runtime"),
+            "expected message naming the missing field: {txt}"
+        );
+    }
+
+    /// Phase 7: a spec with `requires_js: true` and a properly populated
+    /// `js_runtime` block does NOT flip strict_failed. Companion test to
+    /// `validate_strict_fails_on_missing_js_runtime` so a regression can
+    /// be triangulated to either side of the predicate.
+    #[test]
+    fn validate_strict_passes_with_js_runtime() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        write_spec(
+            &spec_dir,
+            "complete.json",
+            r#"{
+                "name": "complete",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "script": ["cmd"],
+                        "requires_js": true,
+                        "js_runtime": {"kind":"post_process","source":"()=>[]"}
+                    }]
+                }]
+            }"#,
+        );
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        let outcome =
+            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        assert_eq!(outcome.counts.warnings, 0);
+        assert!(!outcome.strict_failed);
+    }
+
+    /// Phase 7: empty `js_runtime.source` is also rejected in strict
+    /// mode — the converter must not regress to dropping the body but
+    /// keeping the wrapper.
+    #[test]
+    fn validate_strict_fails_on_empty_js_runtime_source() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        write_spec(
+            &spec_dir,
+            "empty.json",
+            r#"{
+                "name": "empty",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "requires_js": true,
+                        "js_runtime": {"kind":"custom","source":"   "}
+                    }]
+                }]
+            }"#,
+        );
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        let outcome =
+            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        assert!(outcome.counts.warnings > 0);
+        assert!(outcome.strict_failed);
     }
 }

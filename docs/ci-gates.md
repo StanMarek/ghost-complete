@@ -2,7 +2,7 @@
 
 ## Overview
 
-Four CI gates live in `.github/workflows/ci.yml`. Three were introduced in Phase 0.5 (binary size, snapshot diff, fig-converter oracle); a fourth (coverage baseline drift) was added in Phase 4. Benchmark-regression checking is intentionally **not** a CI gate — it is run manually at release time (see [Release-time benchmark checking](#release-time-benchmark-checking) below). The gates are wired via `needs:` dependencies, which controls **ordering within a workflow run** — i.e. a gate waits for its prerequisite jobs before it starts. That is a separate concern from **branch protection**, which is what blocks the GitHub merge button on a PR. A repo admin must explicitly configure each status check as required in GitHub's branch-protection settings (see [Branch-protection configuration](#branch-protection-configuration) below). Without that step, the gates run and report results but cannot block a merge.
+Five CI gates live in `.github/workflows/ci.yml`. Three were introduced in Phase 0.5 (binary size, snapshot diff, fig-converter oracle); a fourth (coverage baseline drift) was added in Phase 4; a fifth (coverage regression) landed with UX-9 Phase 7. Benchmark-regression checking is intentionally **not** a CI gate — it is run manually at release time (see [Release-time benchmark checking](#release-time-benchmark-checking) below). The gates are wired via `needs:` dependencies, which controls **ordering within a workflow run** — i.e. a gate waits for its prerequisite jobs before it starts. That is a separate concern from **branch protection**, which is what blocks the GitHub merge button on a PR. A repo admin must explicitly configure each status check as required in GitHub's branch-protection settings (see [Branch-protection configuration](#branch-protection-configuration) below). Without that step, the gates run and report results but cannot block a merge.
 
 ---
 
@@ -106,6 +106,41 @@ To refresh the baseline: run `ghost-complete status --json` and follow the proce
 
 ---
 
+### Coverage regression
+
+**Job name in CI:** `Coverage regression`
+**YAML key:** `coverage-regression`
+**Trigger:** `needs: [check]` — runs after the `check` job succeeds. Wired with `continue-on-error: true` for the initial rollout (UX-9 Phase 7).
+
+**Purpose:** fails when the live `requires_js_generators_unsupported` count from `ghost-complete status --json` rises above the latest `docs/coverage-baseline.json` row by more than the configured tolerance (default: 0), or when any command is reported `commands_nonfunctional > 0`. Catches regressions where:
+
+- a converter change drops `js_runtime` metadata from generators that previously dispatched, or
+- a spec edit moves a previously-supported generator into the unsupported bucket, or
+- a command becomes unreachable through the alias index.
+
+**Failure modes:**
+
+- Hard fail (exit 1): `requires_js_generators_unsupported > baseline + tolerance`. The error message names the delta and points at `docs/coverage-baseline.json` for the refresh path.
+- Hard fail (exit 1): `commands_nonfunctional > 0`. Always a defect — independent of baseline.
+- Soft warning (`::warning::` annotation, exit 0): the unsupported count rose by 1..=tolerance. Surfaces in the PR checks panel without blocking the merge.
+
+**Status today:** wired into CI as **non-blocking** (`continue-on-error: true`). The gate runs and reports results, but a failing run does not fail the workflow. Promotion to a blocking status check is a separate follow-up; the maintainer who promotes it is responsible for first refreshing the baseline if the live numbers have drifted.
+
+**How to debug locally:**
+
+```bash
+cargo build --release
+scripts/check-coverage-regression.sh                                # default tolerance 0
+scripts/check-coverage-regression.sh --tolerance 100                # accept up to 100 new unsupported generators
+scripts/check-coverage-regression.sh --status-json /tmp/status.json # bypass binary invocation
+COVERAGE_REGRESSION_TOLERANCE=50 scripts/check-coverage-regression.sh
+bash scripts/check-coverage-regression.test.sh                      # self-tests
+```
+
+**Baseline refresh:** when an intentional change increases the unsupported count or modifies coverage, append a new release row to [`docs/coverage-baseline.json`](./coverage-baseline.json) capturing the new floor. The script reads `releases[-1]` (the latest entry) so an append-only history preserves prior numbers for trend reporting in `ghost-complete status` while updating the gate's baseline.
+
+---
+
 ## Release-time benchmark checking
 
 Benchmark regression is **not** enforced on every PR. Hosted runner variance (±15–20% on single-threaded latency benches) makes CI-gated benchmarking noisy enough that the signal-to-noise ratio doesn't justify the minutes spent. Instead, the release process runs benchmarks locally on a quiet machine and records the numbers in the release PR.
@@ -148,6 +183,7 @@ These checks are added **alongside** any existing required checks (e.g. `Check`,
 | `Oracle gate (fig-converter)` | Ready to add. |
 | `Binary size gate` | Ready to add. |
 | `Coverage baseline drift` | Informational only (non-blocking warning). Do not add to branch protection. |
+| `Coverage regression` | Wired as `continue-on-error: true` for the initial UX-9 rollout. Promotion to a hard gate is a separate follow-up; the maintainer who promotes it is responsible for refreshing the baseline first. |
 
 > **Note on job names vs. YAML keys:** GitHub branch protection displays the `name:` field of each job, not the YAML key. `Binary size gate` (the name) corresponds to `binary-size-gate` (the key). Using the YAML key in the search box will not match.
 

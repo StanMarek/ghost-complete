@@ -1,6 +1,11 @@
 use anyhow::Result;
 use std::path::PathBuf;
 
+use gc_suggest::specs::{
+    AliasConflict, AliasConflictKind, ArgSpec, CompletionSpec, GeneratorSpec, OptionSpec,
+    SubcommandSpec,
+};
+
 use crate::sanitize::sanitize_for_terminal;
 
 enum Severity {
@@ -369,6 +374,218 @@ fn check_corrections_for_store(store: &gc_suggest::SpecStore) -> CheckResult {
     ))
 }
 
+/// Phase 7: spec addressability check. Iterates `SpecStore::conflicts()` and
+/// reports each rejected alias with a kind-specific hint so users can spot
+/// commands whose declared `name` was rejected (or whose stem was shadowed
+/// by a user override). Pure helper — operates against an in-memory store
+/// so it can be unit-tested without touching the resolver.
+fn check_alias_conflicts_for_store(store: &gc_suggest::SpecStore) -> CheckResult {
+    let conflicts = store.conflicts();
+    if conflicts.is_empty() {
+        return CheckResult::ok("Spec addressability: no addressability conflicts");
+    }
+
+    let dup: Vec<&AliasConflict> = conflicts
+        .iter()
+        .filter(|c| matches!(c.kind, AliasConflictKind::DuplicateName))
+        .collect();
+    let cross: Vec<&AliasConflict> = conflicts
+        .iter()
+        .filter(|c| matches!(c.kind, AliasConflictKind::NameMatchesOtherStem))
+        .collect();
+    let dir_prec: Vec<&AliasConflict> = conflicts
+        .iter()
+        .filter(|c| matches!(c.kind, AliasConflictKind::DirectoryPrecedence))
+        .collect();
+
+    // Truncate per-class previews so a noisy fallback config (e.g. user
+    // override dir overlapping the embedded fallback for every spec)
+    // doesn't blow out the doctor output. PREVIEW_LIMIT mirrors the
+    // corrected-generators check above.
+    const PREVIEW_LIMIT: usize = 5;
+
+    fn render_section(label: &str, hint: &str, items: &[&AliasConflict]) -> String {
+        if items.is_empty() {
+            return String::new();
+        }
+        let mut s = format!(" {} ({}): {}", label, items.len(), hint);
+        let preview = items
+            .iter()
+            .take(PREVIEW_LIMIT)
+            .map(|c| format!("'{}' (loser={})", c.alias, c.loser.filename_stem))
+            .collect::<Vec<_>>()
+            .join(", ");
+        if !preview.is_empty() {
+            s.push_str(&format!(" — examples: {preview}"));
+            if items.len() > PREVIEW_LIMIT {
+                s.push_str(&format!(", ...and {} more", items.len() - PREVIEW_LIMIT));
+            }
+        }
+        s
+    }
+
+    let mut msg = format!(
+        "Spec addressability: {} conflict(s) detected.",
+        conflicts.len()
+    );
+    msg.push_str(&render_section(
+        "DuplicateName",
+        "two specs declare the same `name`; rename one in its `name` field, or accept the loser stays addressable only by stem",
+        &dup,
+    ));
+    msg.push_str(&render_section(
+        "NameMatchesOtherStem",
+        "one spec's `name` matches another file's stem (likely corpus inconsistency — file an issue)",
+        &cross,
+    ));
+    msg.push_str(&render_section(
+        "DirectoryPrecedence",
+        "same filename in multiple configured spec_dirs (earlier dir wins; normal for user overrides)",
+        &dir_prec,
+    ));
+
+    // DirectoryPrecedence is a deliberate user-override behaviour — keep
+    // the severity at Warn only when other kinds are present, otherwise
+    // OK with an explanatory note. DuplicateName / NameMatchesOtherStem
+    // are corpus problems and surface as Warn.
+    if !dup.is_empty() || !cross.is_empty() {
+        CheckResult::warn(msg)
+    } else {
+        CheckResult::ok(msg)
+    }
+}
+
+/// Phase 7 entry point that resolves spec dirs and dispatches to
+/// [`check_alias_conflicts_for_store`].
+fn check_alias_conflicts(config: &gc_config::GhostConfig) -> CheckResult {
+    let dirs = gc_suggest::spec_dirs::resolve_spec_dirs(&config.paths.spec_dirs);
+    let result = match gc_suggest::SpecStore::load_from_dirs(&dirs) {
+        Ok(r) => r,
+        Err(_) => {
+            return CheckResult::skip(
+                "Spec addressability — spec load failed (see Completion specs check)",
+            );
+        }
+    };
+    check_alias_conflicts_for_store(&result.store)
+}
+
+/// Phase 7: JS runtime kill switch check. Reports a Warn when the runtime
+/// is disabled — users running with `js_runtime = false` still see all
+/// static completions, but their requires_js generators become inert.
+/// Disabling is a valid choice (e.g., to skip QuickJS overhead in
+/// resource-constrained environments), so this is informational, not an
+/// error.
+fn check_js_runtime(config: &gc_config::GhostConfig) -> CheckResult {
+    if config.suggest.providers.js_runtime {
+        CheckResult::ok("JS runtime: enabled (requires_js generators will run)")
+    } else {
+        CheckResult::warn(
+            "JS runtime: disabled. requires_js generators will not produce dynamic suggestions. Set suggest.providers.js_runtime = true to re-enable.",
+        )
+    }
+}
+
+/// Walk a parsed spec and yield the count of `requires_js: true` generators
+/// whose `js_runtime` metadata is missing (or whose `js_runtime.source` is
+/// empty). A non-zero count indicates the converter regen was incomplete or
+/// a spec was hand-edited to drop js_runtime — both are corpus defects and
+/// surface as a doctor Fail.
+fn count_missing_js_runtime_in_spec(spec: &CompletionSpec) -> usize {
+    fn missing(g: &GeneratorSpec) -> bool {
+        if !g.requires_js {
+            return false;
+        }
+        match g.js_runtime.as_ref() {
+            None => true,
+            Some(rt) => rt.source.trim().is_empty(),
+        }
+    }
+    fn count_in_args(args: &[ArgSpec]) -> usize {
+        args.iter()
+            .flat_map(|a| a.generators.iter())
+            .filter(|g| missing(g))
+            .count()
+    }
+    fn count_in_options(options: &[OptionSpec]) -> usize {
+        options
+            .iter()
+            .filter_map(|o| o.args.as_ref())
+            .flat_map(|a| a.generators.iter())
+            .filter(|g| missing(g))
+            .count()
+    }
+    let mut total = count_in_args(&spec.args) + count_in_options(&spec.options);
+    let mut stack: Vec<&SubcommandSpec> = spec.subcommands.iter().collect();
+    while let Some(sub) = stack.pop() {
+        total += count_in_args(&sub.args);
+        total += count_in_options(&sub.options);
+        stack.extend(sub.subcommands.iter());
+    }
+    total
+}
+
+/// Phase 7: embedded specs runtime-source check. Walks every entry in the
+/// SpecStore (including embedded fallback) and asserts every requires_js
+/// generator carries js_runtime metadata. Should be 0 today (Phase 2 wired
+/// the converter); a non-zero result is a hard corpus defect.
+fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> CheckResult {
+    let mut affected: Vec<(&str, usize)> = store
+        .iter()
+        .filter_map(|(name, spec)| {
+            let n = count_missing_js_runtime_in_spec(spec);
+            if n == 0 {
+                None
+            } else {
+                Some((name, n))
+            }
+        })
+        .collect();
+
+    if affected.is_empty() {
+        return CheckResult::ok(
+            "Embedded specs: every requires_js generator has js_runtime metadata",
+        );
+    }
+
+    affected.sort_by_key(|(name, _)| *name);
+    let total: usize = affected.iter().map(|(_, n)| *n).sum();
+    let spec_count = affected.len();
+    const PREVIEW_LIMIT: usize = 5;
+    let preview: Vec<&str> = affected
+        .iter()
+        .take(PREVIEW_LIMIT)
+        .map(|(name, _)| *name)
+        .collect();
+    let preview_str = preview.join(", ");
+    let tail = if spec_count > PREVIEW_LIMIT {
+        format!(", ...and {} more", spec_count - PREVIEW_LIMIT)
+    } else {
+        String::new()
+    };
+
+    CheckResult::fail(format!(
+        "Embedded specs: {total} requires_js generator(s) across {spec_count} spec(s) are \
+         missing js_runtime metadata. Indicates an incomplete converter regen or a \
+         hand-edited spec. Affected: {preview_str}{tail}"
+    ))
+}
+
+/// Phase 7 entry point that resolves spec dirs and dispatches to
+/// [`check_embedded_runtime_metadata_for_store`].
+fn check_embedded_runtime_metadata(config: &gc_config::GhostConfig) -> CheckResult {
+    let dirs = gc_suggest::spec_dirs::resolve_spec_dirs(&config.paths.spec_dirs);
+    let result = match gc_suggest::SpecStore::load_from_dirs(&dirs) {
+        Ok(r) => r,
+        Err(_) => {
+            return CheckResult::skip(
+                "Embedded specs — spec load failed (see Completion specs check)",
+            );
+        }
+    };
+    check_embedded_runtime_metadata_for_store(&result.store)
+}
+
 /// Testable terminal check logic — pure function on profile.
 fn check_terminal_profile(
     profile: &gc_terminal::TerminalProfile,
@@ -448,6 +665,32 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
         None => results.push(CheckResult::skip(
             "Corrected generators — config invalid, cannot resolve spec dirs",
         )),
+    }
+
+    // Phase 7 checks (UX-9):
+    //   - Spec addressability: surface AliasConflicts so users can spot
+    //     a `name` that lost to another file's stem, etc.
+    //   - JS runtime: warn when the kill switch is off so a user who
+    //     forgot they disabled it sees why their dynamic completions are
+    //     inert.
+    //   - Embedded specs: assert every requires_js generator in the
+    //     loaded corpus carries js_runtime metadata. Catches an
+    //     incomplete converter regen or a hand-edited spec.
+    match &config {
+        Some(cfg) => {
+            results.push(check_alias_conflicts(cfg));
+            results.push(check_js_runtime(cfg));
+            results.push(check_embedded_runtime_metadata(cfg));
+        }
+        None => {
+            results.push(CheckResult::skip(
+                "Spec addressability — config invalid, cannot resolve spec dirs",
+            ));
+            results.push(CheckResult::skip("JS runtime — config invalid"));
+            results.push(CheckResult::skip(
+                "Embedded specs — config invalid, cannot resolve spec dirs",
+            ));
+        }
     }
 
     print_results(&results);
@@ -771,5 +1014,156 @@ mod tests {
             !rendered_message.contains('\x00'),
             "rendered message must not contain NUL bytes: {rendered_message:?}"
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // UX-9 Phase 7 — alias conflicts / JS runtime / embedded specs
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn doctor_lists_alias_conflicts_with_kind_specific_hints() {
+        // Two specs declare the same `name` — duplicate_name conflict.
+        let (store, _dir) = store_from_json_fixtures(&[
+            ("a.json", r#"{"name":"shared"}"#),
+            ("b.json", r#"{"name":"shared"}"#),
+        ]);
+        let result = check_alias_conflicts_for_store(&store);
+        assert!(matches!(result.severity, Severity::Warn));
+        assert!(
+            result.message.contains("conflict(s) detected"),
+            "message must lead with conflict count: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("DuplicateName"),
+            "message must label the conflict kind: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("rename one"),
+            "message must include the kind-specific hint: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("'shared'"),
+            "message must name the contended alias: {}",
+            result.message
+        );
+    }
+
+    #[test]
+    fn doctor_alias_conflicts_ok_when_none() {
+        let (store, _dir) = store_from_json_fixtures(&[("a.json", r#"{"name":"a"}"#)]);
+        let result = check_alias_conflicts_for_store(&store);
+        assert!(matches!(result.severity, Severity::Ok));
+        assert!(result.message.contains("no addressability conflicts"));
+    }
+
+    #[test]
+    fn doctor_warns_when_js_runtime_disabled() {
+        let mut config = gc_config::GhostConfig::default();
+        config.suggest.providers.js_runtime = false;
+        let result = check_js_runtime(&config);
+        assert!(matches!(result.severity, Severity::Warn));
+        assert!(
+            result.message.contains("disabled"),
+            "expected `disabled` in message: {}",
+            result.message
+        );
+        assert!(
+            result
+                .message
+                .contains("suggest.providers.js_runtime = true"),
+            "expected pointer at config key: {}",
+            result.message
+        );
+    }
+
+    #[test]
+    fn doctor_passes_when_js_runtime_enabled() {
+        let mut config = gc_config::GhostConfig::default();
+        config.suggest.providers.js_runtime = true;
+        let result = check_js_runtime(&config);
+        assert!(matches!(result.severity, Severity::Ok));
+        assert!(result.message.contains("enabled"));
+    }
+
+    #[test]
+    fn doctor_passes_when_runtime_metadata_complete() {
+        // Spec with a requires_js generator that carries js_runtime
+        // metadata (typical post-Phase-2 state). Should be OK.
+        let (store, _dir) = store_from_json_fixtures(&[(
+            "ok.json",
+            r#"{
+                "name": "ok",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "script": ["cmd"],
+                        "requires_js": true,
+                        "js_runtime": {"kind":"post_process","source":"()=>[]"}
+                    }]
+                }]
+            }"#,
+        )]);
+        let result = check_embedded_runtime_metadata_for_store(&store);
+        assert!(matches!(result.severity, Severity::Ok));
+        assert!(
+            result
+                .message
+                .contains("every requires_js generator has js_runtime metadata"),
+            "got: {}",
+            result.message
+        );
+    }
+
+    #[test]
+    fn doctor_fails_when_runtime_metadata_missing() {
+        // Spec with requires_js=true but no js_runtime — the converter
+        // forgot to populate. Doctor must Fail (loud signal so a regen
+        // mistake doesn't ship silently).
+        let (store, _dir) = store_from_json_fixtures(&[(
+            "broken.json",
+            r#"{
+                "name": "broken",
+                "args": [{
+                    "name": "x",
+                    "generators": [{"requires_js": true}]
+                }]
+            }"#,
+        )]);
+        let result = check_embedded_runtime_metadata_for_store(&store);
+        assert!(matches!(result.severity, Severity::Fail));
+        assert!(
+            result.message.contains("missing js_runtime metadata"),
+            "got: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("broken"),
+            "must name affected spec: {}",
+            result.message
+        );
+    }
+
+    #[test]
+    fn doctor_fails_when_runtime_source_empty() {
+        // js_runtime present but source is whitespace — the converter
+        // dropped the body. Same severity as missing entirely.
+        let (store, _dir) = store_from_json_fixtures(&[(
+            "empty-source.json",
+            r#"{
+                "name": "empty",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "requires_js": true,
+                        "js_runtime": {"kind":"custom","source":"   "}
+                    }]
+                }]
+            }"#,
+        )]);
+        let result = check_embedded_runtime_metadata_for_store(&store);
+        assert!(matches!(result.severity, Severity::Fail));
     }
 }

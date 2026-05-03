@@ -148,3 +148,25 @@ jobs:
       - uses: actions/checkout@v6
       - name: Check coverage baseline drift
         run: scripts/check-coverage-baseline-drift.sh
+
+  coverage-regression:
+    name: Coverage regression
+    # UX-9 Phase 7 introduces a regression gate that fails when the
+    # unsupported requires_js generator count rises above the baseline by
+    # more than the configured tolerance, OR when any command becomes
+    # nonfunctional. Wired as `continue-on-error: true` for the initial
+    # rollout so a baseline-refresh oversight does not block unrelated
+    # work; promotion to a hard gate is a separate follow-up.
+    needs: [check]
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build release binary
+        run: cargo build --release
+      - name: Coverage regression gate
+        run: scripts/check-coverage-regression.sh
+      - name: Coverage regression gate (self-test)
+        run: bash scripts/check-coverage-regression.test.sh
