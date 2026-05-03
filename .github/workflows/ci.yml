@@ -121,7 +121,7 @@ jobs:
               - 'tools/spec-priority-audit/**'
       - name: Set up Node
         if: steps.filter.outputs.fig_converter == 'true' || steps.filter.outputs.spec_priority_audit == 'true'
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
       - name: Install fig-converter dependencies
