@@ -228,6 +228,14 @@ Some Fig specs contain generators that require JavaScript execution. Ghost Compl
 | `custom`          | No script — `js_runtime.source` is an async function that returns suggestions directly (the Fig `custom: async () => [...]` shape). | Activated in Phase 5. |
 | `script_function` | Generator emits a string of code in `js_runtime.source` whose evaluation produces an `argv` to spawn, then post-processes the resulting stdout. | Activated in Phase 5. |
 
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `kind` | string | Yes | One of `post_process`, `script_function`, `custom` (see table above). |
+| `source` | string | Yes | The JS function source. For `post_process` it receives stdout and returns suggestions; for `custom` it returns suggestions directly; for `script_function` its evaluation yields the argv to spawn. |
+| `input` | string | No | Which input is fed to the JS function (e.g. `"stdout"`, `"argv"`). Defaults are kind-specific; setting this overrides the default. |
+| `timeout_ms` | integer | No | Per-generator override of the global JS execution timeout. |
+| `allow_shell_command` | boolean | No | Default `false`. When `true`, the runtime allows passing a shell-string (rather than `argv`) to `executeShellCommand` for Class B/C generators. Required only for explicitly-audited shipped specs. |
+
 Until Phase 4 ships, treat any spec with `requires_js: true` as having that generator dropped, irrespective of `js_runtime` content. The metadata fields are reserved and parsed by the schema starting in Phase 2 so converter pipelines can already populate them; the field shape is subject to change until Phase 8 lands.
 
 #### Available Templates

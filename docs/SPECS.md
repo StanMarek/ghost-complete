@@ -143,7 +143,11 @@ ghost-complete status --json > /tmp/status.json
 #    on `requires_js_generators_total`, `command_alias_conflicts`, and
 #    `spec_files_total`. The fully/partially counts can differ slightly
 #    when the same `name` is shared by multiple files (the runtime
-#    classifies per addressable command; the script per file).
+#    classifies per addressable command; the script per file). To keep
+#    those two sources visibly distinct, the script emits the file-level
+#    counts as `file_scan_fully_functional` / `file_scan_partially_functional`,
+#    while the runtime-level counts in `status --json` keep the
+#    `commands_*` prefix.
 scripts/count-spec-coverage.sh --json > /tmp/scan.json
 
 # 3. Hand-edit docs/coverage-baseline.json: append a new object to `releases`

@@ -10,8 +10,8 @@
 # METRICS
 #   spec_files_total                    — *.json files in spec dir.
 #   commands_addressable                — unique top-level `name` values.
-#   commands_fully_functional           — files with zero requires_js generators.
-#   commands_partially_functional       — files with ≥1 requires_js generator.
+#   file_scan_fully_functional          — files with zero requires_js generators.
+#   file_scan_partially_functional      — files with ≥1 requires_js generator.
 #   commands_nonfunctional              — files that fail to parse (today: 0
 #                                          in the embedded corpus).
 #   requires_js_generators_total        — every {requires_js: true} object,
@@ -22,15 +22,17 @@
 #   command_alias_conflicts             — files where the JSON `name` differs
 #                                          from the file stem.
 #
-# NOTE: the file-level fully/partially counts can differ slightly from the
-# runtime-loader-level counts (`ghost-complete status --json`'s
-# `commands_fully_functional` / `commands_partially_functional` fields).
-# `status` keys SpecStore on JSON `name` and applies first-match-wins
-# dedup, so a duplicate-name pair where one variant is partial and the
-# other is fully-functional may be classified differently depending on
-# load order. The runtime is the source of truth for what users see at
-# completion time; this script reports the corpus-wide truth, before any
-# loader-side filtering.
+# NOTE: the fully/partially counts here are FILE-level and use the
+# `file_scan_*` prefix to disambiguate from the runtime-loader-level
+# counts (`ghost-complete status --json`'s `commands_fully_functional` /
+# `commands_partially_functional` fields). `status` keys SpecStore on
+# JSON `name` and applies first-match-wins dedup, so a duplicate-name
+# pair where one variant is partial and the other is fully-functional
+# may be classified differently depending on load order. The runtime is
+# the source of truth for what users see at completion time; this
+# script reports the corpus-wide truth, before any loader-side
+# filtering. Keys that align across the two scans (e.g. `commands_addressable`,
+# `requires_js_generators_total`) keep the `commands_*` prefix.
 #
 # Cross-checks against `ghost-complete status --json` are documented in
 # docs/SPECS.md.
@@ -121,8 +123,8 @@ if (( emit_json )); then
 {
   "spec_files_total": $count_spec_files,
   "commands_addressable": $count_addressable,
-  "commands_fully_functional": $count_full,
-  "commands_partially_functional": $count_partial,
+  "file_scan_fully_functional": $count_full,
+  "file_scan_partially_functional": $count_partial,
   "commands_nonfunctional": $count_nonfunctional,
   "requires_js_generators_total": $count_requires_js,
   "requires_js_generators_supported": $count_supported,
@@ -134,8 +136,8 @@ else
     cat <<EOF
 spec_files_total                    $count_spec_files
 commands_addressable                $count_addressable
-commands_fully_functional           $count_full
-commands_partially_functional       $count_partial
+file_scan_fully_functional          $count_full
+file_scan_partially_functional      $count_partial
 commands_nonfunctional              $count_nonfunctional
 requires_js_generators_total        $count_requires_js
 requires_js_generators_supported    $count_supported

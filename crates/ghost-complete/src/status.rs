@@ -15,13 +15,14 @@ use crate::sanitize::sanitize_for_terminal;
 /// not available). Keeps the "Coverage trend" section working out of the box.
 const EMBEDDED_BASELINE: &str = include_str!("../../../docs/coverage-baseline.json");
 
-/// Count every generator with `requires_js: true` anywhere in a spec tree.
-///
-/// Mirrors `has_requires_js` (which short-circuits on the first match) but
-/// returns a count for the runtime-loader-level corpus statistics. Phase 4
-/// will distinguish supported from unsupported generators based on the
-/// `js_runtime` metadata (Phase 2 adds that field). For Phase 0 the
-/// breakdown is supported = 0, unsupported = total.
+/// Count every generator with `requires_js: true` anywhere in a parsed
+/// spec tree. Used to classify a single spec as fully vs. partially
+/// functional — NOT as the corpus-wide `requires_js_generators_total`.
+/// The structured deserializer drops `OptionSpec.args[N>0]`, so summing
+/// this over `SpecStore` undercounts the corpus by ~135 today (the
+/// `scan_spec_files` raw-JSON walk is the source of truth for that
+/// counter). Phase 4 will distinguish supported from unsupported
+/// generators once `js_runtime` metadata lands in Phase 2.
 fn count_requires_js_generators(spec: &CompletionSpec) -> usize {
     fn count_in_generators(gens: &[GeneratorSpec]) -> usize {
         gens.iter().filter(|g| g.requires_js).count()
@@ -313,14 +314,15 @@ pub struct StatusOutcome {
     /// Per-dir spec-load error strings, already sanitised for terminal
     /// output. Retained so the JSON path can surface them too.
     pub parse_error_lines: Vec<String>,
-    /// UX-9 Phase 0 counters (computed from the runtime loader index).
-    /// These mirror existing fields where possible (commands_addressable
-    /// == fs_specs after dedup; commands_fully_functional == fully_functional)
-    /// while introducing the new vocabulary that future phases will diverge
-    /// on. Phase 1 lifts `commands_addressable` to spec_files_total by
-    /// fixing the filename/name collision that drops 6 specs today; Phase 4
-    /// lifts `requires_js_generators_supported` above zero by activating
-    /// post-process generators; Phase 1 also surfaces `command_alias_conflicts`.
+    /// UX-9 Phase 0 counters. Most are computed from the runtime loader
+    /// index (so they mirror what completion would actually see), but
+    /// `requires_js_generators_total` is sourced from the file-level walk
+    /// in `scan_spec_files`, NOT from `SpecStore`. The loader currently
+    /// undercounts requires_js generators by ~135 (~80 from `OptionSpec.args`
+    /// truncating the array to its first entry, ~55 from name-keyed dedupe
+    /// dropping duplicates) so it reports ~3506 vs the file-level 3641.
+    /// Phase 1 stem-keying + relaxing `OptionSpec.args` to a real `Vec<ArgSpec>`
+    /// converges the two; until then the file walk is the source of truth.
     pub commands_addressable: usize,
     pub commands_partially_functional: usize,
     pub commands_nonfunctional: usize,
@@ -345,8 +347,10 @@ pub struct FileScan {
     pub spec_files_total: usize,
     /// Total count of `requires_js: true` generators across ALL spec files
     /// (including ones that lose their addressability slot to a duplicate
-    /// `name` entry). Should equal the runtime-loader count today (and
-    /// Phase 1 keeps that invariant intact).
+    /// `name` entry). Sourced from the raw-JSON walk; the loader-level
+    /// count diverges by ~135 today (~80 from `OptionSpec.args` truncation,
+    /// ~55 from name-keyed dedupe), so the file walk is the source of
+    /// truth for this counter until Phase 1 closes the gap.
     pub requires_js_generators_total: usize,
 }
 
@@ -390,12 +394,14 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
 
     js_commands.sort();
 
-    // File-level scan is the source of truth for the
-    // `requires_js_generators_total` figure. The structured deserializer
-    // drops `OptionSpec.args[N>0]` (see `scan_spec_files` for details),
-    // so a loader-based count undercounts the corpus by ~80 today. We
-    // surface the raw-walk count here so users see the true corpus size,
-    // and the gap shrinks as Phase 1+ relaxes the schema.
+    // File-level scan is the source of truth for `requires_js_generators_total`.
+    // Walking SpecStore via `count_requires_js_generators` undercounts by
+    // ~135 today: ~80 from `OptionSpec.args` truncating to its first entry
+    // in the deserializer and ~55 from name-keyed dedupe dropping
+    // duplicate-stem files. So the file-level walk reports 3641 while the
+    // loader walk would report ~3506. Phase 1 stem-keying + a real
+    // `Vec<ArgSpec>` for option args converges the two; until then the
+    // raw-walk count is what we surface to users.
     let file_scan = scan_spec_files(&dirs)?;
     let requires_js_generators_total = file_scan.requires_js_generators_total;
 
@@ -434,14 +440,16 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
 /// `command_alias_conflicts` figure that Phase 1 will close.
 ///
 /// Counts `requires_js: true` via a raw `serde_json::Value` walk rather
-/// than going through `parse_spec_checked_and_sanitized`. The structured
-/// parser drops `OptionSpec.args[N>0]` (it stores `Option<ArgSpec>` and
-/// `vec.into_iter().next()`s the rest away — see `deserialize_option_args`),
-/// so a parser-based file scan undercounts the corpus by ~80 today. The
-/// whole point of `file_scan` is to surface the corpus's *true* generator
-/// total, independent of any current schema clamping. Phase 1+ may lift
-/// the schema limitation, at which point the loader-level count converges
-/// with the file-level count.
+/// than going through `parse_spec_checked_and_sanitized`. Two effects
+/// drive the loader-vs-file-walk gap (~135 generators today): the
+/// structured parser truncates `OptionSpec.args[N>0]` because it stores
+/// `Option<ArgSpec>` and `vec.into_iter().next()`s the rest away (see
+/// `deserialize_option_args`, ~80 generators), and SpecStore's name-keyed
+/// HashMap drops duplicate-`name` files (~55 generators). The file-level
+/// walk surfaces the corpus's true generator total (3641); the
+/// loader-level count is currently ~3506. Phase 1 stem-keying converges
+/// the dedupe gap; relaxing `OptionSpec.args` to `Vec<ArgSpec>` closes
+/// the rest.
 ///
 /// Errors are tolerant — a missing dir is silently skipped (matches the
 /// loader's behavior). A malformed file is also skipped (its requires_js
