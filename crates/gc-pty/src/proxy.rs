@@ -344,11 +344,14 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                                 "CPR response — forwarding to PTY (shell)"
                             );
                             let cpr = format!("\x1b[{r};{c}R");
-                            if pty_writer.write_all(cpr.as_bytes()).is_err() {
-                                return;
-                            }
-                            if pty_writer.flush().is_err() {
-                                return;
+                            if write_pty_or_shutdown(
+                                pty_writer.as_mut(),
+                                cpr.as_bytes(),
+                                "forward shell CPR response",
+                            )
+                            .is_err()
+                            {
+                                break 'stdin;
                             }
                         }
                         CprAction::DropEmpty(r, c) => {
@@ -358,11 +361,14 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                                 "CPR response with empty queue — forwarding defensively"
                             );
                             let cpr = format!("\x1b[{r};{c}R");
-                            if pty_writer.write_all(cpr.as_bytes()).is_err() {
-                                return;
-                            }
-                            if pty_writer.flush().is_err() {
-                                return;
+                            if write_pty_or_shutdown(
+                                pty_writer.as_mut(),
+                                cpr.as_bytes(),
+                                "forward defensive CPR response",
+                            )
+                            .is_err()
+                            {
+                                break 'stdin;
                             }
                         }
                     }
@@ -392,13 +398,15 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         break 'stdin;
                     }
                 }
-                if !forward.is_empty() {
-                    if pty_writer.write_all(&forward).is_err() {
-                        return;
-                    }
-                    if pty_writer.flush().is_err() {
-                        return;
-                    }
+                if !forward.is_empty()
+                    && write_pty_or_shutdown(
+                        pty_writer.as_mut(),
+                        &forward,
+                        "forward terminal input",
+                    )
+                    .is_err()
+                {
+                    break 'stdin;
                 }
             }
         }
@@ -688,9 +696,9 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                                 tracing::warn!("parser mutex poisoned on SIGWINCH: {e}");
                             }
                         }
-                        // Re-render popup if visible, then write through the
-                        // epoch gate so stale resize paints cannot land after
-                        // newer shell output invalidated popup ownership.
+                        // Dismiss popup if visible, then write cleanup through
+                        // the epoch gate so stale resize cleanup cannot land
+                        // after newer shell output invalidated popup ownership.
                         let mut render_buf = Vec::new();
                         let render_epoch = match handler.lock() {
                             Ok(mut h) => {
@@ -843,6 +851,20 @@ enum OverlayWriteOutcome {
     Stale,
 }
 
+fn write_pty_or_shutdown(
+    pty_writer: &mut dyn Write,
+    bytes: &[u8],
+    operation: &'static str,
+) -> std::io::Result<()> {
+    pty_writer
+        .write_all(bytes)
+        .and_then(|()| pty_writer.flush())
+        .map_err(|e| {
+            tracing::debug!(operation, "PTY write/flush failed: {e}");
+            e
+        })
+}
+
 fn write_overlay_if_current(
     handler: &Arc<Mutex<InputHandler>>,
     epoch: u64,
@@ -852,7 +874,7 @@ fn write_overlay_if_current(
         return Ok(OverlayWriteOutcome::Empty);
     }
 
-    let h = match handler.lock() {
+    let mut h = match handler.lock() {
         Ok(h) => h,
         Err(e) => {
             tracing::warn!("overlay write skipped (handler lock poisoned): {e}");
@@ -867,6 +889,7 @@ fn write_overlay_if_current(
             current_epoch = h.output_epoch(),
             "dropping stale overlay render"
         );
+        h.discard_overlay_ownership_after_stale_write();
         return Ok(OverlayWriteOutcome::Stale);
     }
 
@@ -1274,6 +1297,33 @@ mod tests {
             .expect("stale overlay should not be an I/O error");
 
         assert_eq!(outcome, OverlayWriteOutcome::Stale);
+    }
+
+    #[test]
+    fn write_overlay_if_current_discards_owned_state_on_stale_write() {
+        let handler = Arc::new(Mutex::new(
+            InputHandler::new(&[], gc_terminal::TerminalProfile::for_ghostty()).expect("handler"),
+        ));
+        let stale_epoch = {
+            let mut h = handler.lock().expect("handler");
+            h.set_visible(true);
+            h.output_epoch()
+        };
+
+        {
+            let mut h = handler.lock().expect("handler");
+            h.handle_terminal_output(&mut Vec::new(), false, 1);
+            assert_ne!(h.output_epoch(), stale_epoch);
+        }
+
+        let outcome = write_overlay_if_current(&handler, stale_epoch, b"stale overlay bytes")
+            .expect("stale overlay should not be an I/O error");
+
+        assert_eq!(outcome, OverlayWriteOutcome::Stale);
+        assert!(
+            !handler.lock().expect("handler").has_overlay_ownership(),
+            "handler must not keep ownership for overlay bytes that never reached stdout"
+        );
     }
 
     struct SpawnedTestChild {

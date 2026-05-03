@@ -132,10 +132,10 @@ impl Perform for TerminalState {
             // forwards the response back to the program inside the PTY
             // that asked for it. Other DSR variants (e.g. CSI 5n) do not
             // produce a CPR response and must NOT enqueue. The local
-            // intermediates guard is defensive: the blanket-discard
-            // above already drops sequences with intermediates, but
-            // scoping the check here keeps DEC private DSR (`CSI ? 6n`)
-            // safe even if the outer filter is ever relocated.
+            // intermediates guard is defensive: private `?` CSI sequences
+            // return through the private-mode guard above before ordinary
+            // DSR handling, and this arm should remain scoped to plain DSR
+            // even if surrounding filters move later.
             'n' if intermediates.is_empty() && csi_param(params, 0, 0) == 6 => {
                 self.enqueue_cpr(CprOwner::Shell);
             }
@@ -724,6 +724,33 @@ mod tests {
     }
 
     #[test]
+    fn test_private_decawm_set_reenables_autowrap_after_reset() {
+        let mut p = TerminalParser::new(3, 3);
+
+        p.process_bytes(b"\x1b[?7l");
+        p.process_bytes(b"abc");
+        p.process_bytes(b"\x1b[?7h");
+        p.process_bytes(b"de");
+
+        assert_eq!(p.state().cursor_position(), (1, 1));
+    }
+
+    #[test]
+    fn test_private_decawm_honored_among_multiple_private_params() {
+        let mut p = TerminalParser::new(3, 3);
+
+        p.process_bytes(b"\x1b[?1;7l");
+        p.process_bytes(b"abcd");
+        assert_eq!(p.state().cursor_position(), (0, 2));
+
+        p.process_bytes(b"\x1b[1;1H");
+        p.process_bytes(b"\x1b[?1;7h");
+        p.process_bytes(b"abcde");
+
+        assert_eq!(p.state().cursor_position(), (1, 2));
+    }
+
+    #[test]
     fn test_csi_su_tracks_scroll_without_moving_cursor() {
         let mut p = make_parser();
         p.process_bytes(b"\x1b[3;1H");
@@ -1291,9 +1318,9 @@ mod tests {
 
     #[test]
     fn csi_private_6n_does_not_enqueue() {
-        // CSI ? 6n is DEC private DSR — carries an intermediate byte `?`.
-        // The blanket-discard at the top of csi_dispatch drops it before
-        // the 'n' arm fires, so no Shell entry should be enqueued.
+        // CSI ? 6n is DEC private DSR. Private `?` CSI sequences return through
+        // the private-mode guard before ordinary DSR handling, so no Shell entry
+        // should be enqueued.
         let mut p = make_parser();
         p.process_bytes(b"\x1b[?6n");
         assert_eq!(p.state().cpr_queue_len(), 0);

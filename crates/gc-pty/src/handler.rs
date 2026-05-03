@@ -528,6 +528,29 @@ impl InputHandler {
         self.output_epoch
     }
 
+    #[cfg(test)]
+    pub(crate) fn has_overlay_ownership(&self) -> bool {
+        self.visible || self.last_layout.is_some() || !matches!(self.feedback, AsyncFeedback::Idle)
+    }
+
+    pub(crate) fn discard_overlay_ownership_after_stale_write(&mut self) {
+        self.visible = false;
+        self.suggestions.clear();
+        self.overlay.reset();
+        self.last_layout = None;
+        self.debounce_suppressed = false;
+        if let Some(handle) = self.dynamic_task.take() {
+            handle.abort();
+        }
+        self.dynamic_rx = None;
+        self.dynamic_ctx = None;
+        self.feedback = AsyncFeedback::Idle;
+        self.pending_failed.clear();
+        self.pending_empty_count = 0;
+        self.last_trigger_fingerprint = None;
+        self.bump_output_epoch();
+    }
+
     /// Returns the current suggestions slice (read-only).
     #[doc(hidden)]
     pub fn current_suggestions(&self) -> &[Suggestion] {
@@ -1746,7 +1769,11 @@ impl InputHandler {
             &feedback,
         );
 
-        if additional_scroll == 0 {
+        let feedback_only_repaint_after_scroll = self.suggestions.is_empty()
+            && !matches!(&feedback, FeedbackKind::None)
+            && self.overlay_scroll_deficit > 0;
+
+        if additional_scroll == 0 && !feedback_only_repaint_after_scroll {
             if let Some(ref layout) = self.last_layout {
                 clear_popup(&mut buf, layout, &self.terminal_profile);
             }
@@ -1896,8 +1923,11 @@ impl InputHandler {
         display_dirty: bool,
         viewport_scrolls: u16,
     ) {
-        if viewport_scrolls > 0 {
+        if display_dirty || viewport_scrolls > 0 {
             self.bump_output_epoch();
+        }
+
+        if viewport_scrolls > 0 {
             self.last_trigger_fingerprint = None;
         }
 
@@ -3859,6 +3889,21 @@ mod tests {
     }
 
     #[test]
+    fn test_display_dirty_terminal_output_bumps_epoch_without_owned_popup() {
+        let mut handler = make_handler();
+        let before_epoch = handler.output_epoch();
+        let mut buf = Vec::new();
+
+        handler.handle_terminal_output(&mut buf, true, 0);
+
+        assert!(buf.is_empty());
+        assert!(
+            handler.output_epoch() > before_epoch,
+            "display-changing PTY output must invalidate pending overlay buffers"
+        );
+    }
+
+    #[test]
     fn test_terminal_output_clears_feedback_only_layout_when_not_visible() {
         let mut handler = make_handler();
         handler.feedback = AsyncFeedback::Loading {
@@ -3926,6 +3971,39 @@ mod tests {
         assert!(
             output.contains("\x1b[24;1H"),
             "new render should still scroll from the bottom row: {output:?}"
+        );
+    }
+
+    #[test]
+    fn test_render_at_skips_old_clear_when_feedback_only_render_scrolls() {
+        let mut handler = make_handler();
+        handler.overlay_scroll_deficit = 4;
+        handler.last_layout = Some(PopupLayout {
+            start_row: 19,
+            start_col: 70,
+            width: 10,
+            height: 1,
+            scroll_deficit: 4,
+        });
+        handler.feedback = AsyncFeedback::Loading {
+            spawned_at: std::time::Instant::now(),
+        };
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 23, 0, 24, 80);
+
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            !output.contains("\x1b[20;71H"),
+            "stale feedback-only clear at old popup coordinates must be skipped: {output:?}"
+        );
+        assert_eq!(
+            handler
+                .last_layout
+                .as_ref()
+                .expect("feedback layout")
+                .scroll_deficit,
+            handler.overlay_scroll_deficit
         );
     }
 

@@ -29,6 +29,7 @@ struct CprEntry {
 struct CursorSnapshot {
     row: u16,
     col: u16,
+    screen_cols: u16,
     pending_wrap: bool,
     autowrap: bool,
 }
@@ -432,6 +433,7 @@ impl TerminalState {
         self.saved_cursor = Some(CursorSnapshot {
             row: self.cursor_row,
             col: self.cursor_col,
+            screen_cols: self.screen_cols,
             pending_wrap: self.pending_wrap,
             autowrap: self.autowrap,
         });
@@ -443,8 +445,11 @@ impl TerminalState {
             self.cursor_row = snapshot.row;
             self.cursor_col = snapshot.col;
             self.autowrap = snapshot.autowrap;
-            self.pending_wrap = snapshot.pending_wrap;
             self.clamp_cursor();
+            self.pending_wrap = snapshot.pending_wrap
+                && snapshot.autowrap
+                && snapshot.screen_cols == self.screen_cols
+                && self.cursor_col + 1 == self.screen_cols;
         }
     }
 
@@ -627,6 +632,22 @@ mod tests {
 
         state.advance_col(1);
         assert_eq!(state.cursor_position(), (1, 1));
+    }
+
+    #[test]
+    fn restore_cursor_clears_pending_wrap_when_resize_invalidates_last_column() {
+        let mut state = TerminalState::new(3, 3);
+        state.set_cursor(0, 2);
+        state.advance_col(1);
+        assert_eq!(state.cursor_position(), (0, 2));
+        assert!(state.pending_wrap);
+
+        state.save_cursor();
+        state.update_dimensions(3, 5);
+        state.restore_cursor();
+
+        state.advance_col(1);
+        assert_eq!(state.cursor_position(), (0, 3));
     }
 
     #[test]
