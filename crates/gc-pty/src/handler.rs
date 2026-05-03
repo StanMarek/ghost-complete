@@ -171,6 +171,21 @@ enum MergeFreshness {
     PoisonedLock,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct OverlayRenderToken(u64);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct OverlayWriteTicket {
+    pub(crate) epoch: u64,
+    pub(crate) render_token: Option<OverlayRenderToken>,
+}
+
+#[derive(Debug, Clone)]
+struct PendingOverlayRender {
+    token: OverlayRenderToken,
+    layout: PopupLayout,
+}
+
 /// Result of `InputHandler::prepare_trigger_with_block`.
 ///
 /// When a high-priority async generator is pending and `render_block_ms > 0`,
@@ -280,6 +295,11 @@ pub struct InputHandler {
     /// buffers with this value and drop them if shell output advances it before
     /// the buffer reaches stdout.
     output_epoch: u64,
+    /// Monotonic token source for popup render buffers staged by `render_at`.
+    overlay_render_generation: u64,
+    /// Layout/scroll state for the latest render buffer. Committed only after
+    /// the proxy writes that exact buffer to stdout.
+    pending_overlay_render: Option<PendingOverlayRender>,
 }
 
 impl InputHandler {
@@ -314,6 +334,8 @@ impl InputHandler {
             spawned_generation: 0,
             render_block_ms: 80,
             output_epoch: 0,
+            overlay_render_generation: 0,
+            pending_overlay_render: None,
         })
     }
 
@@ -449,6 +471,7 @@ impl InputHandler {
                 self.suggestions.clear();
                 self.overlay.reset();
                 self.last_layout = None;
+                self.pending_overlay_render = None;
             }
             if let Some(handle) = self.dynamic_task.take() {
                 handle.abort();
@@ -528,12 +551,49 @@ impl InputHandler {
         self.output_epoch
     }
 
+    pub(crate) fn overlay_write_ticket(&self) -> OverlayWriteTicket {
+        OverlayWriteTicket {
+            epoch: self.output_epoch,
+            render_token: self
+                .pending_overlay_render
+                .as_ref()
+                .map(|pending| pending.token),
+        }
+    }
+
+    pub(crate) fn commit_overlay_write(&mut self, ticket: OverlayWriteTicket) {
+        let Some(token) = ticket.render_token else {
+            return;
+        };
+        let Some(pending) = self
+            .pending_overlay_render
+            .take_if(|pending| pending.token == token)
+        else {
+            return;
+        };
+        self.overlay_scroll_deficit = pending.layout.scroll_deficit;
+        self.last_layout = Some(pending.layout);
+    }
+
     #[cfg(test)]
     pub(crate) fn has_overlay_ownership(&self) -> bool {
         self.visible || self.last_layout.is_some() || !matches!(self.feedback, AsyncFeedback::Idle)
     }
 
-    pub(crate) fn discard_overlay_ownership_after_stale_write(&mut self) {
+    pub(crate) fn discard_overlay_ownership_after_stale_write(
+        &mut self,
+        ticket: OverlayWriteTicket,
+    ) {
+        let Some(token) = ticket.render_token else {
+            return;
+        };
+        let Some(pending) = self.pending_overlay_render.as_ref() else {
+            return;
+        };
+        if pending.token != token {
+            return;
+        }
+        self.pending_overlay_render = None;
         self.visible = false;
         self.suggestions.clear();
         self.overlay.reset();
@@ -1797,8 +1857,11 @@ impl InputHandler {
         );
         let _ = stdout.write_all(&buf);
         let _ = stdout.flush();
-        self.overlay_scroll_deficit = layout.scroll_deficit;
-        self.last_layout = Some(layout);
+        self.overlay_render_generation = self.overlay_render_generation.wrapping_add(1);
+        self.pending_overlay_render = Some(PendingOverlayRender {
+            token: OverlayRenderToken(self.overlay_render_generation),
+            layout,
+        });
     }
 
     fn current_feedback_kind(&self) -> FeedbackKind {
@@ -1953,6 +2016,7 @@ impl InputHandler {
             let _ = stdout.write_all(&buf);
             let _ = stdout.flush();
         }
+        self.pending_overlay_render = None;
         self.visible = false;
         self.suggestions.clear();
         self.overlay.reset();
@@ -2828,6 +2892,8 @@ mod tests {
             spawned_generation: 0,
             render_block_ms: 0,
             output_epoch: 0,
+            overlay_render_generation: 0,
+            pending_overlay_render: None,
         }
     }
 
@@ -3991,6 +4057,7 @@ mod tests {
         let mut buf = Vec::new();
 
         handler.render_at(&mut buf, 23, 0, 24, 80);
+        handler.commit_overlay_write(handler.overlay_write_ticket());
 
         let output = String::from_utf8_lossy(&buf);
         assert!(
@@ -4017,6 +4084,41 @@ mod tests {
 
         assert!(!buf.is_empty());
         assert!(handler.output_epoch() > before_epoch);
+    }
+
+    #[test]
+    fn test_render_at_commits_layout_only_after_overlay_write_ack() {
+        let mut handler = make_visible_handler(numbered_suggestions(8));
+        handler.overlay_scroll_deficit = 4;
+        handler.last_layout = Some(PopupLayout {
+            start_row: 19,
+            start_col: 70,
+            width: 10,
+            height: 2,
+            scroll_deficit: 4,
+        });
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 22, 0, 24, 80);
+
+        assert!(!buf.is_empty());
+        assert_eq!(
+            handler.overlay_scroll_deficit, 4,
+            "staged render must not commit scroll deficit before stdout write succeeds"
+        );
+        let layout = handler.last_layout.as_ref().expect("committed old layout");
+        assert_eq!(layout.start_row, 19);
+        assert_eq!(layout.start_col, 70);
+        assert_eq!(layout.scroll_deficit, 4);
+
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+
+        let layout = handler.last_layout.as_ref().expect("committed new layout");
+        assert_eq!(handler.overlay_scroll_deficit, layout.scroll_deficit);
+        assert_ne!(
+            layout.start_col, 70,
+            "acknowledged render should replace the previous committed layout"
+        );
     }
 
     #[test]
@@ -4314,6 +4416,7 @@ mod tests {
 
         let mut stdout = Vec::new();
         handler.trigger(&parser, &mut stdout);
+        handler.commit_overlay_write(handler.overlay_write_ticket());
 
         let layout = handler
             .last_layout

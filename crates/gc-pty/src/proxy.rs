@@ -13,7 +13,7 @@ use gc_overlay::{parse_style, PopupTheme};
 use gc_suggest::spec_dirs::resolve_spec_dirs;
 
 use crate::config_watch::spawn_config_watcher;
-use crate::handler::{InputHandler, Keybindings, TriggerPrepared};
+use crate::handler::{InputHandler, Keybindings, OverlayWriteTicket, TriggerPrepared};
 use crate::input::KeyParser;
 use crate::resize::{get_terminal_size, resize_pty};
 use crate::spawn::{spawn_shell, SpawnedShell};
@@ -379,7 +379,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 // locking stdout for the entire loop (which would deadlock
                 // with Task B's stdout writes).
                 let mut render_buf = Vec::new();
-                let (forward, render_epoch) = {
+                let (forward, render_ticket) = {
                     let mut h = match handler_for_stdin.lock() {
                         Ok(h) => h,
                         Err(e) => {
@@ -388,11 +388,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         }
                     };
                     let forward = h.process_key(key, &parser_for_stdin, &mut render_buf);
-                    (forward, h.output_epoch())
+                    (forward, h.overlay_write_ticket())
                 };
                 if !render_buf.is_empty() {
                     if let Err(e) =
-                        write_overlay_if_current(&handler_for_stdin, render_epoch, &render_buf)
+                        write_overlay_if_current(&handler_for_stdin, render_ticket, &render_buf)
                     {
                         tracing::debug!("Task A overlay write/flush failed: {e}");
                         break 'stdin;
@@ -559,7 +559,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
             if buffer_dirty {
                 let mut render_buf = Vec::new();
-                let render_epoch = {
+                let render_ticket = {
                     let mut h = match handler_for_stdout.lock() {
                         Ok(h) => h,
                         Err(e) => {
@@ -578,11 +578,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     {
                         debounce_notify_b.notify_one();
                     }
-                    h.output_epoch()
+                    h.overlay_write_ticket()
                 };
                 if !render_buf.is_empty() {
                     if let Err(e) =
-                        write_overlay_if_current(&handler_for_stdout, render_epoch, &render_buf)
+                        write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
                     {
                         tracing::debug!("Task B overlay write/flush failed: {e}");
                         break;
@@ -603,7 +603,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
             if cwd_dirty {
                 let mut render_buf = Vec::new();
-                let render_epoch = {
+                let render_ticket = {
                     let mut h = match handler_for_stdout.lock() {
                         Ok(h) => h,
                         Err(e) => {
@@ -614,11 +614,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     if h.auto_trigger_enabled() {
                         h.trigger(&parser_for_stdout, &mut render_buf);
                     }
-                    h.output_epoch()
+                    h.overlay_write_ticket()
                 };
                 if !render_buf.is_empty() {
                     if let Err(e) =
-                        write_overlay_if_current(&handler_for_stdout, render_epoch, &render_buf)
+                        write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
                     {
                         tracing::debug!("Task B overlay write/flush failed: {e}");
                         break;
@@ -629,7 +629,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             // Poll for dynamic (script generator) results — non-blocking.
             {
                 let mut render_buf = Vec::new();
-                let render_epoch = {
+                let render_ticket = {
                     let mut h = match handler_for_stdout.lock() {
                         Ok(h) => h,
                         Err(e) => {
@@ -638,11 +638,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         }
                     };
                     h.try_merge_dynamic(&parser_for_stdout, &mut render_buf);
-                    h.output_epoch()
+                    h.overlay_write_ticket()
                 };
                 if !render_buf.is_empty() {
                     if let Err(e) =
-                        write_overlay_if_current(&handler_for_stdout, render_epoch, &render_buf)
+                        write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
                     {
                         tracing::debug!("Task B overlay write/flush failed: {e}");
                         break;
@@ -700,10 +700,10 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         // the epoch gate so stale resize cleanup cannot land
                         // after newer shell output invalidated popup ownership.
                         let mut render_buf = Vec::new();
-                        let render_epoch = match handler.lock() {
+                        let render_ticket = match handler.lock() {
                             Ok(mut h) => {
                                 h.handle_resize(&parser, &mut render_buf);
-                                Some(h.output_epoch())
+                                Some(h.overlay_write_ticket())
                             }
                             Err(e) => {
                                 tracing::warn!("handler mutex poisoned on SIGWINCH: {e}");
@@ -711,11 +711,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                             }
                         };
                         if !render_buf.is_empty() {
-                            let Some(render_epoch) = render_epoch else {
+                            let Some(render_ticket) = render_ticket else {
                                 continue;
                             };
                             if let Err(e) =
-                                write_overlay_if_current(&handler, render_epoch, &render_buf)
+                                write_overlay_if_current(&handler, render_ticket, &render_buf)
                             {
                                 tracing::debug!("signal overlay write/flush failed: {e}");
                                 break;
@@ -867,7 +867,7 @@ fn write_pty_or_shutdown(
 
 fn write_overlay_if_current(
     handler: &Arc<Mutex<InputHandler>>,
-    epoch: u64,
+    ticket: OverlayWriteTicket,
     render_buf: &[u8],
 ) -> std::io::Result<OverlayWriteOutcome> {
     if render_buf.is_empty() {
@@ -883,23 +883,27 @@ fn write_overlay_if_current(
             )));
         }
     };
-    if h.output_epoch() != epoch {
+    if h.output_epoch() != ticket.epoch {
         tracing::trace!(
-            render_epoch = epoch,
+            render_epoch = ticket.epoch,
             current_epoch = h.output_epoch(),
             "dropping stale overlay render"
         );
-        h.discard_overlay_ownership_after_stale_write();
+        h.discard_overlay_ownership_after_stale_write(ticket);
         return Ok(OverlayWriteOutcome::Stale);
     }
 
     let mut stdout = std::io::stdout().lock();
     let write_result = stdout.write_all(render_buf).and_then(|()| stdout.flush());
-    drop(h);
 
     match write_result {
-        Ok(()) => Ok(OverlayWriteOutcome::Written),
+        Ok(()) => {
+            h.commit_overlay_write(ticket);
+            drop(h);
+            Ok(OverlayWriteOutcome::Written)
+        }
         Err(e) => {
+            drop(h);
             tracing::debug!("overlay stdout write/flush failed: {e}");
             Err(e)
         }
@@ -934,7 +938,7 @@ async fn debounce_loop(
         // render_block_ms > 0, we get back a `NeedsBlock` variant carrying
         // the channel receiver and sync geometry.
         let mut render_buf = Vec::new();
-        let (prepared, render_epoch) = {
+        let (prepared, render_ticket) = {
             let mut h = match handler.lock() {
                 Ok(h) => h,
                 Err(e) => {
@@ -946,10 +950,10 @@ async fn debounce_loop(
                 continue;
             }
             let prepared = h.prepare_trigger_with_block(&parser, &mut render_buf);
-            (prepared, h.output_epoch())
+            (prepared, h.overlay_write_ticket())
         };
         if !render_buf.is_empty() {
-            if let Err(e) = write_overlay_if_current(&handler, render_epoch, &render_buf) {
+            if let Err(e) = write_overlay_if_current(&handler, render_ticket, &render_buf) {
                 tracing::debug!("debounce overlay write/flush failed: {e}");
                 break;
             }
@@ -1005,7 +1009,7 @@ async fn debounce_loop(
             };
 
             let mut render_buf2 = Vec::new();
-            let render_epoch2 = {
+            let render_ticket2 = {
                 let mut h = match handler.lock() {
                     Ok(h) => h,
                     Err(e) => {
@@ -1029,10 +1033,10 @@ async fn debounce_loop(
                     fingerprint,
                     &current_word,
                 );
-                h.output_epoch()
+                h.overlay_write_ticket()
             };
             if !render_buf2.is_empty() {
-                if let Err(e) = write_overlay_if_current(&handler, render_epoch2, &render_buf2) {
+                if let Err(e) = write_overlay_if_current(&handler, render_ticket2, &render_buf2) {
                     tracing::debug!("debounce overlay write/flush failed: {e}");
                     break;
                 }
@@ -1052,7 +1056,7 @@ async fn dynamic_merge_loop(
     loop {
         notify.notified().await;
         let mut render_buf = Vec::new();
-        let render_epoch = {
+        let render_ticket = {
             let mut h = match handler.lock() {
                 Ok(h) => h,
                 Err(e) => {
@@ -1061,10 +1065,10 @@ async fn dynamic_merge_loop(
                 }
             };
             h.try_merge_dynamic(&parser, &mut render_buf);
-            h.output_epoch()
+            h.overlay_write_ticket()
         };
         if !render_buf.is_empty() {
-            if let Err(e) = write_overlay_if_current(&handler, render_epoch, &render_buf) {
+            if let Err(e) = write_overlay_if_current(&handler, render_ticket, &render_buf) {
                 tracing::debug!("dynamic merge overlay write/flush failed: {e}");
                 break;
             }
@@ -1081,7 +1085,7 @@ async fn feedback_tick_loop(notify: Arc<Notify>, handler: Arc<Mutex<InputHandler
                 tokio::time::sleep(Duration::from_millis(next_ms)).await;
             }
             let mut render_buf: Vec<u8> = Vec::new();
-            let (keep_running, render_epoch) = {
+            let (keep_running, render_ticket) = {
                 let mut h = match handler.lock() {
                     Ok(h) => h,
                     Err(e) => {
@@ -1100,10 +1104,10 @@ async fn feedback_tick_loop(notify: Arc<Notify>, handler: Arc<Mutex<InputHandler
                     next_ms = 200;
                     h.feedback_kind().since().is_some()
                 };
-                (keep_running, h.output_epoch())
+                (keep_running, h.overlay_write_ticket())
             };
             if !render_buf.is_empty() {
-                match write_overlay_if_current(&handler, render_epoch, &render_buf) {
+                match write_overlay_if_current(&handler, render_ticket, &render_buf) {
                     Ok(OverlayWriteOutcome::Written | OverlayWriteOutcome::Empty) => {}
                     Ok(OverlayWriteOutcome::Stale) => break,
                     Err(e) => {
@@ -1154,6 +1158,7 @@ fn dispatch_cpr_response(state: &mut gc_parser::TerminalState, row: u16, col: u1
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::input::KeyEvent;
     use gc_terminal::Terminal;
 
     #[test]
@@ -1200,6 +1205,14 @@ mod tests {
 
     fn make_state(rows: u16, cols: u16) -> TerminalParser {
         TerminalParser::new(rows, cols)
+    }
+
+    fn parser_with_buffer(buffer: &str) -> Arc<Mutex<TerminalParser>> {
+        let parser = Arc::new(Mutex::new(TerminalParser::new(24, 80)));
+        let cursor = buffer.chars().count();
+        let osc = format!("\x1b]7770;{cursor};{buffer}\x07");
+        parser.lock().unwrap().process_bytes(osc.as_bytes());
+        parser
     }
 
     #[test]
@@ -1285,15 +1298,15 @@ mod tests {
         let handler = Arc::new(Mutex::new(
             InputHandler::new(&[], gc_terminal::TerminalProfile::for_ghostty()).expect("handler"),
         ));
-        let stale_epoch = handler.lock().expect("handler").output_epoch();
+        let stale_ticket = handler.lock().expect("handler").overlay_write_ticket();
 
         {
             let mut h = handler.lock().expect("handler");
             h.handle_terminal_output(&mut Vec::new(), false, 1);
-            assert_ne!(h.output_epoch(), stale_epoch);
+            assert_ne!(h.output_epoch(), stale_ticket.epoch);
         }
 
-        let outcome = write_overlay_if_current(&handler, stale_epoch, b"stale overlay bytes")
+        let outcome = write_overlay_if_current(&handler, stale_ticket, b"stale overlay bytes")
             .expect("stale overlay should not be an I/O error");
 
         assert_eq!(outcome, OverlayWriteOutcome::Stale);
@@ -1304,25 +1317,70 @@ mod tests {
         let handler = Arc::new(Mutex::new(
             InputHandler::new(&[], gc_terminal::TerminalProfile::for_ghostty()).expect("handler"),
         ));
-        let stale_epoch = {
+        let parser = parser_with_buffer("git ");
+        let (stale_ticket, stale_buf) = {
             let mut h = handler.lock().expect("handler");
-            h.set_visible(true);
-            h.output_epoch()
+            let mut render_buf = Vec::new();
+            h.trigger(&parser, &mut render_buf);
+            assert!(!render_buf.is_empty(), "setup: trigger should render popup");
+            (h.overlay_write_ticket(), render_buf)
         };
 
         {
             let mut h = handler.lock().expect("handler");
             h.handle_terminal_output(&mut Vec::new(), false, 1);
-            assert_ne!(h.output_epoch(), stale_epoch);
+            assert_ne!(h.output_epoch(), stale_ticket.epoch);
         }
 
-        let outcome = write_overlay_if_current(&handler, stale_epoch, b"stale overlay bytes")
+        let outcome = write_overlay_if_current(&handler, stale_ticket, &stale_buf)
             .expect("stale overlay should not be an I/O error");
 
         assert_eq!(outcome, OverlayWriteOutcome::Stale);
         assert!(
             !handler.lock().expect("handler").has_overlay_ownership(),
             "handler must not keep ownership for overlay bytes that never reached stdout"
+        );
+    }
+
+    #[test]
+    fn write_overlay_if_current_preserves_newer_overlay_after_stale_render_race() {
+        let handler = Arc::new(Mutex::new(
+            InputHandler::new(&[], gc_terminal::TerminalProfile::for_ghostty()).expect("handler"),
+        ));
+        let parser = parser_with_buffer("git ");
+        let (stale_ticket, stale_buf) = {
+            let mut h = handler.lock().expect("handler");
+            let mut render_buf = Vec::new();
+            h.trigger(&parser, &mut render_buf);
+            assert!(
+                !render_buf.is_empty(),
+                "setup: first render should produce bytes"
+            );
+            (h.overlay_write_ticket(), render_buf)
+        };
+
+        {
+            let mut h = handler.lock().expect("handler");
+            let mut newer_buf = Vec::new();
+            h.process_key(&KeyEvent::ArrowDown, &parser, &mut newer_buf);
+            assert!(
+                !newer_buf.is_empty(),
+                "setup: newer repaint should produce bytes"
+            );
+            assert_ne!(h.output_epoch(), stale_ticket.epoch);
+            assert!(
+                h.has_overlay_ownership(),
+                "setup: newer overlay ownership should still be current"
+            );
+        }
+
+        let outcome = write_overlay_if_current(&handler, stale_ticket, &stale_buf)
+            .expect("stale overlay should not be an I/O error");
+
+        assert_eq!(outcome, OverlayWriteOutcome::Stale);
+        assert!(
+            handler.lock().expect("handler").has_overlay_ownership(),
+            "dropping an older stale render must not clear newer overlay ownership"
         );
     }
 

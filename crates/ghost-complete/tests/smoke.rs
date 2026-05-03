@@ -276,11 +276,11 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
 fn test_popup_is_cleared_before_later_shell_output() {
     let mut proc = GhostProcess::spawn();
 
-    proc.send_line("echo smoke_popup_repaint_ready_marker");
-    proc.expect_output("smoke_popup_repaint_ready_marker");
+    proc.send_line("PS1='smoke_prompt_repaint_marker '");
+    proc.expect_output("smoke_prompt_repaint_marker");
 
     let mark_before_trigger = proc.output_len();
-    proc.send_line(r"printf '\033]7770;4;git \007'; sleep 1; echo smoke_prompt_repaint_marker");
+    proc.send_line(r"printf '\033]7770;4;git \007'; read _gc_smoke_gate");
 
     let popup_rendered =
         proc.wait_for_bytes_after(b"\x1b7", mark_before_trigger, Duration::from_secs(5));
@@ -297,6 +297,7 @@ fn test_popup_is_cleared_before_later_shell_output() {
 
     let mark_after_popup = proc.output_len();
     let marker = b"smoke_prompt_repaint_marker";
+    proc.send_line("");
     let marker_seen = proc.wait_for_bytes_after(marker, mark_after_popup, Duration::from_secs(5));
     if !marker_seen {
         let snapshot = proc.output_snapshot();
