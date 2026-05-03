@@ -112,6 +112,7 @@ fn script_function_generator(source: &str) -> Arc<GeneratorSpec> {
         js_runtime: Some(Arc::new(JsRuntimeSpec {
             kind: JsRuntimeKind::ScriptFunction,
             source: source.to_string(),
+            self_contained: true,
             input: None,
             timeout_ms: None,
             allow_shell_command: false,
@@ -133,6 +134,32 @@ fn custom_generator(source: &str) -> Arc<GeneratorSpec> {
         js_runtime: Some(Arc::new(JsRuntimeSpec {
             kind: JsRuntimeKind::Custom,
             source: source.to_string(),
+            self_contained: true,
+            input: None,
+            timeout_ms: None,
+            allow_shell_command: false,
+        })),
+        corrected_in: None,
+        template: None,
+    })
+}
+
+fn cached_custom_generator(source: &str) -> Arc<GeneratorSpec> {
+    Arc::new(GeneratorSpec {
+        generator_type: None,
+        script: None,
+        script_template: None,
+        transforms: Vec::new(),
+        cache: Some(gc_suggest::specs::CacheConfig {
+            ttl_seconds: 3600,
+            cache_by_directory: false,
+        }),
+        requires_js: true,
+        js_source: None,
+        js_runtime: Some(Arc::new(JsRuntimeSpec {
+            kind: JsRuntimeKind::Custom,
+            source: source.to_string(),
+            self_contained: true,
             input: None,
             timeout_ms: None,
             allow_shell_command: false,
@@ -255,7 +282,79 @@ async fn phase5_custom_can_read_cwd_and_tokens() {
         .expect("dispatch");
     let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
     assert!(names.contains(&"cwd:/phase5-cwd"), "got: {names:?}");
-    assert!(names.contains(&"tokens:phase5-test,sub"), "got: {names:?}",);
+    assert!(names.contains(&"tokens:phase5-test,sub,"), "got: {names:?}",);
+}
+
+#[tokio::test]
+async fn phase5_custom_tokens_include_non_empty_current_word() {
+    let source = "async (tokens, run, ctx) => [{ \
+        name: 'last:' + tokens[tokens.length - 1], \
+        description: 'current:' + ctx.currentToken + ',previous:' + ctx.previousToken, \
+    }]";
+    let gen = custom_generator(source);
+    let engine = make_engine();
+    let ctx = make_ctx("npm", vec!["install"], "rea");
+    let results = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch");
+    let hit = results
+        .iter()
+        .find(|s| s.text == "last:rea")
+        .expect("custom JS should see the live current word in tokens");
+    assert_eq!(
+        hit.description.as_deref(),
+        Some("current:rea,previous:install")
+    );
+}
+
+#[tokio::test]
+async fn phase5_script_function_tokens_include_empty_cursor_slot_after_space() {
+    let gen = script_function_generator(
+        "(tokens, ctx) => ['printf', '%s\\n%s\\n%s\\n', \
+            'last:' + tokens[tokens.length - 1], \
+            'current:' + ctx.currentToken, \
+            'previous:' + ctx.previousToken]",
+    );
+    let engine = make_engine();
+    let ctx = make_ctx("npm", vec!["install"], "");
+    let results = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch");
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(names, vec!["last:", "current:", "previous:install"]);
+}
+
+#[tokio::test]
+async fn phase5_custom_cache_key_includes_current_and_previous_token() {
+    let source = "async (tokens, run, ctx) => [{ \
+        name: 'current:' + ctx.currentToken + ',previous:' + ctx.previousToken, \
+    }]";
+    let gen = cached_custom_generator(source);
+    let engine = make_engine();
+
+    let ctx_rea = make_ctx("npm", vec!["install"], "rea");
+    let first = engine
+        .run_generators(
+            std::slice::from_ref(&gen),
+            &ctx_rea,
+            Path::new("/tmp"),
+            5_000,
+        )
+        .await
+        .expect("first dispatch");
+    assert_eq!(first[0].text, "current:rea,previous:install");
+
+    let ctx_pre = make_ctx("npm", vec!["install"], "pre");
+    let second = engine
+        .run_generators(&[gen], &ctx_pre, Path::new("/tmp"), 5_000)
+        .await
+        .expect("second dispatch");
+    assert_eq!(
+        second[0].text, "current:pre,previous:install",
+        "custom cache must not reuse results from a different live prefix"
+    );
 }
 
 #[tokio::test]
@@ -293,6 +392,7 @@ async fn phase5_suggest_sync_schedules_requires_js_custom_generator() {
                     "requires_js": true,
                     "js_runtime": {
                         "kind": "custom",
+                        "self_contained": true,
                         "source": "async (tokens, run, ctx) => [{ name: 'cwd:' + ctx.currentWorkingDirectory }, { name: 'home:' + ctx.environmentVariables.HOME }]"
                     }
                 }]
@@ -487,6 +587,7 @@ async fn phase5_supported_count_lifts_to_full_corpus() {
                 kind: JsRuntimeKind::PostProcess,
                 source: "out => out.split('\\n').filter(Boolean).map(n => ({ name: 'pp:' + n }))"
                     .to_string(),
+                self_contained: true,
                 input: None,
                 timeout_ms: None,
                 allow_shell_command: false,

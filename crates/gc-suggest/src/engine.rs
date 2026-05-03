@@ -1409,28 +1409,33 @@ fn is_supported_script_generator(gen: &GeneratorSpec) -> bool {
         Some(rt) if rt.kind == JsRuntimeKind::PostProcess => {
             gen.script.is_some() || gen.script_template.is_some()
         }
-        Some(rt) if rt.kind == JsRuntimeKind::ScriptFunction => !rt.source.trim().is_empty(),
-        Some(rt) if rt.kind == JsRuntimeKind::Custom => !rt.source.trim().is_empty(),
+        Some(rt)
+            if matches!(
+                rt.kind,
+                JsRuntimeKind::ScriptFunction | JsRuntimeKind::Custom
+            ) =>
+        {
+            rt.self_contained && !rt.source.trim().is_empty()
+        }
         _ => false,
     }
 }
 
 /// Pack the parsed command line into the host-API context for a Phase 5
-/// JS dispatch. The token slice is `[command, ...args]` so JS code that
-/// destructures `[, sub] = tokens` matches Fig's documented shape.
+/// JS dispatch. The token slice is `[command, ...completed_args,
+/// current_word]`, including an empty final slot at a word boundary, so
+/// Fig-style code that reads `tokens[tokens.length - 1]` sees the live
+/// cursor token.
 ///
-/// The env is filtered to a small allowlist that matches what
-/// `script::run_script` already exposes — auth tokens (`PATH`,
-/// `HOME`, `GITHUB_TOKEN`, etc.) reach the child via the inherited
-/// process env, and the host binding mirrors that surface so JS specs
-/// can observe e.g. `env.HOME` without diverging from the script
-/// dispatch path.
+/// Phase 5 mirrors the full process environment except
+/// `GHOST_COMPLETE_ACTIVE`, matching `script::run_script`.
 fn make_js_exec_context(ctx: &CommandContext, cwd: &Path) -> JsExecContext {
-    let mut tokens: Vec<String> = Vec::with_capacity(1 + ctx.args.len());
+    let mut tokens: Vec<String> = Vec::with_capacity(2 + ctx.args.len());
     if let Some(cmd) = ctx.command.as_ref() {
         tokens.push(cmd.clone());
     }
     tokens.extend(ctx.args.iter().cloned());
+    tokens.push(ctx.current_word.clone());
 
     // Phase 5 mirrors the full process env into JS so generators that
     // read `env.HOME` / `env.PATH` keep working. The map is a snapshot
@@ -1588,9 +1593,11 @@ async fn run_custom_dispatch(
     // local.
     let token_fingerprint = exec_ctx.tokens.join("\u{1}");
     let key_source = format!(
-        "custom:{src}#{tokens}",
+        "custom:{src}#tokens:{tokens}#current:{current}#previous:{previous}",
         src = rt.source,
         tokens = token_fingerprint,
+        current = exec_ctx.current_token,
+        previous = exec_ctx.previous_token,
     );
     let cache_cwd = cache_cwd_owned(&cache, &cwd);
     let cache_key = CacheKey::js_processed(

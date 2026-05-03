@@ -152,7 +152,7 @@ fn sanitize_option_spec(opt: &mut OptionSpec) {
     for n in &mut opt.name {
         sanitize_string(n);
     }
-    if let Some(ref mut arg) = opt.args {
+    for arg in opt.args.iter_mut().chain(opt.extra_args.iter_mut()) {
         sanitize_arg_spec(arg);
     }
 }
@@ -205,10 +205,8 @@ where
     }
 }
 
-/// Deserialize option `args` as either a single object or an array.
-fn deserialize_option_args<'de, D>(
-    deserializer: D,
-) -> std::result::Result<Option<ArgSpec>, D::Error>
+/// Deserialize option `args` as either a single object or an ordered array.
+fn deserialize_option_args<'de, D>(deserializer: D) -> std::result::Result<Vec<ArgSpec>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -220,29 +218,10 @@ where
     }
 
     match Option::<OneOrMany>::deserialize(deserializer)? {
-        Some(OneOrMany::One(single)) => Ok(Some(single)),
-        Some(OneOrMany::Many(vec)) => Ok(merge_option_args(vec)),
-        None => Ok(None),
+        Some(OneOrMany::One(single)) => Ok(vec![single]),
+        Some(OneOrMany::Many(vec)) => Ok(vec),
+        None => Ok(Vec::new()),
     }
-}
-
-fn merge_option_args(args: Vec<ArgSpec>) -> Option<ArgSpec> {
-    let mut iter = args.into_iter();
-    let mut merged = iter.next()?;
-    for arg in iter {
-        if merged.name.is_none() {
-            merged.name = arg.name;
-        }
-        if merged.description.is_none() {
-            merged.description = arg.description;
-        }
-        merged.generators.extend(arg.generators);
-        if merged.template.is_none() {
-            merged.template = arg.template;
-        }
-        merged.suggestions.extend(arg.suggestions);
-    }
-    Some(merged)
 }
 
 /// Deserialize an `Option<JsRuntimeSpec>` and wrap it in `Arc` so the
@@ -286,14 +265,44 @@ pub struct SubcommandSpec {
     pub priority: Option<Priority>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct OptionSpec {
     pub name: Vec<String>,
     pub description: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_option_args")]
+    /// Backwards-compatible first option argument. For `args: [...]`, this
+    /// holds only element 0; additional positional option args live in
+    /// `extra_args` so resolution can preserve array boundaries without
+    /// changing the public field shape during this PR.
     pub args: Option<ArgSpec>,
-    #[serde(default)]
+    pub(crate) extra_args: Vec<ArgSpec>,
     pub priority: Option<Priority>,
+}
+
+impl<'de> Deserialize<'de> for OptionSpec {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct RawOptionSpec {
+            name: Vec<String>,
+            description: Option<String>,
+            #[serde(default, deserialize_with = "deserialize_option_args")]
+            args: Vec<ArgSpec>,
+            #[serde(default)]
+            priority: Option<Priority>,
+        }
+
+        let raw = RawOptionSpec::deserialize(deserializer)?;
+        let mut args = raw.args.into_iter();
+        Ok(Self {
+            name: raw.name,
+            description: raw.description,
+            args: args.next(),
+            extra_args: args.collect(),
+            priority: raw.priority,
+        })
+    }
 }
 
 /// Deserialize template as either a single string or an array of strings.
@@ -339,6 +348,10 @@ pub struct ArgSpec {
     /// `args` and `generators`, never `suggestions`.
     #[serde(default, deserialize_with = "deserialize_suggestions_one_or_many")]
     pub(crate) suggestions: Vec<SuggestionEntry>,
+    #[serde(default, rename = "isOptional")]
+    pub is_optional: bool,
+    #[serde(default, rename = "isVariadic")]
+    pub is_variadic: bool,
 }
 
 /// Static suggestion entry — either a plain string shorthand or a full object.
@@ -489,10 +502,16 @@ pub struct JsRuntimeSpec {
     #[serde(default)]
     pub timeout_ms: Option<u64>,
     /// When `true`, allows shell-string command execution from `script_function`
-    /// or `custom` generators. Defaults to `false`. Required only for any
-    /// audited shipped spec needing string-based shell.
+    /// or `custom` generators. Defaults to `false`. In the current engine this
+    /// is effective only for `custom` host calls to `executeShellCommand`;
+    /// `script_function` returns argv for the engine to spawn.
     #[serde(default)]
     pub allow_shell_command: bool,
+    /// True only when the converter proved this source does not close over
+    /// bundler/minifier helper bindings that the QuickJS host will not install.
+    /// Custom/script_function sources without this proof remain unsupported.
+    #[serde(default)]
+    pub self_contained: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -1052,6 +1071,103 @@ pub struct SpecResolution {
     pub past_double_dash: bool,
 }
 
+fn option_arg_count(opt: &OptionSpec) -> usize {
+    usize::from(opt.args.is_some()) + opt.extra_args.len()
+}
+
+fn option_arg_at(opt: &OptionSpec, index: usize) -> Option<&ArgSpec> {
+    if index == 0 {
+        opt.args.as_ref()
+    } else {
+        opt.extra_args.get(index - 1)
+    }
+}
+
+fn option_last_arg_is_variadic(opt: &OptionSpec) -> bool {
+    option_arg_count(opt)
+        .checked_sub(1)
+        .and_then(|idx| option_arg_at(opt, idx))
+        .is_some_and(|arg| arg.is_variadic)
+}
+
+fn has_inline_option_value(flag: &str) -> bool {
+    flag.split_once('=')
+        .is_some_and(|(_, value)| !value.is_empty())
+}
+
+fn completed_option_value_count(args: &[String], flag_idx: usize, opt: &OptionSpec) -> usize {
+    let arg_count = option_arg_count(opt);
+    if arg_count == 0 {
+        return 0;
+    }
+
+    let mut completed = usize::from(has_inline_option_value(&args[flag_idx]));
+    if completed >= arg_count && !option_last_arg_is_variadic(opt) {
+        return completed;
+    }
+
+    let mut idx = flag_idx + 1;
+    while idx < args.len() {
+        if args[idx].starts_with('-') {
+            break;
+        }
+        if completed >= arg_count && !option_last_arg_is_variadic(opt) {
+            break;
+        }
+        completed += 1;
+        idx += 1;
+    }
+    completed
+}
+
+fn active_option_arg_spec<'a>(
+    options: &'a [OptionSpec],
+    args: &[String],
+    ctx: &CommandContext,
+) -> Option<&'a ArgSpec> {
+    if let Some(flag) = &ctx.preceding_flag {
+        if flag.contains('=') {
+            // Inline value already occupies arg slot 0; fall through to the
+            // scanner so `--flag=value <TAB>` can address a second option arg.
+        } else if let Some(opt) = find_option(options, flag) {
+            return option_arg_at(opt, 0);
+        }
+    }
+
+    for (idx, arg) in args.iter().enumerate() {
+        if !arg.starts_with('-') {
+            continue;
+        }
+        let Some(opt) = find_option(options, arg) else {
+            continue;
+        };
+        let arg_count = option_arg_count(opt);
+        if arg_count == 0 {
+            continue;
+        }
+        let completed = completed_option_value_count(args, idx, opt);
+        let span_end =
+            idx + 1 + completed.saturating_sub(usize::from(has_inline_option_value(arg)));
+        if span_end != args.len() {
+            continue;
+        }
+        if completed < arg_count {
+            return option_arg_at(opt, completed);
+        }
+        if option_last_arg_is_variadic(opt) {
+            return option_arg_at(opt, arg_count - 1);
+        }
+    }
+
+    None
+}
+
+fn arg_spec_has_completion_content(arg_spec: &ArgSpec) -> bool {
+    !arg_spec.generators.is_empty()
+        || !arg_spec.suggestions.is_empty()
+        || matches!(arg_spec.template.as_deref(), Some("filepaths" | "folders"))
+}
+
 /// Walk the spec tree using args from the CommandContext to find the deepest
 /// matching subcommand, then return available completions at that position.
 pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResolution {
@@ -1082,12 +1198,13 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
 
         // Skip flags
         if arg.starts_with('-') {
-            // If this flag takes a value in the spec, skip the next arg too
-            // (unless the value is inline via `--flag=value`, where there's
-            // no separate next arg to skip).
+            // If this flag takes values in the spec, skip the completed value
+            // tokens too. Option `args` arrays are positional; flattening them
+            // here would make later option values look like subcommands.
             if let Some(opt) = find_option(current_options, arg) {
-                if opt.args.is_some() && !arg.contains('=') && arg_idx + 1 < args.len() {
-                    arg_idx += 2;
+                let consumed = completed_option_value_count(args, arg_idx, opt);
+                if consumed > 0 {
+                    arg_idx += 1 + consumed;
                     continue;
                 }
             }
@@ -1151,38 +1268,37 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     // the option's arg spec for templates/generators instead of the
     // positional args.
     let mut preceding_flag_has_args = false;
-    if let Some(flag) = &ctx.preceding_flag {
-        if let Some(opt) = find_option(current_options, flag) {
-            if let Some(arg_spec) = &opt.args {
-                // The flag takes an argument — suppress subcommands/options
-                // regardless of whether the arg spec has explicit generators.
-                // A bare `"args": { "name": "file" }` still means the user
-                // is filling a value, not typing a subcommand.
-                preceding_flag_has_args = true;
+    let mut option_arg_has_completion_content = false;
+    if let Some(arg_spec) = active_option_arg_spec(current_options, args, ctx) {
+        // The flag takes an argument — suppress subcommands/options
+        // regardless of whether the arg spec has explicit generators.
+        // A bare `"args": { "name": "file" }` still means the user
+        // is filling a value, not typing a subcommand.
+        preceding_flag_has_args = true;
+        option_arg_has_completion_content = arg_spec_has_completion_content(arg_spec);
 
-                collect_generators(
-                    &arg_spec.generators,
-                    &mut native_generators,
-                    &mut provider_generators,
-                    &mut script_generators,
-                    &mut wants_filepaths,
-                    &mut wants_folders_only,
-                );
-                collect_static_suggestions(&arg_spec.suggestions, &mut static_suggestions);
-                match arg_spec.template.as_deref() {
-                    Some("filepaths") => wants_filepaths = true,
-                    Some("folders") => wants_folders_only = true,
-                    _ => {}
-                }
-            }
+        collect_generators(
+            &arg_spec.generators,
+            &mut native_generators,
+            &mut provider_generators,
+            &mut script_generators,
+            &mut wants_filepaths,
+            &mut wants_folders_only,
+        );
+        collect_static_suggestions(&arg_spec.suggestions, &mut static_suggestions);
+        match arg_spec.template.as_deref() {
+            Some("filepaths") => wants_filepaths = true,
+            Some("folders") => wants_folders_only = true,
+            _ => {}
         }
     }
 
     // Check positional arg specs at the resolved position, but only when
-    // not filling a flag argument. When `preceding_flag_has_args` is true,
-    // the user is supplying the flag's value — positional arg specs are
-    // irrelevant and their suggestions would pollute the candidate set.
-    if !preceding_flag_has_args {
+    // the active flag arg has its own completions. Inert option args still
+    // suppress subcommands/options, but can fall through to positional
+    // generators so alias-injected flags like `gcb -> git checkout -b` do
+    // not produce an empty async dispatch set.
+    if !option_arg_has_completion_content {
         for arg_spec in current_args {
             collect_generators(
                 &arg_spec.generators,
@@ -1307,40 +1423,28 @@ fn collect_generators(
 ) {
     for gen in generators {
         if gen.requires_js {
-            // Phase 5: every populated `js_runtime` kind has an engine
-            // dispatch path:
+            // Phase 5: supported `js_runtime` kinds have engine dispatch
+            // paths:
             // - `post_process` runs the `script` (or `script_template`)
             //   then post-processes stdout via JS.
             // - `script_function` runs JS first to derive argv, then
             //   spawns the resulting argv as a script.
             // - `custom` runs JS directly with a host `executeShellCommand`
             //   binding.
-            // Generators with `requires_js: true` but NO populated
-            // `js_runtime` shape (the converter declined to fill the
-            // metadata) stay skipped — there is nothing to dispatch.
+            // Generators with `requires_js: true` but no populated
+            // `js_runtime`, no source, or custom/script_function source that
+            // was not proven self-contained stay skipped — there is nothing
+            // safe to dispatch.
             let supported = match gen.js_runtime.as_ref().map(|rt| &rt.kind) {
                 Some(JsRuntimeKind::PostProcess) => {
                     // Post-process still requires an accompanying script;
                     // a JS body that can't see stdout has no input.
                     gen.script.is_some() || gen.script_template.is_some()
                 }
-                Some(JsRuntimeKind::ScriptFunction) => {
-                    // Script function generates argv from JS — no
-                    // pre-existing script needed. The non-empty source
-                    // requirement is enforced by the schema (`source: String`).
-                    !gen.js_runtime
-                        .as_ref()
-                        .map(|rt| rt.source.trim().is_empty())
-                        .unwrap_or(true)
-                }
-                Some(JsRuntimeKind::Custom) => {
-                    // Custom evaluates suggestions directly. Same source
-                    // emptiness check.
-                    !gen.js_runtime
-                        .as_ref()
-                        .map(|rt| rt.source.trim().is_empty())
-                        .unwrap_or(true)
-                }
+                Some(JsRuntimeKind::ScriptFunction) | Some(JsRuntimeKind::Custom) => gen
+                    .js_runtime
+                    .as_ref()
+                    .is_some_and(|rt| rt.self_contained && !rt.source.trim().is_empty()),
                 None => false,
             };
             if !supported {
@@ -1458,7 +1562,7 @@ pub fn validate_spec_generators(spec: &mut CompletionSpec) -> Vec<String> {
     let mut warnings = Vec::new();
     validate_args_generators(&mut spec.args, &spec.name, &mut warnings);
     for opt in &mut spec.options {
-        if let Some(ref mut arg_spec) = opt.args {
+        for arg_spec in opt.args.iter_mut().chain(opt.extra_args.iter_mut()) {
             validate_arg_generators(arg_spec, &spec.name, &mut warnings);
         }
     }
@@ -1467,7 +1571,7 @@ pub fn validate_spec_generators(spec: &mut CompletionSpec) -> Vec<String> {
     while let Some(sub) = stack.pop() {
         validate_args_generators(&mut sub.args, &spec.name, &mut warnings);
         for opt in &mut sub.options {
-            if let Some(ref mut arg_spec) = opt.args {
+            for arg_spec in opt.args.iter_mut().chain(opt.extra_args.iter_mut()) {
                 validate_arg_generators(arg_spec, &spec.name, &mut warnings);
             }
         }
@@ -1647,8 +1751,10 @@ pub fn estimated_heap_bytes(spec: &CompletionSpec) -> usize {
         let names: usize = opt.name.iter().map(|n| n.len()).sum();
         let names_vec = opt.name.capacity() * std::mem::size_of::<String>();
         let desc = opt_string_heap(&opt.description);
-        let args = opt.args.as_ref().map(arg_spec_heap).unwrap_or(0);
-        names + names_vec + desc + args
+        let first_arg = opt.args.as_ref().map(arg_spec_heap).unwrap_or(0);
+        let extra_args_vec = opt.extra_args.capacity() * std::mem::size_of::<ArgSpec>();
+        let extra_args = opt.extra_args.iter().map(arg_spec_heap).sum::<usize>();
+        names + names_vec + desc + first_arg + extra_args_vec + extra_args
     }
 
     let mut total = spec.name.len()
@@ -2600,7 +2706,10 @@ mod tests {
                 generators: vec![],
                 template: None,
                 suggestions: vec![],
+                is_optional: false,
+                is_variadic: false,
             }),
+            extra_args: Vec::new(),
             priority: None,
         }];
         // Exact match
@@ -2629,10 +2738,13 @@ mod tests {
                         generators: vec![],
                         template: None,
                         suggestions: vec![],
+                        is_optional: false,
+                        is_variadic: false,
                     })
                 } else {
                     None
                 },
+                extra_args: Vec::new(),
                 priority: None,
             });
         }
@@ -3682,6 +3794,47 @@ mod tests {
     }
 
     #[test]
+    fn inert_option_arg_does_not_block_positional_generators() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "git",
+                "subcommands": [{
+                    "name": "checkout",
+                    "options": [{
+                        "name": ["-b"],
+                        "args": { "name": "new-branch" }
+                    }],
+                    "args": [{
+                        "name": "ref",
+                        "generators": [{"type": "git_branches"}]
+                    }]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("git".into()),
+            args: vec!["checkout".into(), "-b".into()],
+            current_word: "main".into(),
+            word_index: 3,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+
+        let res = resolve_spec(&spec, &ctx);
+        assert!(
+            res.native_generators.contains(&"git_branches".to_string()),
+            "inert option args should fall through to positional generators: {:?}",
+            res.native_generators
+        );
+    }
+
+    #[test]
     fn static_suggestion_priority_field_round_trips() {
         // `collect_static_suggestions` copies `obj.priority` into the
         // resulting Suggestion. Pin the round-trip so a regression that
@@ -3807,6 +3960,103 @@ mod tests {
             .collect();
         assert!(texts.contains(&"json"));
         assert!(texts.contains(&"j"));
+    }
+
+    #[test]
+    fn option_arg_after_trailing_equals_uses_first_arg_spec() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "fmt",
+                "options": [{
+                    "name": ["--format"],
+                    "args": {
+                        "name": "kind",
+                        "suggestions": ["tar", "zip"]
+                    }
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("fmt".into()),
+            args: vec!["--format=".into()],
+            current_word: String::new(),
+            word_index: 2,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: Some("--format=".into()),
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+
+        let res = resolve_spec(&spec, &ctx);
+        let texts: Vec<&str> = res
+            .static_suggestions
+            .iter()
+            .map(|s| s.text.as_str())
+            .collect();
+        assert_eq!(texts, vec!["tar", "zip"]);
+    }
+
+    #[test]
+    fn option_args_array_preserves_positional_arg_specs() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "chezmoi",
+                "options": [{
+                    "name": ["-t", "--track"],
+                    "args": [
+                        {"name": "branch", "suggestions": ["main", "dev"]},
+                        {"name": "start-point", "suggestions": ["origin/main"]}
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+
+        let first_ctx = CommandContext {
+            command: Some("chezmoi".into()),
+            args: vec!["-t".into()],
+            current_word: String::new(),
+            word_index: 2,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: Some("-t".into()),
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let first = resolve_spec(&spec, &first_ctx);
+        let first_texts: Vec<&str> = first
+            .static_suggestions
+            .iter()
+            .map(|s| s.text.as_str())
+            .collect();
+        assert_eq!(first_texts, vec!["main", "dev"]);
+
+        let second_ctx = CommandContext {
+            command: Some("chezmoi".into()),
+            args: vec!["-t".into(), "main".into()],
+            current_word: String::new(),
+            word_index: 3,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let second = resolve_spec(&spec, &second_ctx);
+        let second_texts: Vec<&str> = second
+            .static_suggestions
+            .iter()
+            .map(|s| s.text.as_str())
+            .collect();
+        assert_eq!(second_texts, vec!["origin/main"]);
     }
 
     #[test]

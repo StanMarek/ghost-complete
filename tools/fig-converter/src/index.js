@@ -39,6 +39,7 @@ import { spawn } from 'node:child_process';
 import { convertSpec } from './static-converter.js';
 import { matchPostProcess } from './post-process-matcher.js';
 import { matchNativeFromJsSource, matchNativeGenerator } from './native-map.js';
+import { analyzeGenerator } from './ast-analyzer.js';
 
 const BUILD_DIR = join(
   import.meta.dirname,
@@ -211,6 +212,14 @@ function walkGenerators(obj, callback) {
   }
 }
 
+function buildSelfContainedJsRuntime(kind, source) {
+  if (!source || typeof source !== 'string') return null;
+  const analysis = analyzeGenerator(source);
+  if (analysis.parse_error) return null;
+  if (analysis.fig_api_refs.some((ref) => ref.kind === 'free')) return null;
+  return { kind, source, self_contained: true };
+}
+
 /**
  * Process a single generator through the conversion pipeline.
  *
@@ -250,10 +259,14 @@ export function processGenerator(gen, specName) {
       return result;
     }
     // Phase 2 (UX-9): emit `js_runtime.kind = "custom"` carrying the
-    // function source. The runtime layer activates this in Phase 5.
+    // function source only when the body is self-contained. Function
+    // sources produced by Function.prototype.toString() can close over
+    // bundled/minified helpers; QuickJS evaluates in a fresh host context,
+    // so unresolved free identifiers must remain unsupported.
     const result = { requires_js: true };
-    if (gen._customSource) {
-      result.js_runtime = { kind: 'custom', source: gen._customSource };
+    const runtime = buildSelfContainedJsRuntime('custom', gen._customSource);
+    if (runtime) {
+      result.js_runtime = runtime;
     }
     return result;
   }
@@ -270,10 +283,12 @@ export function processGenerator(gen, specName) {
       return result;
     }
     // Phase 2 (UX-9): emit `js_runtime.kind = "script_function"` carrying
-    // the function source. The runtime layer activates this in Phase 5.
+    // the function source only when it has no converter/bundler helper
+    // dependencies.
     const result = { requires_js: true };
-    if (gen._scriptSource) {
-      result.js_runtime = { kind: 'script_function', source: gen._scriptSource };
+    const runtime = buildSelfContainedJsRuntime('script_function', gen._scriptSource);
+    if (runtime) {
+      result.js_runtime = runtime;
     }
     return result;
   }

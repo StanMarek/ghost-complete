@@ -152,9 +152,8 @@ pub struct JsRuntimeInput {
     pub previous_token: String,
     /// Working directory for the shell.
     pub cwd: PathBuf,
-    /// Filtered environment (whitelist applied by the caller; the
-    /// Phase 5 dispatch path strips `GHOST_COMPLETE_ACTIVE` and surfaces
-    /// the rest verbatim).
+    /// Environment snapshot provided by the caller. The Phase 5 dispatch path
+    /// strips `GHOST_COMPLETE_ACTIVE` and surfaces the rest verbatim.
     pub env: BTreeMap<String, String>,
     /// Human-readable identifier for diagnostics. Typically
     /// `<spec-id>:<generator-index>`.

@@ -11,7 +11,7 @@
 //! ```js
 //! const __ghost = {
 //!   cwd: "<absolute path>",
-//!   env: { HOME: "...", PATH: "...", ... },        // filtered
+//!   env: { HOME: "...", PATH: "...", ... },        // caller snapshot
 //!   searchTerm: "<current_token>",                 // alias
 //!   currentToken: "<current_token>",
 //!   previousToken: "<previous_token>",

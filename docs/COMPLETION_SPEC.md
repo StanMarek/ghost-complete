@@ -223,9 +223,10 @@ Some Fig specs contain generators that require JavaScript execution. As of UX-9 
 | `source` | string | Yes | The JS function source. For `post_process` it receives stdout and returns suggestions; for `custom` it returns suggestions directly; for `script_function` its evaluation yields the argv to spawn. |
 | `input` | string | No | Which input is fed to the JS function (e.g. `"stdout"`, `"argv"`). Defaults are kind-specific; setting this overrides the default. |
 | `timeout_ms` | integer | No | Per-generator override of the global JS execution timeout. |
-| `allow_shell_command` | boolean | No | Default `false`. When `true`, the runtime allows passing a shell-string (rather than `argv`) to `executeShellCommand` for Class B/C generators. Required only for explicitly-audited shipped specs. |
+| `allow_shell_command` | boolean | No | Default `false`. Currently effective only for `custom` generators that call the host `executeShellCommand` binding with a shell string. `script_function` generators return argv for the engine to spawn and are not given a shell runner. Required only for explicitly-audited shipped specs. |
+| `self_contained` | boolean | No | Default `false`. Required for `script_function` and `custom` dispatch; the converter sets it only after proving the source has no unresolved helper/module bindings. |
 
-The converter populates `js_runtime` on every `requires_js` generator it emits — `kind: "post_process"` for postProcess bodies the matcher cannot lower to declarative transforms, `kind: "script_function"` for Fig's `script: (...) => [...]` shape, and `kind: "custom"` for `custom: async () => [...]`. The runtime can be disabled wholesale via `[suggest.providers] js_runtime = false` in `config.toml`; in that mode static portions (subcommands, options) of `requires_js` specs continue to work and the JS-backed generators silently no-op.
+The converter populates `js_runtime` for `post_process` bodies the matcher cannot lower to declarative transforms. For Fig `script: (...) => [...]` and `custom: async () => [...]` sources, it emits `js_runtime` only when static analysis proves the function is self-contained; closure-dependent bodies remain `requires_js` without runtime metadata and are skipped. The runtime can be disabled wholesale via `[suggest.providers] js_runtime = false` in `config.toml`; in that mode static portions (subcommands, options) of `requires_js` specs continue to work and the JS-backed generators silently no-op.
 
 #### Available Templates
 

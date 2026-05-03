@@ -141,6 +141,7 @@ fn post_process_generator(script: &[&str], source: &str) -> Arc<GeneratorSpec> {
         js_runtime: Some(Arc::new(JsRuntimeSpec {
             kind: JsRuntimeKind::PostProcess,
             source: source.to_string(),
+            self_contained: true,
             input: None,
             timeout_ms: None,
             allow_shell_command: false,
@@ -260,6 +261,7 @@ async fn phase4_unsupported_kind_skipped_when_source_empty() {
         js_runtime: Some(Arc::new(JsRuntimeSpec {
             kind: JsRuntimeKind::Custom,
             source: "".to_string(),
+            self_contained: false,
             input: None,
             timeout_ms: None,
             allow_shell_command: false,
@@ -305,6 +307,7 @@ async fn phase4_js_timeout_diagnostic_logged() {
         js_runtime: Some(Arc::new(JsRuntimeSpec {
             kind: JsRuntimeKind::PostProcess,
             source: "out => { while (true) {} }".to_string(),
+            self_contained: true,
             input: None,
             timeout_ms: Some(50),
             allow_shell_command: false,
@@ -363,6 +366,7 @@ async fn phase4_js_exception_diagnostic_logged() {
         js_runtime: Some(Arc::new(JsRuntimeSpec {
             kind: JsRuntimeKind::PostProcess,
             source: "out => { throw new Error('boom') }".to_string(),
+            self_contained: true,
             input: None,
             timeout_ms: None,
             allow_shell_command: false,

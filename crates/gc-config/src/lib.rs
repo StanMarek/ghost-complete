@@ -177,15 +177,10 @@ pub struct ProvidersConfig {
     /// `[suggest.providers] js_runtime = false` in their
     /// `config.toml`.
     ///
-    /// Phase 3 wires this field into the config schema only — the
-    /// suggestion engine begins honouring it in Phase 4 when the JS
-    /// dispatch path is connected. Setting this field today therefore
-    /// has no observable effect on completions; the rollout sequence
-    /// is:
-    ///
-    /// 1. Phase 3 (this PR): expose the field, default `true`.
-    /// 2. Phase 4: gate the `post_process` dispatch on this flag.
-    /// 3. Phase 5+: extend the gate to `script_function` / `custom`.
+    /// When `false`, the suggestion engine skips every JS-backed
+    /// `requires_js` generator whose `js_runtime.kind` is populated
+    /// (`post_process`, `script_function`, or `custom`). Static spec
+    /// completions remain available.
     pub js_runtime: bool,
 }
 

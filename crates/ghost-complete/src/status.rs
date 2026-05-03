@@ -22,10 +22,9 @@ const EMBEDDED_BASELINE: &str = include_str!("../../../docs/coverage-baseline.js
 /// spec tree. Used to classify a single spec as fully vs. partially
 /// functional — NOT as the corpus-wide `requires_js_generators_total`.
 /// The structured deserializer drops `OptionSpec.args[N>0]`, so summing
-/// this over `SpecStore` undercounts the corpus by ~135 today (the
-/// `scan_spec_files` raw-JSON walk is the source of truth for that
-/// counter). Phase 4 will distinguish supported from unsupported
-/// generators once `js_runtime` metadata lands in Phase 2.
+/// this over `SpecStore` undercounts the corpus today (the `scan_spec_files`
+/// raw-JSON walk is the source of truth for that counter). Supported vs.
+/// unsupported generator totals are also derived from the raw JSON scan.
 fn count_requires_js_generators(spec: &CompletionSpec) -> usize {
     fn count_in_generators(gens: &[GeneratorSpec]) -> usize {
         gens.iter().filter(|g| g.requires_js).count()
@@ -506,6 +505,7 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
     // After Phase 1 this is ≥ entry count (709 entries + N non-conflict
     // name aliases against the embedded corpus).
     let commands_addressable = store.aliases_count();
+    let commands_nonfunctional = total_parse_errors;
 
     // command_alias_conflicts: real, runtime-visible alias collisions
     // surfaced by the loader. Each entry is one rejected alias — either
@@ -531,13 +531,7 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
         parse_error_lines,
         commands_addressable,
         commands_partially_functional: partially_functional,
-        // commands_nonfunctional: 0 for now. Phase 1 keeps every spec
-        // addressable via its filename stem even when its `name` alias
-        // is rejected; only same-stem cross-dir collisions truly hide a
-        // spec, and those are deliberate user-override behavior. Phase 7
-        // will surface a tighter classification (e.g. specs whose only
-        // generator is requires_js and unsupported).
-        commands_nonfunctional: 0,
+        commands_nonfunctional,
         requires_js_generators_total,
         requires_js_generators_supported,
         requires_js_generators_unsupported,
@@ -942,11 +936,9 @@ struct SpecCounts {
     /// Phase 0 the two fields are numerically identical.
     commands_fully_functional: usize,
     commands_partially_functional: usize,
-    /// Today: 0. Phase 1 keeps every spec addressable via its filename
-    /// stem even when its `name` alias is rejected, so no spec is
-    /// silently lost from a single configured dir. Phase 7 will lift
-    /// this once we classify specs whose only completion path is a
-    /// requires_js generator that the runtime can't execute yet.
+    /// Specs that failed to load and are therefore absent from the runtime
+    /// store. Alias conflicts are reported separately; duplicate-name losers
+    /// remain addressable through their filename stems.
     commands_nonfunctional: usize,
     /// Total `requires_js: true` generator instances across the corpus
     /// (counted per occurrence, not per spec). Sourced from a raw
@@ -1891,6 +1883,81 @@ mod tests {
         assert_eq!(
             fs_block["requires_js_generators_total"].as_u64().unwrap(),
             1
+        );
+    }
+
+    #[test]
+    fn malformed_specs_are_nonfunctional_and_fail_coverage_gate() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        std::fs::write(spec_dir.join("broken.json"), "{not valid json").unwrap();
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let baseline = write_baseline(
+            &tmp,
+            r#"{
+  "schema_version": "1.0",
+  "releases": [
+    {
+      "version": "test-fixture",
+      "timestamp": "2026-05-03T00:00:00Z",
+      "total_specs": 0,
+      "fully_functional": 0,
+      "requires_js_generators": 0,
+      "native_providers": 0,
+      "corrected_generators": 0,
+      "hand_audit_required": 0,
+      "requires_js_generators_total": 0,
+      "requires_js_generators_supported": 0,
+      "requires_js_generators_unsupported": 0
+    }
+  ]
+}"#,
+        );
+
+        let mut out = Vec::new();
+        run_status_json(Some(cfg.to_str().unwrap()), Some(&baseline), &mut out).unwrap();
+        let status_path = tmp.path().join("status.json");
+        std::fs::write(&status_path, &out).unwrap();
+
+        let parsed: serde_json::Value = serde_json::from_slice(&out).unwrap();
+        assert_eq!(parsed["spec_counts"]["parse_errors"].as_u64().unwrap(), 1);
+        assert!(
+            parsed["spec_counts"]["commands_nonfunctional"]
+                .as_u64()
+                .unwrap()
+                > 0,
+            "malformed specs must make status report nonfunctional commands: {parsed}"
+        );
+
+        let repo_root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .to_path_buf();
+        let script = repo_root.join("scripts/check-coverage-regression.sh");
+        let output = std::process::Command::new("bash")
+            .arg(script)
+            .arg("--baseline")
+            .arg(&baseline)
+            .arg("--status-json")
+            .arg(&status_path)
+            .output()
+            .unwrap();
+
+        assert_eq!(
+            output.status.code(),
+            Some(1),
+            "coverage gate should fail on real status output with a malformed spec\nstdout:\n{}\nstderr:\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(
+            String::from_utf8_lossy(&output.stderr).contains("command(s) are nonfunctional"),
+            "gate failure should name the nonfunctional-command count, stderr:\n{}",
+            String::from_utf8_lossy(&output.stderr)
         );
     }
 

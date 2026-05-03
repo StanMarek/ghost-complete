@@ -116,7 +116,7 @@ To refresh the baseline: run `ghost-complete status --json` and follow the proce
 
 - a converter change drops `js_runtime` metadata from generators that previously dispatched, or
 - a spec edit moves a previously-supported generator into the unsupported bucket, or
-- a command becomes unreachable through the alias index.
+- a malformed or unreadable spec fails to load into the runtime store.
 
 **Failure modes:**
 

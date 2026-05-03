@@ -398,23 +398,24 @@ describe('processGenerator js_runtime emission (UX-9 Phase 2)', () => {
   // the runtime fallback paths get exercised. The native-map lookup keys on
   // (specName, script[]) so a synthetic name can't accidentally hit a rule.
 
-  it('_custom emits js_runtime.kind = "custom" (no native match)', () => {
+  it('_custom emits js_runtime.kind = "custom" only for self-contained sources', () => {
     const gen = {
       _custom: true,
-      _customSource: 'async (ctx) => [{ name: "x" }]',
+      _customSource: 'async (tokens, executeShellCommand, ctx) => [{ name: tokens[0] || ctx.searchTerm }]',
     };
     const out = processGenerator(gen, '__phase2_test_spec__');
     assert.equal(out.requires_js, true);
     assert.deepStrictEqual(out.js_runtime, {
       kind: 'custom',
-      source: 'async (ctx) => [{ name: "x" }]',
+      source: 'async (tokens, executeShellCommand, ctx) => [{ name: tokens[0] || ctx.searchTerm }]',
+      self_contained: true,
     });
     // Phase 2 stops emitting js_source on the new path — the runtime reads
     // js_runtime.source instead.
     assert.equal(out.js_source, undefined);
   });
 
-  it('_scriptFunction emits js_runtime.kind = "script_function" (no native match)', () => {
+  it('_scriptFunction emits js_runtime.kind = "script_function" only for self-contained sources', () => {
     const gen = {
       _scriptFunction: true,
       _scriptSource: '(ctx) => ["echo", "hello"]',
@@ -424,7 +425,30 @@ describe('processGenerator js_runtime emission (UX-9 Phase 2)', () => {
     assert.deepStrictEqual(out.js_runtime, {
       kind: 'script_function',
       source: '(ctx) => ["echo", "hello"]',
+      self_contained: true,
     });
+    assert.equal(out.js_source, undefined);
+  });
+
+  it('_custom with closure-dependent helpers remains unsupported requires_js', () => {
+    const gen = {
+      _custom: true,
+      _customSource: 'async (tokens) => ue(tokens).map(v.getCurrentInsertedDirectory)',
+    };
+    const out = processGenerator(gen, '__phase2_test_spec__');
+    assert.equal(out.requires_js, true);
+    assert.equal(out.js_runtime, undefined);
+    assert.equal(out.js_source, undefined);
+  });
+
+  it('_scriptFunction with closure-dependent helpers remains unsupported requires_js', () => {
+    const gen = {
+      _scriptFunction: true,
+      _scriptSource: '(tokens) => ge(tokens, v.getCurrentInsertedDirectory)',
+    };
+    const out = processGenerator(gen, '__phase2_test_spec__');
+    assert.equal(out.requires_js, true);
+    assert.equal(out.js_runtime, undefined);
     assert.equal(out.js_source, undefined);
   });
 

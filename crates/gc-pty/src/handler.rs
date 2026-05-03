@@ -103,8 +103,9 @@ pub fn parse_key_name(name: &str) -> anyhow::Result<KeyEvent> {
 
 /// Snapshot of command context at generator-spawn time, so merge-time can
 /// decide whether in-flight results still match the user's current buffer.
-/// `spawned_current_word` is `Some` only for generators that embed the word
-/// literally (e.g. script templates with `{current_token}`).
+/// `spawned_current_word` is `Some` only for generators whose subprocess/JS
+/// inputs can depend on the live word (e.g. script templates with
+/// `{current_token}` or JS runtime generators that receive `searchTerm`).
 #[derive(Debug, Clone)]
 struct DynamicCtxSnapshot {
     command: Option<String>,
@@ -143,13 +144,11 @@ impl DynamicCtxSnapshot {
         {
             return true;
         }
-        // `script_template` generators (the only case where this field is
-        // Some) substitute `{current_token}` LITERALLY into the generator's
-        // command line, per docs/COMPLETION_SPEC.md. `docker inspect ar` and
-        // `docker inspect arg` are independent commands producing disjoint
-        // result sets — prefix extension is unsound because results are not
-        // a superset/subset relationship. Any change to current_word means
-        // the results are from a different command invocation entirely.
+        // Generators that capture current_word feed it into their spawned
+        // command or JS host context. Prefix extension is unsound because
+        // those result sets are not guaranteed to have a superset/subset
+        // relationship. Any change means the results came from a different
+        // invocation.
         if let Some(ref spawned_word) = self.spawned_current_word {
             if spawned_word != &current.current_word {
                 return true;
@@ -1446,15 +1445,12 @@ impl InputHandler {
         }
         // Snapshot the command context so try_merge_dynamic can drop results
         // if the user typed a different command/subcommand/flag while
-        // generators were running. A script_template only depends on
-        // current_word if its template actually contains `{current_token}`
-        // — templates that only use `{prev_token}` or no placeholders at
-        // all don't need current_word to be pinned.
-        let uses_current_word = script_generators.iter().any(|gen| {
-            gen.script_template
-                .as_ref()
-                .is_some_and(|tpl| tpl.iter().any(|part| part.contains("{current_token}")))
-        });
+        // generators were running. Pin current_word only for generators that
+        // receive it as an input; plain scripts and providers use it as a
+        // merge-time fuzzy prefix instead.
+        let uses_current_word = script_generators
+            .iter()
+            .any(|gen| generator_depends_on_current_word(gen));
         self.dynamic_ctx = Some(DynamicCtxSnapshot::capture(ctx, uses_current_word));
         self.spawned_generation = self.buffer_generation;
         let (tx, rx) = mpsc::channel::<DynamicResult>(8);
@@ -2295,6 +2291,18 @@ fn build_env_snapshot(has_providers: bool) -> std::collections::HashMap<String, 
     } else {
         std::collections::HashMap::new()
     }
+}
+
+fn generator_depends_on_current_word(gen: &gc_suggest::specs::GeneratorSpec) -> bool {
+    if gen
+        .script_template
+        .as_ref()
+        .is_some_and(|tpl| tpl.iter().any(|part| part.contains("{current_token}")))
+    {
+        return true;
+    }
+
+    gen.requires_js && gen.js_runtime.is_some()
 }
 
 /// Two borrowed `HashSet<&str>`s (existing + per-batch) — keeping references
@@ -4411,6 +4419,34 @@ mod tests {
         let c = ctx("git", &["checkout"], None, 2, "ma");
         let snap = DynamicCtxSnapshot::capture(&c, false);
         assert!(snap.spawned_current_word.is_none());
+    }
+
+    #[test]
+    fn js_runtime_generators_are_current_word_dependent() {
+        let gen = gc_suggest::specs::GeneratorSpec {
+            generator_type: None,
+            script: None,
+            script_template: None,
+            transforms: Vec::new(),
+            cache: None,
+            requires_js: true,
+            js_source: None,
+            js_runtime: Some(std::sync::Arc::new(gc_suggest::specs::JsRuntimeSpec {
+                kind: gc_suggest::specs::JsRuntimeKind::Custom,
+                source: "async (tokens, run, ctx) => [{ name: ctx.searchTerm }]".to_string(),
+                self_contained: true,
+                input: None,
+                timeout_ms: None,
+                allow_shell_command: false,
+            })),
+            corrected_in: None,
+            template: None,
+        };
+
+        assert!(
+            generator_depends_on_current_word(&gen),
+            "JS runtime generators receive currentToken/searchTerm/tokens and must pin current_word"
+        );
     }
 
     // --- dismiss/trigger dynamic_task abort verification ---
