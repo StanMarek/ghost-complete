@@ -71,7 +71,7 @@ The workspace contains 9 crates under `crates/`:
 | [`gc-overlay`](../crates/gc-overlay/) | ANSI popup rendering — cursor save/restore, synchronized output, scroll-to-make-room, scrollbar, fuzzy match highlighting | |
 | [`gc-config`](../crates/gc-config/) | TOML config, keybindings, themes (presets + custom styles), generator timeouts | serde, toml |
 | [`gc-terminal`](../crates/gc-terminal/) | Terminal detection and capability profiling — `TerminalProfile` with `RenderStrategy` and `PromptDetection` enums | |
-| [`gc-jsrt`](../crates/gc-jsrt/) | Bounded QuickJS evaluator for `requires_js` specs (UX-9). Phase 3 ships the foundation; Phase 4+ wire it into `gc-suggest`. See [`docs/JS_RUNTIME.md`](JS_RUNTIME.md). | rquickjs |
+| [`gc-jsrt`](../crates/gc-jsrt/) | Bounded QuickJS evaluator for `requires_js` specs (UX-9). Active and wired into `gc-suggest` for all three `js_runtime.kind` variants (`post_process`, `script_function`, `custom`). See [`docs/JS_RUNTIME.md`](JS_RUNTIME.md). | rquickjs |
 
 ### Dependency Graph
 
@@ -81,12 +81,13 @@ ghost-complete ──► gc-pty ──► gc-parser
                      │    ──► gc-config
                      │    ──► gc-terminal
                      │    ──► gc-suggest ──► gc-buffer
-                     │                  └─► gc-config
+                     │                  ├─► gc-config
+                     │                  └─► gc-jsrt
                      │    ──► gc-overlay ──► gc-suggest
                      │                  └─► gc-terminal
 ```
 
-`gc-parser`, `gc-buffer`, `gc-config`, and `gc-terminal` are leaf crates with no other `gc-*` dependencies. `gc-suggest` depends on `gc-buffer` and `gc-config`. `gc-overlay` depends on `gc-suggest` and `gc-terminal`. `gc-pty` depends on every other crate and ties them all together.
+`gc-parser`, `gc-buffer`, `gc-config`, `gc-terminal`, and `gc-jsrt` are leaf crates with no other `gc-*` dependencies. `gc-suggest` depends on `gc-buffer`, `gc-config`, and `gc-jsrt`. `gc-overlay` depends on `gc-suggest` and `gc-terminal`. `gc-pty` depends on every other crate and ties them all together.
 
 ## Key Design Decisions
 
@@ -159,10 +160,11 @@ Specs support multiple generator types:
 | **Templates** (`filepaths`, `folders`) | Sync, filesystem | Instant |
 | **Script generators** (shell commands) | Async, spawned process | Variable (cached with TTL) |
 | **Script templates** (commands with `{current_token}`) | Async, spawned process | Variable |
+| **`requires_js` generators** (Fig postProcess / script-fn / custom) | Async via `gc-jsrt` (bounded QuickJS); see [`docs/JS_RUNTIME.md`](JS_RUNTIME.md) | Variable (cached separately under `CacheKey::JsProcessed`) |
 
 Script generator output passes through a transform pipeline (`split_lines`, `trim`, `regex_extract`, `json_extract`, `column_extract`, etc.) that is validated at spec load time.
 
-Generator results are cached in-memory with configurable TTL per-generator. `cache_by_directory` keys cache entries by CWD for commands whose output is directory-dependent.
+Generator results are cached in-memory with configurable TTL per-generator. `cache_by_directory` keys cache entries by CWD for commands whose output is directory-dependent. JS post-processed output uses a separate keyspace (`CacheKey::JsProcessed { source_hash }`) so two `js_runtime.source` bodies sharing the same script don't cross-contaminate.
 
 ## Popup Rendering
 

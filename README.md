@@ -172,13 +172,13 @@ Beyond specs, built-in providers offer:
 - **Shell alias resolution** — `alias g=git` → `g push` uses the git spec
 - **Frecency-ranked history** — frequently/recently used commands score higher
 
-Many specs include dynamic generators that run shell commands for live results (e.g., `brew list`, `docker ps`, `kubectl get`). Generator results are cached with configurable TTL. A loading indicator (`...`) appears while generators run.
+Many specs include dynamic generators that run shell commands for live results (e.g., `brew list`, `docker ps`, `kubectl get`). Generator results are cached with configurable TTL. A loading indicator (`...`) appears while generators run. Specs that originally relied on inline JavaScript (Fig `postProcess`, `script: () => [...]`, `custom: async () => [...]`) execute through the embedded `gc-jsrt` runtime — see [`docs/JS_RUNTIME.md`](docs/JS_RUNTIME.md) for the sandbox model.
 
 Custom specs go in `~/.config/ghost-complete/specs/`. See [docs/COMPLETION_SPEC.md](docs/COMPLETION_SPEC.md) for the format reference.
 
 ## Architecture
 
-Rust workspace with 8 crates:
+Rust workspace with 9 crates:
 
 | Crate | Role |
 |-------|------|
@@ -190,6 +190,7 @@ Rust workspace with 8 crates:
 | `gc-overlay` | ANSI popup rendering with synchronized output |
 | `gc-config` | TOML config, keybindings, themes |
 | `gc-terminal` | Terminal detection, capability profiling, render strategy selection |
+| `gc-jsrt` | Bounded QuickJS evaluator for `requires_js` specs (rquickjs) |
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design — data flow, dependency graph, key design decisions, and performance characteristics.
 
@@ -207,7 +208,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design — data fl
 - **Terminal.app inside tmux is not detected.** Terminal.app sets no environment variable that leaks through tmux, so Ghost Complete cannot identify it. Ghostty, Kitty, WezTerm, Alacritty, and iTerm2 in tmux work correctly via their respective env vars (`GHOSTTY_RESOURCES_DIR`, `KITTY_WINDOW_ID`, `WEZTERM_UNIX_SOCKET`, `ALACRITTY_SOCKET`, `ITERM_SESSION_ID`).
 - **Dynamic generator results require a keystroke to render.** Async generators (shell commands for live results) merge into the popup on the next PTY read. If the shell is idle after the generator completes, results won't appear until the next keystroke.
 - **Bash and fish: manual trigger only.** Auto-trigger on typing is not implemented for bash or fish. Use Ctrl+/ to manually invoke completions.
-- **Specs with `requires_js: true` are partially functional.** Static completions (subcommands, options) work, but JS-based generators from the original Fig ecosystem are not executed.
+- **JS-backed generators run in a bounded sandbox.** Specs with `requires_js: true` are evaluated by the embedded `gc-jsrt` runtime (QuickJS via rquickjs, default on). The sandbox enforces resource caps (memory, stack, time) and a restricted host API; long-running native operations (pathological regex, large `JSON.parse`) are not preempted at the exact deadline. The runtime can be disabled wholesale via `[suggest.providers] js_runtime = false`. See [`docs/JS_RUNTIME.md`](docs/JS_RUNTIME.md).
 - **No Linux or Windows support.** macOS only. The PTY proxy and terminal detection rely on macOS-specific behavior.
 
 ## FAQ

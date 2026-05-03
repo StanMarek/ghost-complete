@@ -196,20 +196,9 @@ Like script generators, but with token interpolation. `{current_token}` is repla
 | `transforms` | string[] | No | Transform pipeline applied to stdout |
 | `cache` | CacheConfig | No | TTL caching configuration |
 
-#### Deferred JS generators
+#### JS-backed generators (`requires_js`)
 
-Some Fig specs contain generators that require JavaScript execution. Ghost Complete does not yet ship a JS runtime in the released binary. When a generator is flagged as requiring JS, the static portions of the spec (subcommands, options, simple args) still work normally.
-
-```json
-{
-  "requires_js": true,
-  "script": ["fallback", "command"]
-}
-```
-
-**Current behaviour (release ≤ 0.11.0):** any generator with `requires_js: true` is skipped entirely at resolution time, regardless of any sibling fields. A `script` array next to `requires_js` is loaded but not executed. Specs with `requires_js` generators still surface their subcommands and options — only the JS-flagged generator itself is dropped. (Earlier revisions of this document claimed the sibling `script` would run as a fallback; that was never the case in the runtime, and the doc was reconciled with the code in UX-9 Phase 0.)
-
-**In progress (UX-9):** the runtime grows a metadata-driven JS path. Specs with `requires_js: true` may carry a new `js_runtime` object that classifies the generator and supplies the source needed to drive it:
+Some Fig specs contain generators that require JavaScript execution. As of UX-9 Phase 5, all three `js_runtime.kind` variants execute via [`gc-jsrt`](../crates/gc-jsrt/) — a bounded QuickJS evaluator running on a dedicated worker thread. See [`docs/JS_RUNTIME.md`](./JS_RUNTIME.md) for the runtime model (sandbox, host API, resource caps, kill switch).
 
 ```json
 {
@@ -224,9 +213,9 @@ Some Fig specs contain generators that require JavaScript execution. Ghost Compl
 
 | `js_runtime.kind` | Behaviour | Status |
 |-------------------|-----------|--------|
-| `post_process`    | Run `script` (or `script_template`) as a normal script generator, then pass stdout through the JS function in `js_runtime.source`. The function returns the suggestion list. | Activated in Phase 4. |
-| `custom`          | No script — `js_runtime.source` is an async function that returns suggestions directly (the Fig `custom: async () => [...]` shape). | Activated in Phase 5. |
-| `script_function` | Generator emits a string of code in `js_runtime.source` whose evaluation produces an `argv` to spawn, then post-processes the resulting stdout. | Activated in Phase 5. |
+| `post_process`    | Run `script` (or `script_template`) as a normal script generator, then pass stdout through the JS function in `js_runtime.source`. The function returns the suggestion list. | Active (UX-9 Phase 4). |
+| `script_function` | Evaluate `js_runtime.source` to produce an `argv`, spawn it, then post-process the resulting stdout through the same source. | Active (UX-9 Phase 5). |
+| `custom`          | No script — `js_runtime.source` is an async function that returns suggestions directly (the Fig `custom: async () => [...]` shape). | Active (UX-9 Phase 5). |
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -236,7 +225,7 @@ Some Fig specs contain generators that require JavaScript execution. Ghost Compl
 | `timeout_ms` | integer | No | Per-generator override of the global JS execution timeout. |
 | `allow_shell_command` | boolean | No | Default `false`. When `true`, the runtime allows passing a shell-string (rather than `argv`) to `executeShellCommand` for Class B/C generators. Required only for explicitly-audited shipped specs. |
 
-Until Phase 4 ships, treat any spec with `requires_js: true` as having that generator dropped, irrespective of `js_runtime` content. The metadata is now parsed by the schema (UX-9 Phase 2): the converter populates `js_runtime` on every `requires_js` generator it emits — `kind: "post_process"` for postProcess bodies the matcher cannot lower to declarative transforms, `kind: "script_function"` for Fig's `script: (...) => [...]` shape, and `kind: "custom"` for `custom: async () => [...]`. The schema accepts the field today; runtime dispatch lands in Phase 4 (post_process) and Phase 5 (script_function / custom). The field shape may still tighten before Phase 8 ships.
+The converter populates `js_runtime` on every `requires_js` generator it emits — `kind: "post_process"` for postProcess bodies the matcher cannot lower to declarative transforms, `kind: "script_function"` for Fig's `script: (...) => [...]` shape, and `kind: "custom"` for `custom: async () => [...]`. The runtime can be disabled wholesale via `[suggest.providers] js_runtime = false` in `config.toml`; in that mode static portions (subcommands, options) of `requires_js` specs continue to work and the JS-backed generators silently no-op.
 
 #### Available Templates
 

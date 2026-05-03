@@ -18,12 +18,15 @@ The release binary measures ~102 MB (under the 110 MB CI ceiling enforced by
 embedded corpus is the queued reclaim path). On-disk `specs/*.json` remain
 pretty-printed; only the binary-embedded copies are minified.
 
-**Non-goal:** embedding a JavaScript runtime. Upstream specs sometimes include
-inline JS generators (`postProcess`, `custom`, `trigger`); we either rewrite
-those declaratively at convert time, replace them with a native Rust provider,
-or mark the generator `requires_js` and ship it as a functional no-op. See
-[`docs/PROVIDERS.md`](./PROVIDERS.md) and the umbrella initiative referenced
-below.
+**JavaScript runtime:** the JS runtime lives in [`gc-jsrt`](../crates/gc-jsrt/)
+and was activated across UX-9 Phase 3+ (bounded QuickJS via rquickjs, default
+on). Upstream specs that include inline JS generators (`postProcess`, `custom`,
+`trigger`, `script: () => [...]`) are still preferred to be lowered
+declaratively at convert time or replaced with a native Rust provider when the
+shape is reusable; otherwise the converter emits a `js_runtime` block on the
+generator and the runtime evaluates it at suggestion time. See
+[`docs/PROVIDERS.md`](./PROVIDERS.md), [`docs/JS_RUNTIME.md`](./JS_RUNTIME.md),
+and the umbrella initiative referenced below.
 
 ## Conversion pipeline
 
