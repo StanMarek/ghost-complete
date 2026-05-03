@@ -7,7 +7,7 @@ Ghost Complete uses a Fig-compatible JSON format for completion specs. Specs def
 - Specs are JSON files, one per command
 - Shipped specs are embedded in the binary at compile time
 - Custom specs go in `~/.config/ghost-complete/specs/`
-- File name must match the command name (e.g., `git.json` for `git`)
+- The filename stem is the canonical command id (`git.json` is reachable as `git` on the shell). The spec's `name` field can differ from the stem and registers as a secondary alias when free — see [Command addressability](#command-addressability) below.
 - Validate with `ghost-complete validate-specs`
 
 ## Schema
@@ -441,6 +441,46 @@ OR when the user typed a path-prefix.**
 **Generators only run at arg positions where they are declared.** No
 spec field is required to opt out — the absence of a generator is the
 opt-out.
+
+## Command addressability
+
+The shell command users type maps to a parsed spec via the loader's
+**alias index**. There are two layers:
+
+1. **Filename stem (canonical id).** `git.json` is always reachable as
+   `git`. The stem is the stable identifier used by status reporting
+   (`commands_addressable`, `iter()` keys) and by `ghost-complete
+   doctor`'s diagnostics. Filename stems are case-sensitive on the
+   shell, so `R.json` and `r.json` are distinct addressable commands.
+
+2. **`CompletionSpec.name` (secondary alias).** When the spec's `name`
+   field differs from the stem, the loader registers `name` as an
+   additional alias — provided that key isn't already taken. For
+   example, `kubecolor.json` declares `name: "kubectl"`, so it
+   normally would register both `kubecolor` and `kubectl` as keys —
+   but the canonical `kubectl.json` already owns `kubectl` (its stem
+   takes precedence over another file's name claim), so the
+   `kubecolor → kubectl` alias is rejected and the `kubecolor` spec
+   stays reachable only as `kubecolor`.
+
+**Conflict surfacing.** When two files want the same alias, the loader
+records an `AliasConflict` and the rejected file keeps every other
+addressability path it had. Conflicts come in three flavours:
+
+- `DuplicateName` — two files declare the same `CompletionSpec.name`
+  and neither stem matches it (e.g., `tns.json` and `nativescript.json`
+  both declare `name: "ns"`).
+- `NameMatchesOtherStem` — one spec's `name` collides with another
+  file's filename stem (e.g., `kubecolor.json` declares `name:
+  "kubectl"` and `kubectl.json` exists).
+- `DirectoryPrecedence` — same filename in two configured spec dirs.
+  Earlier dirs in `paths.spec_dirs` win, which is how user overrides
+  shadow the embedded fallback (`~/.config/ghost-complete/specs/git.json`
+  beats the embedded `git.json`).
+
+Run `ghost-complete status --json` to see the current
+`commands_addressable` count and `command_alias_conflicts` total.
+Run `ghost-complete doctor` for a per-conflict breakdown.
 
 ## Validation
 

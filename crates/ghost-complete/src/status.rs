@@ -314,15 +314,16 @@ pub struct StatusOutcome {
     /// Per-dir spec-load error strings, already sanitised for terminal
     /// output. Retained so the JSON path can surface them too.
     pub parse_error_lines: Vec<String>,
-    /// UX-9 Phase 0 counters. Most are computed from the runtime loader
-    /// index (so they mirror what completion would actually see), but
-    /// `requires_js_generators_total` is sourced from the file-level walk
-    /// in `scan_spec_files`, NOT from `SpecStore`. The loader currently
-    /// undercounts requires_js generators by ~135 (~80 from `OptionSpec.args`
-    /// truncating the array to its first entry, ~55 from name-keyed dedupe
-    /// dropping duplicates) so it reports ~3506 vs the file-level 3641.
-    /// Phase 1 stem-keying + relaxing `OptionSpec.args` to a real `Vec<ArgSpec>`
-    /// converges the two; until then the file walk is the source of truth.
+    /// UX-9 counters. Most are computed from the runtime loader index
+    /// (so they mirror what completion would actually see), but
+    /// `requires_js_generators_total` is sourced from the file-level
+    /// walk in `scan_spec_files`, NOT from `SpecStore`. The loader still
+    /// undercounts requires_js generators today (`OptionSpec.args`
+    /// truncates the array to its first entry, ~80 generators) so it
+    /// reports below the file-level count. The file-walk count is the
+    /// source of truth for that single field; Phase 6 will close the
+    /// remaining gap. Phase 1 closed the name-keyed-dedupe gap by
+    /// switching SpecStore to filename-stem keying.
     pub commands_addressable: usize,
     pub commands_partially_functional: usize,
     pub commands_nonfunctional: usize,
@@ -331,8 +332,10 @@ pub struct StatusOutcome {
     pub requires_js_generators_unsupported: usize,
     pub command_alias_conflicts: usize,
     /// File-level scan results — independent of the loader-level index so
-    /// the disagreement between `spec_files_total` and `commands_addressable`
-    /// is visible. Today: 709 vs 703 (6 lost to filename/name collisions).
+    /// any divergence between `spec_files_total` and the loader's entry
+    /// count remains visible. After Phase 1 the entry count equals
+    /// `spec_files_total` (every committed file becomes an entry; no
+    /// silent loss to name-keyed dedupe).
     pub file_scan: FileScan,
 }
 
@@ -380,7 +383,9 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
     // Per-spec classification uses the structured loader: a spec is
     // partially functional iff at least one parsed generator carries
     // `requires_js: true`. This shape is what the runtime can actually
-    // see at completion time.
+    // see at completion time. `name` here is the canonical id (filename
+    // stem), so `js_commands` lists the on-shell command keys users would
+    // actually type.
     for (name, spec) in &specs {
         fs_specs += 1;
         let js_count = count_requires_js_generators(spec);
@@ -395,24 +400,26 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
     js_commands.sort();
 
     // File-level scan is the source of truth for `requires_js_generators_total`.
-    // Walking SpecStore via `count_requires_js_generators` undercounts by
-    // ~135 today: ~80 from `OptionSpec.args` truncating to its first entry
-    // in the deserializer and ~55 from name-keyed dedupe dropping
-    // duplicate-stem files. So the file-level walk reports 3641 while the
-    // loader walk would report ~3506. Phase 1 stem-keying + a real
-    // `Vec<ArgSpec>` for option args converges the two; until then the
-    // raw-walk count is what we surface to users.
+    // The structured deserializer truncates `OptionSpec.args[N>0]` (~80
+    // generators today), so summing `count_requires_js_generators` over
+    // SpecStore underreports against a raw JSON walk. Phase 1 closed the
+    // name-keyed dedupe gap; the OptionSpec truncation gap is tracked
+    // for Phase 6.
     let file_scan = scan_spec_files(&dirs)?;
     let requires_js_generators_total = file_scan.requires_js_generators_total;
 
-    // command_alias_conflicts counts files whose declared `name` differs
-    // from the file stem — these are commands that cannot be addressed
-    // by typing the file stem on the shell today. Phase 1 will key
-    // SpecStore on the file stem instead of `name`, eliminating this
-    // class of conflict. (The duplicate-name dedup is a separate class —
-    // also handled by Phase 1 — and shows up as the gap between
-    // `file_scan.spec_files_total` and `commands_addressable`.)
-    let command_alias_conflicts = count_alias_conflicts(&dirs);
+    // commands_addressable: the alias index size, i.e. the number of
+    // unique command keys users can type on the shell to reach a spec.
+    // After Phase 1 this is ≥ entry count (709 entries + N non-conflict
+    // name aliases against the embedded corpus).
+    let commands_addressable = store.aliases_count();
+
+    // command_alias_conflicts: real, runtime-visible alias collisions
+    // surfaced by the loader. Each entry is one rejected alias — either
+    // a duplicate `name` across files, a `name` that crashed into
+    // another file's stem, or a stem that lost to a higher-precedence
+    // dir.
+    let command_alias_conflicts = store.conflicts().len();
 
     Ok(StatusOutcome {
         fs_specs,
@@ -422,8 +429,14 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
         partially_functional,
         js_commands,
         parse_error_lines,
-        commands_addressable: fs_specs,
+        commands_addressable,
         commands_partially_functional: partially_functional,
+        // commands_nonfunctional: 0 for now. Phase 1 keeps every spec
+        // addressable via its filename stem even when its `name` alias
+        // is rejected; only same-stem cross-dir collisions truly hide a
+        // spec, and those are deliberate user-override behavior. Phase 7
+        // will surface a tighter classification (e.g. specs whose only
+        // generator is requires_js and unsupported).
         commands_nonfunctional: 0,
         requires_js_generators_total,
         requires_js_generators_supported: 0,
@@ -434,22 +447,18 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
 }
 
 /// Walk the same spec dirs as the runtime loader, but count individual
-/// FILES rather than going through SpecStore's name-keyed HashMap. Two
-/// files with the same `name` entry both count here — that is the whole
-/// point: the gap between this and the loader-level count is the
-/// `command_alias_conflicts` figure that Phase 1 will close.
+/// FILES, independent of SpecStore. Phase 1 keys SpecStore on filename
+/// stem so the entry count now matches `spec_files_total` per directory
+/// (no name-keyed dedupe), but the file-level walk is still the source
+/// of truth for `requires_js_generators_total`.
 ///
 /// Counts `requires_js: true` via a raw `serde_json::Value` walk rather
-/// than going through `parse_spec_checked_and_sanitized`. Two effects
-/// drive the loader-vs-file-walk gap (~135 generators today): the
-/// structured parser truncates `OptionSpec.args[N>0]` because it stores
+/// than going through `parse_spec_checked_and_sanitized`. The structured
+/// deserializer truncates `OptionSpec.args[N>0]` because it stores
 /// `Option<ArgSpec>` and `vec.into_iter().next()`s the rest away (see
-/// `deserialize_option_args`, ~80 generators), and SpecStore's name-keyed
-/// HashMap drops duplicate-`name` files (~55 generators). The file-level
-/// walk surfaces the corpus's true generator total (3641); the
-/// loader-level count is currently ~3506. Phase 1 stem-keying converges
-/// the dedupe gap; relaxing `OptionSpec.args` to `Vec<ArgSpec>` closes
-/// the rest.
+/// `deserialize_option_args`, ~80 generators), so summing the loader's
+/// view underreports against the on-disk corpus. Phase 6 will close
+/// that gap by relaxing `OptionSpec.args` to a real `Vec<ArgSpec>`.
 ///
 /// Errors are tolerant — a missing dir is silently skipped (matches the
 /// loader's behavior). A malformed file is also skipped (its requires_js
@@ -488,51 +497,6 @@ fn scan_spec_files(dirs: &[PathBuf]) -> Result<FileScan> {
         spec_files_total,
         requires_js_generators_total,
     })
-}
-
-/// Count files whose declared top-level `name` field disagrees with the
-/// file stem. These are commands that cannot be addressed by typing the
-/// file stem on the shell today (the loader keys SpecStore on the JSON
-/// `name`). Phase 1 will switch the loader to file-stem keying, at which
-/// point this number drops to zero (or surfaces as deliberate aliasing
-/// metadata).
-///
-/// Walks the raw JSON via `serde_json::Value` so the count is independent
-/// of `CompletionSpec`'s structured deserializer.
-fn count_alias_conflicts(dirs: &[PathBuf]) -> usize {
-    let mut conflicts = 0usize;
-    for dir in dirs {
-        if !dir.exists() {
-            continue;
-        }
-        let entries = match std::fs::read_dir(dir) {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.extension().and_then(|e| e.to_str()) != Some("json") {
-                continue;
-            }
-            let stem = match path.file_stem().and_then(|s| s.to_str()) {
-                Some(s) => s.to_string(),
-                None => continue,
-            };
-            let contents = match std::fs::read_to_string(&path) {
-                Ok(c) => c,
-                Err(_) => continue,
-            };
-            let value: serde_json::Value = match serde_json::from_str(&contents) {
-                Ok(v) => v,
-                Err(_) => continue,
-            };
-            let name = value.get("name").and_then(|v| v.as_str()).unwrap_or("");
-            if name != stem {
-                conflicts += 1;
-            }
-        }
-    }
-    conflicts
 }
 
 /// Walk a raw `serde_json::Value` and count every object with
@@ -680,8 +644,11 @@ struct SpecCounts {
     filesystem_overrides: usize,
     parse_errors: usize,
     parse_error_details: Vec<String>,
-    /// UX-9 vocabulary — a "command" is a uniquely-addressable
-    /// `CompletionSpec.name` after first-match-wins dedup.
+    /// Total resolvable command aliases — every key the loader would
+    /// match on the shell. Counts filename stems (canonical ids) plus
+    /// non-conflicting `CompletionSpec.name` aliases. Always ≥
+    /// `commands_fully_functional + commands_partially_functional`
+    /// because a single spec can register multiple aliases.
     commands_addressable: usize,
     /// Aliased to `fully_functional` until Phase 4 changes the definition
     /// (a partially-functional command with all its requires_js generators
@@ -689,9 +656,11 @@ struct SpecCounts {
     /// Phase 0 the two fields are numerically identical.
     commands_fully_functional: usize,
     commands_partially_functional: usize,
-    /// Today: 0. Phase 1 will lift this above zero once we surface specs
-    /// that fail to load entirely (e.g., due to alias collisions losing
-    /// their fallback file).
+    /// Today: 0. Phase 1 keeps every spec addressable via its filename
+    /// stem even when its `name` alias is rejected, so no spec is
+    /// silently lost from a single configured dir. Phase 7 will lift
+    /// this once we classify specs whose only completion path is a
+    /// requires_js generator that the runtime can't execute yet.
     commands_nonfunctional: usize,
     /// Total `requires_js: true` generator instances across the corpus
     /// (counted per occurrence, not per spec). Sourced from a raw
@@ -706,15 +675,14 @@ struct SpecCounts {
     /// `requires_js_generators_total - requires_js_generators_supported`.
     /// Surfaced as its own field so consumers don't need to subtract.
     requires_js_generators_unsupported: usize,
-    /// Number of files whose declared top-level `name` disagrees with
-    /// the file stem (≈14 against the embedded corpus). These are
-    /// commands that cannot be addressed by typing the file stem on the
-    /// shell — the loader keys SpecStore on the JSON `name`. Phase 1
-    /// switches the loader to file-stem keying, at which point this
-    /// number drops to zero (or surfaces as deliberate aliasing metadata).
-    /// The duplicate-name dedup is a separate, related class — surfaced
-    /// as the gap between `file_scan.spec_files_total` and
-    /// `commands_addressable`.
+    /// Runtime alias collisions surfaced by the loader. After Phase 1
+    /// SpecStore keys on filename stem (canonical id) plus the spec's
+    /// `name` field as a secondary alias when free; an entry here means
+    /// either a `name` alias was rejected because another file already
+    /// owned that key (DuplicateName / NameMatchesOtherStem) or a stem
+    /// lost to a higher-precedence source dir (DirectoryPrecedence).
+    /// Each conflict carries source-dir + alias diagnostics in
+    /// `SpecStore::conflicts()`; doctor renders them in detail.
     command_alias_conflicts: usize,
 }
 
@@ -1588,35 +1556,50 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
         let outcome = scan_specs(Some(cfg.to_str().unwrap())).unwrap();
 
-        // The active fixture set is:
-        //   static_only.json                    → fully functional, 0 requires_js,
-        //                                          stem≠name (alias mismatch)
-        //   partial_unsupported_js.json         → partially functional, 1 requires_js,
-        //                                          stem≠name (alias mismatch)
-        //   name_mismatch.json                  → fully functional, 0 requires_js,
-        //                                          stem≠name (deliberate alias mismatch)
-        //   duplicate_name_a.json + b.json      → both have name="duplicate", one
-        //                                          loses to first-match-wins; the
-        //                                          surviving one is fully functional.
-        //                                          Both stems differ from "duplicate"
-        //                                          so both count as alias mismatches.
+        // The active fixture set, after Phase 1 stem-keying:
+        //   static_only.json                    → stem `static_only`, name `static-only`,
+        //                                          fully functional, 0 requires_js
+        //   partial_unsupported_js.json         → stem `partial_unsupported_js`,
+        //                                          name `partial-unsupported-js`,
+        //                                          partially functional, 1 requires_js
+        //   name_mismatch.json                  → stem `name_mismatch`, name
+        //                                          `alias-target`, fully functional
+        //   duplicate_name_a.json + b.json      → stems `duplicate_name_a` and
+        //                                          `duplicate_name_b`. Both declare
+        //                                          `name: "duplicate"`. The
+        //                                          alphabetically-first file (`a`)
+        //                                          wins the `duplicate` alias; the
+        //                                          second surfaces a DuplicateName
+        //                                          conflict but stays addressable
+        //                                          via its stem.
         //
-        // file_scan sees all 5 files; the loader sees 4 unique names.
+        // file_scan sees all 5 files; SpecStore now keeps all 5 entries
+        // because filename stems are unique. commands_addressable counts
+        // the 5 stems plus 4 non-conflicting name aliases (`static-only`,
+        // `partial-unsupported-js`, `alias-target`, `duplicate`).
         assert_eq!(outcome.file_scan.spec_files_total, 5);
-        assert_eq!(outcome.fs_specs, 4, "duplicate name collapses to one slot");
-        assert_eq!(outcome.commands_addressable, 4);
         assert_eq!(
-            outcome.command_alias_conflicts, 5,
-            "every fixture's filename stem disagrees with its declared name"
+            outcome.fs_specs, 5,
+            "Phase 1: every committed file is a unique entry"
+        );
+        assert_eq!(
+            outcome.commands_addressable, 9,
+            "5 stems + 4 non-conflicting name aliases (one duplicate name rejected)"
+        );
+        assert_eq!(
+            outcome.command_alias_conflicts, 1,
+            "duplicate_name_b loses the `duplicate` alias to duplicate_name_a"
         );
         assert_eq!(outcome.partially_functional, 1);
-        assert_eq!(outcome.fully_functional, 3);
+        assert_eq!(outcome.fully_functional, 4);
         assert_eq!(outcome.requires_js_generators_total, 1);
         assert_eq!(outcome.requires_js_generators_unsupported, 1);
         assert_eq!(outcome.requires_js_generators_supported, 0);
 
-        // Confirm js_commands surfaces only the partial fixture.
-        assert_eq!(outcome.js_commands, vec!["partial-unsupported-js"]);
+        // js_commands lists the canonical id (filename stem) of every
+        // partially-functional spec. Stem `partial_unsupported_js` is
+        // what users actually type on the shell.
+        assert_eq!(outcome.js_commands, vec!["partial_unsupported_js"]);
     }
 
     #[test]

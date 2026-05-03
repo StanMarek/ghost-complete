@@ -427,8 +427,79 @@ pub struct GeneratorSpec {
     pub template: Option<String>,
 }
 
+/// One unique spec, addressable by one or more aliases. Owned by
+/// [`SpecStore`] and shared into the alias index via `Arc` so a single
+/// parsed spec doesn't have to be cloned per-alias on the load path.
+#[derive(Debug)]
+pub struct SpecEntry {
+    /// Stable identifier used for status reporting and `iter()`. Always
+    /// the filename stem — never `CompletionSpec.name`, because two files
+    /// can declare the same `name` and we surface that as a conflict
+    /// rather than letting one silently shadow the other.
+    pub id: String,
+    /// Filename stem, equal to `id`.
+    pub filename_stem: String,
+    /// Source directory (an entry from `resolve_spec_dirs`'s output).
+    pub source_dir: PathBuf,
+    /// Every alias this spec resolves under, in the order they were
+    /// considered: filename stem first, then `CompletionSpec.name` when
+    /// it differs from the stem and does not collide with another entry.
+    pub aliases: Vec<String>,
+    /// The parsed spec.
+    pub spec: Arc<CompletionSpec>,
+}
+
+/// One alias collision detected during loading. Conflicts are diagnostic
+/// signal — the loser is NOT silently dropped from the entry list, only
+/// from the alias under contention. Surfaced via [`SpecStore::conflicts`].
+#[derive(Debug, Clone)]
+pub struct AliasConflict {
+    /// The alias that two specs both wanted to register.
+    pub alias: String,
+    /// What kind of collision this is — drives diagnostics phrasing.
+    pub kind: AliasConflictKind,
+    /// The spec that won the alias (the existing holder at insert time).
+    pub winner: AliasOwner,
+    /// The spec that lost the alias.
+    pub loser: AliasOwner,
+}
+
+/// Categorises an [`AliasConflict`] so doctor / status can render
+/// appropriate phrasing without re-deriving the relationship.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AliasConflictKind {
+    /// Two different spec files declared the same `CompletionSpec.name`.
+    /// Example: `tns.json` and `nativescript.json` both have `name: "ns"`.
+    DuplicateName,
+    /// One spec's `CompletionSpec.name` collides with another spec's
+    /// filename stem. Example: `kubecolor.json` declares `name: "kubectl"`
+    /// while `kubectl.json` already exists in the same dir.
+    NameMatchesOtherStem,
+    /// Same filename in two different configured dirs. The earlier dir
+    /// wins per `resolve_spec_dirs` order — typically how user overrides
+    /// shadow the embedded fallback.
+    DirectoryPrecedence,
+}
+
+/// Identifies the source of a spec involved in an [`AliasConflict`].
+#[derive(Debug, Clone)]
+pub struct AliasOwner {
+    pub filename_stem: String,
+    pub source_dir: PathBuf,
+    pub spec_name: String,
+}
+
+/// Read-only view of every spec the loader was able to parse, plus the
+/// alias index that resolves command keys to those specs.
+///
+/// `SpecStore` is immutable after construction — every mutation is
+/// confined to [`SpecStore::load_from_dirs`] / [`SpecStore::load_from_dir`].
+/// Lookups go through the alias index; iteration yields entries (not
+/// aliases) so status counts don't double-count one spec under two keys.
 pub struct SpecStore {
-    specs: HashMap<String, CompletionSpec>,
+    entries: Vec<Arc<SpecEntry>>,
+    by_alias: HashMap<String, Arc<SpecEntry>>,
+    conflicts: Vec<AliasConflict>,
 }
 
 pub struct SpecLoadResult {
@@ -442,16 +513,23 @@ impl SpecStore {
     /// This matches the user intuition that earlier entries in config's
     /// `paths.spec_dirs` take precedence (e.g., user overrides before
     /// system defaults).
+    ///
+    /// Each spec is keyed in the alias index by its filename stem
+    /// (canonical id) and, when free, by its `CompletionSpec.name`. Files
+    /// whose declared `name` collides with another spec's name or stem
+    /// keep their stem alias and surface a [`AliasConflict`] entry —
+    /// they are not silently dropped from the store.
     pub fn load_from_dirs(dirs: &[PathBuf]) -> Result<SpecLoadResult> {
-        let mut specs: HashMap<String, CompletionSpec> = HashMap::new();
+        let mut entries: Vec<Arc<SpecEntry>> = Vec::new();
+        let mut by_alias: HashMap<String, Arc<SpecEntry>> = HashMap::new();
+        let mut conflicts: Vec<AliasConflict> = Vec::new();
         let mut errors: Vec<String> = Vec::new();
+
         for dir in dirs {
-            match Self::load_from_dir(dir) {
-                Ok(result) => {
-                    for (name, spec) in result.store.specs {
-                        specs.entry(name).or_insert(spec);
-                    }
-                    errors.extend(result.errors);
+            match load_dir_into_entries(dir) {
+                Ok((dir_entries, dir_errors)) => {
+                    register_entries(dir_entries, &mut entries, &mut by_alias, &mut conflicts);
+                    errors.extend(dir_errors);
                 }
                 Err(e) => {
                     // Directory-level IO failure (e.g., EACCES on read_dir).
@@ -463,51 +541,31 @@ impl SpecStore {
                 }
             }
         }
+
         Ok(SpecLoadResult {
-            store: Self { specs },
+            store: Self {
+                entries,
+                by_alias,
+                conflicts,
+            },
             errors,
         })
     }
 
     pub fn load_from_dir(dir: &Path) -> Result<SpecLoadResult> {
-        let mut specs = HashMap::new();
-        let mut errors = Vec::new();
+        let mut entries: Vec<Arc<SpecEntry>> = Vec::new();
+        let mut by_alias: HashMap<String, Arc<SpecEntry>> = HashMap::new();
+        let mut conflicts: Vec<AliasConflict> = Vec::new();
 
-        if !dir.exists() {
-            tracing::warn!("spec directory does not exist: {}", dir.display());
-            return Ok(SpecLoadResult {
-                store: Self { specs },
-                errors,
-            });
-        }
-
-        let entries = std::fs::read_dir(dir)
-            .with_context(|| format!("failed to read spec directory: {}", dir.display()))?;
-
-        for entry in entries {
-            let entry = entry?;
-            let path = entry.path();
-            if path.extension().and_then(|e| e.to_str()) != Some("json") {
-                continue;
-            }
-            let file_name = path
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .to_string();
-            match Self::load_spec(&path) {
-                Ok(spec) => {
-                    tracing::debug!("loaded spec: {}", spec.name);
-                    specs.insert(spec.name.clone(), spec);
-                }
-                Err(e) => {
-                    errors.push(format!("{file_name}: {e}"));
-                }
-            }
-        }
+        let (dir_entries, errors) = load_dir_into_entries(dir)?;
+        register_entries(dir_entries, &mut entries, &mut by_alias, &mut conflicts);
 
         Ok(SpecLoadResult {
-            store: Self { specs },
+            store: Self {
+                entries,
+                by_alias,
+                conflicts,
+            },
             errors,
         })
     }
@@ -524,20 +582,275 @@ impl SpecStore {
         Ok(spec)
     }
 
+    /// Resolve a command alias (filename stem or non-conflicting
+    /// `CompletionSpec.name`) to the parsed spec. Returns `None` when no
+    /// loaded spec advertises this alias.
     pub fn get(&self, command: &str) -> Option<&CompletionSpec> {
-        self.specs.get(command)
+        self.by_alias.get(command).map(|e| e.spec.as_ref())
     }
 
+    /// Yield one tuple per unique spec. The first element is the
+    /// canonical id (filename stem), NOT every alias — callers that want
+    /// to enumerate aliases use [`SpecStore::entries`] directly.
     pub fn iter(&self) -> impl Iterator<Item = (&str, &CompletionSpec)> {
-        self.specs.iter().map(|(k, v)| (k.as_str(), v))
+        self.entries
+            .iter()
+            .map(|e| (e.id.as_str(), e.spec.as_ref()))
     }
 
+    /// Number of unique spec entries (one per loaded file). Differs from
+    /// [`SpecStore::aliases_count`] when one or more entries advertise a
+    /// `name` alias on top of their filename stem.
     pub fn len(&self) -> usize {
-        self.specs.len()
+        self.entries.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.specs.is_empty()
+        self.entries.is_empty()
+    }
+
+    /// All `Arc<SpecEntry>` values in load order. Read-only access for
+    /// status / doctor diagnostics that need source dir + alias lists.
+    pub fn entries(&self) -> &[Arc<SpecEntry>] {
+        &self.entries
+    }
+
+    /// Total number of resolvable command aliases. Equal to
+    /// `entries.iter().map(|e| e.aliases.len()).sum()` and to
+    /// `by_alias.len()`. Surfaced as `commands_addressable` in status
+    /// JSON.
+    pub fn aliases_count(&self) -> usize {
+        self.by_alias.len()
+    }
+
+    /// Alias collisions detected at load time. Surfaced via doctor / status
+    /// so users can spot specs whose declared `name` was rejected.
+    pub fn conflicts(&self) -> &[AliasConflict] {
+        &self.conflicts
+    }
+}
+
+/// Carrier for a parsed spec on its way into `register_entries`. We can't
+/// build the final `SpecEntry` at this stage because the `aliases` vec
+/// depends on which alias slots are still free across the merged dir set.
+struct PendingSpec {
+    filename_stem: String,
+    source_dir: PathBuf,
+    spec: CompletionSpec,
+}
+
+/// Walk `dir` for `*.json` specs and parse each one. Failures (parse
+/// errors, IO errors) become per-file error strings; successes accumulate
+/// into the returned vec in filename-stem-sorted order so registration is
+/// deterministic across directories with the same files.
+fn load_dir_into_entries(dir: &Path) -> Result<(Vec<PendingSpec>, Vec<String>)> {
+    let mut pending: Vec<PendingSpec> = Vec::new();
+    let mut errors: Vec<String> = Vec::new();
+
+    if !dir.exists() {
+        tracing::warn!("spec directory does not exist: {}", dir.display());
+        return Ok((pending, errors));
+    }
+
+    let read_dir = std::fs::read_dir(dir)
+        .with_context(|| format!("failed to read spec directory: {}", dir.display()))?;
+
+    let mut paths: Vec<PathBuf> = Vec::new();
+    for entry in read_dir {
+        let entry = entry?;
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("json") {
+            continue;
+        }
+        paths.push(path);
+    }
+    // Sort by filename stem so the "first-wins" alias arbitration is
+    // deterministic — without sorting, `read_dir` order on macOS / Linux
+    // is filesystem-defined and can flip between runs (and between CI
+    // boxes), which would make tests that assert which spec won an alias
+    // race flaky.
+    paths.sort_by(|a, b| {
+        let stem_a = a.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+        let stem_b = b.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+        stem_a.cmp(stem_b)
+    });
+
+    for path in paths {
+        let file_name = path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        let stem = match path.file_stem().and_then(|s| s.to_str()) {
+            Some(s) => s.to_string(),
+            None => continue,
+        };
+        match SpecStore::load_spec(&path) {
+            Ok(spec) => {
+                tracing::debug!("loaded spec: {} (stem={})", spec.name, stem);
+                pending.push(PendingSpec {
+                    filename_stem: stem,
+                    source_dir: dir.to_path_buf(),
+                    spec,
+                });
+            }
+            Err(e) => {
+                errors.push(format!("{file_name}: {e}"));
+            }
+        }
+    }
+
+    Ok((pending, errors))
+}
+
+/// Take a directory's parsed specs and merge them into the running store
+/// state. Two passes:
+///   1. Register every filename stem. Stems are the canonical id and
+///      always take precedence over `name` aliases. A stem already
+///      owned by an earlier directory is rejected with a
+///      DirectoryPrecedence conflict.
+///   2. Register `CompletionSpec.name` aliases for entries whose name
+///      differs from the stem. Aliases yield to stems unconditionally;
+///      a name that collides with another spec's stem is rejected with
+///      NameMatchesOtherStem, and a name that collides with another
+///      already-registered name is rejected with DuplicateName.
+///
+/// The two-pass shape exists so the canonical spec wins its own name —
+/// e.g. `kubectl.json` keeps the `kubectl` alias even though
+/// `kubecolor.json` (declared `name: "kubectl"`) is processed first
+/// alphabetically. Without it, an earlier file's name claim could
+/// shadow a later file's stem and silently demote the canonical spec.
+fn register_entries(
+    pending: Vec<PendingSpec>,
+    entries: &mut Vec<Arc<SpecEntry>>,
+    by_alias: &mut HashMap<String, Arc<SpecEntry>>,
+    conflicts: &mut Vec<AliasConflict>,
+) {
+    // Pass 1: register every stem. We move the parsed spec into the
+    // newly-built `SpecEntry` here. `accepted` records each accepted
+    // entry's index in `entries` plus the data we need for pass 2
+    // (filename_stem, source_dir, spec_name) — keeping the ordering of
+    // `pending` so name-alias arbitration is stable.
+    struct Accepted {
+        idx: usize,
+        filename_stem: String,
+        source_dir: PathBuf,
+        spec_name: String,
+    }
+    let mut accepted: Vec<Accepted> = Vec::with_capacity(pending.len());
+
+    for ps in pending {
+        let PendingSpec {
+            filename_stem,
+            source_dir,
+            spec,
+        } = ps;
+
+        if let Some(existing) = by_alias.get(&filename_stem) {
+            tracing::debug!(
+                stem = %filename_stem,
+                existing_dir = %existing.source_dir.display(),
+                losing_dir = %source_dir.display(),
+                "spec stem already registered — skipping (directory precedence)"
+            );
+            conflicts.push(AliasConflict {
+                alias: filename_stem.clone(),
+                kind: AliasConflictKind::DirectoryPrecedence,
+                winner: AliasOwner {
+                    filename_stem: existing.filename_stem.clone(),
+                    source_dir: existing.source_dir.clone(),
+                    spec_name: existing.spec.name.clone(),
+                },
+                loser: AliasOwner {
+                    filename_stem: filename_stem.clone(),
+                    source_dir: source_dir.clone(),
+                    spec_name: spec.name.clone(),
+                },
+            });
+            continue;
+        }
+
+        let spec_name = spec.name.clone();
+        let entry = Arc::new(SpecEntry {
+            id: filename_stem.clone(),
+            filename_stem: filename_stem.clone(),
+            source_dir: source_dir.clone(),
+            aliases: vec![filename_stem.clone()],
+            spec: Arc::new(spec),
+        });
+        let idx = entries.len();
+        entries.push(Arc::clone(&entry));
+        by_alias.insert(filename_stem.clone(), entry);
+        accepted.push(Accepted {
+            idx,
+            filename_stem,
+            source_dir,
+            spec_name,
+        });
+    }
+
+    // Pass 2: register `CompletionSpec.name` aliases in the same order.
+    // Stems already populate `by_alias`, so a name that collides with
+    // another spec's stem is naturally rejected here without a separate
+    // lookup table.
+    for a in accepted {
+        let Accepted {
+            idx,
+            filename_stem,
+            source_dir,
+            spec_name,
+        } = a;
+
+        if spec_name.is_empty() || spec_name == filename_stem {
+            continue;
+        }
+        if let Some(existing) = by_alias.get(&spec_name) {
+            let kind = if existing.filename_stem == spec_name {
+                AliasConflictKind::NameMatchesOtherStem
+            } else {
+                AliasConflictKind::DuplicateName
+            };
+            tracing::debug!(
+                alias = %spec_name,
+                winner_stem = %existing.filename_stem,
+                loser_stem = %filename_stem,
+                kind = ?kind,
+                "name alias already registered — keeping spec addressable by stem only"
+            );
+            conflicts.push(AliasConflict {
+                alias: spec_name.clone(),
+                kind,
+                winner: AliasOwner {
+                    filename_stem: existing.filename_stem.clone(),
+                    source_dir: existing.source_dir.clone(),
+                    spec_name: existing.spec.name.clone(),
+                },
+                loser: AliasOwner {
+                    filename_stem: filename_stem.clone(),
+                    source_dir,
+                    spec_name: spec_name.clone(),
+                },
+            });
+            continue;
+        }
+
+        // Append the alias to the existing entry. Rebuild the Arc<SpecEntry>
+        // because SpecEntry's fields are not interior-mutable — we want
+        // to keep `aliases` as `Vec<String>` (cheaper iteration) than a
+        // Mutex / Cell that would only get touched during loading.
+        let prev = &entries[idx];
+        let mut new_entry = SpecEntry {
+            id: prev.id.clone(),
+            filename_stem: prev.filename_stem.clone(),
+            source_dir: prev.source_dir.clone(),
+            aliases: prev.aliases.clone(),
+            spec: Arc::clone(&prev.spec),
+        };
+        new_entry.aliases.push(spec_name.clone());
+        let new_arc = Arc::new(new_entry);
+        entries[idx] = Arc::clone(&new_arc);
+        by_alias.insert(filename_stem, Arc::clone(&new_arc));
+        by_alias.insert(spec_name, new_arc);
     }
 }
 
@@ -2032,10 +2345,20 @@ mod tests {
         .unwrap();
 
         let result = SpecStore::load_from_dir(dir.path()).unwrap();
-        let spec = result
+        // Stem-keyed addressability — the file is `evil.json`, so `evil`
+        // is the canonical id. The sanitized `name` ("evil[2J") becomes a
+        // secondary alias and resolves too; both lookups must hit the
+        // same parsed spec.
+        let by_stem = result
+            .store
+            .get("evil")
+            .expect("spec should be addressable by filename stem");
+        let by_alias = result
             .store
             .get("evil[2J")
-            .expect("spec should load with sanitized name");
+            .expect("sanitized name should also resolve as alias");
+        assert!(std::ptr::eq(by_stem, by_alias));
+        let spec = by_stem;
         assert!(
             !spec.name.contains('\x1b'),
             "name kept ESC: {:?}",
@@ -3074,5 +3397,295 @@ mod tests {
         let res = resolve_spec(&spec, &ctx);
         assert_eq!(res.static_suggestions.len(), 2);
         assert!(res.static_suggestions.iter().all(|s| s.text == "foo"));
+    }
+
+    // ------------------------------------------------------------------
+    // UX-9 Phase 1: addressability tests
+    //
+    // These tests pin the contract that a spec is reachable by its
+    // filename stem (the "canonical id") and, when free, by its
+    // declared `name` as a secondary alias. Without this guarantee the
+    // 6 corpus files whose `name` collides with another spec's stem
+    // (kubecolor → kubectl, j → autojump, etc.) silently disappear from
+    // the on-shell command set.
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn phase1_kubecolor_resolves_by_filename_stem_and_kubectl_wins_alias() {
+        // Real-corpus shape: kubecolor.json declares `name: "kubectl"`,
+        // kubectl.json also declares `name: "kubectl"`. Pre-Phase-1 one
+        // of the two silently won the `kubectl` HashMap slot and the
+        // other was dropped. Now both load: each is addressable by its
+        // filename stem, and the alphabetically-first file wins the
+        // `kubectl` alias.
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("kubecolor.json"),
+            r#"{
+                "name": "kubectl",
+                "subcommands": [{"name": "from-kubecolor"}]
+            }"#,
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("kubectl.json"),
+            r#"{
+                "name": "kubectl",
+                "subcommands": [{"name": "from-kubectl-spec"}]
+            }"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let store = &result.store;
+
+        // Both stems must address their respective parsed specs.
+        let by_kubecolor = store.get("kubecolor").expect("kubecolor stem must resolve");
+        assert_eq!(by_kubecolor.subcommands[0].name, "from-kubecolor");
+        let by_kubectl = store.get("kubectl").expect("kubectl stem must resolve");
+        assert_eq!(by_kubectl.subcommands[0].name, "from-kubectl-spec");
+
+        // Exactly one conflict: kubecolor.json's `kubectl` name alias
+        // loses to kubectl.json's stem (NameMatchesOtherStem because
+        // the winner's `id` is exactly the contested alias).
+        let conflicts = store.conflicts();
+        assert_eq!(conflicts.len(), 1, "expected one alias conflict");
+        let c = &conflicts[0];
+        assert_eq!(c.alias, "kubectl");
+        assert_eq!(c.kind, AliasConflictKind::NameMatchesOtherStem);
+        assert_eq!(c.winner.filename_stem, "kubectl");
+        assert_eq!(c.loser.filename_stem, "kubecolor");
+
+        // No silent loss: every committed file is one entry.
+        assert_eq!(store.entries().len(), 2);
+        assert_eq!(store.aliases_count(), 2, "two stems, no extra alias");
+    }
+
+    #[test]
+    fn phase1_duplicate_name_collision_surfaces_conflict() {
+        // Two files declare the same `name`. The alphabetically-first
+        // file wins the alias; the second keeps its stem alias and the
+        // collision is recorded as DuplicateName.
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("alpha.json"),
+            r#"{"name": "shared", "subcommands": [{"name": "from-alpha"}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("beta.json"),
+            r#"{"name": "shared", "subcommands": [{"name": "from-beta"}]}"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let store = &result.store;
+
+        // Both stems resolve to their respective specs.
+        assert_eq!(
+            store.get("alpha").unwrap().subcommands[0].name,
+            "from-alpha"
+        );
+        assert_eq!(store.get("beta").unwrap().subcommands[0].name, "from-beta");
+
+        // The shared `name` resolves to the first-loaded file.
+        let by_name = store
+            .get("shared")
+            .expect("name alias must resolve to the winner");
+        assert_eq!(by_name.subcommands[0].name, "from-alpha");
+
+        // Exactly one conflict surfaces: beta loses the `shared` alias.
+        let conflicts = store.conflicts();
+        assert_eq!(conflicts.len(), 1);
+        let c = &conflicts[0];
+        assert_eq!(c.alias, "shared");
+        assert_eq!(c.kind, AliasConflictKind::DuplicateName);
+        assert_eq!(c.winner.filename_stem, "alpha");
+        assert_eq!(c.loser.filename_stem, "beta");
+
+        // Both files become entries; aliases = 2 stems + 1 name = 3.
+        assert_eq!(store.entries().len(), 2);
+        assert_eq!(store.aliases_count(), 3);
+    }
+
+    #[test]
+    fn phase1_uppercase_lowercase_stems_are_case_sensitive() {
+        // The corpus has both R.json and Rscript.json, plus r.json and
+        // rscript.json. Filename stems are case-sensitive: `R` and `r`
+        // are distinct addressable commands (matches the on-shell
+        // case-sensitive PATH lookup behavior).
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("R.json"),
+            r#"{"name": "R", "subcommands": [{"name": "from-uppercase"}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("Rscript.json"),
+            r#"{"name": "Rscript", "subcommands": [{"name": "from-rscript"}]}"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let store = &result.store;
+
+        let by_r = store.get("R").expect("uppercase R must resolve");
+        assert_eq!(by_r.subcommands[0].name, "from-uppercase");
+        let by_rscript = store.get("Rscript").expect("Rscript must resolve");
+        assert_eq!(by_rscript.subcommands[0].name, "from-rscript");
+
+        // Stems match their `name` declarations, so no extra aliases.
+        assert!(
+            store.conflicts().is_empty(),
+            "no conflicts expected, got {:?}",
+            store.conflicts()
+        );
+        assert_eq!(store.entries().len(), 2);
+        assert_eq!(store.aliases_count(), 2);
+    }
+
+    #[test]
+    fn phase1_user_override_replaces_embedded_with_directory_precedence() {
+        // The classic user-override scenario: the same filename in two
+        // configured dirs. The earlier dir wins — the embedded copy is
+        // demoted to a DirectoryPrecedence conflict at debug level
+        // (NOT an error — this is how user overrides work).
+        let user_dir = tempfile::TempDir::new().unwrap();
+        let embedded_dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            user_dir.path().join("git.json"),
+            r#"{"name": "git", "subcommands": [{"name": "user-override"}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            embedded_dir.path().join("git.json"),
+            r#"{"name": "git", "subcommands": [{"name": "embedded-default"}]}"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dirs(&[
+            user_dir.path().to_path_buf(),
+            embedded_dir.path().to_path_buf(),
+        ])
+        .unwrap();
+        let store = &result.store;
+
+        let by_git = store.get("git").expect("git must resolve");
+        assert_eq!(
+            by_git.subcommands[0].name, "user-override",
+            "user copy must win (earlier dir = higher precedence)"
+        );
+
+        let conflicts = store.conflicts();
+        assert_eq!(conflicts.len(), 1);
+        let c = &conflicts[0];
+        assert_eq!(c.alias, "git");
+        assert_eq!(c.kind, AliasConflictKind::DirectoryPrecedence);
+        assert_eq!(c.winner.source_dir, user_dir.path());
+        assert_eq!(c.loser.source_dir, embedded_dir.path());
+
+        // Only the user copy becomes an entry — the embedded loser is
+        // skipped entirely (it has nothing addressable left after
+        // losing its only stem).
+        assert_eq!(store.entries().len(), 1);
+        assert_eq!(store.aliases_count(), 1);
+    }
+
+    #[test]
+    fn phase1_iter_yields_one_tuple_per_unique_spec_not_per_alias() {
+        // SpecStore::iter() must enumerate entries (one per file), not
+        // alias keys (which would double-count specs that register both
+        // a stem and a name alias). Without this, status counts would
+        // overcount the corpus by ~8 against the 709-spec baseline.
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("alias-target.json"),
+            r#"{"name": "different-name", "subcommands": [{"name": "x"}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("plain.json"),
+            r#"{"name": "plain", "subcommands": [{"name": "y"}]}"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let store = &result.store;
+
+        // 2 entries; 3 aliases (alias-target, different-name, plain).
+        assert_eq!(store.entries().len(), 2);
+        assert_eq!(store.aliases_count(), 3);
+
+        let iter_count = store.iter().count();
+        assert_eq!(
+            iter_count, 2,
+            "iter() must yield one tuple per unique spec, not per alias"
+        );
+
+        // Every stem reachable via iter must round-trip through get().
+        for (id, spec) in store.iter() {
+            let got = store.get(id).expect("stem must resolve");
+            assert_eq!(got.name, spec.name);
+        }
+    }
+
+    #[test]
+    fn phase1_addressability_holds_against_full_corpus() {
+        // The on-disk corpus must load without silent loss. After
+        // Phase 1: every committed `*.json` becomes a SpecEntry (709
+        // entries against the embedded corpus), and aliases_count()
+        // equals 709 + the number of non-conflicting `name` aliases.
+        let spec_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
+        if !spec_dir.is_dir() {
+            // Repo-test guard: this test runs from the workspace where
+            // `specs/` lives. Skip silently in environments without it.
+            return;
+        }
+        let result = SpecStore::load_from_dir(&spec_dir).unwrap();
+        let store = &result.store;
+
+        // Every file becomes one entry.
+        let file_count = std::fs::read_dir(&spec_dir)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().extension().and_then(|x| x.to_str()) == Some("json"))
+            .count();
+        assert_eq!(
+            store.entries().len(),
+            file_count,
+            "every committed spec file must produce a unique SpecEntry"
+        );
+
+        // commands_addressable ≥ entries: each entry registers at
+        // least its stem, possibly plus a name alias.
+        assert!(
+            store.aliases_count() >= store.entries().len(),
+            "alias count {} must be ≥ entry count {}",
+            store.aliases_count(),
+            store.entries().len()
+        );
+
+        // The 6 currently-lost commands MUST now address by stem.
+        // These are the spec files whose `name` collides with another
+        // spec's stem in the embedded corpus (kubecolor wants
+        // `kubectl`, j wants `autojump`, etc.). Pre-Phase-1 they were
+        // silently dropped from the loader's HashMap; now their stem
+        // is the canonical command key.
+        for stem in ["kubecolor", "br", "j", "nativescript", "tns", "sta"] {
+            assert!(
+                store.get(stem).is_some(),
+                "stem `{stem}` must be addressable after Phase 1"
+            );
+        }
+
+        // Conflicts: at minimum the 6 NameMatchesOtherStem entries
+        // above plus duplicate-name pairs (e.g. kubectl: 2 specs,
+        // ns: 3 specs). Concrete count is corpus-dependent — guard
+        // against zero.
+        assert!(
+            !store.conflicts().is_empty(),
+            "embedded corpus has known stem/name collisions; conflict list \
+             must be non-empty"
+        );
     }
 }
