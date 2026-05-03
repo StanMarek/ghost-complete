@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-05-03
+
 ### Added
 
 - Restored AWS CLI completion spec. 409 service subcommands (`s3`,
@@ -40,6 +42,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of bundled specs; e.g. `git archive --format=` now suggests `tar`/`zip`,
   `tar --atime-preserve` suggests `replace`/`system`. See
   [ADR 0004](docs/adr/0004-static-arg-suggestions.md).
+- Async suggestion feedback in the popup. While script generators are
+  in-flight, the popup reserves an indicator row that surfaces a spinner
+  (Loading), a per-provider partial-error label (`PartialError`, gated by
+  the new `suggest.show_provider_errors` config), or stays Idle. Hard
+  errors and empty results now expire on a `feedback_dismiss_ms` window
+  rather than dismissing the popup. New config keys: `suggest.spinner`,
+  `suggest.show_provider_errors`, `suggest.feedback_dismiss_ms`.
+- OSC 7772 percent-encoded buffer framing between the shell and the
+  proxy. Replaces the legacy OSC 7770 escape-sensitive framing (now
+  logged once as deprecated) so embedded `\x1b\\` / `\x07` / NUL bytes
+  in the command line buffer are reported losslessly. The shell hook
+  emits OSC 7772 with a percent-encoded payload and an explicit cursor
+  index. OSC 7770 stays parsed for one release for bash/fish parity and
+  is scheduled for removal in v0.12.0. See
+  [ADR 0003](docs/adr/0003-osc7772-buffer-framing.md).
+- Post-install next-steps summary. The installer now prints a structured
+  five-step summary (`doctor`, demo command, `Ctrl+/`, `config edit`)
+  plus the resolved config + spec paths. The headline branches between a
+  green "installed" and a yellow "partially installed" line based on
+  whether `~/.zshrc` was actually written; both paths render through
+  `sanitize_path` so a hostile `$HOME` cannot smuggle terminal escapes.
+
+### Fixed
+
+- Multi-word alias expansion for spec resolution. Aliases are now
+  tokenised with `shlex` and stored as `Vec<String>`, so
+  `alias gco='git checkout'` resolves the git spec, walks the
+  `checkout` subtree, and dispatches `git_branches` / `git_tags` on
+  the next positional. Chained aliases (`alias gcb='gco -b'`) recurse
+  through a 16-hop guard with cycle detection. The on-disk alias
+  cache schema bumps to `format_version: 2` and rejects v1 caches on
+  load. Flag-prefix completion (`gco -<TAB>`) and the async
+  `suggest_dynamic` path now share the same alias-target spec walk
+  so all three entry points stay consistent.
+- Terminal popup rendering robustness. Multiple races and edge cases
+  hardened across the parser/overlay boundary: stale-screen-size
+  recovery so the popup no longer pins to row 1 when CPR coordinates
+  fall outside cached dimensions; cumulative `overlay_scroll_deficit`
+  is reset on shell-side viewport scrolls and discarded outright when
+  it grows past `cursor_row`; overlay write epoch ordering keeps
+  ownership only after acknowledged writes; display-mutating CSI
+  sequences mark the screen dirty so newer popup state survives stale
+  render bytes losing races; bordered-popup `PartialError` demotion
+  now repaints the displaced bottom border instead of leaving a
+  stray `╰──╯`; `pending_failed` / `pending_empty_count` reset
+  symmetrically on every Idle path.
 
 ### Changed
 
@@ -50,6 +98,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   size-reclaim work and would drop the binary back near the original
   ceiling — tracked as a separate spec, not bundled here so neither
   change becomes unreviewable.
+- ADRs are now tracked in git under `docs/adr/`. The first three —
+  `0001-pty-proxy-vs-plugin.md`, `0002-vte-vs-vt100.md`, and
+  `0003-osc7772-buffer-framing.md` — capture historical and current
+  architectural decisions; `0004` and `0005` ship alongside the
+  features they describe in this release.
 
 ## [0.10.0] - 2026-04-26
 
@@ -585,6 +638,7 @@ silently changed behaviour.
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.11.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.11.0
 [0.10.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.10.0
 [0.9.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.9.1
 [0.9.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.9.0
