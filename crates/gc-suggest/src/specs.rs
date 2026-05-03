@@ -1244,30 +1244,59 @@ fn collect_generators(
 ) {
     for gen in generators {
         if gen.requires_js {
-            // Phase 4: a `requires_js` generator becomes runtime-supported when
-            // the converter classified it as `post_process` AND emitted an
-            // accompanying `script` (or `script_template`). The script runs
-            // through the existing script generator path; the JS source feeds
-            // its stdout in a post-process step inside the engine. All other
-            // shapes — `script_function`, `custom`, or any `requires_js` flag
-            // without populated `js_runtime` metadata — stay skipped because
-            // Phase 4 doesn't know how to spawn them yet.
-            let supported = matches!(
-                gen.js_runtime.as_ref().map(|rt| &rt.kind),
-                Some(JsRuntimeKind::PostProcess)
-            ) && (gen.script.is_some() || gen.script_template.is_some());
+            // Phase 5: every populated `js_runtime` kind has an engine
+            // dispatch path:
+            // - `post_process` runs the `script` (or `script_template`)
+            //   then post-processes stdout via JS.
+            // - `script_function` runs JS first to derive argv, then
+            //   spawns the resulting argv as a script.
+            // - `custom` runs JS directly with a host `executeShellCommand`
+            //   binding.
+            // Generators with `requires_js: true` but NO populated
+            // `js_runtime` shape (the converter declined to fill the
+            // metadata) stay skipped — there is nothing to dispatch.
+            let supported = match gen.js_runtime.as_ref().map(|rt| &rt.kind) {
+                Some(JsRuntimeKind::PostProcess) => {
+                    // Post-process still requires an accompanying script;
+                    // a JS body that can't see stdout has no input.
+                    gen.script.is_some() || gen.script_template.is_some()
+                }
+                Some(JsRuntimeKind::ScriptFunction) => {
+                    // Script function generates argv from JS — no
+                    // pre-existing script needed. The non-empty source
+                    // requirement is enforced by the schema (`source: String`).
+                    !gen.js_runtime
+                        .as_ref()
+                        .map(|rt| rt.source.trim().is_empty())
+                        .unwrap_or(true)
+                }
+                Some(JsRuntimeKind::Custom) => {
+                    // Custom evaluates suggestions directly. Same source
+                    // emptiness check.
+                    !gen.js_runtime
+                        .as_ref()
+                        .map(|rt| rt.source.trim().is_empty())
+                        .unwrap_or(true)
+                }
+                None => false,
+            };
             if !supported {
                 tracing::info!(
                     kind = ?gen.js_runtime.as_ref().map(|rt| &rt.kind),
                     has_script = gen.script.is_some(),
                     has_template = gen.script_template.is_some(),
+                    has_source = gen
+                        .js_runtime
+                        .as_ref()
+                        .map(|rt| !rt.source.trim().is_empty())
+                        .unwrap_or(false),
                     "skipping requires_js generator — unsupported shape"
                 );
                 continue;
             }
-            // Fall through: dispatch the generator down the script path so
-            // engine.rs's `run_generators` can capture stdout and feed it
-            // through the JS post-processor.
+            // Fall through: dispatch the generator down the script path
+            // so `engine::run_generators` can pick the right shape based
+            // on `js_runtime.kind`.
         }
         // Three-way dispatch on `generator_type`, with script fall-through
         // ONLY on the unknown-type path. A generator that names a registered
@@ -1319,7 +1348,16 @@ fn collect_generators(
         } else {
             false
         };
-        if !handled_by_type && (gen.script.is_some() || gen.script_template.is_some()) {
+        // Phase 5 widens the script-bucket criterion: a JS-only
+        // generator (script_function / custom) has neither `script`
+        // nor `script_template` populated, but the engine still needs
+        // a slot in the script-generator vec to dispatch it. Funnel
+        // anything with a populated `js_runtime` through the same
+        // queue and let `engine::run_generators` switch on `kind`.
+        let is_js_dispatchable = gen.requires_js && gen.js_runtime.is_some();
+        if !handled_by_type
+            && (gen.script.is_some() || gen.script_template.is_some() || is_js_dispatchable)
+        {
             script.push(Arc::new(gen.clone()));
         }
         // Fig specs put template on generators too (e.g., git checkout's

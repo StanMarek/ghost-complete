@@ -1,10 +1,11 @@
 //! Bounded QuickJS evaluator for Ghost Complete.
 //!
-//! This crate ships the [`JsWorker`] sandbox used by the upcoming UX-9
-//! `requires_js` dispatch path. Phase 3 lands the foundation; the
-//! suggestion engine in `gc-suggest` does **not** yet call into
-//! `gc-jsrt` — that wiring arrives in Phase 4 (`PostProcess`) and
-//! Phase 5 (`ScriptFunction` / `Custom`).
+//! This crate ships the [`JsWorker`] sandbox used by the UX-9
+//! `requires_js` dispatch path. Phase 3 landed the foundation, Phase 4
+//! wired the `PostProcess` (stdout-in / suggestions-out) shape, and
+//! Phase 5 wires the remaining `ScriptFunction` and `Custom` shapes
+//! plus the synchronous host API (cwd / env / tokens /
+//! `executeShellCommand`).
 //!
 //! # Design highlights
 //!
@@ -36,6 +37,7 @@
 //! [`JsWorker`] is the entry point. Construct with [`JsWorker::spawn`],
 //! evaluate with [`JsWorker::evaluate`].
 
+mod host;
 mod normalize;
 mod sandbox;
 mod types;
@@ -43,6 +45,7 @@ mod worker;
 
 pub use normalize::{MAX_DESCRIPTION_LEN, MAX_NAME_LEN, MAX_SUGGESTIONS, MAX_TOTAL_OUTPUT_BYTES};
 pub use types::{
-    JsDiagnostic, JsDiagnosticCode, JsRuntimeError, JsRuntimeInput, JsRuntimeOutput, JsSuggestion,
+    JsDiagnostic, JsDiagnosticCode, JsExecutionKind, JsRuntimeError, JsRuntimeInput,
+    JsRuntimeOutput, JsSuggestion, ShellRunError, ShellRunOutput, ShellRunner,
 };
-pub use worker::JsWorker;
+pub use worker::{JsWorker, MAX_SHELL_CALLS_PER_EVALUATION};

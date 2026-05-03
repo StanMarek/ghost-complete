@@ -6,15 +6,15 @@
 //!
 //! 1. **Lazy worker spawn.** Spawning the worker thread costs ~5 MB and a
 //!    QuickJS runtime initialisation; we don't want that price unless a
-//!    Phase-4 generator actually fires. [`JsRuntimeAdapter::worker`] pays it
-//!    once and memoises the result.
+//!    `requires_js` generator actually fires. [`JsRuntimeAdapter::worker`]
+//!    pays it once and memoises the result.
 //! 2. **Program assembly.** `js_runtime.source` ships the *body* of the JS
 //!    function (e.g. `out => out.split('\n').map(name => ({ name }))`). The
 //!    runtime evaluates a top-level expression, so we synthesise a
-//!    self-invoking call:
-//!    `((out, ctx) => (<source>)(out, ctx))(<JSON.parse(stdout)>, <JSON.parse(ctx)>)`.
-//!    For `post_process` generators the first argument is the script's
-//!    stdout as a JS string.
+//!    self-invoking call wrapping the body. The shape of the synthesised
+//!    program differs by [`gc_jsrt::JsExecutionKind`] — see
+//!    `build_post_process_program`, `build_script_function_program`, and
+//!    `build_custom_program`.
 //! 3. **Diagnostic logging.** Every [`gc_jsrt::JsDiagnostic`] is mapped to a
 //!    structured `tracing` event so Phase 7 (status / doctor) can pick them
 //!    up without re-implementing the rendering.
@@ -24,15 +24,21 @@
 //!
 //! # Phase scope
 //!
-//! Phase 4 implements [`JsRuntimeAdapter::post_process`] (the
-//! `kind = post_process` variant where stdout is the only input). Phases 5+
-//! will add `script_function` and `custom` entry points without changing
-//! the worker contract.
+//! Phase 4 added [`JsRuntimeAdapter::post_process`]. Phase 5 adds
+//! [`JsRuntimeAdapter::script_function`] (returns argv for an engine-side
+//! script invocation) and [`JsRuntimeAdapter::custom`] (returns
+//! suggestions directly via host-API calls).
 
+use std::collections::BTreeMap;
+use std::path::PathBuf;
+use std::sync::Arc;
 use std::sync::OnceLock;
 use std::time::Duration;
 
-use gc_jsrt::{JsDiagnosticCode, JsRuntimeError, JsRuntimeInput, JsRuntimeOutput, JsWorker};
+use gc_jsrt::{
+    JsDiagnosticCode, JsExecutionKind, JsRuntimeError, JsRuntimeInput, JsRuntimeOutput, JsWorker,
+    ShellRunner,
+};
 
 /// Lazily-spawned wrapper around [`gc_jsrt::JsWorker`].
 ///
@@ -93,11 +99,89 @@ impl JsRuntimeAdapter {
         let input = JsRuntimeInput {
             stdout: Some(stdout),
             generator_id: generator_id.clone(),
+            kind: JsExecutionKind::PostProcess,
             ..JsRuntimeInput::default()
         };
         let output = worker.evaluate(program, input, timeout).await?;
         log_diagnostics(&generator_id, &output);
         Ok(output)
+    }
+
+    /// Run a `script_function` JS source. The body is invoked with
+    /// `(tokens, ctx)` and is expected to return either an argv array
+    /// (`["cmd", "arg"]`) or a structured descriptor
+    /// (`{ command: "cmd", args: ["arg"] }`). The caller (engine) is
+    /// responsible for spawning the resulting argv as a script.
+    ///
+    /// `JsRuntimeOutput.argv` carries the resolved argv on success;
+    /// `suggestions` is always empty for this shape.
+    pub async fn script_function(
+        &self,
+        source: &str,
+        ctx: JsExecContext,
+        timeout: Duration,
+        generator_id: String,
+    ) -> Result<JsRuntimeOutput, JsRuntimeError> {
+        let worker = self.worker()?;
+        let program = build_script_function_program(source);
+        let input = ctx.into_runtime_input(generator_id.clone(), JsExecutionKind::ScriptFunction);
+        let output = worker.evaluate(program, input, timeout).await?;
+        log_diagnostics(&generator_id, &output);
+        Ok(output)
+    }
+
+    /// Run a `custom` JS source. The body is invoked with
+    /// `(tokens, executeShellCommand, ctx)` and is expected to return
+    /// suggestions (or a Promise resolving to suggestions). `executeShellCommand`
+    /// is wired to the supplied `ShellRunner`; up to
+    /// [`gc_jsrt::MAX_SHELL_CALLS_PER_EVALUATION`] calls are honoured.
+    pub async fn custom(
+        &self,
+        source: &str,
+        ctx: JsExecContext,
+        timeout: Duration,
+        generator_id: String,
+        runner: Arc<dyn ShellRunner>,
+        allow_shell_command: bool,
+    ) -> Result<JsRuntimeOutput, JsRuntimeError> {
+        let worker = self.worker()?;
+        let program = build_custom_program(source);
+        let mut input = ctx.into_runtime_input(generator_id.clone(), JsExecutionKind::Custom);
+        input.shell_runner = Some(runner);
+        input.allow_shell_command = allow_shell_command;
+        let output = worker.evaluate(program, input, timeout).await?;
+        log_diagnostics(&generator_id, &output);
+        Ok(output)
+    }
+}
+
+/// Caller-side shape that captures the host context the engine wants to
+/// expose to a JS generator. The adapter copies the contents into the
+/// final [`JsRuntimeInput`] without inspecting them — Phase 5 keeps the
+/// crate boundary simple.
+#[derive(Debug, Clone, Default)]
+pub struct JsExecContext {
+    pub tokens: Vec<String>,
+    pub current_token: String,
+    pub previous_token: String,
+    pub cwd: PathBuf,
+    pub env: BTreeMap<String, String>,
+}
+
+impl JsExecContext {
+    fn into_runtime_input(self, generator_id: String, kind: JsExecutionKind) -> JsRuntimeInput {
+        JsRuntimeInput {
+            stdout: None,
+            tokens: self.tokens,
+            current_token: self.current_token,
+            previous_token: self.previous_token,
+            cwd: self.cwd,
+            env: self.env,
+            generator_id,
+            kind,
+            allow_shell_command: false,
+            shell_runner: None,
+        }
     }
 }
 
@@ -130,6 +214,70 @@ fn build_post_process_program(source: &str, stdout: &str) -> String {
 /// path is safe to splice directly.
 fn json_string_literal(s: &str) -> String {
     serde_json::Value::String(s.to_string()).to_string()
+}
+
+/// Construct the wrapper expression for a `script_function` generator.
+///
+/// Phase 5 contract: the JS source is a function (typically arrow-form)
+/// that takes `(tokens, ctx)` and returns either an argv array or a
+/// `{command, args}` descriptor. Host bindings (cwd / env / etc.) are
+/// available as both top-level globals AND inside `ctx`. We pass the
+/// `tokens` array explicitly so generators that destructure
+/// `[, cmd, sub] = tokens` keep working without reaching for
+/// `globalThis.tokens`.
+///
+/// The synthesised program shape:
+/// ```ignore
+/// (function () {
+///   const __src = (<source>);
+///   const __ctx = { cwd, env, currentToken, previousToken, tokens, searchTerm };
+///   return __src(__ctx.tokens, __ctx);
+/// })()
+/// ```
+fn build_script_function_program(source: &str) -> String {
+    format!(
+        "(function() {{ \
+           const __src = ({src}); \
+           const __ctx = {{ \
+             cwd: typeof currentWorkingDirectory !== 'undefined' ? currentWorkingDirectory : '', \
+             env: typeof environmentVariables !== 'undefined' ? environmentVariables : {{}}, \
+             currentToken: typeof currentToken !== 'undefined' ? currentToken : '', \
+             previousToken: typeof previousToken !== 'undefined' ? previousToken : '', \
+             tokens: typeof tokens !== 'undefined' ? tokens : [], \
+             searchTerm: typeof searchTerm !== 'undefined' ? searchTerm : '', \
+           }}; \
+           return __src(__ctx.tokens, __ctx); \
+         }})()",
+        src = source,
+    )
+}
+
+/// Construct the wrapper expression for a `custom` generator.
+///
+/// Phase 5 contract: the JS source is an async function that takes
+/// `(tokens, executeShellCommand, ctx)` and returns suggestions.
+/// `executeShellCommand` and the ctx fields are also available as
+/// top-level globals so legacy specs keep working.
+///
+/// The synthesised program returns the user function's eventual
+/// promise. The worker awaits it via `Promise::finish` so async source
+/// bodies resolve transparently.
+fn build_custom_program(source: &str) -> String {
+    format!(
+        "(function() {{ \
+           const __src = ({src}); \
+           const __ctx = {{ \
+             cwd: typeof currentWorkingDirectory !== 'undefined' ? currentWorkingDirectory : '', \
+             env: typeof environmentVariables !== 'undefined' ? environmentVariables : {{}}, \
+             currentToken: typeof currentToken !== 'undefined' ? currentToken : '', \
+             previousToken: typeof previousToken !== 'undefined' ? previousToken : '', \
+             tokens: typeof tokens !== 'undefined' ? tokens : [], \
+             searchTerm: typeof searchTerm !== 'undefined' ? searchTerm : '', \
+           }}; \
+           return __src(__ctx.tokens, executeShellCommand, __ctx); \
+         }})()",
+        src = source,
+    )
 }
 
 /// Log a structured `tracing` event for each diagnostic so Phase 7 can pick
@@ -184,6 +332,46 @@ fn log_diagnostics(generator_id: &str, output: &JsRuntimeOutput) {
                     code = diag.code.tag(),
                     message = %diag.message,
                     "js_runtime: spec referenced a stripped API"
+                );
+            }
+            JsDiagnosticCode::UnsupportedHostApi => {
+                tracing::warn!(
+                    generator_id = %generator_id,
+                    code = diag.code.tag(),
+                    api = %diag.message,
+                    "js_runtime: spec called an unsupported host API"
+                );
+            }
+            JsDiagnosticCode::ShellCommandStringDenied => {
+                tracing::warn!(
+                    generator_id = %generator_id,
+                    code = diag.code.tag(),
+                    message = %diag.message,
+                    "js_runtime: shell-string command denied (allow_shell_command=false)"
+                );
+            }
+            JsDiagnosticCode::ShellCommandLimitExceeded => {
+                tracing::warn!(
+                    generator_id = %generator_id,
+                    code = diag.code.tag(),
+                    message = %diag.message,
+                    "js_runtime: executeShellCommand recursion cap reached"
+                );
+            }
+            JsDiagnosticCode::ShellCommandFailed => {
+                tracing::warn!(
+                    generator_id = %generator_id,
+                    code = diag.code.tag(),
+                    message = %diag.message,
+                    "js_runtime: executeShellCommand failed"
+                );
+            }
+            JsDiagnosticCode::InvalidArgv => {
+                tracing::warn!(
+                    generator_id = %generator_id,
+                    code = diag.code.tag(),
+                    message = %diag.message,
+                    "js_runtime: script_function returned invalid argv"
                 );
             }
             // Empty output is a normal "no completions" path; demote to debug

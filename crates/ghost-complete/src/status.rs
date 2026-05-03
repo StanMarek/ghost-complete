@@ -568,30 +568,43 @@ fn count_requires_js_classes_in_value(value: &serde_json::Value) -> JsClassCount
     counts
 }
 
-/// Returns true when a generator object has the shape Phase 4 can dispatch.
-/// Mirrors `collect_generators` in `gc-suggest::specs`: the JS path needs
-/// `js_runtime.kind == "post_process"` AND at least one of `script` /
-/// `script_template`.
+/// Returns true when a generator object has the shape the runtime
+/// can dispatch.
+///
+/// Mirrors `collect_generators` in `gc-suggest::specs`. After Phase 5
+/// the engine handles all three `js_runtime.kind` variants:
+///   * `post_process` requires an accompanying `script` / `script_template`.
+///   * `script_function` and `custom` only need a non-empty `source`.
 fn is_post_process_supported(map: &serde_json::Map<String, serde_json::Value>) -> bool {
-    let kind_is_post_process = map
-        .get("js_runtime")
-        .and_then(|v| v.as_object())
-        .and_then(|rt| rt.get("kind"))
+    let runtime = match map.get("js_runtime").and_then(|v| v.as_object()) {
+        Some(r) => r,
+        None => return false,
+    };
+    let kind = runtime
+        .get("kind")
         .and_then(|k| k.as_str())
-        .map(|k| k == "post_process")
+        .unwrap_or_default();
+    let source_non_empty = runtime
+        .get("source")
+        .and_then(|v| v.as_str())
+        .map(|s| !s.trim().is_empty())
         .unwrap_or(false);
-    if !kind_is_post_process {
-        return false;
+
+    match kind {
+        "post_process" => {
+            let has_script = map
+                .get("script")
+                .map(|v| v.is_array() || v.is_string())
+                .unwrap_or(false);
+            let has_template = map
+                .get("script_template")
+                .map(|v| v.is_array() || v.is_string())
+                .unwrap_or(false);
+            (has_script || has_template) && source_non_empty
+        }
+        "script_function" | "custom" => source_non_empty,
+        _ => false,
     }
-    let has_script = map
-        .get("script")
-        .map(|v| v.is_array() || v.is_string())
-        .unwrap_or(false);
-    let has_template = map
-        .get("script_template")
-        .map(|v| v.is_array() || v.is_string())
-        .unwrap_or(false);
-    has_script || has_template
 }
 
 /// Inner implementation that writes its report to `out` instead of stdout,
@@ -1650,8 +1663,11 @@ mod tests {
         //                                          name `custom-unsupported`,
         //                                          partially functional, 1 requires_js
         //                                          (js_runtime.kind = custom;
-        //                                          Phase 5 wires runtime evaluation,
-        //                                          today still skipped).
+        //                                          historical filename — Phase 5 now
+        //                                          DOES support custom generators, so
+        //                                          this fixture is supported in the
+        //                                          counter even though the name
+        //                                          predates the change).
         //
         // file_scan sees all 7 files; SpecStore keeps all 7 entries (filename
         // stems unique). commands_addressable counts the 7 stems plus 6
@@ -1674,13 +1690,14 @@ mod tests {
         assert_eq!(outcome.partially_functional, 3);
         assert_eq!(outcome.fully_functional, 4);
         assert_eq!(outcome.requires_js_generators_total, 3);
-        // Phase 4 wires `post_process_supported` (kind = post_process WITH a
-        // populated `script`) into the QuickJS dispatch path. The other two
-        // requires_js fixtures stay unsupported: `custom_unsupported` is a
-        // Phase 5 (`Custom`) shape, and `partial_unsupported_js` predates
-        // `js_runtime` entirely.
-        assert_eq!(outcome.requires_js_generators_supported, 1);
-        assert_eq!(outcome.requires_js_generators_unsupported, 2);
+        // Phase 4 wired `post_process_supported`. Phase 5 adds the
+        // `script_function` and `custom` shapes, so the
+        // `custom_unsupported` fixture lifts to supported as well —
+        // its source is non-empty and the `Custom` dispatch path now
+        // exists. `partial_unsupported_js` predates `js_runtime`
+        // metadata entirely so it stays in the unsupported bucket.
+        assert_eq!(outcome.requires_js_generators_supported, 2);
+        assert_eq!(outcome.requires_js_generators_unsupported, 1);
 
         // js_commands lists the canonical id (filename stem) of every
         // partially-functional spec, in alphabetical order.

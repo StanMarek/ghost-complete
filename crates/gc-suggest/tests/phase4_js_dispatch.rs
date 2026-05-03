@@ -158,11 +158,11 @@ async fn phase4_two_js_sources_same_stdout_dont_cross_contaminate() {
 }
 
 #[tokio::test]
-async fn phase4_unsupported_kind_still_skipped() {
-    // A `custom` generator without an accompanying script — the resolver
-    // would skip it at `collect_generators` time. We pass it directly to
-    // `run_generators` to simulate a misclassified spec landing in the
-    // engine: argv resolves to empty, so the dispatch is a no-op.
+async fn phase4_unsupported_kind_skipped_when_source_empty() {
+    // Phase 5 widened support so `custom` generators with a populated
+    // source dispatch through the JS host API. A generator with an
+    // EMPTY source still has nothing to run and stays skipped — this
+    // is the only "unsupported shape" path that survives Phase 5.
     let gen = Arc::new(GeneratorSpec {
         generator_type: None,
         script: None,
@@ -173,7 +173,7 @@ async fn phase4_unsupported_kind_still_skipped() {
         js_source: None,
         js_runtime: Some(JsRuntimeSpec {
             kind: JsRuntimeKind::Custom,
-            source: "async () => [{ name: 'should-not-run' }]".to_string(),
+            source: "".to_string(),
             input: None,
             timeout_ms: None,
             allow_shell_command: false,
@@ -188,9 +188,13 @@ async fn phase4_unsupported_kind_still_skipped() {
         .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
         .await
         .expect("dispatch tolerates the unsupported shape");
+    // The empty-source generator is JS-dispatchable at the schema
+    // level (the spec says `kind: custom`) so the engine spawns the
+    // JS evaluation. The evaluator returns immediately with an
+    // `EmptyOutput` diagnostic — no suggestions surface.
     assert!(
         results.is_empty(),
-        "unsupported (no-script) generator must yield zero suggestions, got: {results:?}"
+        "empty-source custom generator must yield zero suggestions, got: {results:?}"
     );
 }
 

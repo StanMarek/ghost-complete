@@ -24,10 +24,13 @@ use std::time::{Duration, Instant};
 use rquickjs::{CatchResultExt, Context, Promise, Runtime, Value};
 use tokio::sync::oneshot;
 
+pub use crate::host::MAX_SHELL_CALLS_PER_EVALUATION;
+use crate::host::{install_host_api, HostState};
 use crate::normalize::normalize_value;
 use crate::sandbox::configure_or_internal;
 use crate::types::{
-    JsDiagnostic, JsDiagnosticCode, JsRuntimeError, JsRuntimeInput, JsRuntimeOutput,
+    JsDiagnostic, JsDiagnosticCode, JsExecutionKind, JsRuntimeError, JsRuntimeInput,
+    JsRuntimeOutput,
 };
 
 /// Hard cap on QuickJS heap usage per worker, in bytes (8 MiB).
@@ -49,10 +52,10 @@ const GC_THRESHOLD_BYTES: usize = 2 * 1024 * 1024;
 /// One job submitted to the worker.
 struct Job {
     program: String,
-    /// Caller-provided context (currently unused inside the worker — Phase
-    /// 4+ will surface it through a host-API binding). Kept on the wire
-    /// so the worker shape doesn't change again.
-    #[allow(dead_code)]
+    /// Caller-provided context. Phase 4 only uses `stdout`; Phase 5
+    /// reads `tokens` / `cwd` / `env` / `current_token` / `previous_token`
+    /// to populate the host bindings, and the `kind` discriminator
+    /// chooses the dispatch shape.
     input: JsRuntimeInput,
     deadline: Instant,
     reply: oneshot::Sender<Result<JsRuntimeOutput, JsRuntimeError>>,
@@ -235,6 +238,9 @@ fn run_job(
 
     let timeout_ms = (job.deadline.saturating_duration_since(Instant::now())).as_millis() as u64;
 
+    let host_state = HostState::new();
+    let host_state_for_post = host_state.clone();
+
     Ok(context.with(|ctx| -> JsRuntimeOutput {
         if let Err(msg) = configure_or_internal(&ctx) {
             return JsRuntimeOutput::empty_with(JsDiagnostic {
@@ -243,11 +249,26 @@ fn run_job(
             });
         }
 
+        // Phase 5: install host bindings for ScriptFunction / Custom
+        // jobs. PostProcess jobs do not need them — but installing
+        // unconditionally is cheap (a few property sets on a fresh
+        // context) and gives spec authors a consistent surface.
+        if let Err(e) = install_host_api(&ctx, &job.input, host_state.clone()) {
+            return JsRuntimeOutput::empty_with(JsDiagnostic {
+                code: JsDiagnosticCode::Exception,
+                message: format!("could not install host API: {e}"),
+            });
+        }
+
         // Evaluate. We accept either a synchronous value or a Promise
         // (corpus uses both `(out) => [...]` and `async (out) => [...]`).
         let value: Value<'_> = match ctx.eval::<Value<'_>, _>(job.program.as_bytes()).catch(&ctx) {
             Ok(v) => v,
-            Err(e) => return classify_error(e, interrupted, timeout_ms),
+            Err(e) => {
+                let mut out = classify_error(e, interrupted, timeout_ms);
+                attach_host_diagnostics(&mut out, &host_state_for_post);
+                return out;
+            }
         };
 
         // If the result is a Promise, finish it synchronously. Promise
@@ -260,14 +281,135 @@ fn run_job(
             };
             match promise.finish::<Value<'_>>().catch(&ctx) {
                 Ok(v) => v,
-                Err(e) => return classify_error(e, interrupted, timeout_ms),
+                Err(e) => {
+                    let mut out = classify_error(e, interrupted, timeout_ms);
+                    attach_host_diagnostics(&mut out, &host_state_for_post);
+                    return out;
+                }
             }
         } else {
             value
         };
 
-        normalize_value(&ctx, resolved)
+        let mut output = match job.input.kind {
+            JsExecutionKind::PostProcess | JsExecutionKind::Custom => {
+                normalize_value(&ctx, resolved)
+            }
+            JsExecutionKind::ScriptFunction => normalize_argv(&ctx, resolved),
+        };
+        attach_host_diagnostics(&mut output, &host_state_for_post);
+        output
     }))
+}
+
+/// Surface unsupported-host-api accumulator into the runtime output.
+fn attach_host_diagnostics(output: &mut JsRuntimeOutput, state: &HostState) {
+    for name in state.drain_unsupported() {
+        output.diagnostics.push(JsDiagnostic {
+            code: JsDiagnosticCode::UnsupportedHostApi,
+            message: name,
+        });
+    }
+}
+
+/// Convert a JS return value into an argv vector for `script_function`
+/// generators. Accepts either:
+///   * `["cmd", "arg1", "arg2"]`            – plain argv array
+///   * `{ command: "cmd", args: ["arg1"] }` – Fig structured descriptor
+///
+/// Anything else surfaces as `InvalidArgv`. The output's
+/// `argv` field is populated in place; the suggestions vec stays empty
+/// because `script_function` produces no suggestions of its own — those
+/// come from the follow-up script invocation in the engine.
+fn normalize_argv<'js>(_ctx: &rquickjs::Ctx<'js>, value: Value<'js>) -> JsRuntimeOutput {
+    let mut output = JsRuntimeOutput::default();
+
+    // Accept both `["cmd", "arg"]` and `{ command, args }`.
+    if let Some(arr) = value.as_array() {
+        let mut argv: Vec<String> = Vec::with_capacity(arr.len());
+        for i in 0..arr.len() {
+            let v: Value<'js> = match arr.get(i) {
+                Ok(v) => v,
+                Err(e) => {
+                    output.diagnostics.push(JsDiagnostic {
+                        code: JsDiagnosticCode::InvalidArgv,
+                        message: format!("argv element [{i}] read failed: {e}"),
+                    });
+                    return output;
+                }
+            };
+            let Some(s) = v.as_string() else {
+                output.diagnostics.push(JsDiagnostic {
+                    code: JsDiagnosticCode::InvalidArgv,
+                    message: format!("argv element [{i}] is not a string"),
+                });
+                return output;
+            };
+            match s.to_string() {
+                Ok(s) => argv.push(s),
+                Err(e) => {
+                    output.diagnostics.push(JsDiagnostic {
+                        code: JsDiagnosticCode::InvalidArgv,
+                        message: format!("argv element [{i}] decode failed: {e}"),
+                    });
+                    return output;
+                }
+            }
+        }
+        if argv.is_empty() {
+            output.diagnostics.push(JsDiagnostic {
+                code: JsDiagnosticCode::InvalidArgv,
+                message: "argv array must have at least one element".into(),
+            });
+            return output;
+        }
+        output.argv = argv;
+        return output;
+    }
+
+    if let Some(obj) = value.as_object() {
+        let executable: String = match obj.get::<_, Value<'js>>("command") {
+            Ok(v) => match v.as_string() {
+                Some(s) => s.to_string().unwrap_or_default(),
+                None => String::new(),
+            },
+            Err(_) => String::new(),
+        };
+        let mut argv: Vec<String> = Vec::new();
+        if !executable.is_empty() {
+            argv.push(executable);
+        }
+        if let Ok(v) = obj.get::<_, Value<'js>>("args") {
+            if let Some(args_arr) = v.as_array() {
+                for i in 0..args_arr.len() {
+                    let elem: Value<'js> = match args_arr.get(i) {
+                        Ok(e) => e,
+                        Err(_) => continue,
+                    };
+                    if let Some(s) = elem.as_string() {
+                        if let Ok(s) = s.to_string() {
+                            argv.push(s);
+                        }
+                    }
+                }
+            }
+        }
+        if argv.is_empty() {
+            output.diagnostics.push(JsDiagnostic {
+                code: JsDiagnosticCode::InvalidArgv,
+                message: "structured argv descriptor produced empty argv".into(),
+            });
+            return output;
+        }
+        output.argv = argv;
+        return output;
+    }
+
+    output.diagnostics.push(JsDiagnostic {
+        code: JsDiagnosticCode::InvalidArgv,
+        message: "script_function must return an argv array or {command, args}".into(),
+    });
+    output
 }
 
 struct DeadlineGuard<'a> {
