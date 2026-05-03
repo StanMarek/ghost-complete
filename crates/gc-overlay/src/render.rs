@@ -265,7 +265,7 @@ pub fn render_popup(
     let loading_extra_deficit: u16 = if feedback.reserves_row() { 1 } else { 0 };
     let total_height_needed = visible_count + border_pad + loading_extra_deficit;
     let new_deficit = total_height_needed.saturating_sub(space_below);
-    let total_deficit = prior_deficit + new_deficit;
+    let total_deficit = prior_deficit.saturating_add(new_deficit);
     let final_cursor_row = cursor_row.saturating_sub(total_deficit);
 
     let use_sync = matches!(
@@ -1680,6 +1680,34 @@ mod tests {
         assert_eq!(layout2.scroll_deficit, 9);
         // final_cursor = 22 - 9 = 13, start_row = 14
         assert_eq!(layout2.start_row, 14);
+    }
+
+    #[test]
+    fn test_render_saturates_cumulative_scroll_deficit() {
+        let mut buf = Vec::new();
+        let suggestions: Vec<Suggestion> = (0..25)
+            .map(|i| make(&format!("item{i}"), None, SuggestionKind::Command))
+            .collect();
+        let state = OverlayState::new();
+
+        let layout = render_popup(
+            &mut buf,
+            &suggestions,
+            &state,
+            22,
+            0,
+            24,
+            80,
+            25,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &bordered_theme(),
+            u16::MAX,
+            FeedbackKind::Loading { frame: 0 },
+            &ghostty_profile(),
+        );
+
+        assert_eq!(layout.scroll_deficit, u16::MAX);
     }
 
     #[test]

@@ -385,7 +385,12 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     (forward, h.output_epoch())
                 };
                 if !render_buf.is_empty() {
-                    let _ = write_overlay_if_current(&handler_for_stdin, render_epoch, &render_buf);
+                    if let Err(e) =
+                        write_overlay_if_current(&handler_for_stdin, render_epoch, &render_buf)
+                    {
+                        tracing::debug!("Task A overlay write/flush failed: {e}");
+                        break 'stdin;
+                    }
                 }
                 if !forward.is_empty() {
                     if pty_writer.write_all(&forward).is_err() {
@@ -568,8 +573,12 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     h.output_epoch()
                 };
                 if !render_buf.is_empty() {
-                    let _ =
-                        write_overlay_if_current(&handler_for_stdout, render_epoch, &render_buf);
+                    if let Err(e) =
+                        write_overlay_if_current(&handler_for_stdout, render_epoch, &render_buf)
+                    {
+                        tracing::debug!("Task B overlay write/flush failed: {e}");
+                        break;
+                    }
                 }
             }
 
@@ -600,8 +609,12 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     h.output_epoch()
                 };
                 if !render_buf.is_empty() {
-                    let _ =
-                        write_overlay_if_current(&handler_for_stdout, render_epoch, &render_buf);
+                    if let Err(e) =
+                        write_overlay_if_current(&handler_for_stdout, render_epoch, &render_buf)
+                    {
+                        tracing::debug!("Task B overlay write/flush failed: {e}");
+                        break;
+                    }
                 }
             }
 
@@ -620,8 +633,12 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     h.output_epoch()
                 };
                 if !render_buf.is_empty() {
-                    let _ =
-                        write_overlay_if_current(&handler_for_stdout, render_epoch, &render_buf);
+                    if let Err(e) =
+                        write_overlay_if_current(&handler_for_stdout, render_epoch, &render_buf)
+                    {
+                        tracing::debug!("Task B overlay write/flush failed: {e}");
+                        break;
+                    }
                 }
             }
         }
@@ -689,7 +706,12 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                             let Some(render_epoch) = render_epoch else {
                                 continue;
                             };
-                            let _ = write_overlay_if_current(&handler, render_epoch, &render_buf);
+                            if let Err(e) =
+                                write_overlay_if_current(&handler, render_epoch, &render_buf)
+                            {
+                                tracing::debug!("signal overlay write/flush failed: {e}");
+                                break;
+                            }
                         }
                     }
                     Err(e) => {
@@ -814,20 +836,29 @@ fn poll_until(
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum OverlayWriteOutcome {
+    Empty,
+    Written,
+    Stale,
+}
+
 fn write_overlay_if_current(
     handler: &Arc<Mutex<InputHandler>>,
     epoch: u64,
     render_buf: &[u8],
-) -> bool {
+) -> std::io::Result<OverlayWriteOutcome> {
     if render_buf.is_empty() {
-        return true;
+        return Ok(OverlayWriteOutcome::Empty);
     }
 
     let h = match handler.lock() {
         Ok(h) => h,
         Err(e) => {
             tracing::warn!("overlay write skipped (handler lock poisoned): {e}");
-            return false;
+            return Err(std::io::Error::other(format!(
+                "handler lock poisoned during overlay write: {e}"
+            )));
         }
     };
     if h.output_epoch() != epoch {
@@ -836,14 +867,20 @@ fn write_overlay_if_current(
             current_epoch = h.output_epoch(),
             "dropping stale overlay render"
         );
-        return false;
+        return Ok(OverlayWriteOutcome::Stale);
     }
 
     let mut stdout = std::io::stdout().lock();
-    stdout
-        .write_all(render_buf)
-        .and_then(|()| stdout.flush())
-        .is_ok()
+    let write_result = stdout.write_all(render_buf).and_then(|()| stdout.flush());
+    drop(h);
+
+    match write_result {
+        Ok(()) => Ok(OverlayWriteOutcome::Written),
+        Err(e) => {
+            tracing::debug!("overlay stdout write/flush failed: {e}");
+            Err(e)
+        }
+    }
 }
 
 /// Debounce loop: waits for buffer-change notifications, resets a timer on each
@@ -889,7 +926,10 @@ async fn debounce_loop(
             (prepared, h.output_epoch())
         };
         if !render_buf.is_empty() {
-            let _ = write_overlay_if_current(&handler, render_epoch, &render_buf);
+            if let Err(e) = write_overlay_if_current(&handler, render_epoch, &render_buf) {
+                tracing::debug!("debounce overlay write/flush failed: {e}");
+                break;
+            }
         }
 
         // Phase 2 (only when blocking): await the generator outside the lock,
@@ -969,7 +1009,10 @@ async fn debounce_loop(
                 h.output_epoch()
             };
             if !render_buf2.is_empty() {
-                let _ = write_overlay_if_current(&handler, render_epoch2, &render_buf2);
+                if let Err(e) = write_overlay_if_current(&handler, render_epoch2, &render_buf2) {
+                    tracing::debug!("debounce overlay write/flush failed: {e}");
+                    break;
+                }
             }
         }
     }
@@ -998,7 +1041,10 @@ async fn dynamic_merge_loop(
             h.output_epoch()
         };
         if !render_buf.is_empty() {
-            let _ = write_overlay_if_current(&handler, render_epoch, &render_buf);
+            if let Err(e) = write_overlay_if_current(&handler, render_epoch, &render_buf) {
+                tracing::debug!("dynamic merge overlay write/flush failed: {e}");
+                break;
+            }
         }
     }
 }
@@ -1033,10 +1079,15 @@ async fn feedback_tick_loop(notify: Arc<Notify>, handler: Arc<Mutex<InputHandler
                 };
                 (keep_running, h.output_epoch())
             };
-            if !render_buf.is_empty()
-                && !write_overlay_if_current(&handler, render_epoch, &render_buf)
-            {
-                break;
+            if !render_buf.is_empty() {
+                match write_overlay_if_current(&handler, render_epoch, &render_buf) {
+                    Ok(OverlayWriteOutcome::Written | OverlayWriteOutcome::Empty) => {}
+                    Ok(OverlayWriteOutcome::Stale) => break,
+                    Err(e) => {
+                        tracing::debug!("feedback overlay write/flush failed: {e}");
+                        break;
+                    }
+                }
             }
             if !keep_running {
                 break;
@@ -1204,6 +1255,25 @@ mod tests {
             CprAction::ForwardToPty(7, 3)
         );
         assert_eq!(p.state().cpr_queue_len(), 0);
+    }
+
+    #[test]
+    fn write_overlay_if_current_drops_stale_overlay_after_epoch_bump() {
+        let handler = Arc::new(Mutex::new(
+            InputHandler::new(&[], gc_terminal::TerminalProfile::for_ghostty()).expect("handler"),
+        ));
+        let stale_epoch = handler.lock().expect("handler").output_epoch();
+
+        {
+            let mut h = handler.lock().expect("handler");
+            h.handle_terminal_output(&mut Vec::new(), false, 1);
+            assert_ne!(h.output_epoch(), stale_epoch);
+        }
+
+        let outcome = write_overlay_if_current(&handler, stale_epoch, b"stale overlay bytes")
+            .expect("stale overlay should not be an I/O error");
+
+        assert_eq!(outcome, OverlayWriteOutcome::Stale);
     }
 
     struct SpawnedTestChild {

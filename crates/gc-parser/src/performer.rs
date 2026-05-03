@@ -63,9 +63,9 @@ impl Perform for TerminalState {
             return;
         }
 
-        // Blanket-discard any other CSI sequence carrying intermediate bytes.
-        // Examples: `CSI ? 25 h` (DECSET show cursor, intermediate `?`),
-        // `CSI ! p` (DECSTR soft reset, intermediate `!`), `CSI > c` (DA2).
+        // Blanket-discard remaining CSI sequences carrying non-private
+        // intermediate bytes. Examples: `CSI ! p` (DECSTR soft reset,
+        // intermediate `!`), `CSI > c` (DA2).
         // None of these affect the subset of state we track (cursor
         // position, screen dimensions, prompt/cwd bookkeeping), so the
         // cleanest handling is to ignore them entirely. This is a

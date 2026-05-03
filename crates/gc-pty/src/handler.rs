@@ -245,10 +245,12 @@ pub struct InputHandler {
     /// See `DynamicCtxSnapshot::capture` and `is_stale_against`.
     dynamic_ctx: Option<DynamicCtxSnapshot>,
     terminal_profile: TerminalProfile,
-    /// Accumulated viewport scroll from popup rendering. Persists across
-    /// dismiss/re-trigger cycles because viewport scroll is permanent.
-    /// Reset when a CPR sync corrects the parser's cursor position (new prompt).
-    scroll_deficit: u16,
+    /// Accumulated viewport scroll caused by popup rendering. Persists across
+    /// dismiss/re-trigger cycles because overlay-owned viewport scroll is permanent.
+    /// Parser-observed shell scrolls are already reflected in `TerminalState`
+    /// and must not be stored here. Reset when a CPR sync corrects the parser's
+    /// cursor position (new prompt).
+    overlay_scroll_deficit: u16,
     /// Fingerprint (buffer hash + cursor offset) of the last trigger that
     /// produced a visible popup. Used as an idempotency guard in the trigger
     /// paths (`InputHandler::trigger` and `prepare_trigger_with_block`/
@@ -274,7 +276,7 @@ pub struct InputHandler {
     /// painting sync-only results. 0 disables bounded blocking (paint immediately).
     /// Set from `config.popup.render_block_ms` during the builder phase.
     render_block_ms: u64,
-    /// Monotonic stamp for overlay-owned bytes. Proxy tasks stamp render
+    /// Wrapping epoch stamp for overlay-owned bytes. Proxy tasks stamp render
     /// buffers with this value and drop them if shell output advances it before
     /// the buffer reaches stdout.
     output_epoch: u64,
@@ -306,7 +308,7 @@ impl InputHandler {
             pending_empty_count: 0,
             dynamic_ctx: None,
             terminal_profile,
-            scroll_deficit: 0,
+            overlay_scroll_deficit: 0,
             last_trigger_fingerprint: None,
             buffer_generation: 0,
             spawned_generation: 0,
@@ -870,7 +872,7 @@ impl InputHandler {
                     // CPR sync means the parser's cursor_row now reflects reality,
                     // so any accumulated scroll deficit from prior renders is stale.
                     if p.state_mut().take_cpr_synced() {
-                        self.scroll_deficit = 0;
+                        self.overlay_scroll_deficit = 0;
                     }
                     let state = p.state();
                     let buffer = state.command_buffer().unwrap_or("").to_string();
@@ -1011,7 +1013,7 @@ impl InputHandler {
             match parser.lock() {
                 Ok(mut p) => {
                     if p.state_mut().take_cpr_synced() {
-                        self.scroll_deficit = 0;
+                        self.overlay_scroll_deficit = 0;
                     }
                     let state = p.state();
                     let buffer = state.command_buffer().unwrap_or("").to_string();
@@ -1740,7 +1742,7 @@ impl InputHandler {
             self.max_visible,
             DEFAULT_MIN_POPUP_WIDTH,
             &self.theme,
-            self.scroll_deficit,
+            self.overlay_scroll_deficit,
             &feedback,
         );
 
@@ -1762,13 +1764,13 @@ impl InputHandler {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             &self.theme,
-            self.scroll_deficit,
+            self.overlay_scroll_deficit,
             feedback,
             &self.terminal_profile,
         );
         let _ = stdout.write_all(&buf);
         let _ = stdout.flush();
-        self.scroll_deficit = layout.scroll_deficit;
+        self.overlay_scroll_deficit = layout.scroll_deficit;
         self.last_layout = Some(layout);
     }
 
@@ -1896,7 +1898,6 @@ impl InputHandler {
     ) {
         if viewport_scrolls > 0 {
             self.bump_output_epoch();
-            self.scroll_deficit = self.scroll_deficit.saturating_add(viewport_scrolls);
             self.last_trigger_fingerprint = None;
         }
 
@@ -2047,7 +2048,7 @@ impl InputHandler {
             self.dismiss(stdout);
         }
         // Screen dimensions changed — prior scroll deficit is meaningless.
-        self.scroll_deficit = 0;
+        self.overlay_scroll_deficit = 0;
     }
 
     /// Abort any in-flight dynamic generator task. Called during proxy
@@ -2791,7 +2792,7 @@ mod tests {
             pending_empty_count: 0,
             dynamic_ctx: None,
             terminal_profile: TerminalProfile::for_ghostty(),
-            scroll_deficit: 0,
+            overlay_scroll_deficit: 0,
             last_trigger_fingerprint: None,
             buffer_generation: 0,
             spawned_generation: 0,
@@ -3880,21 +3881,32 @@ mod tests {
     }
 
     #[test]
-    fn test_terminal_scroll_extends_scroll_deficit_without_requiring_visible_popup() {
+    fn test_terminal_scroll_preserves_existing_overlay_scroll_deficit_when_hidden() {
         let mut handler = make_handler();
-        handler.scroll_deficit = 3;
+        handler.overlay_scroll_deficit = 3;
         let mut buf = Vec::new();
 
         handler.handle_terminal_output(&mut buf, false, 2);
 
         assert!(buf.is_empty());
-        assert_eq!(handler.scroll_deficit, 5);
+        assert_eq!(handler.overlay_scroll_deficit, 3);
+    }
+
+    #[test]
+    fn test_hidden_terminal_scroll_does_not_create_overlay_scroll_deficit() {
+        let mut handler = make_handler();
+        let mut buf = Vec::new();
+
+        handler.handle_terminal_output(&mut buf, false, 2);
+
+        assert!(buf.is_empty());
+        assert_eq!(handler.overlay_scroll_deficit, 0);
     }
 
     #[test]
     fn test_render_at_skips_old_clear_when_new_render_scrolls() {
         let mut handler = make_visible_handler(numbered_suggestions(8));
-        handler.scroll_deficit = 4;
+        handler.overlay_scroll_deficit = 4;
         handler.last_layout = Some(PopupLayout {
             start_row: 19,
             start_col: 70,

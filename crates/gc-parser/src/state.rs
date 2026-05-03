@@ -25,6 +25,14 @@ struct CprEntry {
     enqueued_at: Instant,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct CursorSnapshot {
+    row: u16,
+    col: u16,
+    pending_wrap: bool,
+    autowrap: bool,
+}
+
 /// Tracks terminal state derived from the VT escape sequence stream.
 ///
 /// Maintains cursor position, screen dimensions, prompt boundaries (OSC 133),
@@ -36,7 +44,7 @@ pub struct TerminalState {
     cursor_col: u16,
     screen_rows: u16,
     screen_cols: u16,
-    saved_cursor: Option<(u16, u16)>,
+    saved_cursor: Option<CursorSnapshot>,
     prompt_row: Option<u16>,
     autowrap: bool,
     pending_wrap: bool,
@@ -421,15 +429,21 @@ impl TerminalState {
     }
 
     pub(crate) fn save_cursor(&mut self) {
-        self.saved_cursor = Some((self.cursor_row, self.cursor_col));
+        self.saved_cursor = Some(CursorSnapshot {
+            row: self.cursor_row,
+            col: self.cursor_col,
+            pending_wrap: self.pending_wrap,
+            autowrap: self.autowrap,
+        });
     }
 
     pub(crate) fn restore_cursor(&mut self) {
         self.mark_display_dirty();
-        if let Some((row, col)) = self.saved_cursor {
-            self.cursor_row = row;
-            self.cursor_col = col;
-            self.pending_wrap = false;
+        if let Some(snapshot) = self.saved_cursor {
+            self.cursor_row = snapshot.row;
+            self.cursor_col = snapshot.col;
+            self.autowrap = snapshot.autowrap;
+            self.pending_wrap = snapshot.pending_wrap;
             self.clamp_cursor();
         }
     }
@@ -591,6 +605,28 @@ mod tests {
         let (row, col) = state.cursor_position();
         assert!(row < 12, "row {row} should be clamped below 12");
         assert!(col < 40, "col {col} should be clamped below 40");
+    }
+
+    #[test]
+    fn restore_cursor_restores_autowrap_and_pending_wrap() {
+        let mut state = TerminalState::new(3, 3);
+        state.set_cursor(0, 2);
+        state.advance_col(1);
+        assert_eq!(state.cursor_position(), (0, 2));
+        assert!(state.pending_wrap);
+        assert!(state.autowrap);
+
+        state.save_cursor();
+        state.set_autowrap(false);
+        state.set_cursor(1, 0);
+
+        state.restore_cursor();
+        assert_eq!(state.cursor_position(), (0, 2));
+        assert!(state.pending_wrap);
+        assert!(state.autowrap);
+
+        state.advance_col(1);
+        assert_eq!(state.cursor_position(), (1, 1));
     }
 
     #[test]
