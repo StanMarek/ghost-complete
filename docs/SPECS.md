@@ -103,16 +103,34 @@ with `schema_version: "1.0"` and one row per release. Each row records:
 
 - `version`, `timestamp` — release identity.
 - `total_specs`, `fully_functional`, `requires_js_generators` — scanned from
-  the embedded specs at release time.
+  the embedded specs at release time. (Legacy fields, retained across schema
+  bumps so older `BaselineRelease` consumers keep parsing.)
 - `native_providers`, `corrected_generators`, `hand_audit_required` — not
   derivable from the scanned specs alone; maintained manually per release.
+- **UX-9 Phase 0 additions** (carried in the same release row, parsed via the
+  flatten-extra map for forward compatibility):
+  `spec_files_total`, `commands_addressable`,
+  `commands_(fully|partially|non)functional`,
+  `requires_js_generators_(total|supported|unsupported)`,
+  `command_alias_conflicts`. See `docs/COMPLETION_SPEC.md` for the
+  classification rules. Phase 0 surfaces these as derived counts; Phase 4
+  starts populating `requires_js_generators_supported` above zero.
 
-`ghost-complete status --json` (added in Phase 4) emits a `spec_counts` object,
-but the keys are deliberately different from the baseline-row schema: `status`
-reports shipped/loaded counts (`total`, `partially_functional`, `embedded`,
-`filesystem_overrides`, `parse_errors`), while the baseline tracks the
-classification breakdown used for trend reporting. A refresh therefore involves
-a small projection, not a copy.
+`ghost-complete status --json` emits a `spec_counts` object whose UX-9
+Phase 0 keys mirror the new baseline fields one-to-one. The legacy keys
+(`total`, `fully_functional`, `partially_functional`, `embedded`,
+`filesystem_overrides`, `parse_errors`) are retained alongside for
+backwards compat. The schema_version field on the JSON output bumped from
+`"1.0"` to `"1.1"` when the new keys landed; old consumers see the legacy
+keys unchanged.
+
+The output also carries a top-level `file_scan` block (`spec_files_total`,
+`requires_js_generators_total`) that is computed independently from the
+runtime loader index. This is on purpose: the loader keys SpecStore on the
+JSON `name` field and applies first-match-wins dedup, so the loader-level
+count can differ from the file-level count. Phase 1 will close that gap
+(commands addressable by file stem, alias conflicts surfaced as
+load-side warnings).
 
 Refresh workflow at release time:
 
@@ -120,31 +138,47 @@ Refresh workflow at release time:
 # 1. Capture the current scan.
 ghost-complete status --json > /tmp/status.json
 
-# 2. Hand-edit docs/coverage-baseline.json: append a new object to `releases`
+# 2. (Optional) cross-check with the repo-local script that walks the spec
+#    JSON via jq, independent of the runtime loader. The two should agree
+#    on `requires_js_generators_total`, `command_alias_conflicts`, and
+#    `spec_files_total`. The fully/partially counts can differ slightly
+#    when the same `name` is shared by multiple files (the runtime
+#    classifies per addressable command; the script per file).
+scripts/count-spec-coverage.sh --json > /tmp/scan.json
+
+# 3. Hand-edit docs/coverage-baseline.json: append a new object to `releases`
 #    with the following fields, drawing on the scan output plus the
 #    manually-maintained fields:
-#      - version                    (the new release tag, e.g. "0.10.0")
-#      - timestamp                  (ISO 8601 UTC)
-#      - total_specs                (from status.json spec_counts.total)
-#      - fully_functional           (from status.json spec_counts.fully_functional)
-#      - requires_js_generators     (from the spike report; recount as needed)
-#      - native_providers           (count current files in providers/ that
-#                                    are wired into the ProviderKind enum)
-#      - corrected_generators       (count of `_corrected_in` markers:
-#                                    `grep -cR '"_corrected_in"' specs/`)
-#      - hand_audit_required        (from the spike inventory, carried
-#                                    forward until a recount)
+#      - version                              (the new release tag)
+#      - timestamp                            (ISO 8601 UTC)
+#      - total_specs / fully_functional       (legacy — keep populated for
+#                                              backwards compat)
+#      - requires_js_generators               (legacy — keep populated)
+#      - native_providers                     (count files in providers/ that
+#                                              are wired into the ProviderKind enum)
+#      - corrected_generators                 (count of `_corrected_in` markers:
+#                                              `grep -cR '"_corrected_in"' specs/`)
+#      - hand_audit_required                  (from the spike inventory, carried
+#                                              forward until a recount)
+#      - spec_files_total                     (from status.json file_scan.spec_files_total)
+#      - commands_addressable                 (from status.json spec_counts.commands_addressable)
+#      - commands_fully_functional            (from status.json)
+#      - commands_partially_functional        (from status.json)
+#      - commands_nonfunctional               (from status.json)
+#      - requires_js_generators_total         (from status.json)
+#      - requires_js_generators_supported     (from status.json)
+#      - requires_js_generators_unsupported   (from status.json)
+#      - command_alias_conflicts              (from status.json)
 #
-# 3. Verify the file parses as JSON and that `ghost-complete status` renders
+# 4. Verify the file parses as JSON and that `ghost-complete status` renders
 #    the trend section as expected (the last row should show signed deltas
 #    against the previous row).
 ```
 
 The projection is manual by design. A future `scripts/refresh-coverage-baseline.mjs`
-could automate the `total_specs` / `fully_functional` / `corrected_generators`
-projection from `status --json` plus `grep`, but the `native_providers`,
-`requires_js_generators`, and `hand_audit_required` fields rely on analyses
-that live outside the scanned spec JSON. An honest documented step beats a
+could automate the projection from `status --json` plus `grep`, but the
+`native_providers` and `hand_audit_required` fields rely on analyses that
+live outside the scanned spec JSON. An honest documented step beats a
 half-finished automation.
 
 **Owner:** maintainer, as part of the release checklist. **CI drift warning:**

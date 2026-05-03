@@ -1,0 +1,31 @@
+{
+  "name": "partial-unsupported-js",
+  "description": "UX-9 fixture: one normal subcommand plus one arg with a requires_js generator that has no js_runtime metadata. The runtime drops the generator (matches release-≤0.11.0 behaviour); subcommands and options still resolve.",
+  "subcommands": [
+    {
+      "name": "static-sub",
+      "description": "A subcommand that needs no JS"
+    },
+    {
+      "name": "needs-js",
+      "description": "A subcommand whose positional arg only completes via JS",
+      "args": [
+        {
+          "name": "thing",
+          "generators": [
+            {
+              "requires_js": true,
+              "js_source": "ctx => ctx.things.map(t => ({ name: t.id }))"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "name": ["--help"],
+      "description": "Print help"
+    }
+  ]
+}

@@ -15,37 +15,41 @@ use crate::sanitize::sanitize_for_terminal;
 /// not available). Keeps the "Coverage trend" section working out of the box.
 const EMBEDDED_BASELINE: &str = include_str!("../../../docs/coverage-baseline.json");
 
-/// Check if a spec tree contains any generators with `requires_js: true`.
-fn has_requires_js(spec: &CompletionSpec) -> bool {
-    check_args_for_js(&spec.args)
-        || check_options_for_js(&spec.options)
-        || check_subcommands_for_js(&spec.subcommands)
-}
+/// Count every generator with `requires_js: true` anywhere in a spec tree.
+///
+/// Mirrors `has_requires_js` (which short-circuits on the first match) but
+/// returns a count for the runtime-loader-level corpus statistics. Phase 4
+/// will distinguish supported from unsupported generators based on the
+/// `js_runtime` metadata (Phase 2 adds that field). For Phase 0 the
+/// breakdown is supported = 0, unsupported = total.
+fn count_requires_js_generators(spec: &CompletionSpec) -> usize {
+    fn count_in_generators(gens: &[GeneratorSpec]) -> usize {
+        gens.iter().filter(|g| g.requires_js).count()
+    }
+    fn count_in_arg(arg: &ArgSpec) -> usize {
+        count_in_generators(&arg.generators)
+    }
+    fn count_in_args(args: &[ArgSpec]) -> usize {
+        args.iter().map(count_in_arg).sum()
+    }
+    fn count_in_options(opts: &[OptionSpec]) -> usize {
+        opts.iter()
+            .map(|o| o.args.as_ref().map_or(0, count_in_arg))
+            .sum()
+    }
+    fn count_in_subcommands(subs: &[SubcommandSpec]) -> usize {
+        subs.iter()
+            .map(|s| {
+                count_in_args(&s.args)
+                    + count_in_options(&s.options)
+                    + count_in_subcommands(&s.subcommands)
+            })
+            .sum()
+    }
 
-fn check_generators_for_js(generators: &[GeneratorSpec]) -> bool {
-    generators.iter().any(|g| g.requires_js)
-}
-
-fn check_arg_for_js(arg: &ArgSpec) -> bool {
-    check_generators_for_js(&arg.generators)
-}
-
-fn check_args_for_js(args: &[ArgSpec]) -> bool {
-    args.iter().any(check_arg_for_js)
-}
-
-fn check_options_for_js(options: &[OptionSpec]) -> bool {
-    options
-        .iter()
-        .any(|o| o.args.as_ref().is_some_and(check_arg_for_js))
-}
-
-fn check_subcommands_for_js(subcommands: &[SubcommandSpec]) -> bool {
-    subcommands.iter().any(|s| {
-        check_args_for_js(&s.args)
-            || check_options_for_js(&s.options)
-            || check_subcommands_for_js(&s.subcommands)
-    })
+    count_in_args(&spec.args)
+        + count_in_options(&spec.options)
+        + count_in_subcommands(&spec.subcommands)
 }
 
 /// Minimum sanity check that a baseline `timestamp` string resembles an RFC
@@ -309,6 +313,41 @@ pub struct StatusOutcome {
     /// Per-dir spec-load error strings, already sanitised for terminal
     /// output. Retained so the JSON path can surface them too.
     pub parse_error_lines: Vec<String>,
+    /// UX-9 Phase 0 counters (computed from the runtime loader index).
+    /// These mirror existing fields where possible (commands_addressable
+    /// == fs_specs after dedup; commands_fully_functional == fully_functional)
+    /// while introducing the new vocabulary that future phases will diverge
+    /// on. Phase 1 lifts `commands_addressable` to spec_files_total by
+    /// fixing the filename/name collision that drops 6 specs today; Phase 4
+    /// lifts `requires_js_generators_supported` above zero by activating
+    /// post-process generators; Phase 1 also surfaces `command_alias_conflicts`.
+    pub commands_addressable: usize,
+    pub commands_partially_functional: usize,
+    pub commands_nonfunctional: usize,
+    pub requires_js_generators_total: usize,
+    pub requires_js_generators_supported: usize,
+    pub requires_js_generators_unsupported: usize,
+    pub command_alias_conflicts: usize,
+    /// File-level scan results — independent of the loader-level index so
+    /// the disagreement between `spec_files_total` and `commands_addressable`
+    /// is visible. Today: 709 vs 703 (6 lost to filename/name collisions).
+    pub file_scan: FileScan,
+}
+
+/// File-level scan, populated independently from the runtime loader index.
+/// Walks the embedded specs (and on-disk override dirs) and counts both
+/// files and total `requires_js: true` occurrences without going through
+/// SpecStore's dedupe-by-name pipeline.
+#[derive(Debug, Default, Clone, Serialize)]
+pub struct FileScan {
+    /// Number of `*.json` spec files seen across all embedded + override
+    /// dirs, before any name-keyed deduplication.
+    pub spec_files_total: usize,
+    /// Total count of `requires_js: true` generators across ALL spec files
+    /// (including ones that lose their addressability slot to a duplicate
+    /// `name` entry). Should equal the runtime-loader count today (and
+    /// Phase 1 keeps that invariant intact).
+    pub requires_js_generators_total: usize,
 }
 
 /// Scan filesystem spec dirs and collect the numbers the status report
@@ -334,9 +373,14 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
     let mut specs: Vec<(&str, &CompletionSpec)> = store.iter().collect();
     specs.sort_by_key(|(name, _)| *name);
 
+    // Per-spec classification uses the structured loader: a spec is
+    // partially functional iff at least one parsed generator carries
+    // `requires_js: true`. This shape is what the runtime can actually
+    // see at completion time.
     for (name, spec) in &specs {
         fs_specs += 1;
-        if has_requires_js(spec) {
+        let js_count = count_requires_js_generators(spec);
+        if js_count > 0 {
             partially_functional += 1;
             js_commands.push((*name).to_string());
         } else {
@@ -346,6 +390,24 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
 
     js_commands.sort();
 
+    // File-level scan is the source of truth for the
+    // `requires_js_generators_total` figure. The structured deserializer
+    // drops `OptionSpec.args[N>0]` (see `scan_spec_files` for details),
+    // so a loader-based count undercounts the corpus by ~80 today. We
+    // surface the raw-walk count here so users see the true corpus size,
+    // and the gap shrinks as Phase 1+ relaxes the schema.
+    let file_scan = scan_spec_files(&dirs)?;
+    let requires_js_generators_total = file_scan.requires_js_generators_total;
+
+    // command_alias_conflicts counts files whose declared `name` differs
+    // from the file stem — these are commands that cannot be addressed
+    // by typing the file stem on the shell today. Phase 1 will key
+    // SpecStore on the file stem instead of `name`, eliminating this
+    // class of conflict. (The duplicate-name dedup is a separate class —
+    // also handled by Phase 1 — and shows up as the gap between
+    // `file_scan.spec_files_total` and `commands_addressable`.)
+    let command_alias_conflicts = count_alias_conflicts(&dirs);
+
     Ok(StatusOutcome {
         fs_specs,
         embedded_count,
@@ -354,7 +416,145 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
         partially_functional,
         js_commands,
         parse_error_lines,
+        commands_addressable: fs_specs,
+        commands_partially_functional: partially_functional,
+        commands_nonfunctional: 0,
+        requires_js_generators_total,
+        requires_js_generators_supported: 0,
+        requires_js_generators_unsupported: requires_js_generators_total,
+        command_alias_conflicts,
+        file_scan,
     })
+}
+
+/// Walk the same spec dirs as the runtime loader, but count individual
+/// FILES rather than going through SpecStore's name-keyed HashMap. Two
+/// files with the same `name` entry both count here — that is the whole
+/// point: the gap between this and the loader-level count is the
+/// `command_alias_conflicts` figure that Phase 1 will close.
+///
+/// Counts `requires_js: true` via a raw `serde_json::Value` walk rather
+/// than going through `parse_spec_checked_and_sanitized`. The structured
+/// parser drops `OptionSpec.args[N>0]` (it stores `Option<ArgSpec>` and
+/// `vec.into_iter().next()`s the rest away — see `deserialize_option_args`),
+/// so a parser-based file scan undercounts the corpus by ~80 today. The
+/// whole point of `file_scan` is to surface the corpus's *true* generator
+/// total, independent of any current schema clamping. Phase 1+ may lift
+/// the schema limitation, at which point the loader-level count converges
+/// with the file-level count.
+///
+/// Errors are tolerant — a missing dir is silently skipped (matches the
+/// loader's behavior). A malformed file is also skipped (its requires_js
+/// count is unknowable).
+fn scan_spec_files(dirs: &[PathBuf]) -> Result<FileScan> {
+    let mut spec_files_total = 0usize;
+    let mut requires_js_generators_total = 0usize;
+
+    for dir in dirs {
+        if !dir.exists() {
+            continue;
+        }
+        let entries = match std::fs::read_dir(dir) {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) != Some("json") {
+                continue;
+            }
+            spec_files_total += 1;
+            let contents = match std::fs::read_to_string(&path) {
+                Ok(c) => c,
+                Err(_) => continue,
+            };
+            let value: serde_json::Value = match serde_json::from_str(&contents) {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
+            requires_js_generators_total += count_requires_js_in_value(&value);
+        }
+    }
+
+    Ok(FileScan {
+        spec_files_total,
+        requires_js_generators_total,
+    })
+}
+
+/// Count files whose declared top-level `name` field disagrees with the
+/// file stem. These are commands that cannot be addressed by typing the
+/// file stem on the shell today (the loader keys SpecStore on the JSON
+/// `name`). Phase 1 will switch the loader to file-stem keying, at which
+/// point this number drops to zero (or surfaces as deliberate aliasing
+/// metadata).
+///
+/// Walks the raw JSON via `serde_json::Value` so the count is independent
+/// of `CompletionSpec`'s structured deserializer.
+fn count_alias_conflicts(dirs: &[PathBuf]) -> usize {
+    let mut conflicts = 0usize;
+    for dir in dirs {
+        if !dir.exists() {
+            continue;
+        }
+        let entries = match std::fs::read_dir(dir) {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) != Some("json") {
+                continue;
+            }
+            let stem = match path.file_stem().and_then(|s| s.to_str()) {
+                Some(s) => s.to_string(),
+                None => continue,
+            };
+            let contents = match std::fs::read_to_string(&path) {
+                Ok(c) => c,
+                Err(_) => continue,
+            };
+            let value: serde_json::Value = match serde_json::from_str(&contents) {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
+            let name = value.get("name").and_then(|v| v.as_str()).unwrap_or("");
+            if name != stem {
+                conflicts += 1;
+            }
+        }
+    }
+    conflicts
+}
+
+/// Walk a raw `serde_json::Value` and count every object with
+/// `"requires_js": true`. Equivalent to the jq query
+/// `[.. | objects | select(.requires_js == true)] | length`.
+/// Independent of `CompletionSpec`'s structured deserializer so the
+/// file-level scan is not subject to the same schema-side
+/// undercounting.
+fn count_requires_js_in_value(value: &serde_json::Value) -> usize {
+    let mut stack: Vec<&serde_json::Value> = vec![value];
+    let mut count = 0usize;
+    while let Some(node) = stack.pop() {
+        match node {
+            serde_json::Value::Object(map) => {
+                if matches!(map.get("requires_js"), Some(serde_json::Value::Bool(true))) {
+                    count += 1;
+                }
+                for v in map.values() {
+                    stack.push(v);
+                }
+            }
+            serde_json::Value::Array(arr) => {
+                for v in arr {
+                    stack.push(v);
+                }
+            }
+            _ => {}
+        }
+    }
+    count
 }
 
 /// Inner implementation that writes its report to `out` instead of stdout,
@@ -429,7 +629,16 @@ fn run_status_inner_with_trend(
 /// Supported `schema_version` for the `ghost-complete status --json`
 /// output. Bumped when the output shape changes in a backward-incompatible
 /// way.
-const STATUS_SCHEMA_VERSION: &str = "1.0";
+///
+/// 1.0 — original shape (UX-8 era).
+/// 1.1 — UX-9 Phase 0: adds `commands_addressable`,
+///       `commands_(fully|partially|non)functional`,
+///       `requires_js_generators_(total|supported|unsupported)`,
+///       `command_alias_conflicts` to `spec_counts`, plus a top-level
+///       `file_scan` block. All additions are purely additive — old
+///       fields keep their meaning so existing JSON consumers still
+///       parse the output unchanged.
+const STATUS_SCHEMA_VERSION: &str = "1.1";
 
 /// The shape emitted by `ghost-complete status --json`. Defining this as a
 /// `#[derive(Serialize)]` struct rather than inline `json!` macros fails
@@ -442,9 +651,18 @@ const STATUS_SCHEMA_VERSION: &str = "1.0";
 struct StatusReport {
     schema_version: &'static str,
     spec_counts: SpecCounts,
+    /// File-level scan independent of the runtime loader index. Surfaced
+    /// alongside `spec_counts` so consumers can distinguish a
+    /// loader-deduped count from a raw file count.
+    file_scan: FileScan,
     coverage_trend: Option<CoverageTrend>,
 }
 
+/// Counters surfaced under `spec_counts`. UX-9 Phase 0 adds the new
+/// command_* and requires_js_generators_* fields; the legacy fields
+/// (`total`, `fully_functional`, `partially_functional`, `embedded`,
+/// `filesystem_overrides`, `parse_errors`, `parse_error_details`) keep
+/// their meaning so 1.0 consumers keep working unchanged.
 #[derive(Debug, Serialize)]
 struct SpecCounts {
     total: usize,
@@ -454,6 +672,42 @@ struct SpecCounts {
     filesystem_overrides: usize,
     parse_errors: usize,
     parse_error_details: Vec<String>,
+    /// UX-9 vocabulary — a "command" is a uniquely-addressable
+    /// `CompletionSpec.name` after first-match-wins dedup.
+    commands_addressable: usize,
+    /// Aliased to `fully_functional` until Phase 4 changes the definition
+    /// (a partially-functional command with all its requires_js generators
+    /// successfully activated will be promoted to fully functional). For
+    /// Phase 0 the two fields are numerically identical.
+    commands_fully_functional: usize,
+    commands_partially_functional: usize,
+    /// Today: 0. Phase 1 will lift this above zero once we surface specs
+    /// that fail to load entirely (e.g., due to alias collisions losing
+    /// their fallback file).
+    commands_nonfunctional: usize,
+    /// Total `requires_js: true` generator instances across the corpus
+    /// (counted per occurrence, not per spec). Sourced from a raw
+    /// `serde_json::Value` walk — equivalent to
+    /// `[.. | objects | select(.requires_js == true)] | length` —
+    /// because the structured loader silently drops some generator
+    /// slots (see `scan_spec_files`). Equal to
+    /// `file_scan.requires_js_generators_total`.
+    requires_js_generators_total: usize,
+    /// Today: 0. Phase 4 lifts this as post-process generators activate.
+    requires_js_generators_supported: usize,
+    /// `requires_js_generators_total - requires_js_generators_supported`.
+    /// Surfaced as its own field so consumers don't need to subtract.
+    requires_js_generators_unsupported: usize,
+    /// Number of files whose declared top-level `name` disagrees with
+    /// the file stem (≈14 against the embedded corpus). These are
+    /// commands that cannot be addressed by typing the file stem on the
+    /// shell — the loader keys SpecStore on the JSON `name`. Phase 1
+    /// switches the loader to file-stem keying, at which point this
+    /// number drops to zero (or surfaces as deliberate aliasing metadata).
+    /// The duplicate-name dedup is a separate, related class — surfaced
+    /// as the gap between `file_scan.spec_files_total` and
+    /// `commands_addressable`.
+    command_alias_conflicts: usize,
 }
 
 #[derive(Debug, Serialize)]
@@ -538,7 +792,16 @@ fn run_status_json(
             filesystem_overrides: outcome.fs_specs,
             parse_errors: outcome.total_parse_errors,
             parse_error_details: outcome.parse_error_lines.clone(),
+            commands_addressable: outcome.commands_addressable,
+            commands_fully_functional: outcome.fully_functional,
+            commands_partially_functional: outcome.commands_partially_functional,
+            commands_nonfunctional: outcome.commands_nonfunctional,
+            requires_js_generators_total: outcome.requires_js_generators_total,
+            requires_js_generators_supported: outcome.requires_js_generators_supported,
+            requires_js_generators_unsupported: outcome.requires_js_generators_unsupported,
+            command_alias_conflicts: outcome.command_alias_conflicts,
         },
+        file_scan: outcome.file_scan.clone(),
         coverage_trend,
     };
 
@@ -1078,7 +1341,7 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.0");
+        assert_eq!(parsed["schema_version"], "1.1");
         assert!(
             parsed["spec_counts"].is_object(),
             "spec_counts must be an object"
@@ -1093,6 +1356,21 @@ mod tests {
             parsed["spec_counts"]["parse_error_details"].is_array(),
             "parse_error_details must be an array (empty when no errors)"
         );
+        // UX-9 Phase 0 additions — schema 1.1.
+        assert!(parsed["spec_counts"]["commands_addressable"].is_number());
+        assert!(parsed["spec_counts"]["commands_fully_functional"].is_number());
+        assert!(parsed["spec_counts"]["commands_partially_functional"].is_number());
+        assert!(parsed["spec_counts"]["commands_nonfunctional"].is_number());
+        assert!(parsed["spec_counts"]["requires_js_generators_total"].is_number());
+        assert!(parsed["spec_counts"]["requires_js_generators_supported"].is_number());
+        assert!(parsed["spec_counts"]["requires_js_generators_unsupported"].is_number());
+        assert!(parsed["spec_counts"]["command_alias_conflicts"].is_number());
+        assert!(
+            parsed["file_scan"].is_object(),
+            "file_scan top-level block must be present in 1.1"
+        );
+        assert!(parsed["file_scan"]["spec_files_total"].is_number());
+        assert!(parsed["file_scan"]["requires_js_generators_total"].is_number());
         assert_eq!(
             parsed["spec_counts"]["parse_error_details"]
                 .as_array()
@@ -1149,6 +1427,188 @@ mod tests {
             0,
             "no-error fixture should produce an empty parse_error_details array"
         );
+    }
+
+    /// UX-9 Phase 0: `status --json` schema 1.1 must expose every new
+    /// counter field. This test exercises the wiring without depending on
+    /// the corpus content (uses two synthetic fixtures so the numbers are
+    /// pinned).
+    #[test]
+    fn status_json_exposes_new_counters() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        // One static-only spec — should land in fully_functional.
+        std::fs::write(
+            spec_dir.join("static-cmd.json"),
+            r#"{
+                "name": "static-cmd",
+                "subcommands": [{"name": "go"}]
+            }"#,
+        )
+        .unwrap();
+        // One spec with a single requires_js generator — should land in
+        // partially_functional and contribute 1 to the requires_js totals.
+        std::fs::write(
+            spec_dir.join("partial-cmd.json"),
+            r#"{
+                "name": "partial-cmd",
+                "args": [{
+                    "name": "thing",
+                    "generators": [{"requires_js": true, "js_source": "ctx => []"}]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        let txt = String::from_utf8_lossy(&out);
+        let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
+
+        // Schema 1.1 surfaces every new counter as a numeric value.
+        assert_eq!(parsed["schema_version"], "1.1");
+        let counts = &parsed["spec_counts"];
+        assert_eq!(
+            counts["commands_addressable"].as_u64().unwrap(),
+            2,
+            "two specs in dir → two addressable commands"
+        );
+        assert_eq!(counts["commands_fully_functional"].as_u64().unwrap(), 1);
+        assert_eq!(counts["commands_partially_functional"].as_u64().unwrap(), 1);
+        assert_eq!(counts["commands_nonfunctional"].as_u64().unwrap(), 0);
+        assert_eq!(
+            counts["requires_js_generators_total"].as_u64().unwrap(),
+            1,
+            "one requires_js generator across both fixtures"
+        );
+        assert_eq!(
+            counts["requires_js_generators_supported"].as_u64().unwrap(),
+            0,
+            "Phase 0 supports zero requires_js generators"
+        );
+        assert_eq!(
+            counts["requires_js_generators_unsupported"]
+                .as_u64()
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            counts["command_alias_conflicts"].as_u64().unwrap(),
+            0,
+            "no duplicate names → no alias conflicts"
+        );
+
+        // file_scan is a new top-level block.
+        let fs_block = &parsed["file_scan"];
+        assert_eq!(fs_block["spec_files_total"].as_u64().unwrap(), 2);
+        assert_eq!(
+            fs_block["requires_js_generators_total"].as_u64().unwrap(),
+            1
+        );
+    }
+
+    /// UX-9 Phase 0: `commands_partially_functional` is the count of specs
+    /// where at least one generator carries `requires_js: true`. The runtime
+    /// loader is the source of truth — not a raw jq scan — so this test
+    /// covers the wiring through `scan_specs`.
+    #[test]
+    fn status_partial_count_matches_runtime_loader() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        std::fs::write(
+            spec_dir.join("static-cmd.json"),
+            r#"{"name": "static-cmd", "subcommands": [{"name": "go"}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            spec_dir.join("partial-cmd.json"),
+            r#"{
+                "name": "partial-cmd",
+                "args": [{
+                    "name": "thing",
+                    "generators": [{"requires_js": true}]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let outcome = scan_specs(Some(cfg.to_str().unwrap())).unwrap();
+        assert_eq!(outcome.fs_specs, 2);
+        assert_eq!(outcome.fully_functional, 1);
+        assert_eq!(outcome.partially_functional, 1);
+        assert_eq!(outcome.commands_addressable, 2);
+        assert_eq!(outcome.commands_partially_functional, 1);
+        assert_eq!(outcome.requires_js_generators_total, 1);
+        assert_eq!(outcome.requires_js_generators_unsupported, 1);
+        assert_eq!(outcome.requires_js_generators_supported, 0);
+        // file-level scan agrees with loader-level scan when there are no
+        // alias conflicts.
+        assert_eq!(outcome.file_scan.spec_files_total, 2);
+        assert_eq!(outcome.file_scan.requires_js_generators_total, 1);
+        assert_eq!(outcome.command_alias_conflicts, 0);
+    }
+
+    /// UX-9 Phase 0 fixtures parse cleanly and produce the expected counter
+    /// classifications. Guards the on-disk fixture files in
+    /// `crates/gc-suggest/tests/fixtures/ux9/` against bit-rot.
+    #[test]
+    fn ux9_active_fixtures_classify_correctly() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+
+        // Copy the active (non-parked) fixtures into the spec dir under
+        // their on-disk filenames. Skip the README + the parked subdir.
+        let fixtures_root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../gc-suggest/tests/fixtures/ux9");
+        for entry in std::fs::read_dir(&fixtures_root)
+            .expect("ux9 fixtures dir must exist alongside ghost-complete")
+        {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.is_dir() || path.extension().and_then(|e| e.to_str()) != Some("json") {
+                continue;
+            }
+            let dest = spec_dir.join(path.file_name().unwrap());
+            std::fs::copy(&path, &dest).unwrap();
+        }
+
+        let cfg = write_config_for(&spec_dir, &tmp);
+        let outcome = scan_specs(Some(cfg.to_str().unwrap())).unwrap();
+
+        // The active fixture set is:
+        //   static_only.json                    → fully functional, 0 requires_js,
+        //                                          stem≠name (alias mismatch)
+        //   partial_unsupported_js.json         → partially functional, 1 requires_js,
+        //                                          stem≠name (alias mismatch)
+        //   name_mismatch.json                  → fully functional, 0 requires_js,
+        //                                          stem≠name (deliberate alias mismatch)
+        //   duplicate_name_a.json + b.json      → both have name="duplicate", one
+        //                                          loses to first-match-wins; the
+        //                                          surviving one is fully functional.
+        //                                          Both stems differ from "duplicate"
+        //                                          so both count as alias mismatches.
+        //
+        // file_scan sees all 5 files; the loader sees 4 unique names.
+        assert_eq!(outcome.file_scan.spec_files_total, 5);
+        assert_eq!(outcome.fs_specs, 4, "duplicate name collapses to one slot");
+        assert_eq!(outcome.commands_addressable, 4);
+        assert_eq!(
+            outcome.command_alias_conflicts, 5,
+            "every fixture's filename stem disagrees with its declared name"
+        );
+        assert_eq!(outcome.partially_functional, 1);
+        assert_eq!(outcome.fully_functional, 3);
+        assert_eq!(outcome.requires_js_generators_total, 1);
+        assert_eq!(outcome.requires_js_generators_unsupported, 1);
+        assert_eq!(outcome.requires_js_generators_supported, 0);
+
+        // Confirm js_commands surfaces only the partial fixture.
+        assert_eq!(outcome.js_commands, vec!["partial-unsupported-js"]);
     }
 
     #[test]

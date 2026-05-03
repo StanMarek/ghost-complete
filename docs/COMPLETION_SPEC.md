@@ -198,7 +198,7 @@ Like script generators, but with token interpolation. `{current_token}` is repla
 
 #### Deferred JS generators
 
-Some Fig specs contain generators that require JavaScript execution. Ghost Complete does not implement a JS runtime. When a generator is flagged as requiring JS, the static portions of the spec (subcommands, options, simple args) still work normally — only the JS-dependent generator is skipped.
+Some Fig specs contain generators that require JavaScript execution. Ghost Complete does not yet ship a JS runtime in the released binary. When a generator is flagged as requiring JS, the static portions of the spec (subcommands, options, simple args) still work normally.
 
 ```json
 {
@@ -207,7 +207,28 @@ Some Fig specs contain generators that require JavaScript execution. Ghost Compl
 }
 ```
 
-If a `script` field is present alongside `requires_js`, the script is executed as a regular script generator (without JS evaluation).
+**Current behaviour (release ≤ 0.11.0):** any generator with `requires_js: true` is skipped entirely at resolution time, regardless of any sibling fields. A `script` array next to `requires_js` is loaded but not executed. Specs with `requires_js` generators still surface their subcommands and options — only the JS-flagged generator itself is dropped. (Earlier revisions of this document claimed the sibling `script` would run as a fallback; that was never the case in the runtime, and the doc was reconciled with the code in UX-9 Phase 0.)
+
+**In progress (UX-9):** the runtime grows a metadata-driven JS path. Specs with `requires_js: true` may carry a new `js_runtime` object that classifies the generator and supplies the source needed to drive it:
+
+```json
+{
+  "requires_js": true,
+  "script": ["echo", "hello\nworld"],
+  "js_runtime": {
+    "kind": "post_process",
+    "source": "out => out.split('\\n').filter(Boolean).map(name => ({ name }))"
+  }
+}
+```
+
+| `js_runtime.kind` | Behaviour | Status |
+|-------------------|-----------|--------|
+| `post_process`    | Run `script` (or `script_template`) as a normal script generator, then pass stdout through the JS function in `js_runtime.source`. The function returns the suggestion list. | Activated in Phase 4. |
+| `custom`          | No script — `js_runtime.source` is an async function that returns suggestions directly (the Fig `custom: async () => [...]` shape). | Activated in Phase 5. |
+| `script_function` | Generator emits a string of code in `js_runtime.source` whose evaluation produces an `argv` to spawn, then post-processes the resulting stdout. | Activated in Phase 5. |
+
+Until Phase 4 ships, treat any spec with `requires_js: true` as having that generator dropped, irrespective of `js_runtime` content. The metadata fields are reserved and parsed by the schema starting in Phase 2 so converter pipelines can already populate them; the field shape is subject to change until Phase 8 lands.
 
 #### Available Templates
 
