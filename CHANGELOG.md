@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `worklink` — are deprecated AWS services that upstream stopped
   wiring up, so the converter does not see them.) The `--profile`
   option uses a native `split_lines + filter_empty + trim` transform
-  on `aws configure list-profiles` with directory-keyed caching. The
+  on `aws configure list-profiles` with directory-keyed caching (5 min TTL). The
   remaining 1 843 dynamic generators (instance/region/bucket/role
   enumeration) ship as `requires_js: true` and stay deferred to the
   long-running requires-js plan; static completions work today.

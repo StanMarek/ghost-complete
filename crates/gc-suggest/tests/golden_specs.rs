@@ -371,12 +371,16 @@ fn aws_profile_option_has_native_transform_generator() {
          pipeline should have lowered it. If it flipped back, profile \
          completion has regressed."
     );
-    assert!(
-        gen.script
-            .as_ref()
-            .map(|v| v.iter().any(|s| s == "list-profiles"))
-            .unwrap_or(false),
-        "--profile generator must invoke `aws configure list-profiles`; \
+    assert_eq!(
+        gen.script.as_deref(),
+        Some(
+            &[
+                "aws".to_string(),
+                "configure".to_string(),
+                "list-profiles".to_string()
+            ][..]
+        ),
+        "--profile generator must invoke exactly `aws configure list-profiles`; \
          got script={:?}",
         gen.script
     );
@@ -403,6 +407,18 @@ fn aws_profile_option_has_native_transform_generator() {
         "--profile generator must have cache_by_directory: true so profile \
          changes propagate when the user cd's into a different project. \
          Got cache={cache:?}"
+    );
+    // engine.rs only inserts into the cache when ttl_seconds > 0; without
+    // a positive TTL the cache_by_directory flag is decorative and the
+    // generator re-shells `aws configure list-profiles` on every Tab.
+    // Codex iteration 3 caught this — assert the runtime contract.
+    assert!(
+        cache.ttl_seconds > 0,
+        "--profile cache.ttl_seconds must be > 0 for the runtime to actually \
+         cache results; got {}. Without a positive TTL, cache_by_directory \
+         is silently inert (engine.rs:465). The CHANGELOG promise of \
+         directory-keyed caching depends on this.",
+        cache.ttl_seconds
     );
 }
 
@@ -557,12 +573,16 @@ fn aws_empty_query_returns_subcommands_not_filesystem() {
             .map(|s| (&s.text, s.kind))
             .collect::<Vec<_>>()
     );
-    assert!(
-        !result
-            .suggestions
-            .iter()
-            .any(|s| matches!(s.kind, SuggestionKind::FilePath | SuggestionKind::Directory)),
-        "aws <empty query> must not leak filesystem entries; got {:?}",
+    // The PR description claims a "service popup" — verify the result
+    // window is _entirely_ subcommands. With an empty history/commands
+    // provider in the test harness, anything else (filesystem, history,
+    // env vars) leaking in would be a regression.
+    assert_eq!(
+        subcmd_count,
+        result.suggestions.len(),
+        "aws <empty query> must yield only subcommand suggestions; \
+         got {subcmd_count} subcommands out of {} total: {:?}",
+        result.suggestions.len(),
         result
             .suggestions
             .iter()
