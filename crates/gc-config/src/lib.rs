@@ -170,6 +170,23 @@ pub struct ProvidersConfig {
     pub filesystem: bool,
     pub specs: bool,
     pub git: bool,
+    /// Global kill switch for the QuickJS evaluator that backs
+    /// `requires_js` generators (UX-9). Defaults to `true` so the
+    /// runtime ships enabled the moment the `gc-jsrt` foundation is
+    /// merged; users can disable it locally with
+    /// `[suggest.providers] js_runtime = false` in their
+    /// `config.toml`.
+    ///
+    /// Phase 3 wires this field into the config schema only — the
+    /// suggestion engine begins honouring it in Phase 4 when the JS
+    /// dispatch path is connected. Setting this field today therefore
+    /// has no observable effect on completions; the rollout sequence
+    /// is:
+    ///
+    /// 1. Phase 3 (this PR): expose the field, default `true`.
+    /// 2. Phase 4: gate the `post_process` dispatch on this flag.
+    /// 3. Phase 5+: extend the gate to `script_function` / `custom`.
+    pub js_runtime: bool,
 }
 
 impl Default for ProvidersConfig {
@@ -179,6 +196,7 @@ impl Default for ProvidersConfig {
             filesystem: true,
             specs: true,
             git: true,
+            js_runtime: true,
         }
     }
 }

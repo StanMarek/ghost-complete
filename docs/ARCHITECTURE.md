@@ -59,7 +59,7 @@ Ghost Complete is a terminal-native autocomplete engine that works as a PTY prox
 
 ## Crate Map
 
-The workspace contains 8 crates under `crates/`:
+The workspace contains 9 crates under `crates/`:
 
 | Crate | Purpose | Key Dependencies |
 |-------|---------|------------------|
@@ -71,6 +71,7 @@ The workspace contains 8 crates under `crates/`:
 | [`gc-overlay`](../crates/gc-overlay/) | ANSI popup rendering — cursor save/restore, synchronized output, scroll-to-make-room, scrollbar, fuzzy match highlighting | |
 | [`gc-config`](../crates/gc-config/) | TOML config, keybindings, themes (presets + custom styles), generator timeouts | serde, toml |
 | [`gc-terminal`](../crates/gc-terminal/) | Terminal detection and capability profiling — `TerminalProfile` with `RenderStrategy` and `PromptDetection` enums | |
+| [`gc-jsrt`](../crates/gc-jsrt/) | Bounded QuickJS evaluator for `requires_js` specs (UX-9). Phase 3 ships the foundation; Phase 4+ wire it into `gc-suggest`. See [`docs/JS_RUNTIME.md`](JS_RUNTIME.md). | rquickjs |
 
 ### Dependency Graph
 

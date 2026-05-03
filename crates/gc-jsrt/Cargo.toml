@@ -1,0 +1,31 @@
+[package]
+name = "gc-jsrt"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish = false
+
+description = "Bounded QuickJS evaluator for Ghost Complete (UX-9 / requires_js specs)."
+
+[dependencies]
+# Sync rquickjs Runtime + Context. We deliberately avoid the `loader`,
+# `dyn-load`, `futures`, `parallel`, `macro`, and `phf` features:
+# - `loader`/`dyn-load` would expose ES6 module loading and native plugin
+#   loading we never want corpus JS to reach.
+# - `futures` pulls in the AsyncRuntime; we use a dedicated worker thread
+#   instead so we keep a smaller surface and a single concurrency model.
+# - `macro`/`phf` add proc-macro and PHF dependencies we don't use.
+# `rust-alloc` keeps QuickJS allocations going through Rust's global
+# allocator so memory usage shows up in the same accounting as everything
+# else in the binary.
+rquickjs = { version = "0.10", default-features = false, features = ["rust-alloc"] }
+serde = { workspace = true }
+serde_json = "1"
+thiserror = "2"
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros", "rt-multi-thread", "time"] }

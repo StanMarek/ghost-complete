@@ -75,6 +75,7 @@ Enable or disable individual suggestion providers.
 | `filesystem` | bool | `true` | File and directory completions |
 | `specs` | bool | `true` | Fig-compatible JSON spec completions |
 | `git` | bool | `true` | Git context completions (branches, tags, remotes) |
+| `js_runtime` | bool | `true` | QuickJS evaluator for `requires_js` spec generators (UX-9). Phase 3 ships the runtime foundation; Phase 4+ wire the dispatch path that this gate controls. Today the flag is wired into the schema only — flipping it has no observable effect on completions yet. |
 
 ```toml
 [suggest.providers]
@@ -82,6 +83,7 @@ commands = true
 filesystem = true
 specs = true
 git = true
+js_runtime = true
 ```
 
 ### `[paths]`
@@ -301,6 +303,7 @@ commands = true
 filesystem = true
 specs = true
 git = false
+js_runtime = true
 
 [paths]
 spec_dirs = ["~/.config/ghost-complete/specs"]
