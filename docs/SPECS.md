@@ -2,15 +2,16 @@
 
 Ghost Complete ships 709 Fig-compatible JSON completion specs sourced from
 [`@withfig/autocomplete`](https://github.com/withfig/autocomplete) and converted
-offline. The converted JSON lives under [`specs/`](../specs/) (~20 MB on disk)
-and is embedded into the binary at build time via `include_str!`, so the
-shipped `ghost-complete` has zero runtime spec-fetch cost and no network
-dependency. The embed is produced by
+offline. The converted JSON lives under [`specs/`](../specs/) (~74 MB on disk
+since the AWS spec was restored in `ux-8`) and is embedded into the binary at
+build time via `include_str!`, so the shipped `ghost-complete` has zero
+runtime spec-fetch cost and no network dependency. The embed is produced by
 [`crates/gc-suggest/build.rs`](../crates/gc-suggest/build.rs), which strips the
 runtime-unused `js_source` field and minifies each spec before `include_str!`
-bakes it into the binary — shrinks the release binary from ~47 MB to ~28 MB
-(under the 30 MB CI ceiling enforced by
-[`docs/ci-gates.md`](./ci-gates.md#binary-size-gate)). On-disk `specs/*.json`
+bakes it into the binary — minified embedded corpus is ~47 MB and the release
+binary measures ~102 MB (under the 110 MB CI ceiling enforced by
+[`docs/ci-gates.md`](./ci-gates.md#binary-size-gate); zstd-compressing the
+embedded corpus is the queued reclaim path). On-disk `specs/*.json`
 remain pretty-printed; only the binary-embedded copies are minified.
 
 **Non-goal:** embedding a JavaScript runtime. Upstream specs sometimes include

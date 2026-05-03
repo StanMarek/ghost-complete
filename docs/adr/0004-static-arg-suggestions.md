@@ -71,8 +71,11 @@ surface even when the user is filling a flag argument or past `--`.
   Future drift requires a deliberate test edit.
 - **Memory budget gate.** A new test `embedded_specs_under_memory_budget`
   walks the full `CompletionSpec` heap (including `args.suggestions`) and
-  asserts the total stays under 64 MiB. Regression detection without external
-  tooling.
+  asserts the total stays under a fixed budget. Regression detection without
+  external tooling. (The budget started at 64 MiB; `ux-8` raised it to
+  128 MiB to admit the AWS spec, which alone contributes ~67 MiB of
+  description text. zstd-compressing the embedded corpus is the queued
+  reclaim path.)
 
 ### Negative
 
@@ -83,7 +86,7 @@ surface even when the user is filling a flag argument or past `--`.
   workspace.
 - **Modest memory increase.** Strongly-typed parsing of the 384 specs with
   `suggestions` arrays adds ~600 KB to the spec heap. Comfortably under the
-  64 MiB budget.
+  budget (still well under after the `ux-8` 128 MiB bump).
 - **Plan-deviation: the `if !preceding_flag_has_args` guard.** Wiring static
   suggestions surfaced a latent bug: `resolve_spec` was unconditionally
   collecting positional-arg generators even when filling a flag's argument

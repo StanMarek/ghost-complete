@@ -83,8 +83,14 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Build release binary
         run: cargo build --release
-      - name: Absolute ceiling (30MB)
-        run: scripts/check-binary-size.sh --absolute-max 30MB
+      # Ceiling raised from 30MB to 110MB in ux-8 to admit the AWS spec.
+      # The actual restored-AWS binary is ~102 MB (the SPEC predicted ~40 MB
+      # but undercounted: the 418 inlined sub-specs carry ~28 MB of upstream
+      # description text, which `include_str!` doubles in __const data).
+      # zstd-compressing the embedded specs (separate plan) is the principled
+      # reclaim path; this ceiling is the honest measurement plus ~8% headroom.
+      - name: Absolute ceiling (110MB)
+        run: scripts/check-binary-size.sh --absolute-max 110MB
       - name: Per-phase delta budget
         run: scripts/check-binary-size.sh --delta-max "$PHASE_BUDGET"
 
