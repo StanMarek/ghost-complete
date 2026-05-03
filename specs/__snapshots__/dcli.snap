@@ -195,7 +195,10 @@
             "description": "Ids of the devices to remove",
             "generators": [
               {
-                "js_source": "function(a){try{let t=JSON.parse(a);return t.sort((e,n)=>n.lastActivityDateUnix-e.lastActivityDateUnix),t.map(e=>({name:e.deviceName,description:`Last activity: ${s(e.lastActivityDateUnix)}`,insertValue:e.deviceId}))}catch{return[]}}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(a){try{let t=JSON.parse(a);return t.sort((e,n)=>n.lastActivityDateUnix-e.lastActivityDateUnix),t.map(e=>({name:e.deviceName,description:`Last activity: ${s(e.lastActivityDateUnix)}`,insertValue:e.deviceId}))}catch{return[]}}"
+                },
                 "requires_js": true,
                 "script": [
                   "dcli",
@@ -291,7 +294,10 @@
                 "description": "Access key of the credentials to revoke",
                 "generators": [
                   {
-                    "js_source": "function(a){try{let t=JSON.parse(a);return t.sort((e,n)=>n.creationDateUnix-e.creationDateUnix),t.map(e=>({name:`${e.deviceName} (${e.accessKey})}`,description:`Created: ${s(e.creationDateUnix)}`,insertValue:e.accessKey}))}catch{return[]}}",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(a){try{let t=JSON.parse(a);return t.sort((e,n)=>n.creationDateUnix-e.creationDateUnix),t.map(e=>({name:`${e.deviceName} (${e.accessKey})}`,description:`Created: ${s(e.creationDateUnix)}`,insertValue:e.accessKey}))}catch{return[]}}"
+                    },
                     "requires_js": true,
                     "script": [
                       "dcli",

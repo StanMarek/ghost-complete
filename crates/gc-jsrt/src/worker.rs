@@ -82,6 +82,16 @@ impl Drop for WorkerHandle {
         // is dropped — but `JsWorker` is `Clone` so we can't take it
         // here. Instead the worker loop exits when it observes the
         // channel disconnect; we just join.
+        //
+        // TODO(ux-9 follow-up): `thread.join()` blocks until the current
+        // JS evaluation finishes (capped only by the per-job interrupt
+        // deadline, which can still be seconds). A long-running custom
+        // generator can therefore stall process shutdown. Replace with a
+        // bounded shutdown — e.g. a stop-signal channel that the worker
+        // loop polls between jobs, plus a `JoinHandle::is_finished` +
+        // ~2s ceiling so a slow evaluator never blocks `Drop` longer than
+        // the wall-clock budget already promises. Tracked as a follow-up
+        // post-UX-9.
         if let Some(thread) = self.thread.take() {
             let _ = thread.join();
         }

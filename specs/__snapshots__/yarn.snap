@@ -5,7 +5,10 @@
         "cache": {
           "cache_by_directory": true
         },
-        "js_source": "function(e,[n]){if(e.trim()==\"\")return[];try{let i=JSON.parse(e),s=i.scripts,a=i.fig||{};if(s)return Object.entries(s).map(([o,r])=>{let d=n===\"yarn\"?\"fig://icon?type=yarn\":\"fig://icon?type=npm\",m=a[o];return{name:o,icon:d,description:r,priority:51,...m}})}catch(i){console.error(i)}return[]}",
+        "js_runtime": {
+          "kind": "post_process",
+          "source": "function(e,[n]){if(e.trim()==\"\")return[];try{let i=JSON.parse(e),s=i.scripts,a=i.fig||{};if(s)return Object.entries(s).map(([o,r])=>{let d=n===\"yarn\"?\"fig://icon?type=yarn\":\"fig://icon?type=npm\",m=a[o];return{name:o,icon:d,description:r,priority:51,...m}})}catch(i){console.error(i)}return[]}"
+        },
         "requires_js": true,
         "script": [
           "bash",
@@ -665,7 +668,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "async(n,i,s)=>{let a=n[n.length-1];if(a===\"\")return[];let o=e&&e.length>0?`+keywords:${e.join(\",\")}`:\"\",d=[\"-s\",\"-H\",\"Accept: application/json\",o?`https://api.npms.io/v2/search?size=20&q=${a}${o}`:`https://api.npms.io/v2/search/suggestions?q=${a}&size=20`],m=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${a.slice(0,-1)}`],y=h=>i({command:\"curl\",args:h[h.length-1]===\"@\"?m:d}),u=a.startsWith(\"@\")?C(a)>1:a.includes(\"@\");try{let h=JSON.parse((await y(a)).stdout);if(u){let b=Object.entries(h[\"dist-tags\"]||{}).map(([A,V])=>({name:A,description:V}));return b.push(...Object.keys(h.versions).map(A=>({name:A})).reverse()),b}return(o?h.results:h).map(b=>({name:b.package.name,description:b.package.description}))}catch(h){return console.error({error:h}),[]}}",
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(n,i,s)=>{let a=n[n.length-1];if(a===\"\")return[];let o=e&&e.length>0?`+keywords:${e.join(\",\")}`:\"\",d=[\"-s\",\"-H\",\"Accept: application/json\",o?`https://api.npms.io/v2/search?size=20&q=${a}${o}`:`https://api.npms.io/v2/search/suggestions?q=${a}&size=20`],m=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${a.slice(0,-1)}`],y=h=>i({command:\"curl\",args:h[h.length-1]===\"@\"?m:d}),u=a.startsWith(\"@\")?C(a)>1:a.includes(\"@\");try{let h=JSON.parse((await y(a)).stdout);if(u){let b=Object.entries(h[\"dist-tags\"]||{}).map(([A,V])=>({name:A,description:V}));return b.push(...Object.keys(h.versions).map(A=>({name:A})).reverse()),b}return(o?h.results:h).map(b=>({name:b.package.name,description:b.package.description}))}catch(h){return console.error({error:h}),[]}}"
+            },
             "requires_js": true
           }
         ],
@@ -1533,7 +1539,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "function(e){if(e.trim()==\"\")return[];try{let n=e.indexOf(\"{\"),i=e.indexOf(\"}\"),s=e.substring(n,i+1);s=s.replace(/\\'/gi,'\"').replace(\"lastUpdateCheck\",'\"lastUpdateCheck\"').replace(\"registry\",'\"lastUpdateCheck\"');let a=JSON.parse(s);if(a)return Object.keys(a).map(o=>({name:o}))}catch{}return[]}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){if(e.trim()==\"\")return[];try{let n=e.indexOf(\"{\"),i=e.indexOf(\"}\"),s=e.substring(n,i+1);s=s.replace(/\\'/gi,'\"').replace(\"lastUpdateCheck\",'\"lastUpdateCheck\"').replace(\"registry\",'\"lastUpdateCheck\"');let a=JSON.parse(s);if(a)return Object.keys(a).map(o=>({name:o}))}catch{}return[]}"
+                },
                 "requires_js": true,
                 "script": [
                   "yarn",
@@ -1550,7 +1559,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "function(e){if(e.trim()==\"\")return[];try{let n=e.indexOf(\"{\"),i=e.indexOf(\"}\"),s=e.substring(n,i+1);s=s.replace(/\\'/gi,'\"').replace(\"lastUpdateCheck\",'\"lastUpdateCheck\"').replace(\"registry\",'\"lastUpdateCheck\"');let a=JSON.parse(s);if(a)return Object.keys(a).map(o=>({name:o}))}catch{}return[]}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){if(e.trim()==\"\")return[];try{let n=e.indexOf(\"{\"),i=e.indexOf(\"}\"),s=e.substring(n,i+1);s=s.replace(/\\'/gi,'\"').replace(\"lastUpdateCheck\",'\"lastUpdateCheck\"').replace(\"registry\",'\"lastUpdateCheck\"');let a=JSON.parse(s);if(a)return Object.keys(a).map(o=>({name:o}))}catch{}return[]}"
+                },
                 "requires_js": true,
                 "script": [
                   "yarn",
@@ -1574,7 +1586,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "function(e){return e[e.length-1]===\"\"?void 0:[\"curl\",\"-s\",\"-H\",\"Accept: application/json\",`https://api.npms.io/v2/search?q=${\"create-\"+e[e.length-1]}&size=20`]}",
+            "js_runtime": {
+              "kind": "script_function",
+              "source": "function(e){return e[e.length-1]===\"\"?void 0:[\"curl\",\"-s\",\"-H\",\"Accept: application/json\",`https://api.npms.io/v2/search?q=${\"create-\"+e[e.length-1]}&size=20`]}"
+            },
             "requires_js": true
           }
         ],
@@ -2299,7 +2314,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(n,i,s)=>{let a=n[n.length-1];if(a===\"\")return[];let o=e&&e.length>0?`+keywords:${e.join(\",\")}`:\"\",d=[\"-s\",\"-H\",\"Accept: application/json\",o?`https://api.npms.io/v2/search?size=20&q=${a}${o}`:`https://api.npms.io/v2/search/suggestions?q=${a}&size=20`],m=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${a.slice(0,-1)}`],y=h=>i({command:\"curl\",args:h[h.length-1]===\"@\"?m:d}),u=a.startsWith(\"@\")?C(a)>1:a.includes(\"@\");try{let h=JSON.parse((await y(a)).stdout);if(u){let b=Object.entries(h[\"dist-tags\"]||{}).map(([A,V])=>({name:A,description:V}));return b.push(...Object.keys(h.versions).map(A=>({name:A})).reverse()),b}return(o?h.results:h).map(b=>({name:b.package.name,description:b.package.description}))}catch(h){return console.error({error:h}),[]}}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,i,s)=>{let a=n[n.length-1];if(a===\"\")return[];let o=e&&e.length>0?`+keywords:${e.join(\",\")}`:\"\",d=[\"-s\",\"-H\",\"Accept: application/json\",o?`https://api.npms.io/v2/search?size=20&q=${a}${o}`:`https://api.npms.io/v2/search/suggestions?q=${a}&size=20`],m=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${a.slice(0,-1)}`],y=h=>i({command:\"curl\",args:h[h.length-1]===\"@\"?m:d}),u=a.startsWith(\"@\")?C(a)>1:a.includes(\"@\");try{let h=JSON.parse((await y(a)).stdout);if(u){let b=Object.entries(h[\"dist-tags\"]||{}).map(([A,V])=>({name:A,description:V}));return b.push(...Object.keys(h.versions).map(A=>({name:A})).reverse()),b}return(o?h.results:h).map(b=>({name:b.package.name,description:b.package.description}))}catch(h){return console.error({error:h}),[]}}"
+                },
                 "requires_js": true
               }
             ],
@@ -2332,7 +2350,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(e,n,i)=>{let{stdout:s}=await n({command:\"yarn\",args:[\"global\",\"dir\"]}),{stdout:a}=await n({command:\"cat\",args:[`${s.trim()}/package.json`]});if(a.trim()==\"\")return[];try{let o=JSON.parse(a),r=o.dependencies||{},d=o.devDependencies||{};return[...Object.keys(r),...Object.keys(d)].filter(u=>!e.includes(u)).map(u=>({name:u,icon:\"\\u{1F4E6}\"}))}catch{}return[]}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(e,n,i)=>{let{stdout:s}=await n({command:\"yarn\",args:[\"global\",\"dir\"]}),{stdout:a}=await n({command:\"cat\",args:[`${s.trim()}/package.json`]});if(a.trim()==\"\")return[];try{let o=JSON.parse(a),r=o.dependencies||{},d=o.devDependencies||{};return[...Object.keys(r),...Object.keys(d)].filter(u=>!e.includes(u)).map(u=>({name:u,icon:\"\\u{1F4E6}\"}))}catch{}return[]}"
+                },
                 "requires_js": true
               }
             ],
@@ -4978,7 +4999,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "function(e,n=[]){if(e.trim()===\"\")return[];try{let i=JSON.parse(e),s=i.dependencies??{},a=i.devDependencies,o=i.optionalDependencies??{};return Object.assign(s,a,o),Object.keys(s).filter(r=>!n.some(m=>m===r)).map(r=>({name:r,icon:\"\\u{1F4E6}\",description:s[r]?\"dependency\":o[r]?\"optionalDependency\":\"devDependency\"}))}catch(i){return console.error(i),[]}}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(e,n=[]){if(e.trim()===\"\")return[];try{let i=JSON.parse(e),s=i.dependencies??{},a=i.devDependencies,o=i.optionalDependencies??{};return Object.assign(s,a,o),Object.keys(s).filter(r=>!n.some(m=>m===r)).map(r=>({name:r,icon:\"\\u{1F4E6}\",description:s[r]?\"dependency\":o[r]?\"optionalDependency\":\"devDependency\"}))}catch(i){return console.error(i),[]}}"
+            },
             "requires_js": true,
             "script": [
               "bash",
@@ -5333,7 +5357,10 @@
               "cache": {
                 "cache_by_directory": true
               },
-              "js_source": "function(e,[n]){if(e.trim()==\"\")return[];try{let i=JSON.parse(e),s=i.scripts,a=i.fig||{};if(s)return Object.entries(s).map(([o,r])=>{let d=n===\"yarn\"?\"fig://icon?type=yarn\":\"fig://icon?type=npm\",m=a[o];return{name:o,icon:d,description:r,priority:51,...m}})}catch(i){console.error(i)}return[]}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "function(e,[n]){if(e.trim()==\"\")return[];try{let i=JSON.parse(e),s=i.scripts,a=i.fig||{};if(s)return Object.entries(s).map(([o,r])=>{let d=n===\"yarn\"?\"fig://icon?type=yarn\":\"fig://icon?type=npm\",m=a[o];return{name:o,icon:d,description:r,priority:51,...m}})}catch(i){console.error(i)}return[]}"
+              },
               "requires_js": true,
               "script": [
                 "bash",
@@ -5748,7 +5775,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "function(e,n=[]){if(e.trim()===\"\")return[];try{let i=JSON.parse(e),s=i.dependencies??{},a=i.devDependencies,o=i.optionalDependencies??{};return Object.assign(s,a,o),Object.keys(s).filter(r=>!n.some(m=>m===r)).map(r=>({name:r,icon:\"\\u{1F4E6}\",description:s[r]?\"dependency\":o[r]?\"optionalDependency\":\"devDependency\"}))}catch(i){return console.error(i),[]}}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(e,n=[]){if(e.trim()===\"\")return[];try{let i=JSON.parse(e),s=i.dependencies??{},a=i.devDependencies,o=i.optionalDependencies??{};return Object.assign(s,a,o),Object.keys(s).filter(r=>!n.some(m=>m===r)).map(r=>({name:r,icon:\"\\u{1F4E6}\",description:s[r]?\"dependency\":o[r]?\"optionalDependency\":\"devDependency\"}))}catch(i){return console.error(i),[]}}"
+            },
             "requires_js": true,
             "script": [
               "bash",

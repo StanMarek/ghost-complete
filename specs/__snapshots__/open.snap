@@ -38,7 +38,10 @@
         "generators": [
           {
             "cache": {},
-            "js_source": "s=>{let e=new Map(s.split(`\n`).map(n=>{let i=n.indexOf(\" \");return[n.slice(0,i),n.slice(i+1)]}));e.delete(\"(null)\");let t=[];for(let[n,i]of e.entries())t.push({name:n,description:i,icon:`fig://${i}`});return t}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "s=>{let e=new Map(s.split(`\n`).map(n=>{let i=n.indexOf(\" \");return[n.slice(0,i),n.slice(i+1)]}));e.delete(\"(null)\");let t=[];for(let[n,i]of e.entries())t.push({name:n,description:i,icon:`fig://${i}`});return t}"
+            },
             "requires_js": true,
             "script": [
               "bash",

@@ -3,7 +3,10 @@
     {
       "generators": [
         {
-          "js_source": "s=>Array.from(new Set(s.split(`\n`))).map(e=>({name:e,description:`NAMESPACE ${e}`}))",
+          "js_runtime": {
+            "kind": "post_process",
+            "source": "s=>Array.from(new Set(s.split(`\n`))).map(e=>({name:e,description:`NAMESPACE ${e}`}))"
+          },
           "requires_js": true,
           "script": [
             "envchain",
@@ -25,7 +28,10 @@
         {
           "generators": [
             {
-              "js_source": "s=>Array.from(new Set(s.split(`\n`))).map(e=>({name:e,description:`NAMESPACE ${e}`}))",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "s=>Array.from(new Set(s.split(`\n`))).map(e=>({name:e,description:`NAMESPACE ${e}`}))"
+              },
               "requires_js": true,
               "script": [
                 "envchain",

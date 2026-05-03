@@ -412,7 +412,13 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
     // SpecStore underreports against a raw JSON walk. Phase 1 closed the
     // name-keyed dedupe gap; the OptionSpec truncation gap is tracked
     // for Phase 6.
-    let file_scan = scan_spec_files(&dirs)?;
+    //
+    // Walk the SpecStore's resolved entries instead of read_dir-ing every
+    // configured spec_dir: when two dirs ship a copy of the same spec
+    // (e.g. user-config + workspace), first-match-wins keeps only one
+    // entry, but a per-directory walk would still sum every dir's copy
+    // and double-count the requires_js generators. UX-9 fix-up.
+    let file_scan = scan_spec_files(&store)?;
     let requires_js_generators_total = file_scan.requires_js_generators_total;
     // Phase 4: classify every requires_js generator on disk into
     // supported/unsupported buckets. A generator is supported when it carries
@@ -462,11 +468,12 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
     })
 }
 
-/// Walk the same spec dirs as the runtime loader, but count individual
-/// FILES, independent of SpecStore. Phase 1 keys SpecStore on filename
-/// stem so the entry count now matches `spec_files_total` per directory
-/// (no name-keyed dedupe), but the file-level walk is still the source
-/// of truth for `requires_js_generators_total`.
+/// Walk the spec entries the runtime loader actually kept and count
+/// `requires_js: true` generators across them. Phase 1 keys SpecStore
+/// on filename stem so the entry count equals `spec_files_total` per
+/// addressable spec, but the loader's structured deserializer truncates
+/// `OptionSpec.args[N>0]` (~80 generators) — so the file-level walk
+/// stays the source of truth for `requires_js_generators_total`.
 ///
 /// Counts `requires_js: true` via a raw `serde_json::Value` walk rather
 /// than going through `parse_spec_checked_and_sanitized`. The structured
@@ -476,40 +483,36 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
 /// view underreports against the on-disk corpus. Phase 6 will close
 /// that gap by relaxing `OptionSpec.args` to a real `Vec<ArgSpec>`.
 ///
-/// Errors are tolerant — a missing dir is silently skipped (matches the
+/// Iterates [`SpecStore::canonical_paths`] so two overlapping spec_dirs
+/// shipping copies of the same filename do NOT cause every copy's
+/// requires_js generators to be counted. The loader applies first-match-
+/// wins precedence; this scan now mirrors that decision instead of
+/// re-walking every configured directory in isolation.
+///
+/// Errors are tolerant — a missing path is silently skipped (matches the
 /// loader's behavior). A malformed file is also skipped (its requires_js
 /// count is unknowable).
-fn scan_spec_files(dirs: &[PathBuf]) -> Result<FileScan> {
+fn scan_spec_files(store: &SpecStore) -> Result<FileScan> {
     let mut spec_files_total = 0usize;
     let mut requires_js_generators_total = 0usize;
     let mut requires_js_generators_supported = 0usize;
 
-    for dir in dirs {
-        if !dir.exists() {
+    for (_stem, path) in store.canonical_paths() {
+        if !path.exists() {
             continue;
         }
-        let entries = match std::fs::read_dir(dir) {
-            Ok(e) => e,
+        spec_files_total += 1;
+        let contents = match std::fs::read_to_string(&path) {
+            Ok(c) => c,
             Err(_) => continue,
         };
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.extension().and_then(|e| e.to_str()) != Some("json") {
-                continue;
-            }
-            spec_files_total += 1;
-            let contents = match std::fs::read_to_string(&path) {
-                Ok(c) => c,
-                Err(_) => continue,
-            };
-            let value: serde_json::Value = match serde_json::from_str(&contents) {
-                Ok(v) => v,
-                Err(_) => continue,
-            };
-            let counts = count_requires_js_classes_in_value(&value);
-            requires_js_generators_total += counts.total;
-            requires_js_generators_supported += counts.supported;
-        }
+        let value: serde_json::Value = match serde_json::from_str(&contents) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        let counts = count_requires_js_classes_in_value(&value);
+        requires_js_generators_total += counts.total;
+        requires_js_generators_supported += counts.supported;
     }
 
     Ok(FileScan {
@@ -1043,6 +1046,64 @@ mod tests {
         assert_eq!(outcome.fully_functional, 1);
         assert_eq!(outcome.partially_functional, 1);
         assert_eq!(outcome.js_commands, vec!["only-fallback"]);
+    }
+
+    /// UX-9 fix-up: when two resolved spec_dirs ship copies of the same
+    /// filename, the file-level walk MUST count only the entry SpecStore
+    /// kept (first-match-wins), not every dir's copy. Without the
+    /// `canonical_paths`-based scan the second dir's `git.json` would
+    /// re-enter the totals and double the requires_js count.
+    #[test]
+    fn status_file_scan_does_not_double_count_overlapping_dirs() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let primary_dir = tmp.path().join("primary-specs");
+        let fallback_dir = tmp.path().join("fallback-specs");
+        std::fs::create_dir_all(&primary_dir).unwrap();
+        std::fs::create_dir_all(&fallback_dir).unwrap();
+
+        // primary copy of git.json: 5 requires_js generators
+        let primary_git = make_git_spec_with_requires_js(5);
+        std::fs::write(primary_dir.join("git.json"), primary_git).unwrap();
+
+        // fallback copy of git.json: 10 requires_js generators (would
+        // dominate the corpus count if both copies were summed)
+        let fallback_git = make_git_spec_with_requires_js(10);
+        std::fs::write(fallback_dir.join("git.json"), fallback_git).unwrap();
+
+        let cfg = write_config_for_dirs(&[&primary_dir, &fallback_dir], &tmp);
+        let outcome = scan_specs(Some(cfg.to_str().unwrap())).unwrap();
+
+        // SpecStore: only the primary entry survives.
+        assert_eq!(outcome.fs_specs, 1, "first-match-wins keeps one entry");
+        // file_scan now mirrors that — counts ONLY the primary file.
+        assert_eq!(
+            outcome.file_scan.spec_files_total, 1,
+            "file scan walks the loader's resolved entries, not every dir"
+        );
+        assert_eq!(
+            outcome.requires_js_generators_total, 5,
+            "primary wins: only its 5 generators count, not the fallback's 10 (15 total \
+             would indicate the pre-fix double-counting bug)"
+        );
+        assert_eq!(
+            outcome.command_alias_conflicts, 1,
+            "fallback copy is rejected as a DirectoryPrecedence conflict"
+        );
+    }
+
+    /// Build a minimal git-style spec body with `n` requires_js generators
+    /// across distinct positional args. Each generator is shaped exactly
+    /// like the runtime classifier expects (no js_runtime metadata, so
+    /// they all land in the unsupported bucket).
+    fn make_git_spec_with_requires_js(n: usize) -> String {
+        let args: Vec<String> = (0..n)
+            .map(|i| {
+                format!(
+                    r#"{{"name":"a{i}","generators":[{{"script":["echo","x"],"requires_js":true}}]}}"#
+                )
+            })
+            .collect();
+        format!(r#"{{"name":"git","args":[{}]}}"#, args.join(","))
     }
 
     // -------------------------------------------------------------------------

@@ -20,13 +20,65 @@
 //!   evaluator entirely.
 
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use gc_buffer::{CommandContext, QuoteState};
 use gc_suggest::commands::CommandsProvider;
 use gc_suggest::history::HistoryProvider;
 use gc_suggest::specs::{CacheConfig, GeneratorSpec, JsRuntimeKind, JsRuntimeSpec, SpecStore};
 use gc_suggest::SuggestionEngine;
+use tracing_subscriber::fmt::MakeWriter;
+
+/// Captures every byte written by `tracing_subscriber::fmt` into a shared
+/// `Mutex<Vec<u8>>`. Used by the diagnostic-warn tests to assert that a
+/// specific structured warn line (carrying `code = "Timeout"` etc.) was
+/// emitted by the JS dispatch path.
+#[derive(Clone)]
+struct CaptureWriter(Arc<Mutex<Vec<u8>>>);
+
+impl std::io::Write for CaptureWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0
+            .lock()
+            .expect("capture buffer poisoned")
+            .extend_from_slice(buf);
+        Ok(buf.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a> MakeWriter<'a> for CaptureWriter {
+    type Writer = CaptureWriter;
+    fn make_writer(&'a self) -> Self::Writer {
+        self.clone()
+    }
+}
+
+/// Install a thread-local tracing subscriber that captures structured
+/// events into the supplied buffer. Returns a `(buffer, guard)` pair —
+/// hold the guard for the duration of the operation under test, then
+/// `String::from_utf8_lossy` the buffer to assert on emitted log content.
+///
+/// `#[tokio::test]` defaults to `flavor = "current_thread"`, so spawned
+/// tasks inherit the subscriber via tracing's per-thread default. The
+/// JS worker runs on its own OS thread, but `log_diagnostics` is invoked
+/// back on the awaiter's thread (after the worker's oneshot reply
+/// resolves), which is the test thread — so the warn lines we care
+/// about land in `captured`.
+fn install_log_capture() -> (Arc<Mutex<Vec<u8>>>, tracing::subscriber::DefaultGuard) {
+    let captured = Arc::new(Mutex::new(Vec::<u8>::new()));
+    let writer = CaptureWriter(Arc::clone(&captured));
+    let subscriber = tracing_subscriber::fmt()
+        .with_writer(writer)
+        .with_max_level(tracing::Level::TRACE)
+        // ANSI escapes would clutter assertions on log content.
+        .with_ansi(false)
+        .finish();
+    let guard = tracing::subscriber::set_default(subscriber);
+    (captured, guard)
+}
 
 fn make_ctx(command: &str, args: Vec<&str>, current_word: &str) -> CommandContext {
     CommandContext {
@@ -76,13 +128,13 @@ fn post_process_generator(script: &[&str], source: &str) -> Arc<GeneratorSpec> {
         }),
         requires_js: true,
         js_source: None,
-        js_runtime: Some(JsRuntimeSpec {
+        js_runtime: Some(Arc::new(JsRuntimeSpec {
             kind: JsRuntimeKind::PostProcess,
             source: source.to_string(),
             input: None,
             timeout_ms: None,
             allow_shell_command: false,
-        }),
+        })),
         corrected_in: None,
         template: None,
     })
@@ -171,13 +223,13 @@ async fn phase4_unsupported_kind_skipped_when_source_empty() {
         cache: None,
         requires_js: true,
         js_source: None,
-        js_runtime: Some(JsRuntimeSpec {
+        js_runtime: Some(Arc::new(JsRuntimeSpec {
             kind: JsRuntimeKind::Custom,
             source: "".to_string(),
             input: None,
             timeout_ms: None,
             allow_shell_command: false,
-        }),
+        })),
         corrected_in: None,
         template: None,
     });
@@ -202,6 +254,12 @@ async fn phase4_unsupported_kind_skipped_when_source_empty() {
 async fn phase4_js_timeout_diagnostic_logged() {
     // Tight timeout + infinite loop: the JS interrupt handler must abort
     // and the dispatch must return empty suggestions instead of hanging.
+    // Install a tracing capture and assert the expected `code = "Timeout"`
+    // warn line was actually emitted — the diagnostics path is the
+    // primary signal Phase 7 will surface in `doctor`, so silent
+    // regressions here would erase a user-visible feature.
+    let (captured, _guard) = install_log_capture();
+
     let gen = Arc::new(GeneratorSpec {
         generator_type: None,
         script: Some(vec!["echo".to_string(), "ignored".to_string()]),
@@ -210,13 +268,13 @@ async fn phase4_js_timeout_diagnostic_logged() {
         cache: None,
         requires_js: true,
         js_source: None,
-        js_runtime: Some(JsRuntimeSpec {
+        js_runtime: Some(Arc::new(JsRuntimeSpec {
             kind: JsRuntimeKind::PostProcess,
             source: "out => { while (true) {} }".to_string(),
             input: None,
             timeout_ms: Some(50),
             allow_shell_command: false,
-        }),
+        })),
         corrected_in: None,
         template: None,
     });
@@ -237,10 +295,29 @@ async fn phase4_js_timeout_diagnostic_logged() {
         elapsed.as_secs() < 4,
         "timeout must abort well before the 5s outer timeout (took {elapsed:?})"
     );
+
+    let logs =
+        String::from_utf8_lossy(&captured.lock().expect("capture buffer poisoned")).into_owned();
+    assert!(
+        logs.contains("code=\"timeout\""),
+        "expected a structured warn with `code = \"timeout\"` (the lowercase \
+         tag from JsDiagnosticCode::tag) in captured logs:\n{logs}"
+    );
+    assert!(
+        logs.contains("evaluation timed out"),
+        "expected the human-readable timeout message in captured logs:\n{logs}"
+    );
+    assert!(
+        logs.contains("generator_id=phase4-test#0"),
+        "expected the generator_id field with the test fixture's name in \
+         captured logs:\n{logs}"
+    );
 }
 
 #[tokio::test]
 async fn phase4_js_exception_diagnostic_logged() {
+    let (captured, _guard) = install_log_capture();
+
     let gen = Arc::new(GeneratorSpec {
         generator_type: None,
         script: Some(vec!["echo".to_string(), "ignored".to_string()]),
@@ -249,13 +326,13 @@ async fn phase4_js_exception_diagnostic_logged() {
         cache: None,
         requires_js: true,
         js_source: None,
-        js_runtime: Some(JsRuntimeSpec {
+        js_runtime: Some(Arc::new(JsRuntimeSpec {
             kind: JsRuntimeKind::PostProcess,
             source: "out => { throw new Error('boom') }".to_string(),
             input: None,
             timeout_ms: None,
             allow_shell_command: false,
-        }),
+        })),
         corrected_in: None,
         template: None,
     });
@@ -269,6 +346,23 @@ async fn phase4_js_exception_diagnostic_logged() {
     assert!(
         results.is_empty(),
         "throwing JS body must yield zero suggestions, got: {results:?}"
+    );
+
+    let logs =
+        String::from_utf8_lossy(&captured.lock().expect("capture buffer poisoned")).into_owned();
+    assert!(
+        logs.contains("code=\"exception\""),
+        "expected a structured warn with `code = \"exception\"` (the lowercase \
+         tag from JsDiagnosticCode::tag) in captured logs:\n{logs}"
+    );
+    assert!(
+        logs.contains("evaluation threw"),
+        "expected the human-readable exception message in captured logs:\n{logs}"
+    );
+    assert!(
+        logs.contains("generator_id=phase4-test#0"),
+        "expected the generator_id field with the test fixture's name in \
+         captured logs:\n{logs}"
     );
 }
 

@@ -78,7 +78,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "function(n){if(n)try{let e=JSON.parse(n);if(e.imports)return Object.entries(e.imports).map(([t,a])=>({name:t,icon:\"\\u{1F996}\",description:a}))}catch{return[]}return[]}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(n){if(n)try{let e=JSON.parse(n);if(e.imports)return Object.entries(e.imports).map(([t,a])=>({name:t,icon:\"\\u{1F996}\",description:a}))}catch{return[]}return[]}"
+            },
             "requires_js": true,
             "script": [
               "cat",
@@ -111,7 +114,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "function(n){if(n)try{let e=JSON.parse(n);if(e.scripts)return Object.entries(e.scripts).map(([t,a])=>({name:t,icon:\"\\u{1F680}\",description:\"trex script\"}))}catch{return[]}return[]}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(n){if(n)try{let e=JSON.parse(n);if(e.scripts)return Object.entries(e.scripts).map(([t,a])=>({name:t,icon:\"\\u{1F680}\",description:\"trex script\"}))}catch{return[]}return[]}"
+            },
             "requires_js": true,
             "script": [
               "cat",
@@ -143,7 +149,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "function(n){if(n)try{let e=JSON.parse(n);if(e.imports)return Object.entries(e.imports).map(([t,a])=>({name:t,icon:\"\\u{1F996}\",description:a}))}catch{return[]}return[]}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(n){if(n)try{let e=JSON.parse(n);if(e.imports)return Object.entries(e.imports).map(([t,a])=>({name:t,icon:\"\\u{1F996}\",description:a}))}catch{return[]}return[]}"
+            },
             "requires_js": true,
             "script": [
               "cat",

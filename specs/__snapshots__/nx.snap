@@ -24,7 +24,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "n=>{let t=n.slice(-1)[0];return t.indexOf(\":\")>-1?[\"nx\",\"list\",t.split(\":\")[0]]:[\"nx\",\"list\"]}",
+            "js_runtime": {
+              "kind": "script_function",
+              "source": "n=>{let t=n.slice(-1)[0];return t.indexOf(\":\")>-1?[\"nx\",\"list\",t.split(\":\")[0]]:[\"nx\",\"list\"]}"
+            },
             "requires_js": true
           }
         ],
@@ -75,7 +78,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "async(n,t,i)=>{let o=[],s=n[n.length-1].split(\":\"),r=s.length>1?s[0]:\"\",p=s.length>2?s[1]:\"\";if(await d(t),r)if(p)for(let a of u.get(`${r}:${p}`))o.push({name:a});else for(let a of g.get(r))u.get(`${r}:${a}`)?o.push({name:a,insertValue:`${a}:`}):o.push({name:a});else for(let a of g.keys())o.push({name:a,insertValue:`${a}:`});return o}",
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(n,t,i)=>{let o=[],s=n[n.length-1].split(\":\"),r=s.length>1?s[0]:\"\",p=s.length>2?s[1]:\"\";if(await d(t),r)if(p)for(let a of u.get(`${r}:${p}`))o.push({name:a});else for(let a of g.get(r))u.get(`${r}:${a}`)?o.push({name:a,insertValue:`${a}:`}):o.push({name:a});else for(let a of g.keys())o.push({name:a,insertValue:`${a}:`});return o}"
+            },
             "requires_js": true
           }
         ],
@@ -88,7 +94,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(n,t)=>{let i=[],o=[];n.join(\" \").startsWith(\"nx run\")?o.push(...n[2].split(\":\")):o.push(n[2],n[1]);let[r,p]=o;await d(t);for(let a of u.get(`${r}:${p}`))i.push({name:a});return i}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,t)=>{let i=[],o=[];n.join(\" \").startsWith(\"nx run\")?o.push(...n[2].split(\":\")):o.push(n[2],n[1]);let[r,p]=o;await d(t);for(let a of u.get(`${r}:${p}`))i.push({name:a});return i}"
+                },
                 "requires_js": true
               }
             ],
@@ -150,7 +159,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],
@@ -172,7 +184,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(n,t)=>{let i=[];await d(t);for(let o of g.keys())i.push({name:o});return i}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,t)=>{let i=[];await d(t);for(let o of g.keys())i.push({name:o});return i}"
+                },
                 "requires_js": true
               }
             ],
@@ -219,7 +234,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],
@@ -274,7 +292,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(n,t)=>{let i=[],o=[];n.join(\" \").startsWith(\"nx run\")?o.push(...n[2].split(\":\")):o.push(n[2],n[1]);let[r,p]=o;await d(t);for(let a of u.get(`${r}:${p}`))i.push({name:a});return i}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,t)=>{let i=[],o=[];n.join(\" \").startsWith(\"nx run\")?o.push(...n[2].split(\":\")):o.push(n[2],n[1]);let[r,p]=o;await d(t);for(let a of u.get(`${r}:${p}`))i.push({name:a});return i}"
+                },
                 "requires_js": true
               }
             ],
@@ -290,7 +311,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],
@@ -361,7 +385,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],
@@ -389,7 +416,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],
@@ -435,7 +465,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(n,t)=>{let i=[],o=[];n.join(\" \").startsWith(\"nx run\")?o.push(...n[2].split(\":\")):o.push(n[2],n[1]);let[r,p]=o;await d(t);for(let a of u.get(`${r}:${p}`))i.push({name:a});return i}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,t)=>{let i=[],o=[];n.join(\" \").startsWith(\"nx run\")?o.push(...n[2].split(\":\")):o.push(n[2],n[1]);let[r,p]=o;await d(t);for(let a of u.get(`${r}:${p}`))i.push({name:a});return i}"
+                },
                 "requires_js": true
               }
             ],
@@ -451,7 +484,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],
@@ -549,7 +585,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],
@@ -607,7 +646,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],
@@ -636,7 +678,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(n,t)=>{let i=[];await d(t);for(let o of g.keys())i.push({name:o});return i}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,t)=>{let i=[];await d(t);for(let o of g.keys())i.push({name:o});return i}"
+                },
                 "requires_js": true
               }
             ],
@@ -690,7 +735,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],
@@ -764,7 +812,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(n,t)=>{let i=[],o=[];n.join(\" \").startsWith(\"nx run\")?o.push(...n[2].split(\":\")):o.push(n[2],n[1]);let[r,p]=o;await d(t);for(let a of u.get(`${r}:${p}`))i.push({name:a});return i}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,t)=>{let i=[],o=[];n.join(\" \").startsWith(\"nx run\")?o.push(...n[2].split(\":\")):o.push(n[2],n[1]);let[r,p]=o;await d(t);for(let a of u.get(`${r}:${p}`))i.push({name:a});return i}"
+                },
                 "requires_js": true
               }
             ],
@@ -780,7 +831,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],
@@ -822,7 +876,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],
@@ -890,7 +947,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],
@@ -931,7 +991,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],
@@ -983,7 +1046,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],
@@ -1024,7 +1090,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],
@@ -1304,7 +1373,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(n,t)=>{let i=[],o=[];n.join(\" \").startsWith(\"nx run\")?o.push(...n[2].split(\":\")):o.push(n[2],n[1]);let[r,p]=o;await d(t);for(let a of u.get(`${r}:${p}`))i.push({name:a});return i}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,t)=>{let i=[],o=[];n.join(\" \").startsWith(\"nx run\")?o.push(...n[2].split(\":\")):o.push(n[2],n[1]);let[r,p]=o;await d(t);for(let a of u.get(`${r}:${p}`))i.push({name:a});return i}"
+                },
                 "requires_js": true
               }
             ],
@@ -1320,7 +1392,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],
@@ -1391,7 +1466,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(n,t)=>{let i=[];await d(t);for(let o of g.keys())i.push({name:o});return i}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,t)=>{let i=[];await d(t);for(let o of g.keys())i.push({name:o});return i}"
+                },
                 "requires_js": true
               }
             ],
@@ -1455,7 +1533,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(t,i,o)=>{let s=[],r=t[t.length-1].split(\",\");await d(i);for(let p of n.keys())r.includes(p)||s.push({name:p,insertValue:`${p},`});return s}"
+                },
                 "requires_js": true
               }
             ],

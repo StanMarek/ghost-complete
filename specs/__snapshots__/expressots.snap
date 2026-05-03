@@ -31,7 +31,10 @@
             "description": "Choose a template",
             "generators": [
               {
-                "js_source": "function(e){return[{name:\"opinionated\",description:\"An opinionated ExpressoTS application\"},{name:\"non-opinionated\",description:\"An ExpressoTS application\"}]}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){return[{name:\"opinionated\",description:\"An opinionated ExpressoTS application\"},{name:\"non-opinionated\",description:\"An ExpressoTS application\"}]}"
+                },
                 "requires_js": true,
                 "script": [
                   "expressots",
@@ -52,7 +55,10 @@
             "description": "Choose a package manager",
             "generators": [
               {
-                "js_source": "function(e){return[{name:\"npm\",description:\"\"},{name:\"yarn\",description:\"\"},{name:\"pnpm\",description:\"\"}]}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){return[{name:\"npm\",description:\"\"},{name:\"yarn\",description:\"\"},{name:\"pnpm\",description:\"\"}]}"
+                },
                 "requires_js": true,
                 "script": [
                   "expressots",

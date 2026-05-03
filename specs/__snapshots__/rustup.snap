@@ -389,7 +389,10 @@
                 "cache": {
                   "ttl_seconds": 3600
                 },
-                "js_source": "o=>{if(o===\"\")return[];let t=JSON.parse(o);return[{name:\"stable\"},{name:\"beta\"},{name:\"nightly\"},...t.map(n=>({name:n.tag_name,description:`${n.name} - ${new Date(n.published_at).toLocaleDateString()}`}))]}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>{if(o===\"\")return[];let t=JSON.parse(o);return[{name:\"stable\"},{name:\"beta\"},{name:\"nightly\"},...t.map(n=>({name:n.tag_name,description:`${n.name} - ${new Date(n.published_at).toLocaleDateString()}`}))]}"
+                },
                 "requires_js": true,
                 "script": [
                   "bash",

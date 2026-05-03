@@ -478,10 +478,13 @@ impl SuggestionEngine {
             // user-controlled `[suggest.providers] js_runtime` switch. When
             // disabled, behave as if the runtime never landed: skip the
             // dispatch entirely.
+            //
+            // `js_runtime` is now `Arc<JsRuntimeSpec>` at the schema layer, so
+            // the hot path Arc-clones (cheap pointer bump) instead of
+            // deep-copying the embedded JS source on every keystroke. Some of
+            // the corpus generators (notably AWS) carry several KB of source.
             let js_dispatch: Option<Arc<JsRuntimeSpec>> = match (gen.requires_js, &gen.js_runtime) {
-                (true, Some(rt)) if rt.kind == JsRuntimeKind::PostProcess => {
-                    Some(Arc::new(rt.clone()))
-                }
+                (true, Some(rt)) if rt.kind == JsRuntimeKind::PostProcess => Some(Arc::clone(rt)),
                 _ => None,
             };
 
@@ -491,7 +494,7 @@ impl SuggestionEngine {
             // body handle PostProcess + non-JS.
             if matches!(js_kind, Some(JsRuntimeKind::ScriptFunction)) {
                 let rt = match gen.js_runtime.as_ref() {
-                    Some(rt) => rt.clone(),
+                    Some(rt) => Arc::clone(rt),
                     None => continue,
                 };
                 let exec_ctx = make_js_exec_context(ctx, cwd);
@@ -527,7 +530,7 @@ impl SuggestionEngine {
 
             if matches!(js_kind, Some(JsRuntimeKind::Custom)) {
                 let rt = match gen.js_runtime.as_ref() {
-                    Some(rt) => rt.clone(),
+                    Some(rt) => Arc::clone(rt),
                     None => continue,
                 };
                 let exec_ctx = make_js_exec_context(ctx, cwd);
@@ -1445,7 +1448,7 @@ fn make_js_exec_context(ctx: &CommandContext, cwd: &Path) -> JsExecContext {
 /// (post-transform, post-cache).
 #[allow(clippy::too_many_arguments)]
 async fn run_script_function_dispatch(
-    rt: specs::JsRuntimeSpec,
+    rt: Arc<specs::JsRuntimeSpec>,
     exec_ctx: JsExecContext,
     cmd_name: String,
     generator_index: usize,
@@ -1549,7 +1552,7 @@ async fn run_script_function_dispatch(
 /// trait does that on JS's behalf.
 #[allow(clippy::too_many_arguments)]
 async fn run_custom_dispatch(
-    rt: specs::JsRuntimeSpec,
+    rt: Arc<specs::JsRuntimeSpec>,
     exec_ctx: JsExecContext,
     cmd_name: String,
     generator_index: usize,

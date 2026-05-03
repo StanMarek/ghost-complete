@@ -3,7 +3,10 @@
     {
       "generators": [
         {
-          "js_source": "async function(n,r){let i=n.find(e=>e.includes(\":\")),o=n.find(e=>/^-.*n.*/.test(e)),s;if(i){let{stdout:e}=await r({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});s=e}else{let{stdout:e}=await r({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});s=e}return s.split(`\n`).map(e=>e.split(\" \")).map(e=>({name:o?e[1]:e[0],description:i?`Group - ${o?e[0]:`gid: ${e[1]}`}`:`User - ${o?e[0]:`uid: ${e[1]}`}`,icon:i?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}",
+          "js_runtime": {
+            "kind": "custom",
+            "source": "async function(n,r){let i=n.find(e=>e.includes(\":\")),o=n.find(e=>/^-.*n.*/.test(e)),s;if(i){let{stdout:e}=await r({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});s=e}else{let{stdout:e}=await r({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});s=e}return s.split(`\n`).map(e=>e.split(\" \")).map(e=>({name:o?e[1]:e[0],description:i?`Group - ${o?e[0]:`gid: ${e[1]}`}`:`User - ${o?e[0]:`uid: ${e[1]}`}`,icon:i?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}"
+          },
           "requires_js": true
         }
       ],
@@ -32,15 +35,13 @@
       "description": "If the file is a symbolic link, change the user ID and/or the group ID of the link itself",
       "name": [
         "-h"
-      ],
-      "priority": 65
+      ]
     },
     {
       "description": "Interpret user ID and group ID as numeric, avoiding name lookups",
       "name": [
         "-n"
-      ],
-      "priority": 65
+      ]
     },
     {
       "description": "Cause chown to be verbose, showing files as the owner is modified",
@@ -52,8 +53,7 @@
       "description": "Change the user ID and/or the group ID for the file hierarchies rooted in the files instead of just the files themselves",
       "name": [
         "-R"
-      ],
-      "priority": 70
+      ]
     },
     {
       "description": "If the -R option is specified, symbolic links on the command line are followed",

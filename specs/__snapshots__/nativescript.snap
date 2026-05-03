@@ -248,7 +248,10 @@
                 "cache": {
                   "ttl_seconds": 8640000
                 },
-                "js_source": "r=>JSON.parse(r).map(y=>{let h=y?.name;return{name:`@nativescript/${h}`,description:`Template ${h}`}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "r=>JSON.parse(r).map(y=>{let h=y?.name;return{name:`@nativescript/${h}`,description:`Template ${h}`}})"
+                },
                 "requires_js": true,
                 "script": [
                   "curl",

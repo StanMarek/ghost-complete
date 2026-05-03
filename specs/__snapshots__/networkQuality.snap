@@ -39,7 +39,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "n=>{let e=[],o=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of n.matchAll(o))e.push({name:t[2],description:t[1]});return e}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "n=>{let e=[],o=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of n.matchAll(o))e.push({name:t[2],description:t[1]});return e}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",

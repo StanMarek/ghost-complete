@@ -842,7 +842,10 @@
         "description": "Name of the npm script to run",
         "generators": [
           {
-            "js_source": "e=>{let a=e.split(\"END\").filter(i=>i.trim()!==\"\"),r=[];return a.forEach(i=>{let m=JSON.parse(i);r=r.concat(Object.keys(m.scripts))}),Array.from(new Set(r)).map(i=>({name:i,icon:\"fig://icon?type=npm\"}))}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let a=e.split(\"END\").filter(i=>i.trim()!==\"\"),r=[];return a.forEach(i=>{let m=JSON.parse(i);r=r.concat(Object.keys(m.scripts))}),Array.from(new Set(r)).map(i=>({name:i,icon:\"fig://icon?type=npm\"}))}"
+            },
             "requires_js": true,
             "script": [
               "bash",
@@ -1399,7 +1402,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "e=>{let a=e.split(\"END\").filter(i=>i.trim()!==\"\"),r=[];return a.forEach(i=>{let m=JSON.parse(i);r=r.concat(Object.keys(m.scripts))}),Array.from(new Set(r)).map(i=>({name:i,icon:\"fig://icon?type=npm\"}))}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let a=e.split(\"END\").filter(i=>i.trim()!==\"\"),r=[];return a.forEach(i=>{let m=JSON.parse(i);r=r.concat(Object.keys(m.scripts))}),Array.from(new Set(r)).map(i=>({name:i,icon:\"fig://icon?type=npm\"}))}"
+            },
             "requires_js": true,
             "script": [
               "bash",

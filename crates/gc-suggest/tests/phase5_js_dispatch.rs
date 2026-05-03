@@ -16,13 +16,52 @@
 //! takes on every keystroke.
 
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use gc_buffer::{CommandContext, QuoteState};
 use gc_suggest::commands::CommandsProvider;
 use gc_suggest::history::HistoryProvider;
 use gc_suggest::specs::{GeneratorSpec, JsRuntimeKind, JsRuntimeSpec, SpecStore};
 use gc_suggest::SuggestionEngine;
+use tracing_subscriber::fmt::MakeWriter;
+
+/// Per-thread tracing capture writer (mirror of the helper in
+/// phase4_js_dispatch.rs — the integration-test crate doesn't share a
+/// common module, so we duplicate the small writer here).
+#[derive(Clone)]
+struct CaptureWriter(Arc<Mutex<Vec<u8>>>);
+
+impl std::io::Write for CaptureWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0
+            .lock()
+            .expect("capture buffer poisoned")
+            .extend_from_slice(buf);
+        Ok(buf.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a> MakeWriter<'a> for CaptureWriter {
+    type Writer = CaptureWriter;
+    fn make_writer(&'a self) -> Self::Writer {
+        self.clone()
+    }
+}
+
+fn install_log_capture() -> (Arc<Mutex<Vec<u8>>>, tracing::subscriber::DefaultGuard) {
+    let captured = Arc::new(Mutex::new(Vec::<u8>::new()));
+    let writer = CaptureWriter(Arc::clone(&captured));
+    let subscriber = tracing_subscriber::fmt()
+        .with_writer(writer)
+        .with_max_level(tracing::Level::TRACE)
+        .with_ansi(false)
+        .finish();
+    let guard = tracing::subscriber::set_default(subscriber);
+    (captured, guard)
+}
 
 fn make_ctx(command: &str, args: Vec<&str>, current_word: &str) -> CommandContext {
     CommandContext {
@@ -59,13 +98,13 @@ fn script_function_generator(source: &str) -> Arc<GeneratorSpec> {
         cache: None,
         requires_js: true,
         js_source: None,
-        js_runtime: Some(JsRuntimeSpec {
+        js_runtime: Some(Arc::new(JsRuntimeSpec {
             kind: JsRuntimeKind::ScriptFunction,
             source: source.to_string(),
             input: None,
             timeout_ms: None,
             allow_shell_command: false,
-        }),
+        })),
         corrected_in: None,
         template: None,
     })
@@ -80,13 +119,13 @@ fn custom_generator(source: &str) -> Arc<GeneratorSpec> {
         cache: None,
         requires_js: true,
         js_source: None,
-        js_runtime: Some(JsRuntimeSpec {
+        js_runtime: Some(Arc::new(JsRuntimeSpec {
             kind: JsRuntimeKind::Custom,
             source: source.to_string(),
             input: None,
             timeout_ms: None,
             allow_shell_command: false,
-        }),
+        })),
         corrected_in: None,
         template: None,
     })
@@ -184,7 +223,11 @@ async fn phase5_custom_can_read_cwd_and_tokens() {
 async fn phase5_custom_unsupported_host_api_logs_diagnostic() {
     // Reach for an unsupported Fig API; the spec catches the throw and
     // surfaces the diagnostic code as a suggestion. Engine returns the
-    // resulting suggestion verbatim.
+    // resulting suggestion verbatim AND emits a structured warn so
+    // Phase 7's `doctor` can surface the misconfiguration. We assert
+    // both signals — the suggestion (user-visible behaviour) and the
+    // log line (operator-visible behaviour).
+    let (captured, _guard) = install_log_capture();
     let source = "async (tokens, run, ctx) => { \
         try { \
             fig.fs.readFile('/etc/hosts'); \
@@ -204,6 +247,19 @@ async fn phase5_custom_unsupported_host_api_logs_diagnostic() {
     assert!(
         names.contains(&"caught:UnsupportedHostApi"),
         "expected unsupported API diagnostic, got: {names:?}",
+    );
+
+    let logs =
+        String::from_utf8_lossy(&captured.lock().expect("capture buffer poisoned")).into_owned();
+    assert!(
+        logs.contains("code=\"unsupported_host_api\""),
+        "expected a structured warn with `code = \"unsupported_host_api\"` \
+         (the lowercase tag from JsDiagnosticCode::tag) in captured logs:\n{logs}"
+    );
+    assert!(
+        logs.contains("generator_id=phase5-test#0"),
+        "expected the generator_id field with the test fixture's name in \
+         captured logs:\n{logs}"
     );
 }
 
@@ -317,14 +373,14 @@ async fn phase5_supported_count_lifts_to_full_corpus() {
             cache: None,
             requires_js: true,
             js_source: None,
-            js_runtime: Some(JsRuntimeSpec {
+            js_runtime: Some(Arc::new(JsRuntimeSpec {
                 kind: JsRuntimeKind::PostProcess,
                 source: "out => out.split('\\n').filter(Boolean).map(n => ({ name: 'pp:' + n }))"
                     .to_string(),
                 input: None,
                 timeout_ms: None,
                 allow_shell_command: false,
-            }),
+            })),
             corrected_in: None,
             template: None,
         }),

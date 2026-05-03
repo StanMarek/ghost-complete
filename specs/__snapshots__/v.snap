@@ -127,7 +127,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "n=>n.trim().slice(19,-1).split(\", \").filter(i=>i!=\"other\").map(i=>({priority:0,name:i,description:`Display help for: \"${i}\"`}))",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "n=>n.trim().slice(19,-1).split(\", \").filter(i=>i!=\"other\").map(i=>({priority:0,name:i,description:`Display help for: \"${i}\"`}))"
+            },
             "requires_js": true,
             "script": [
               "v",

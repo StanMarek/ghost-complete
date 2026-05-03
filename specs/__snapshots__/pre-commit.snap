@@ -412,7 +412,10 @@
         "description": "A single hook-id to run",
         "generators": [
           {
-            "js_source": "i=>{let e=[];try{let t=Ps.parse(i).repos;return t&&t.forEach(s=>{s.hooks.forEach(n=>{e.push({name:`${n.id}`})})}),e}catch(t){console.log(t)}}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "i=>{let e=[];try{let t=Ps.parse(i).repos;return t&&t.forEach(s=>{s.hooks.forEach(n=>{e.push({name:`${n.id}`})})}),e}catch(t){console.log(t)}}"
+            },
             "requires_js": true,
             "script": [
               "cat",
@@ -567,7 +570,10 @@
             "generators": [
               {
                 "_corrected_in": "v0.10.0",
-                "js_source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "git",
@@ -591,7 +597,10 @@
             "generators": [
               {
                 "_corrected_in": "v0.10.0",
-                "js_source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "git",
@@ -725,7 +734,10 @@
           "description": "A single hook-id to run",
           "generators": [
             {
-              "js_source": "i=>{let e=[];try{let t=Ps.parse(i).repos;return t&&t.forEach(s=>{s.hooks.forEach(n=>{e.push({name:`${n.id}`})})}),e}catch(t){console.log(t)}}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "i=>{let e=[];try{let t=Ps.parse(i).repos;return t&&t.forEach(s=>{s.hooks.forEach(n=>{e.push({name:`${n.id}`})})}),e}catch(t){console.log(t)}}"
+              },
               "requires_js": true,
               "script": [
                 "cat",
@@ -881,7 +893,10 @@
             "generators": [
               {
                 "_corrected_in": "v0.10.0",
-                "js_source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "git",
@@ -905,7 +920,10 @@
             "generators": [
               {
                 "_corrected_in": "v0.10.0",
-                "js_source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "git",

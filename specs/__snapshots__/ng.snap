@@ -91,7 +91,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "function(a){try{let e=JSON.parse(a);return Object.entries(e).map(([t,s])=>({name:t,description:s.projectType}))}catch{}return[]}",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(a){try{let e=JSON.parse(a);return Object.entries(e).map(([t,s])=>({name:t,description:s.projectType}))}catch{}return[]}"
+                    },
                     "requires_js": true,
                     "script": [
                       "ng",
@@ -181,7 +184,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "function(a){try{let e=JSON.parse(a);return Object.entries(e).map(([t,s])=>({name:t,description:s.projectType}))}catch{}return[]}",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(a){try{let e=JSON.parse(a);return Object.entries(e).map(([t,s])=>({name:t,description:s.projectType}))}catch{}return[]}"
+                    },
                     "requires_js": true,
                     "script": [
                       "ng",

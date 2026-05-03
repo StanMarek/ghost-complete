@@ -79,7 +79,10 @@
             "cache": {
               "ttl_seconds": 259200
             },
-            "js_source": "o=>JSON.parse(o).map(e=>({name:e.name,description:e.summary}))",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>JSON.parse(o).map(e=>({name:e.name,description:e.summary}))"
+            },
             "requires_js": true,
             "script": [
               "curl",

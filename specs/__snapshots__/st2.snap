@@ -239,7 +239,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}"
+                },
                 "requires_js": true
               }
             ],
@@ -786,7 +789,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}",
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}"
+                    },
                     "requires_js": true
                   }
                 ],
@@ -1225,7 +1231,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}",
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}"
+                    },
                     "requires_js": true
                   }
                 ],
@@ -1455,7 +1464,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}",
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}"
+                    },
                     "requires_js": true
                   }
                 ],
@@ -1590,7 +1602,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}",
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}"
+                    },
                     "requires_js": true
                   }
                 ],
@@ -2014,7 +2029,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}",
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}"
+                    },
                     "requires_js": true
                   }
                 ],
@@ -2911,7 +2929,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}",
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}"
+                    },
                     "requires_js": true
                   }
                 ],
@@ -3083,7 +3104,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}",
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}"
+                    },
                     "requires_js": true
                   }
                 ],
@@ -3186,7 +3210,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}",
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}"
+                    },
                     "requires_js": true
                   }
                 ],
@@ -7242,7 +7269,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}",
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "async function(V,K){let F=V.find(c=>c.includes(\":\")),S=V.find(c=>/^-.*n.*/.test(c)),M;if(F){let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});M=c}else{let{stdout:c}=await K({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});M=c}return M.split(`\n`).map(c=>c.split(\" \")).map(c=>({name:S?c[1]:c[0],description:F?`Group - ${S?c[0]:`gid: ${c[1]}`}`:`User - ${S?c[0]:`uid: ${c[1]}`}`,icon:F?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}"
+                    },
                     "requires_js": true
                   }
                 ],

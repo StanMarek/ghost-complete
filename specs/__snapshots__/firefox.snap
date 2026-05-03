@@ -151,7 +151,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "async n=>{let i=n[n.length-1],e=Number(i);return Number.isNaN(e)?[]:Number.isInteger(e)?e<0||e>65535?[]:[{name:i,description:\"Port number\"}]:[]}",
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async n=>{let i=n[n.length-1],e=Number(i);return Number.isNaN(e)?[]:Number.isInteger(e)?e<0||e>65535?[]:[{name:i,description:\"Port number\"}]:[]}"
+            },
             "requires_js": true
           }
         ],

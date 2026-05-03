@@ -278,7 +278,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "function(t){let n,i;return t.includes(\"-f\")?(n=t.indexOf(\"-f\"),i=t[n+1]):t.includes(\"--file\")?(n=t.indexOf(\"--file\"),i=t[n+1]):i=\"Dockerfile\",[\"grep\",\"-iE\",\"FROM.*AS\",i]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "function(t){let n,i;return t.includes(\"-f\")?(n=t.indexOf(\"-f\"),i=t[n+1]):t.includes(\"--file\")?(n=t.indexOf(\"--file\"),i=t[n+1]):i=\"Dockerfile\",[\"grep\",\"-iE\",\"FROM.*AS\",i]}"
+                },
                 "requires_js": true
               }
             ],
@@ -392,7 +395,10 @@
           "generators": [
             {
               "_corrected_in": "v0.10.0",
-              "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+              },
               "requires_js": true,
               "script": [
                 "podman",
@@ -1463,7 +1469,10 @@
         "generators": [
           {
             "_corrected_in": "v0.10.0",
-            "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+            },
             "requires_js": true,
             "script": [
               "podman",
@@ -1626,7 +1635,10 @@
         "generators": [
           {
             "_corrected_in": "v0.10.0",
-            "js_source": "function(t){return t.split(`\n`).map(i=>JSON.parse(i)).map(i=>({name:i.Id,displayName:`[con] ${i.Id} (${i.Image})`}))}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(t){return t.split(`\n`).map(i=>JSON.parse(i)).map(i=>({name:i.Id,displayName:`[con] ${i.Id} (${i.Image})`}))}"
+            },
             "requires_js": true,
             "script": [
               "podman",
@@ -1638,7 +1650,10 @@
           },
           {
             "_corrected_in": "v0.10.0",
-            "js_source": "function(t){return t.split(`\n`).map(i=>JSON.parse(i)).map(i=>{let r;return i.repository===\"<none>\"?r=i.Id:(r=i.repository,i.Tag!==\"<none>\"&&(r+=`:${i.tag}`)),{name:i.ID,displayName:`[img] ${r}`}})}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(t){return t.split(`\n`).map(i=>JSON.parse(i)).map(i=>{let r;return i.repository===\"<none>\"?r=i.Id:(r=i.repository,i.Tag!==\"<none>\"&&(r+=`:${i.tag}`)),{name:i.ID,displayName:`[img] ${r}`}})}"
+            },
             "requires_js": true,
             "script": [
               "podman",
@@ -1650,7 +1665,10 @@
           },
           {
             "_corrected_in": "v0.10.0",
-            "js_source": "function(t){return t.split(`\n`).map(i=>JSON.parse(i)).map(i=>({name:i.Name,displayName:`[vol] ${i.Name}`}))}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(t){return t.split(`\n`).map(i=>JSON.parse(i)).map(i=>({name:i.Name,displayName:`[vol] ${i.Name}`}))}"
+            },
             "requires_js": true,
             "script": [
               "docker",
@@ -2005,7 +2023,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "function(t){return t[t.length-1]===\"\"?void 0:[\"podman\",\"search\",t[t.length-1],\"--format\",\"{{ json . }}\"]}",
+            "js_runtime": {
+              "kind": "script_function",
+              "source": "function(t){return t[t.length-1]===\"\"?void 0:[\"podman\",\"search\",t[t.length-1],\"--format\",\"{{ json . }}\"]}"
+            },
             "requires_js": true
           }
         ],
@@ -2202,7 +2223,10 @@
         "generators": [
           {
             "_corrected_in": "v0.10.0",
-            "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+            },
             "requires_js": true,
             "script": [
               "podman",
@@ -3153,7 +3177,10 @@
         "generators": [
           {
             "_corrected_in": "v0.10.0",
-            "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+            },
             "requires_js": true,
             "script": [
               "podman",
@@ -3719,7 +3746,10 @@
               "generators": [
                 {
                   "_corrected_in": "v0.10.0",
-                  "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}",
+                  "js_runtime": {
+                    "kind": "post_process",
+                    "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+                  },
                   "requires_js": true,
                   "script": [
                     "podman",
@@ -6666,7 +6696,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "function(t){let n,i;return t.includes(\"-f\")?(n=t.indexOf(\"-f\"),i=t[n+1]):t.includes(\"--file\")?(n=t.indexOf(\"--file\"),i=t[n+1]):i=\"Dockerfile\",[\"grep\",\"-iE\",\"FROM.*AS\",i]}",
+                    "js_runtime": {
+                      "kind": "script_function",
+                      "source": "function(t){let n,i;return t.includes(\"-f\")?(n=t.indexOf(\"-f\"),i=t[n+1]):t.includes(\"--file\")?(n=t.indexOf(\"--file\"),i=t[n+1]):i=\"Dockerfile\",[\"grep\",\"-iE\",\"FROM.*AS\",i]}"
+                    },
                     "requires_js": true
                   }
                 ],
@@ -6685,7 +6718,10 @@
             "generators": [
               {
                 "_corrected_in": "v0.10.0",
-                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "podman",
@@ -6775,7 +6811,10 @@
             "generators": [
               {
                 "_corrected_in": "v0.10.0",
-                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "podman",
@@ -6917,7 +6956,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "function(t){return t[t.length-1]===\"\"?void 0:[\"podman\",\"search\",t[t.length-1],\"--format\",\"{{ json . }}\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "function(t){return t[t.length-1]===\"\"?void 0:[\"podman\",\"search\",t[t.length-1],\"--format\",\"{{ json . }}\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -6995,7 +7037,10 @@
             "generators": [
               {
                 "_corrected_in": "v0.10.0",
-                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "podman",
@@ -7034,7 +7079,10 @@
             "generators": [
               {
                 "_corrected_in": "v0.10.0",
-                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "podman",
@@ -7084,7 +7132,10 @@
               "generators": [
                 {
                   "_corrected_in": "v0.10.0",
-                  "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.name||n.Name,description:n.id||n.ID,icon:\"fig://icon?type=docker\"}))",
+                  "js_runtime": {
+                    "kind": "post_process",
+                    "source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.name||n.Name,description:n.id||n.ID,icon:\"fig://icon?type=docker\"}))"
+                  },
                   "requires_js": true,
                   "script": [
                     "podman",
@@ -7326,7 +7377,10 @@
               "generators": [
                 {
                   "_corrected_in": "v0.10.0",
-                  "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.name||n.Name,description:n.id||n.ID,icon:\"fig://icon?type=docker\"}))",
+                  "js_runtime": {
+                    "kind": "post_process",
+                    "source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.name||n.Name,description:n.id||n.ID,icon:\"fig://icon?type=docker\"}))"
+                  },
                   "requires_js": true,
                   "script": [
                     "podman",
@@ -7379,7 +7433,10 @@
             "generators": [
               {
                 "_corrected_in": "v0.10.0",
-                "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.name||n.Name,description:n.id||n.ID,icon:\"fig://icon?type=docker\"}))",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.name||n.Name,description:n.id||n.ID,icon:\"fig://icon?type=docker\"}))"
+                },
                 "requires_js": true,
                 "script": [
                   "podman",
@@ -7482,7 +7539,10 @@
             "generators": [
               {
                 "_corrected_in": "v0.10.0",
-                "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.name||n.Name,description:n.id||n.ID,icon:\"fig://icon?type=docker\"}))",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.name||n.Name,description:n.id||n.ID,icon:\"fig://icon?type=docker\"}))"
+                },
                 "requires_js": true,
                 "script": [
                   "podman",
@@ -7557,7 +7617,10 @@
             "generators": [
               {
                 "_corrected_in": "v0.10.0",
-                "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.name||n.Name,description:n.id||n.ID,icon:\"fig://icon?type=docker\"}))",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.name||n.Name,description:n.id||n.ID,icon:\"fig://icon?type=docker\"}))"
+                },
                 "requires_js": true,
                 "script": [
                   "podman",
@@ -7630,7 +7693,10 @@
             "generators": [
               {
                 "_corrected_in": "v0.10.0",
-                "js_source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.name||n.Name,description:n.id||n.ID,icon:\"fig://icon?type=docker\"}))",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.name||n.Name,description:n.id||n.ID,icon:\"fig://icon?type=docker\"}))"
+                },
                 "requires_js": true,
                 "script": [
                   "podman",
@@ -7826,7 +7892,10 @@
             "generators": [
               {
                 "_corrected_in": "v0.10.0",
-                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,icon:\"fig://icon?type=docker\"}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,icon:\"fig://icon?type=docker\"}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "podman",
@@ -7916,7 +7985,10 @@
             "generators": [
               {
                 "_corrected_in": "v0.10.0",
-                "js_source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,icon:\"fig://icon?type=docker\"}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,icon:\"fig://icon?type=docker\"}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "podman",
@@ -8007,7 +8079,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--profiles\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--profiles\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -8060,7 +8135,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -8075,7 +8153,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                    "js_runtime": {
+                      "kind": "script_function",
+                      "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                    },
                     "requires_js": true
                   }
                 ],
@@ -8178,7 +8259,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -8325,7 +8409,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -8405,7 +8492,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -8429,7 +8519,10 @@
             {
               "generators": [
                 {
-                  "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                  },
                   "requires_js": true
                 }
               ],
@@ -8527,7 +8620,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -8552,7 +8648,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -8580,7 +8679,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -8703,7 +8805,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -8719,7 +8824,10 @@
             {
               "generators": [
                 {
-                  "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                  },
                   "requires_js": true
                 }
               ],
@@ -8764,7 +8872,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -8861,7 +8972,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -8910,7 +9024,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -8934,7 +9051,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -8961,7 +9081,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -9010,7 +9133,10 @@
             {
               "generators": [
                 {
-                  "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                  "js_runtime": {
+                    "kind": "script_function",
+                    "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                  },
                   "requires_js": true
                 }
               ],
@@ -9169,7 +9295,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -9185,7 +9314,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -9213,7 +9345,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -9228,7 +9363,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],
@@ -9243,7 +9381,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}",
+                "js_runtime": {
+                  "kind": "script_function",
+                  "source": "i=>{let n=a(i),t=r(i);return[...n,...t,\"config\",\"--services\"]}"
+                },
                 "requires_js": true
               }
             ],

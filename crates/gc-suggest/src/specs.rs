@@ -226,6 +226,21 @@ where
     }
 }
 
+/// Deserialize an `Option<JsRuntimeSpec>` and wrap it in `Arc` so the
+/// dispatch hot path can share the underlying spec with worker tasks
+/// without deep-cloning the embedded JS source. Equivalent to
+/// `Option::<JsRuntimeSpec>::deserialize(...)?.map(Arc::new)` — the
+/// helper exists because serde's `rc` feature (which would let us derive
+/// `Deserialize` directly on `Arc<T>`) is not enabled in this workspace.
+fn deserialize_arc_js_runtime<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<Arc<JsRuntimeSpec>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(Option::<JsRuntimeSpec>::deserialize(deserializer)?.map(Arc::new))
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct CompletionSpec {
     pub name: String,
@@ -477,7 +492,14 @@ pub struct GeneratorSpec {
     /// Runtime JS metadata for generators that need QuickJS evaluation.
     /// Phase 2 stores this at load time; Phase 4+ wire the dispatch path
     /// that honours it in preference to the legacy `requires_js` short-circuit.
-    pub js_runtime: Option<JsRuntimeSpec>,
+    ///
+    /// Wrapped in `Arc` so the dispatch hot path can share it with the
+    /// spawned worker task without deep-cloning the embedded JS source on
+    /// every keystroke. The corpus contains generators whose source is
+    /// several KB (e.g. AWS), and an `Arc` pointer-bump is essentially
+    /// free vs. a `String::clone`.
+    #[serde(default, deserialize_with = "deserialize_arc_js_runtime")]
+    pub js_runtime: Option<Arc<JsRuntimeSpec>>,
     /// Release tag recording when a silently-mis-converted generator was corrected.
     /// Persists in the spec across regenerations so downstream consumers can
     /// enumerate and surface the affected specs on upgrade.
@@ -689,6 +711,28 @@ impl SpecStore {
     /// so users can spot specs whose declared `name` was rejected.
     pub fn conflicts(&self) -> &[AliasConflict] {
         &self.conflicts
+    }
+
+    /// Resolved on-disk path for every entry the loader actually kept, in
+    /// load order. The path is reconstructed as `source_dir.join(format!(
+    /// "{stem}.json"))` — the loader uses that exact form when reading the
+    /// file, so any consumer that re-parses through this list sees the
+    /// same JSON the runtime saw.
+    ///
+    /// Used by `ghost-complete status` to count requires_js generators
+    /// without double-counting when overlapping spec_dirs each ship a
+    /// copy of the same filename. Pre-Phase-4 the file scan walked every
+    /// configured directory and summed their generator counts, which
+    /// inflated the reported number on configs where the embedded specs
+    /// dir and a user override dir both contained `git.json`.
+    pub fn canonical_paths(&self) -> Vec<(String, PathBuf)> {
+        self.entries
+            .iter()
+            .map(|e| {
+                let path = e.source_dir.join(format!("{}.json", e.filename_stem));
+                (e.filename_stem.clone(), path)
+            })
+            .collect()
     }
 }
 

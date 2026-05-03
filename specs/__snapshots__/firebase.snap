@@ -1788,7 +1788,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "t=>{let i=/^│ (\\w.*?)│/gm,e=Array.from(t.matchAll(i));return e.shift(),e.map(a=>({name:a[1].trim(),description:\"ProjectAlias\"}))}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "t=>{let i=/^│ (\\w.*?)│/gm,e=Array.from(t.matchAll(i));return e.shift(),e.map(a=>({name:a[1].trim(),description:\"ProjectAlias\"}))}"
+            },
             "requires_js": true,
             "script": [
               "firebase",

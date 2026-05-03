@@ -47,7 +47,10 @@
         "description": "The number of the screen to display on",
         "generators": [
           {
-            "js_source": "s=>{if(s.includes(\"command not found\"))return[];if(s.length===0)return[];try{let t=JSON.parse(s),a=[];for(let e of t.SPDisplaysDataType)if(e.spdisplays_ndrvs)for(let i of e.spdisplays_ndrvs)a.push({description:i._name,icon:\"\\u{1F5A5}\\uFE0F\"});return a.map((e,i)=>({...e,name:String(i+1)}))}catch{return[]}}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "s=>{if(s.includes(\"command not found\"))return[];if(s.length===0)return[];try{let t=JSON.parse(s),a=[];for(let e of t.SPDisplaysDataType)if(e.spdisplays_ndrvs)for(let i of e.spdisplays_ndrvs)a.push({description:i._name,icon:\"\\u{1F5A5}\\uFE0F\"});return a.map((e,i)=>({...e,name:String(i+1)}))}catch{return[]}}"
+            },
             "requires_js": true,
             "script": [
               "system_profiler",

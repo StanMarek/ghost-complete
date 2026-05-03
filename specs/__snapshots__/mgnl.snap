@@ -329,7 +329,10 @@
         "description": "At least one name of a light module to be downloaded from npm. If you are installing more than one module from the repository, separate the module names with a space",
         "generators": [
           {
-            "js_source": "async(s,c,d)=>{let a=s[s.length-1];if(a===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",u=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${a}${r}`:`https://api.npms.io/v2/search/suggestions?q=${a}&size=20`],m=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${a.slice(0,-1)}`],I=l=>c({command:\"curl\",args:l[l.length-1]===\"@\"?m:u}),D=a.startsWith(\"@\")?P(a)>1:a.includes(\"@\");try{let l=JSON.parse((await I(a)).stdout);if(D){let v=Object.entries(l[\"dist-tags\"]||{}).map(([j,M])=>({name:j,description:M}));return v.push(...Object.keys(l.versions).map(j=>({name:j})).reverse()),v}return(r?l.results:l).map(v=>({name:v.package.name,description:v.package.description}))}catch(l){return console.error({error:l}),[]}}",
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(s,c,d)=>{let a=s[s.length-1];if(a===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",u=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${a}${r}`:`https://api.npms.io/v2/search/suggestions?q=${a}&size=20`],m=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${a.slice(0,-1)}`],I=l=>c({command:\"curl\",args:l[l.length-1]===\"@\"?m:u}),D=a.startsWith(\"@\")?P(a)>1:a.includes(\"@\");try{let l=JSON.parse((await I(a)).stdout);if(D){let v=Object.entries(l[\"dist-tags\"]||{}).map(([j,M])=>({name:j,description:M}));return v.push(...Object.keys(l.versions).map(j=>({name:j})).reverse()),v}return(r?l.results:l).map(v=>({name:v.package.name,description:v.package.description}))}catch(l){return console.error({error:l}),[]}}"
+            },
             "requires_js": true
           }
         ],
@@ -443,7 +446,10 @@
         "description": "The search query sent to the npm's API. The query can contain multiple terms separated with commas and no spaces",
         "generators": [
           {
-            "js_source": "async(s,c,d)=>{let a=s[s.length-1];if(a===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",u=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${a}${r}`:`https://api.npms.io/v2/search/suggestions?q=${a}&size=20`],m=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${a.slice(0,-1)}`],I=l=>c({command:\"curl\",args:l[l.length-1]===\"@\"?m:u}),D=a.startsWith(\"@\")?P(a)>1:a.includes(\"@\");try{let l=JSON.parse((await I(a)).stdout);if(D){let v=Object.entries(l[\"dist-tags\"]||{}).map(([j,M])=>({name:j,description:M}));return v.push(...Object.keys(l.versions).map(j=>({name:j})).reverse()),v}return(r?l.results:l).map(v=>({name:v.package.name,description:v.package.description}))}catch(l){return console.error({error:l}),[]}}",
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(s,c,d)=>{let a=s[s.length-1];if(a===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",u=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${a}${r}`:`https://api.npms.io/v2/search/suggestions?q=${a}&size=20`],m=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${a.slice(0,-1)}`],I=l=>c({command:\"curl\",args:l[l.length-1]===\"@\"?m:u}),D=a.startsWith(\"@\")?P(a)>1:a.includes(\"@\");try{let l=JSON.parse((await I(a)).stdout);if(D){let v=Object.entries(l[\"dist-tags\"]||{}).map(([j,M])=>({name:j,description:M}));return v.push(...Object.keys(l.versions).map(j=>({name:j})).reverse()),v}return(r?l.results:l).map(v=>({name:v.package.name,description:v.package.description}))}catch(l){return console.error({error:l}),[]}}"
+            },
             "requires_js": true
           }
         ],

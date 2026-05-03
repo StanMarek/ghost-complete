@@ -1482,7 +1482,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>{let e=Number(t);return Array.from({length:e},(o,n)=>{let i=e-n;return{priority:i,name:String(i)}})}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>{let e=Number(t);return Array.from({length:e},(o,n)=>{let i=e-n;return{priority:i,name:String(i)}})}"
+                },
                 "requires_js": true,
                 "script": [
                   "sysctl",
@@ -1957,7 +1960,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "script(t){return t[t.length-1]===\"\"?void 0:[\"curl\",\"-s\",\"-H\",\"Accept: application/json\",`https://api.npms.io/v2/search?q=${t[t.length-1]}&size=20`]}",
+            "js_runtime": {
+              "kind": "script_function",
+              "source": "script(t){return t[t.length-1]===\"\"?void 0:[\"curl\",\"-s\",\"-H\",\"Accept: application/json\",`https://api.npms.io/v2/search?q=${t[t.length-1]}&size=20`]}"
+            },
             "requires_js": true
           }
         ],
@@ -2100,7 +2106,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>{let e=Number(t);return Array.from({length:e},(o,n)=>{let i=e-n;return{priority:i,name:String(i)}})}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>{let e=Number(t);return Array.from({length:e},(o,n)=>{let i=e-n;return{priority:i,name:String(i)}})}"
+                },
                 "requires_js": true,
                 "script": [
                   "sysctl",
@@ -3063,7 +3072,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>{let e=Number(t);return Array.from({length:e},(o,n)=>{let i=e-n;return{priority:i,name:String(i)}})}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>{let e=Number(t);return Array.from({length:e},(o,n)=>{let i=e-n;return{priority:i,name:String(i)}})}"
+                },
                 "requires_js": true,
                 "script": [
                   "sysctl",
