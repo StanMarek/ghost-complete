@@ -483,6 +483,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     let debounce_notify_b = Arc::clone(&debounce_notify);
     let stdout_handle = tokio::task::spawn_blocking(move || {
         let mut buf = [0u8; 8192];
+        let mut deferred_trigger_after_redraw = false;
         loop {
             let n = match reader.read(&mut buf) {
                 Ok(0) => break, // PTY closed
@@ -607,6 +608,8 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 }
             }
 
+            let display_changed = display_dirty || viewport_scrolls > 0;
+
             // Check if shell reported a buffer update via OSC 7770.
             // Trigger suggestions here (Task B) instead of Task A to ensure
             // we have the shell's updated buffer, fixing the stale-buffer bug.
@@ -631,20 +634,29 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         }
                     };
                     let had_pending_trigger = h.has_pending_trigger();
-                    let action = buffer_dirty_action(
-                        had_pending_trigger,
-                        delay_ms,
-                        h.auto_trigger_enabled(),
-                        h.is_debounce_suppressed(),
-                    );
+                    let action = if deferred_trigger_after_redraw && display_changed {
+                        BufferDirtyAction::Ignore
+                    } else {
+                        buffer_dirty_action(
+                            had_pending_trigger,
+                            delay_ms,
+                            h.auto_trigger_enabled(),
+                            h.is_debounce_suppressed(),
+                            display_changed,
+                        )
+                    };
                     if had_pending_trigger {
                         h.clear_trigger_request();
                     }
                     match action {
                         BufferDirtyAction::Trigger => {
+                            deferred_trigger_after_redraw = false;
                             h.trigger(&parser_for_stdout, &mut render_buf)
                         }
                         BufferDirtyAction::Debounce => debounce_notify_b.notify_one(),
+                        BufferDirtyAction::DeferUntilDisplay => {
+                            deferred_trigger_after_redraw = true;
+                        }
                         BufferDirtyAction::Ignore => {}
                     }
                     h.overlay_write_ticket()
@@ -654,6 +666,32 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
                     {
                         tracing::debug!("Task B overlay write/flush failed: {e}");
+                        break;
+                    }
+                }
+            }
+
+            if deferred_trigger_after_redraw && display_changed {
+                let mut render_buf = Vec::new();
+                let render_ticket = {
+                    let mut h = match handler_for_stdout.lock() {
+                        Ok(h) => h,
+                        Err(e) => {
+                            tracing::warn!("handler mutex poisoned in stdout task: {e}");
+                            break;
+                        }
+                    };
+                    deferred_trigger_after_redraw = false;
+                    if h.auto_trigger_enabled() {
+                        h.trigger(&parser_for_stdout, &mut render_buf);
+                    }
+                    h.overlay_write_ticket()
+                };
+                if !render_buf.is_empty() {
+                    if let Err(e) =
+                        write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
+                    {
+                        tracing::debug!("Task B deferred overlay write/flush failed: {e}");
                         break;
                     }
                 }
@@ -917,6 +955,7 @@ fn poll_until(
 enum BufferDirtyAction {
     Trigger,
     Debounce,
+    DeferUntilDisplay,
     Ignore,
 }
 
@@ -925,9 +964,13 @@ fn buffer_dirty_action(
     delay_ms: u64,
     auto_trigger_enabled: bool,
     debounce_suppressed: bool,
+    display_changed: bool,
 ) -> BufferDirtyAction {
     if !auto_trigger_enabled {
         return BufferDirtyAction::Ignore;
+    }
+    if has_pending_trigger && !display_changed {
+        return BufferDirtyAction::DeferUntilDisplay;
     }
     if has_pending_trigger {
         return BufferDirtyAction::Trigger;
@@ -935,7 +978,9 @@ fn buffer_dirty_action(
     if debounce_suppressed {
         return BufferDirtyAction::Ignore;
     }
-    if delay_ms == 0 {
+    if delay_ms == 0 && !display_changed {
+        BufferDirtyAction::DeferUntilDisplay
+    } else if delay_ms == 0 {
         BufferDirtyAction::Trigger
     } else {
         BufferDirtyAction::Debounce
@@ -1302,15 +1347,23 @@ mod tests {
     #[test]
     fn buffer_dirty_action_triggers_immediately_when_delay_zero() {
         assert_eq!(
-            buffer_dirty_action(false, 0, true, false),
+            buffer_dirty_action(false, 0, true, false, true),
             BufferDirtyAction::Trigger
+        );
+    }
+
+    #[test]
+    fn buffer_dirty_action_defers_delay_zero_until_redraw() {
+        assert_eq!(
+            buffer_dirty_action(false, 0, true, false, false),
+            BufferDirtyAction::DeferUntilDisplay
         );
     }
 
     #[test]
     fn buffer_dirty_action_ignores_when_auto_trigger_disabled() {
         assert_eq!(
-            buffer_dirty_action(false, 0, false, false),
+            buffer_dirty_action(false, 0, false, false, true),
             BufferDirtyAction::Ignore
         );
     }
@@ -1318,7 +1371,7 @@ mod tests {
     #[test]
     fn buffer_dirty_action_ignores_when_debounce_suppressed() {
         assert_eq!(
-            buffer_dirty_action(false, 0, true, true),
+            buffer_dirty_action(false, 0, true, true, true),
             BufferDirtyAction::Ignore
         );
     }
@@ -1326,15 +1379,24 @@ mod tests {
     #[test]
     fn buffer_dirty_action_debounces_when_delay_positive() {
         assert_eq!(
-            buffer_dirty_action(false, 150, true, false),
+            buffer_dirty_action(false, 150, true, false, false),
             BufferDirtyAction::Debounce
         );
     }
 
     #[test]
-    fn buffer_dirty_action_prefers_pending_trigger() {
+    fn buffer_dirty_action_defers_pending_trigger_until_redraw() {
         assert_eq!(
-            buffer_dirty_action(true, 150, true, true),
+            buffer_dirty_action(true, 150, true, true, false),
+            BufferDirtyAction::DeferUntilDisplay,
+            "OSC-only buffer reports must not render before the matching ZLE redraw moves the cursor"
+        );
+    }
+
+    #[test]
+    fn buffer_dirty_action_triggers_pending_after_redraw() {
+        assert_eq!(
+            buffer_dirty_action(true, 150, true, true, true),
             BufferDirtyAction::Trigger
         );
     }
