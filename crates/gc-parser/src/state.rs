@@ -56,12 +56,8 @@ pub struct TerminalState {
     command_buffer: Option<String>,
     buffer_cursor: usize,
     buffer_dirty: bool,
-    /// True when an OSC 7772 buffer report has been observed but the parser
-    /// has not yet applied any subsequent display-changing operation. Used
-    /// by the proxy to decide whether the popup can be triggered now (the
-    /// terminal display already reflects the new buffer) or must wait until
-    /// the redraw arrives in a later PTY read. Set in [`Self::set_command_buffer`]
-    /// and cleared in [`Self::mark_display_dirty`].
+    /// Set when a shell-side buffer report (OSC 7770/7772) updates the buffer
+    /// ahead of the matching display redraw; cleared when display catches up.
     buffer_pending_display: bool,
     cwd_dirty: bool,
     cursor_sync_requested: bool,
@@ -176,16 +172,6 @@ impl TerminalState {
         dirty
     }
 
-    /// Returns true if the most recent buffer-update event has not yet been
-    /// followed by a display-changing op in the parser stream. This signals
-    /// to the proxy that the terminal display has not yet been redrawn to
-    /// reflect the new buffer state, and that triggering the popup now would
-    /// position it from stale cursor geometry.
-    ///
-    /// The flag is `false` if no buffer event has been seen yet, or if any
-    /// display-changing op has been processed since the last buffer event.
-    /// Reading does not clear the flag — the proxy's deferral only resolves
-    /// once the parser observes a real display update.
     pub fn buffer_pending_display(&self) -> bool {
         self.buffer_pending_display
     }
@@ -518,6 +504,8 @@ impl TerminalState {
     pub(crate) fn clear_command_buffer(&mut self) {
         self.command_buffer = None;
         self.buffer_cursor = 0;
+        self.buffer_dirty = false;
+        self.buffer_pending_display = false;
     }
 
     pub(crate) fn set_autowrap(&mut self, enabled: bool) {
@@ -917,6 +905,18 @@ mod tests {
             state.buffer_pending_display(),
             "draining buffer_dirty must not advance the pending-display flag"
         );
+    }
+
+    #[test]
+    fn buffer_pending_display_via_process_bytes_osc_then_print() {
+        // Mirrors the proxy's actual byte-stream path: OSC buffer report
+        // followed by a printable byte in a single batch should set the
+        // flag on the OSC and clear it on the printable.
+        let mut p = crate::TerminalParser::new(24, 80);
+        p.process_bytes(b"\x1b]7770;3;git\x07");
+        assert!(p.state().buffer_pending_display());
+        p.process_bytes(b"x");
+        assert!(!p.state().buffer_pending_display());
     }
 
     #[test]
