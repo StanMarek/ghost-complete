@@ -674,9 +674,10 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 }
             }
 
-            // Run in Task B so we observe the parser's post-OSC buffer state.
-            if let Some((latest_buffer_epoch, buffer_generation)) = latest_buffer_report {
-                let display_after_latest_buffer = display_epoch > latest_buffer_epoch;
+            // Observe the parser's post-OSC buffer state after the stdout
+            // pipeline drains it.
+            if let Some(report) = latest_buffer_report {
+                let display_after_latest_buffer = display_epoch > report.display_epoch;
                 let action = {
                     let mut h = match handler_for_stdout.lock() {
                         Ok(h) => h,
@@ -710,8 +711,8 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     apply_buffer_dirty_action(
                         &mut deferred_buffer_dirty,
                         &mut state,
-                        latest_buffer_epoch,
-                        buffer_generation,
+                        report.display_epoch,
+                        report.generation,
                         action,
                     )
                 };
@@ -1101,15 +1102,22 @@ fn forwarded_input_invalidates_debounce(key: &KeyEvent) -> bool {
     !matches!(key, KeyEvent::CursorPositionReport(_, _))
 }
 
+/// Latest OSC 7770 buffer report observed in a single PTY read. Named so the
+/// two same-typed `u64` fields can't be silently transposed at a call site.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct BufferReport {
+    display_epoch: u64,
+    generation: u64,
+}
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 struct PtyReadEvents {
     needs_cpr: bool,
     display_dirty: bool,
     viewport_scrolls: u16,
-    /// (display_epoch, buffer_generation) of the latest buffer report seen in
-    /// this read. Tied as a pair so the type system rules out the impossible
-    /// "epoch without generation" state.
-    latest_buffer_report: Option<(u64, u64)>,
+    /// Latest buffer report seen in this read. Tied as a pair so the type
+    /// system rules out the impossible "epoch without generation" state.
+    latest_buffer_report: Option<BufferReport>,
 }
 
 fn process_pty_read(
@@ -1140,7 +1148,10 @@ fn process_pty_read(
         }
 
         if state.take_buffer_dirty() {
-            events.latest_buffer_report = Some((*display_epoch, next_buffer_generation()));
+            events.latest_buffer_report = Some(BufferReport {
+                display_epoch: *display_epoch,
+                generation: next_buffer_generation(),
+            });
         }
     }
     events
@@ -1152,6 +1163,11 @@ enum DeferredBufferDirtyAction {
     NotifyDebounce,
 }
 
+/// Tracks buffer-generation state across the stdout/debounce/dynamic-merge
+/// tasks. `notified_generation` is intentionally not cleared when superseded
+/// by `next_buffer_generation()`: gating in `can_fire_generation` is anchored
+/// on `current_generation == generation`, so a stale notified value can never
+/// satisfy a live check. The next `notify_generation` overwrites it in place.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 struct DebounceState {
     current_generation: u64,
@@ -1339,7 +1355,7 @@ fn clear_deferred_buffer_dirty(
 fn defer_cwd_trigger_until_buffer_display(
     deferred: &mut Option<DeferredBufferDirty>,
     debounce_state: &mut DebounceState,
-    latest_buffer_report: Option<(u64, u64)>,
+    latest_buffer_report: Option<BufferReport>,
     display_epoch: u64,
 ) -> bool {
     if let Some(pending) = deferred.as_mut() {
@@ -1347,19 +1363,19 @@ fn defer_cwd_trigger_until_buffer_display(
         return true;
     }
 
-    let Some((buffer_epoch, buffer_generation)) = latest_buffer_report else {
+    let Some(report) = latest_buffer_report else {
         return false;
     };
-    if display_epoch > buffer_epoch {
+    if display_epoch > report.display_epoch {
         return false;
     }
 
     *deferred = Some(DeferredBufferDirty {
         action: DeferredBufferDirtyAction::TriggerNow,
-        display_epoch: buffer_epoch,
-        generation: buffer_generation,
+        display_epoch: report.display_epoch,
+        generation: report.generation,
     });
-    debounce_state.defer_generation(buffer_generation);
+    debounce_state.defer_generation(report.generation);
     true
 }
 
@@ -2222,7 +2238,13 @@ mod tests {
         );
 
         assert_eq!(display_epoch, 0, "pure OSC must not advance display epoch");
-        assert_eq!(events.latest_buffer_report, Some((0, 1)));
+        assert_eq!(
+            events.latest_buffer_report,
+            Some(BufferReport {
+                display_epoch: 0,
+                generation: 1,
+            })
+        );
         assert!(!events.display_dirty);
         assert_eq!(events.viewport_scrolls, 0);
         assert_eq!(next_generation, 1);
@@ -2253,7 +2275,10 @@ mod tests {
         assert!(defer_cwd_trigger_until_buffer_display(
             &mut deferred,
             &mut debounce_state,
-            Some((4, current_generation)),
+            Some(BufferReport {
+                display_epoch: 4,
+                generation: current_generation,
+            }),
             4,
         ));
         assert_eq!(
@@ -2307,6 +2332,46 @@ mod tests {
         );
         assert_eq!(deferred, None);
         assert!(!debounce_state.can_fire_generation(1));
+    }
+
+    #[test]
+    fn cwd_dirty_fires_immediately_when_no_buffer_report_pending() {
+        // No prior deferred and no buffer report this read — the CWD-only
+        // trigger must fire immediately (caller observes false return).
+        let mut deferred = None;
+        let mut debounce_state = DebounceState::default();
+
+        assert!(!defer_cwd_trigger_until_buffer_display(
+            &mut deferred,
+            &mut debounce_state,
+            None,
+            5,
+        ));
+        assert_eq!(deferred, None);
+        assert!(!debounce_state.has_deferred_generation());
+    }
+
+    #[test]
+    fn cwd_dirty_fires_immediately_when_buffer_report_already_displayed() {
+        // The buffer report rode in on bytes that already updated the screen
+        // (display_epoch advanced past the report's epoch), so there is
+        // nothing left to wait for — fire immediately (false return).
+        let mut deferred = None;
+        let mut debounce_state = DebounceState::default();
+        let prior_generation = debounce_state.next_buffer_generation();
+        debounce_state.notify_generation(prior_generation);
+
+        assert!(!defer_cwd_trigger_until_buffer_display(
+            &mut deferred,
+            &mut debounce_state,
+            Some(BufferReport {
+                display_epoch: 4,
+                generation: 2,
+            }),
+            5,
+        ));
+        assert_eq!(deferred, None);
+        assert!(!debounce_state.has_deferred_generation());
     }
 
     #[test]
@@ -2366,10 +2431,10 @@ mod tests {
         );
 
         assert!(events.display_dirty);
-        let (latest_epoch, _) = events.latest_buffer_report.expect("buffer report");
-        assert_eq!(latest_epoch, display_epoch);
+        let report = events.latest_buffer_report.expect("buffer report");
+        assert_eq!(report.display_epoch, display_epoch);
         assert!(
-            display_epoch <= latest_epoch,
+            display_epoch <= report.display_epoch,
             "display bytes before the latest OSC report must not satisfy that report"
         );
     }
@@ -2386,8 +2451,8 @@ mod tests {
         );
 
         assert!(events.display_dirty);
-        let (latest_epoch, _) = events.latest_buffer_report.expect("buffer report");
-        assert!(display_epoch > latest_epoch);
+        let report = events.latest_buffer_report.expect("buffer report");
+        assert!(display_epoch > report.display_epoch);
     }
 
     #[test]
@@ -2407,10 +2472,16 @@ mod tests {
 
         assert!(events.display_dirty);
         assert_eq!(display_epoch, 1);
-        assert_eq!(events.latest_buffer_report, Some((1, 2)));
+        assert_eq!(
+            events.latest_buffer_report,
+            Some(BufferReport {
+                display_epoch: 1,
+                generation: 2,
+            })
+        );
         assert_eq!(next_generation, 2);
-        let (latest_epoch, _) = events.latest_buffer_report.unwrap();
-        assert!(display_epoch <= latest_epoch);
+        let report = events.latest_buffer_report.unwrap();
+        assert!(display_epoch <= report.display_epoch);
     }
 
     #[test]
@@ -2430,10 +2501,16 @@ mod tests {
 
         assert!(events.display_dirty);
         assert_eq!(display_epoch, 2);
-        assert_eq!(events.latest_buffer_report, Some((1, 2)));
+        assert_eq!(
+            events.latest_buffer_report,
+            Some(BufferReport {
+                display_epoch: 1,
+                generation: 2,
+            })
+        );
         assert_eq!(next_generation, 2);
-        let (latest_epoch, _) = events.latest_buffer_report.unwrap();
-        assert!(display_epoch > latest_epoch);
+        let report = events.latest_buffer_report.unwrap();
+        assert!(display_epoch > report.display_epoch);
     }
 
     use gc_parser::TerminalParser;
