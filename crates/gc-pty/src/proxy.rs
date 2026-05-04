@@ -711,8 +711,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     apply_buffer_dirty_action(
                         &mut deferred_buffer_dirty,
                         &mut state,
-                        report.display_epoch,
-                        report.generation,
+                        report,
                         action,
                     )
                 };
@@ -1226,6 +1225,11 @@ impl DebounceState {
     fn has_deferred_generation(&self) -> bool {
         self.deferred_generation.is_some()
     }
+
+    #[cfg(test)]
+    fn deferred_generation(&self) -> Option<u64> {
+        self.deferred_generation
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1313,8 +1317,7 @@ fn buffer_dirty_action(
 fn apply_buffer_dirty_action(
     deferred: &mut Option<DeferredBufferDirty>,
     debounce_state: &mut DebounceState,
-    buffer_epoch: u64,
-    buffer_generation: u64,
+    report: BufferReport,
     action: BufferDirtyAction,
 ) -> ResolvedBufferDirtyAction {
     match action {
@@ -1324,16 +1327,16 @@ fn apply_buffer_dirty_action(
         }
         BufferDirtyAction::Debounce => {
             clear_deferred_buffer_dirty(deferred, debounce_state);
-            debounce_state.notify_generation(buffer_generation);
+            debounce_state.notify_generation(report.generation);
             ResolvedBufferDirtyAction::NotifyDebounce
         }
         BufferDirtyAction::DeferUntilDisplay(action) => {
             *deferred = Some(DeferredBufferDirty {
                 action,
-                display_epoch: buffer_epoch,
-                generation: buffer_generation,
+                display_epoch: report.display_epoch,
+                generation: report.generation,
             });
-            debounce_state.defer_generation(buffer_generation);
+            debounce_state.defer_generation(report.generation);
             ResolvedBufferDirtyAction::NoOp
         }
         BufferDirtyAction::Ignore => {
@@ -1963,7 +1966,15 @@ mod tests {
 
         let action = buffer_dirty_action(false, 150, true, true, false);
         assert_eq!(
-            apply_buffer_dirty_action(&mut deferred, &mut debounce_state, 3, 1, action),
+            apply_buffer_dirty_action(
+                &mut deferred,
+                &mut debounce_state,
+                BufferReport {
+                    display_epoch: 3,
+                    generation: 1,
+                },
+                action,
+            ),
             ResolvedBufferDirtyAction::NoOp
         );
         assert_eq!(deferred, None);
@@ -1981,7 +1992,15 @@ mod tests {
         let action = buffer_dirty_action(false, 150, true, false, false);
 
         assert_eq!(
-            apply_buffer_dirty_action(&mut deferred, &mut debounce_state, 8, generation, action),
+            apply_buffer_dirty_action(
+                &mut deferred,
+                &mut debounce_state,
+                BufferReport {
+                    display_epoch: 8,
+                    generation,
+                },
+                action,
+            ),
             ResolvedBufferDirtyAction::NoOp
         );
         assert_eq!(
@@ -2014,8 +2033,10 @@ mod tests {
             apply_buffer_dirty_action(
                 &mut deferred,
                 &mut debounce_state,
-                3,
-                first_generation,
+                BufferReport {
+                    display_epoch: 3,
+                    generation: first_generation,
+                },
                 BufferDirtyAction::Debounce,
             ),
             ResolvedBufferDirtyAction::NotifyDebounce
@@ -2027,8 +2048,10 @@ mod tests {
             apply_buffer_dirty_action(
                 &mut deferred,
                 &mut debounce_state,
-                4,
-                second_generation,
+                BufferReport {
+                    display_epoch: 4,
+                    generation: second_generation,
+                },
                 BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::NotifyDebounce),
             ),
             ResolvedBufferDirtyAction::NoOp
@@ -2074,8 +2097,10 @@ mod tests {
             apply_buffer_dirty_action(
                 &mut deferred,
                 &mut debounce_state,
-                4,
-                second_generation,
+                BufferReport {
+                    display_epoch: 4,
+                    generation: second_generation,
+                },
                 BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::NotifyDebounce),
             ),
             ResolvedBufferDirtyAction::NoOp
@@ -2112,8 +2137,10 @@ mod tests {
             apply_buffer_dirty_action(
                 &mut deferred,
                 &mut debounce_state,
-                4,
-                generation,
+                BufferReport {
+                    display_epoch: 4,
+                    generation,
+                },
                 BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::TriggerNow),
             ),
             ResolvedBufferDirtyAction::NoOp
@@ -2137,8 +2164,10 @@ mod tests {
             apply_buffer_dirty_action(
                 &mut deferred,
                 &mut debounce_state,
-                4,
-                generation,
+                BufferReport {
+                    display_epoch: 4,
+                    generation,
+                },
                 BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::NotifyDebounce),
             ),
             ResolvedBufferDirtyAction::NoOp
@@ -2188,8 +2217,10 @@ mod tests {
             apply_buffer_dirty_action(
                 &mut deferred,
                 &mut debounce_state,
-                3,
-                first_generation,
+                BufferReport {
+                    display_epoch: 3,
+                    generation: first_generation,
+                },
                 BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::TriggerNow),
             ),
             ResolvedBufferDirtyAction::NoOp
@@ -2200,8 +2231,10 @@ mod tests {
             apply_buffer_dirty_action(
                 &mut deferred,
                 &mut debounce_state,
-                3,
-                second_generation,
+                BufferReport {
+                    display_epoch: 3,
+                    generation: second_generation,
+                },
                 BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::NotifyDebounce),
             ),
             ResolvedBufferDirtyAction::NoOp
@@ -2214,7 +2247,10 @@ mod tests {
                 generation: second_generation,
             })
         );
-        assert_eq!(debounce_state.deferred_generation, Some(second_generation));
+        assert_eq!(
+            debounce_state.deferred_generation(),
+            Some(second_generation)
+        );
 
         assert_eq!(
             resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 4, true, false),
@@ -2264,8 +2300,10 @@ mod tests {
             apply_buffer_dirty_action(
                 &mut deferred,
                 &mut debounce_state,
-                4,
-                current_generation,
+                BufferReport {
+                    display_epoch: 4,
+                    generation: current_generation,
+                },
                 BufferDirtyAction::Ignore,
             ),
             ResolvedBufferDirtyAction::NoOp
@@ -2409,7 +2447,15 @@ mod tests {
         let action = buffer_dirty_action(true, 150, true, false, true);
 
         assert_eq!(
-            apply_buffer_dirty_action(&mut deferred, &mut debounce_state, 2, 2, action),
+            apply_buffer_dirty_action(
+                &mut deferred,
+                &mut debounce_state,
+                BufferReport {
+                    display_epoch: 2,
+                    generation: 2,
+                },
+                action,
+            ),
             ResolvedBufferDirtyAction::Trigger
         );
         assert_eq!(deferred, None);
