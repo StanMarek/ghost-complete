@@ -504,12 +504,13 @@ fn check_js_runtime(config: &gc_config::GhostConfig) -> CheckResult {
 ///     than passing the spec while the engine drops the generator on
 ///     the floor.
 ///
-/// A non-zero count therefore indicates an incomplete converter regen
-/// (missing/empty js_runtime), a hand-edited spec, OR — most commonly
-/// in the v0.12.x corpus — a `script_function` / `custom` generator
-/// the converter has not yet proven self-contained. All three are
-/// corpus defects that surface as a doctor Fail so the operator sees
-/// the same number the runtime is silently dropping.
+/// A non-zero count therefore indicates a corpus defect: an incomplete
+/// converter regen (missing/empty `js_runtime`), a hand-edited spec, a
+/// `post_process` kind that lost its `script` / `script_template`, or
+/// — most commonly in the v0.12.x corpus — a `script_function` /
+/// `custom` generator the converter has not yet proven self-contained.
+/// All four surface as a doctor Fail so the operator sees the same
+/// number the runtime is silently dropping.
 fn count_missing_js_runtime_in_spec(spec: &CompletionSpec) -> usize {
     fn missing(g: &GeneratorSpec) -> bool {
         if !g.requires_js {

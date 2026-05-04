@@ -1066,9 +1066,10 @@ mod tests {
         assert!(outcome.strict_failed);
     }
 
-    /// Regression guard for test-iter3-2: the iterative `walk_subs`
-    /// descent (intentionally non-recursive to handle AWS-style
-    /// ~10-level subcommand nesting without stack overflow) must
+    /// Regression guard for test-iter3-2: the iterative subcommand-descent
+    /// loop in `collect_missing_js_runtime_warnings` (intentionally
+    /// non-recursive to handle AWS-style ~10-level subcommand nesting
+    /// without stack overflow) must
     /// preserve the same `$/subcommands[i]/subcommands[j]/.../args[k]`
     /// JSON-pointer shape the recursive form produced. A future
     /// refactor that breaks the path concatenation (e.g. dropping the
