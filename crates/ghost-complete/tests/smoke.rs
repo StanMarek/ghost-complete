@@ -4,6 +4,19 @@ use harness::GhostProcess;
 use std::thread;
 use std::time::Duration;
 
+/// First byte sequence emitted by `gc-overlay::render_popup`: DECSC (save
+/// cursor). Seeing it after a marked offset proves a popup render ran.
+const POPUP_RENDER_MARKER: &[u8] = b"\x1b7";
+/// Last byte sequence emitted by `gc-overlay::clear_popup`: DECRC (restore
+/// cursor). Seeing it after a marked offset proves a teardown ran.
+const POPUP_TEARDOWN_MARKER: &[u8] = b"\x1b8";
+/// Window during which we assert the popup must NOT render. Long enough that
+/// any unblocked render path would have completed; short enough that test
+/// time stays reasonable. The popup-defer behavior (issue #107) keeps the
+/// popup invisible across this entire window when only an OSC report has
+/// been observed and no display update has followed.
+const NO_RENDER_WINDOW: Duration = Duration::from_millis(500);
+
 fn find_subslice(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     if needle.is_empty() {
         return Some(0);
@@ -11,6 +24,37 @@ fn find_subslice(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     haystack
         .windows(needle.len())
         .position(|window| window == needle)
+}
+
+/// Asserts the popup did NOT render within `NO_RENDER_WINDOW` after the
+/// given offset, panicking with captured bytes for diagnosis if it did.
+/// Covers the issue-#107 invariant: an OSC 7770/7772 buffer report observed
+/// in isolation (no following ZLE redraw bytes in the same PTY read) must
+/// not produce a popup until the next display update lands.
+fn assert_no_popup_render_after(proc: &GhostProcess, mark: usize, context: &str) {
+    if proc.wait_for_bytes_after(POPUP_RENDER_MARKER, mark, NO_RENDER_WINDOW) {
+        let snapshot = proc.output_snapshot();
+        let since_mark = &snapshot[mark..];
+        panic!(
+            "Popup rendered before display advanced during {context}. \
+             Issue #107 regression: trigger fired on stale cursor geometry.\n\
+             Bytes since mark ({} bytes, lossy UTF-8):\n{:?}",
+            since_mark.len(),
+            String::from_utf8_lossy(since_mark),
+        );
+    }
+}
+
+/// Advances the parser's display state from the test driver. Writes a single
+/// printable byte that the shell will echo back, producing CSI/print bytes
+/// the parser interprets as `display_dirty`. The byte is consumed by the
+/// shell's pending `read` so it doesn't leak into a follow-up command.
+/// Returns the output offset captured immediately before the byte was
+/// written, so subsequent assertions can require activity strictly after.
+fn advance_display(proc: &mut GhostProcess) -> usize {
+    let mark = proc.output_len();
+    proc.write_raw(b"x");
+    mark
 }
 
 #[test]
@@ -194,28 +238,44 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
     //     OSC ] 7770 ; <cursor-char-offset> ; <buffer> BEL
     //     \x1b]7770;4;git \x07
     // The shell executes printf, emits the raw bytes to stdout, gc-parser
-    // consumes them and sets command_buffer = "git " with cursor = 4.
-    // The buffer_dirty flag causes Task B to auto-fire trigger().
+    // consumes them and sets command_buffer = "git " with cursor = 4. The
+    // buffer_dirty flag is observed by Task B alongside `buffer_pending_display`
+    // (set because no display-changing op has followed); per issue #107 the
+    // proxy must defer the trigger until the parser sees a real redraw.
     //
     // Keep the shell command blocked after the OSC write. If the command
     // exits immediately, the shell prints a new prompt, and the proxy now
     // correctly tears down the popup before forwarding that prompt output.
     proc.send_line(r"printf '\033]7770;4;git \007'; read _ghost_popup_hold");
 
-    // Wait for the popup render. The overlay's first emitted byte sequence
-    // is DECSC (`\x1b7` = save cursor). Seeing it after mark_before_trigger
-    // proves that the OSC 7770 -> auto-trigger -> render_popup pipeline ran.
-    let popup_rendered =
-        proc.wait_for_bytes_after(b"\x1b7", mark_before_trigger, Duration::from_secs(5));
+    // Phase 1: OSC alone — popup must NOT render yet. This is the issue
+    // #107 regression check: prior versions rendered immediately and then
+    // had the popup torn down by the next display_dirty batch.
+    assert_no_popup_render_after(&proc, mark_before_trigger, "git OSC injection");
+
+    // Phase 2: advance display. Writing a printable byte through to the
+    // shell's pending `read` causes the shell's PTY layer to echo it back,
+    // producing display-changing bytes that clear `buffer_pending_display`
+    // in the parser and unblock the deferred trigger.
+    let mark_before_redraw = advance_display(&mut proc);
+
+    // Phase 3: deferred trigger fires now. The overlay's first emitted byte
+    // sequence is DECSC (`\x1b7` = save cursor). Seeing it after the redraw
+    // mark proves the deferred buffer-dirty action resolved cleanly.
+    let popup_rendered = proc.wait_for_bytes_after(
+        POPUP_RENDER_MARKER,
+        mark_before_redraw,
+        Duration::from_secs(5),
+    );
 
     if !popup_rendered {
         let snapshot = proc.output_snapshot();
-        let since_trigger = &snapshot[mark_before_trigger..];
+        let since_redraw = &snapshot[mark_before_redraw..];
         panic!(
-            "Popup did not render within 5s after OSC 7770 injection.\n\
-             Bytes since trigger mark ({} bytes, lossy UTF-8):\n{:?}",
-            since_trigger.len(),
-            String::from_utf8_lossy(since_trigger),
+            "Popup did not render within 5s after display advanced post-OSC 7770.\n\
+             Bytes since redraw mark ({} bytes, lossy UTF-8):\n{:?}",
+            since_redraw.len(),
+            String::from_utf8_lossy(since_redraw),
         );
     }
 
@@ -252,7 +312,11 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
 
     // clear_popup emits DECSC + movement + blanks + DECRC. The DECRC
     // (`\x1b8`) appearing after the ESC mark is the dismiss signal.
-    let dismissed = proc.wait_for_bytes_after(b"\x1b8", mark_before_esc, Duration::from_secs(5));
+    let dismissed = proc.wait_for_bytes_after(
+        POPUP_TEARDOWN_MARKER,
+        mark_before_esc,
+        Duration::from_secs(5),
+    );
 
     if !dismissed {
         let snapshot = proc.output_snapshot();
@@ -282,16 +346,24 @@ fn test_popup_is_cleared_before_later_shell_output() {
     let mark_before_trigger = proc.output_len();
     proc.send_line(r"printf '\033]7770;4;git \007'; read _gc_smoke_gate");
 
-    let popup_rendered =
-        proc.wait_for_bytes_after(b"\x1b7", mark_before_trigger, Duration::from_secs(5));
+    // Issue #107 deferral: OSC alone must not render. Advance display so
+    // the deferred trigger can resolve.
+    assert_no_popup_render_after(&proc, mark_before_trigger, "prompt-repaint cleanup setup");
+    let mark_before_redraw = advance_display(&mut proc);
+
+    let popup_rendered = proc.wait_for_bytes_after(
+        POPUP_RENDER_MARKER,
+        mark_before_redraw,
+        Duration::from_secs(5),
+    );
     if !popup_rendered {
         let snapshot = proc.output_snapshot();
-        let since_trigger = &snapshot[mark_before_trigger..];
+        let since_redraw = &snapshot[mark_before_redraw..];
         panic!(
-            "Popup did not render before prompt repaint.\n\
-             Bytes since trigger mark ({} bytes, lossy UTF-8):\n{:?}",
-            since_trigger.len(),
-            String::from_utf8_lossy(since_trigger),
+            "Popup did not render after display advanced post-OSC, before prompt repaint.\n\
+             Bytes since redraw mark ({} bytes, lossy UTF-8):\n{:?}",
+            since_redraw.len(),
+            String::from_utf8_lossy(since_redraw),
         );
     }
 
@@ -331,5 +403,74 @@ fn test_popup_is_cleared_before_later_shell_output() {
         String::from_utf8_lossy(after_marker),
     );
 
+    proc.exit_with_code(0);
+}
+
+/// Issue #107 regression: when the OSC 7772 buffer report and the matching
+/// ZLE redraw arrive in *separate* PTY reads (a timing pattern that varies
+/// by macOS version, CPU, and PTY scheduler), prior versions rendered the
+/// popup on the first read at stale cursor geometry and then immediately
+/// tore it down on the second read's `display_dirty`. Users perceived this
+/// as the popup appearing only on alternating keystrokes.
+///
+/// This test exercises the OSC-only PTY read path explicitly:
+///   1. `printf` writes ONLY the OSC 7772 bytes — no follow-up display ops.
+///   2. The shell blocks on `read`, guaranteeing no further output until we
+///      drive a printable byte through.
+///   3. Assert: popup did NOT render (defer is in effect — `buffer_pending_display`
+///      is set in the parser, the proxy stashes a `PendingTrigger`).
+///   4. Send a printable byte → shell echo path produces display bytes →
+///      parser clears `buffer_pending_display` → proxy resolves the deferred
+///      trigger and renders the popup at the now-correct cursor position.
+///   5. Assert: popup rendered after the redraw mark.
+///
+/// Without the fix, step 3 would fail (popup rendered immediately) and the
+/// teardown-by-display_dirty in the next batch would be the failure mode
+/// the user's video documents.
+#[test]
+fn test_popup_defers_until_display_after_osc_only_pty_read() {
+    let mut proc = GhostProcess::spawn();
+
+    proc.send_line("echo defer_smoke_ready_marker");
+    proc.expect_output("defer_smoke_ready_marker");
+
+    let mark_before_osc = proc.output_len();
+
+    // OSC alone, immediately followed by `read` — no display-changing bytes
+    // emitted by the shell after the OSC until we drive a keystroke. Using
+    // OSC 7770 (legacy raw framing) so `printf` doesn't interpret a `%`
+    // sequence as a format specifier the way OSC 7772 percent-encoding would.
+    proc.send_line(r"printf '\033]7770;4;git \007'; read _gc_defer_gate");
+
+    // Phase 1: defer holds. No popup despite buffer_dirty=true.
+    assert_no_popup_render_after(&proc, mark_before_osc, "OSC-only PTY read defer");
+
+    // Phase 2: drive a printable byte; shell echo provides the display
+    // update that clears `buffer_pending_display` and resolves the defer.
+    let mark_before_redraw = advance_display(&mut proc);
+
+    // Phase 3: deferred trigger resolves and the popup renders. Allow
+    // generous timeout because the trigger goes through the full suggest
+    // pipeline (spec resolution, fuzzy ranking, layout, render).
+    let popup_rendered = proc.wait_for_bytes_after(
+        POPUP_RENDER_MARKER,
+        mark_before_redraw,
+        Duration::from_secs(5),
+    );
+    if !popup_rendered {
+        let snapshot = proc.output_snapshot();
+        let since_redraw = &snapshot[mark_before_redraw..];
+        panic!(
+            "Deferred trigger failed to resolve into a popup render after \
+             display advanced. This is the issue #107 fix regression check.\n\
+             Bytes since redraw mark ({} bytes, lossy UTF-8):\n{:?}",
+            since_redraw.len(),
+            String::from_utf8_lossy(since_redraw),
+        );
+    }
+
+    // Drain anything still in flight, then unblock the shell's read.
+    proc.write_raw(&[0x1B]); // ESC dismisses the popup so a clean prompt repaint can happen.
+    proc.send_line("");
     proc.exit_with_code(0);
 }

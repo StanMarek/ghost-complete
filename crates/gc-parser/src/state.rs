@@ -56,6 +56,13 @@ pub struct TerminalState {
     command_buffer: Option<String>,
     buffer_cursor: usize,
     buffer_dirty: bool,
+    /// True when an OSC 7772 buffer report has been observed but the parser
+    /// has not yet applied any subsequent display-changing operation. Used
+    /// by the proxy to decide whether the popup can be triggered now (the
+    /// terminal display already reflects the new buffer) or must wait until
+    /// the redraw arrives in a later PTY read. Set in [`Self::set_command_buffer`]
+    /// and cleared in [`Self::mark_display_dirty`].
+    buffer_pending_display: bool,
     cwd_dirty: bool,
     cursor_sync_requested: bool,
     cpr_synced: bool,
@@ -98,6 +105,7 @@ impl TerminalState {
             command_buffer: None,
             buffer_cursor: 0,
             buffer_dirty: false,
+            buffer_pending_display: false,
             cwd_dirty: false,
             cursor_sync_requested: false,
             cpr_synced: false,
@@ -166,6 +174,20 @@ impl TerminalState {
         let dirty = self.buffer_dirty;
         self.buffer_dirty = false;
         dirty
+    }
+
+    /// Returns true if the most recent buffer-update event has not yet been
+    /// followed by a display-changing op in the parser stream. This signals
+    /// to the proxy that the terminal display has not yet been redrawn to
+    /// reflect the new buffer state, and that triggering the popup now would
+    /// position it from stale cursor geometry.
+    ///
+    /// The flag is `false` if no buffer event has been seen yet, or if any
+    /// display-changing op has been processed since the last buffer event.
+    /// Reading does not clear the flag — the proxy's deferral only resolves
+    /// once the parser observes a real display update.
+    pub fn buffer_pending_display(&self) -> bool {
+        self.buffer_pending_display
     }
 
     /// Returns true if the CWD changed since the last check,
@@ -490,6 +512,7 @@ impl TerminalState {
         self.command_buffer = Some(buffer);
         self.buffer_cursor = clamped;
         self.buffer_dirty = true;
+        self.buffer_pending_display = true;
     }
 
     pub(crate) fn clear_command_buffer(&mut self) {
@@ -542,6 +565,7 @@ impl TerminalState {
 
     fn mark_display_dirty(&mut self) {
         self.display_dirty = true;
+        self.buffer_pending_display = false;
     }
 
     fn wrap_to_next_line(&mut self) {
@@ -846,6 +870,53 @@ mod tests {
         assert_eq!(dropped, 1);
         assert_eq!(state.cpr_queue_len(), 1);
         assert_eq!(state.claim_next_cpr(), Some(CprOwner::Shell));
+    }
+
+    #[test]
+    fn buffer_pending_display_initially_false() {
+        let state = TerminalState::new(24, 80);
+        assert!(!state.buffer_pending_display());
+    }
+
+    #[test]
+    fn buffer_pending_display_set_by_buffer_update() {
+        let mut state = TerminalState::new(24, 80);
+        state.set_command_buffer("git ".to_string(), 4);
+        assert!(state.buffer_pending_display());
+        assert!(state.take_buffer_dirty());
+    }
+
+    #[test]
+    fn buffer_pending_display_cleared_by_display_op_after_buffer_update() {
+        let mut state = TerminalState::new(24, 80);
+        state.set_command_buffer("git ".to_string(), 4);
+        assert!(state.buffer_pending_display());
+        state.advance_col(1);
+        assert!(
+            !state.buffer_pending_display(),
+            "any display-changing op must clear the pending flag"
+        );
+    }
+
+    #[test]
+    fn buffer_pending_display_re_armed_by_subsequent_buffer_update() {
+        let mut state = TerminalState::new(24, 80);
+        state.set_command_buffer("git ".to_string(), 4);
+        state.advance_col(1);
+        assert!(!state.buffer_pending_display());
+        state.set_command_buffer("git c".to_string(), 5);
+        assert!(state.buffer_pending_display());
+    }
+
+    #[test]
+    fn buffer_pending_display_unaffected_by_take_buffer_dirty() {
+        let mut state = TerminalState::new(24, 80);
+        state.set_command_buffer("git ".to_string(), 4);
+        let _ = state.take_buffer_dirty();
+        assert!(
+            state.buffer_pending_display(),
+            "draining buffer_dirty must not advance the pending-display flag"
+        );
     }
 
     #[test]
