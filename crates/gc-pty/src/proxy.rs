@@ -14,7 +14,7 @@ use gc_suggest::spec_dirs::resolve_spec_dirs;
 
 use crate::config_watch::spawn_config_watcher;
 use crate::handler::{InputHandler, Keybindings, OverlayWriteTicket, TriggerPrepared};
-use crate::input::KeyParser;
+use crate::input::{KeyEvent, KeyParser};
 use crate::resize::{get_terminal_size, resize_pty};
 use crate::spawn::{spawn_shell, SpawnedShell};
 
@@ -24,6 +24,7 @@ use crate::spawn::{spawn_shell, SpawnedShell};
 /// `CprAction::DropEmpty` and is forwarded defensively, which is why the
 /// threshold is generous.
 const CPR_STALE_THRESHOLD: Duration = Duration::from_secs(30);
+const ASYNC_OVERLAY_GATE_RETRY: Duration = Duration::from_millis(10);
 
 /// Drop guard that ensures raw mode is always restored, even on panic.
 struct RawModeGuard;
@@ -262,8 +263,15 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     };
     let handler_for_merge = Arc::clone(&handler);
     let parser_for_merge = Arc::clone(&parser);
+    let debounce_state_for_merge = Arc::clone(&debounce_state);
     let merge_handle = tokio::spawn(async move {
-        dynamic_merge_loop(dynamic_notify, handler_for_merge, parser_for_merge).await;
+        dynamic_merge_loop(
+            dynamic_notify,
+            handler_for_merge,
+            parser_for_merge,
+            debounce_state_for_merge,
+        )
+        .await;
     });
 
     let feedback_notify = {
@@ -277,8 +285,14 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         h.feedback_tick_notify()
     };
     let handler_for_feedback = Arc::clone(&handler);
+    let debounce_state_for_feedback = Arc::clone(&debounce_state);
     let feedback_handle = tokio::spawn(async move {
-        feedback_tick_loop(feedback_notify, handler_for_feedback).await;
+        feedback_tick_loop(
+            feedback_notify,
+            handler_for_feedback,
+            debounce_state_for_feedback,
+        )
+        .await;
     });
 
     // Channel to signal that one of the I/O tasks has finished
@@ -289,6 +303,8 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     let mut pty_writer = writer;
     let parser_for_stdin = Arc::clone(&parser);
     let handler_for_stdin = Arc::clone(&handler);
+    let debounce_state_for_stdin = Arc::clone(&debounce_state);
+    let trigger_snapshot_gate_a = Arc::clone(&trigger_snapshot_gate);
     let stdin_handle = tokio::task::spawn_blocking(move || {
         let mut stdin = std::io::stdin().lock();
         let mut buf = [0u8; 4096];
@@ -456,6 +472,13 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 // with Task B's stdout writes).
                 let mut render_buf = Vec::new();
                 let (forward, render_ticket) = {
+                    let _snapshot_guard = match trigger_snapshot_gate_a.lock() {
+                        Ok(guard) => guard,
+                        Err(e) => {
+                            tracing::warn!("trigger snapshot gate poisoned in stdin task: {e}");
+                            break 'stdin;
+                        }
+                    };
                     let mut h = match handler_for_stdin.lock() {
                         Ok(h) => h,
                         Err(e) => {
@@ -464,6 +487,17 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         }
                     };
                     let forward = h.process_key(key, &parser_for_stdin, &mut render_buf);
+                    let invalidates_debounce =
+                        !forward.is_empty() && forwarded_input_invalidates_debounce(key);
+                    if invalidates_debounce {
+                        match debounce_state_for_stdin.lock() {
+                            Ok(mut state) => state.invalidate_for_forwarded_input(),
+                            Err(e) => {
+                                tracing::warn!("debounce state mutex poisoned in stdin task: {e}");
+                                break 'stdin;
+                            }
+                        }
+                    }
                     (forward, h.overlay_write_ticket())
                 };
                 if !render_buf.is_empty() {
@@ -851,23 +885,33 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
             // Poll for dynamic (script generator) results — non-blocking.
             {
-                let mut render_buf = Vec::new();
-                let render_ticket = {
-                    let mut h = match handler_for_stdout.lock() {
-                        Ok(h) => h,
-                        Err(e) => {
-                            tracing::warn!("handler mutex poisoned in stdout task: {e}");
-                            break;
+                match locked_async_overlay_gate_decision(&debounce_state_b, "stdout task") {
+                    Some(AsyncOverlayGateDecision::Render) => {
+                        let mut render_buf = Vec::new();
+                        let render_ticket = {
+                            let mut h = match handler_for_stdout.lock() {
+                                Ok(h) => h,
+                                Err(e) => {
+                                    tracing::warn!("handler mutex poisoned in stdout task: {e}");
+                                    break;
+                                }
+                            };
+                            h.try_merge_dynamic(&parser_for_stdout, &mut render_buf);
+                            h.overlay_write_ticket()
+                        };
+                        if !render_buf.is_empty() {
+                            if let Err(e) = write_overlay_if_current(
+                                &handler_for_stdout,
+                                render_ticket,
+                                &render_buf,
+                            ) {
+                                tracing::debug!("Task B overlay write/flush failed: {e}");
+                                break;
+                            }
                         }
-                    };
-                    h.try_merge_dynamic(&parser_for_stdout, &mut render_buf);
-                    h.overlay_write_ticket()
-                };
-                if !render_buf.is_empty() {
-                    if let Err(e) =
-                        write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
-                    {
-                        tracing::debug!("Task B overlay write/flush failed: {e}");
+                    }
+                    Some(AsyncOverlayGateDecision::Blocked) => {}
+                    None => {
                         break;
                     }
                 }
@@ -1067,6 +1111,10 @@ fn poll_until(
     }
 }
 
+fn forwarded_input_invalidates_debounce(key: &KeyEvent) -> bool {
+    !matches!(key, KeyEvent::CursorPositionReport(_, _))
+}
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 struct PtyReadEvents {
     needs_cpr: bool,
@@ -1124,6 +1172,13 @@ impl DebounceState {
         self.current_generation
     }
 
+    fn invalidate_for_forwarded_input(&mut self) {
+        if self.deferred_generation.is_some() {
+            return;
+        }
+        self.current_generation += 1;
+    }
+
     fn notify_generation(&mut self, generation: u64) {
         self.notified_generation = Some(generation);
         if self.deferred_generation == Some(generation) {
@@ -1150,6 +1205,10 @@ impl DebounceState {
             && self.notified_generation == Some(generation)
             && self.deferred_generation.is_none()
     }
+
+    fn has_deferred_generation(&self) -> bool {
+        self.deferred_generation.is_some()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1172,6 +1231,67 @@ enum ResolvedBufferDirtyAction {
     Trigger,
     NotifyDebounce,
     None,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DebounceFireDecision {
+    Fire,
+    Skip,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DebounceContinuationDecision {
+    Apply,
+    Drop,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AsyncOverlayGateDecision {
+    Render,
+    Blocked,
+}
+
+fn debounce_fire_decision(state: &DebounceState, generation: u64) -> DebounceFireDecision {
+    if state.can_fire_generation(generation) {
+        DebounceFireDecision::Fire
+    } else {
+        DebounceFireDecision::Skip
+    }
+}
+
+fn debounce_continuation_decision(
+    state: &DebounceState,
+    generation: u64,
+) -> DebounceContinuationDecision {
+    if state.can_fire_generation(generation) {
+        DebounceContinuationDecision::Apply
+    } else {
+        DebounceContinuationDecision::Drop
+    }
+}
+
+fn async_overlay_gate_decision(state: &DebounceState) -> AsyncOverlayGateDecision {
+    if state.has_deferred_generation() {
+        AsyncOverlayGateDecision::Blocked
+    } else {
+        AsyncOverlayGateDecision::Render
+    }
+}
+
+fn locked_async_overlay_gate_decision(
+    debounce_state: &Arc<Mutex<DebounceState>>,
+    source: &'static str,
+) -> Option<AsyncOverlayGateDecision> {
+    match debounce_state.lock() {
+        Ok(state) => Some(async_overlay_gate_decision(&state)),
+        Err(e) => {
+            tracing::warn!(
+                source = source,
+                "async overlay gate skipped (debounce state lock poisoned): {e}"
+            );
+            None
+        }
+    }
 }
 
 fn buffer_dirty_action(
@@ -1291,7 +1411,11 @@ fn resolve_deferred_buffer_dirty(
     }
 
     *deferred = None;
+    let generation_is_current = debounce_state.current_generation == pending.generation;
     debounce_state.clear_deferred_generation(pending.generation);
+    if !generation_is_current {
+        return ResolvedBufferDirtyAction::None;
+    }
     match pending.action {
         DeferredBufferDirtyAction::TriggerNow => {
             if auto_trigger_enabled {
@@ -1439,7 +1563,7 @@ async fn debounce_loop(
                     continue;
                 }
             };
-            let should_fire = {
+            let fire_decision = {
                 let state = match debounce_state.lock() {
                     Ok(state) => state,
                     Err(e) => {
@@ -1447,9 +1571,9 @@ async fn debounce_loop(
                         continue;
                     }
                 };
-                state.can_fire_generation(generation)
+                debounce_fire_decision(&state, generation)
             };
-            if !should_fire {
+            if fire_decision == DebounceFireDecision::Skip {
                 continue;
             }
             let mut h = match handler.lock() {
@@ -1523,6 +1647,36 @@ async fn debounce_loop(
 
             let mut render_buf2 = Vec::new();
             let render_ticket2 = {
+                let _snapshot_guard = match trigger_snapshot_gate.lock() {
+                    Ok(guard) => guard,
+                    Err(e) => {
+                        tracing::warn!(
+                            "debounce apply_block_result skipped (trigger snapshot gate poisoned): {e}"
+                        );
+                        continue;
+                    }
+                };
+                let continuation_decision = {
+                    let state = match debounce_state.lock() {
+                        Ok(state) => state,
+                        Err(e) => {
+                            tracing::warn!(
+                                "debounce apply_block_result skipped (state lock poisoned): {e}"
+                            );
+                            continue;
+                        }
+                    };
+                    debounce_continuation_decision(&state, generation)
+                };
+                if continuation_decision == DebounceContinuationDecision::Drop {
+                    match handler.lock() {
+                        Ok(mut h) => h.abort_dynamic_task_and_clear_ctx(),
+                        Err(e) => tracing::warn!(
+                            "handler mutex poisoned during stale block-result cleanup: {e}"
+                        ),
+                    }
+                    continue;
+                }
                 let mut h = match handler.lock() {
                     Ok(h) => h,
                     Err(e) => {
@@ -1565,9 +1719,19 @@ async fn dynamic_merge_loop(
     notify: Arc<Notify>,
     handler: Arc<Mutex<InputHandler>>,
     parser: Arc<Mutex<TerminalParser>>,
+    debounce_state: Arc<Mutex<DebounceState>>,
 ) {
     loop {
         notify.notified().await;
+        loop {
+            match locked_async_overlay_gate_decision(&debounce_state, "dynamic merge loop") {
+                Some(AsyncOverlayGateDecision::Render) => break,
+                Some(AsyncOverlayGateDecision::Blocked) => {
+                    tokio::time::sleep(ASYNC_OVERLAY_GATE_RETRY).await;
+                }
+                None => return,
+            }
+        }
         let mut render_buf = Vec::new();
         let render_ticket = {
             let mut h = match handler.lock() {
@@ -1589,13 +1753,25 @@ async fn dynamic_merge_loop(
     }
 }
 
-async fn feedback_tick_loop(notify: Arc<Notify>, handler: Arc<Mutex<InputHandler>>) {
+async fn feedback_tick_loop(
+    notify: Arc<Notify>,
+    handler: Arc<Mutex<InputHandler>>,
+    debounce_state: Arc<Mutex<DebounceState>>,
+) {
     loop {
         notify.notified().await;
         let mut next_ms: u64 = 0;
         loop {
             if next_ms > 0 {
                 tokio::time::sleep(Duration::from_millis(next_ms)).await;
+            }
+            match locked_async_overlay_gate_decision(&debounce_state, "feedback tick loop") {
+                Some(AsyncOverlayGateDecision::Render) => {}
+                Some(AsyncOverlayGateDecision::Blocked) => {
+                    tokio::time::sleep(ASYNC_OVERLAY_GATE_RETRY).await;
+                    continue;
+                }
+                None => return,
             }
             let mut render_buf: Vec<u8> = Vec::new();
             let (keep_running, render_ticket) = {
@@ -1882,6 +2058,123 @@ mod tests {
     }
 
     #[test]
+    fn debounce_fire_decision_rejects_generation_invalidated_by_forwarded_input() {
+        let mut debounce_state = DebounceState::default();
+        let generation = debounce_state.next_buffer_generation();
+        debounce_state.notify_generation(generation);
+        assert_eq!(
+            debounce_fire_decision(&debounce_state, generation),
+            DebounceFireDecision::Fire
+        );
+
+        debounce_state.invalidate_for_forwarded_input();
+
+        assert_eq!(
+            debounce_fire_decision(&debounce_state, generation),
+            DebounceFireDecision::Skip
+        );
+    }
+
+    #[test]
+    fn debounce_fire_decision_rejects_prior_generation_when_newer_report_is_deferred() {
+        let mut deferred = None;
+        let mut debounce_state = DebounceState::default();
+        let first_generation = debounce_state.next_buffer_generation();
+        debounce_state.notify_generation(first_generation);
+
+        let second_generation = debounce_state.next_buffer_generation();
+        assert_eq!(
+            apply_buffer_dirty_action(
+                &mut deferred,
+                &mut debounce_state,
+                4,
+                second_generation,
+                BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::NotifyDebounce),
+            ),
+            ResolvedBufferDirtyAction::None
+        );
+
+        assert_eq!(
+            debounce_fire_decision(&debounce_state, first_generation),
+            DebounceFireDecision::Skip
+        );
+        assert_eq!(
+            debounce_continuation_decision(&debounce_state, first_generation),
+            DebounceContinuationDecision::Drop
+        );
+    }
+
+    #[test]
+    fn async_overlay_gate_blocks_while_redraw_deferred() {
+        let mut debounce_state = DebounceState::default();
+        let generation = debounce_state.next_buffer_generation();
+        debounce_state.defer_generation(generation);
+
+        assert_eq!(
+            async_overlay_gate_decision(&debounce_state),
+            AsyncOverlayGateDecision::Blocked
+        );
+
+        debounce_state.clear_deferred_generation(generation);
+
+        assert_eq!(
+            async_overlay_gate_decision(&debounce_state),
+            AsyncOverlayGateDecision::Render
+        );
+    }
+
+    #[test]
+    fn deferred_trigger_survives_forwarded_input_that_advances_display() {
+        let mut deferred = None;
+        let mut debounce_state = DebounceState::default();
+        let generation = debounce_state.next_buffer_generation();
+        assert_eq!(
+            apply_buffer_dirty_action(
+                &mut deferred,
+                &mut debounce_state,
+                4,
+                generation,
+                BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::TriggerNow),
+            ),
+            ResolvedBufferDirtyAction::None
+        );
+
+        debounce_state.invalidate_for_forwarded_input();
+
+        assert_eq!(
+            resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 5, true, false),
+            ResolvedBufferDirtyAction::Trigger
+        );
+        assert_eq!(deferred, None);
+    }
+
+    #[test]
+    fn deferred_debounce_survives_forwarded_input_that_advances_display() {
+        let mut deferred = None;
+        let mut debounce_state = DebounceState::default();
+        let generation = debounce_state.next_buffer_generation();
+        assert_eq!(
+            apply_buffer_dirty_action(
+                &mut deferred,
+                &mut debounce_state,
+                4,
+                generation,
+                BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::NotifyDebounce),
+            ),
+            ResolvedBufferDirtyAction::None
+        );
+
+        debounce_state.invalidate_for_forwarded_input();
+
+        assert_eq!(
+            resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 5, true, false),
+            ResolvedBufferDirtyAction::NotifyDebounce
+        );
+        assert_eq!(deferred, None);
+        assert!(debounce_state.can_fire_generation(generation));
+    }
+
+    #[test]
     fn pty_read_records_buffer_generation_when_report_updates_parser() {
         let mut parser = TerminalParser::new(24, 80);
         let mut display_epoch = 0;
@@ -2067,16 +2360,22 @@ mod tests {
     fn pty_read_uses_latest_buffer_epoch_when_reports_coalesce() {
         let mut parser = TerminalParser::new(24, 80);
         let mut display_epoch = 0;
+        let mut next_generation = 0;
         let events = process_pty_read(
             &mut parser,
             b"\x1b]7770;4;git \x07x\x1b]7770;5;git s\x07",
             &mut display_epoch,
-            || 1,
+            || {
+                next_generation += 1;
+                next_generation
+            },
         );
 
         assert!(events.display_dirty);
         assert_eq!(display_epoch, 1);
         assert_eq!(events.latest_buffer_epoch, Some(1));
+        assert_eq!(events.latest_buffer_generation, Some(2));
+        assert_eq!(next_generation, 2);
         assert!(display_epoch <= events.latest_buffer_epoch.unwrap());
     }
 
@@ -2084,16 +2383,22 @@ mod tests {
     fn pty_read_allows_display_after_latest_coalesced_buffer_report() {
         let mut parser = TerminalParser::new(24, 80);
         let mut display_epoch = 0;
+        let mut next_generation = 0;
         let events = process_pty_read(
             &mut parser,
             b"\x1b]7770;4;git \x07x\x1b]7770;5;git s\x07y",
             &mut display_epoch,
-            || 1,
+            || {
+                next_generation += 1;
+                next_generation
+            },
         );
 
         assert!(events.display_dirty);
         assert_eq!(display_epoch, 2);
         assert_eq!(events.latest_buffer_epoch, Some(1));
+        assert_eq!(events.latest_buffer_generation, Some(2));
+        assert_eq!(next_generation, 2);
         assert!(display_epoch > events.latest_buffer_epoch.unwrap());
     }
 

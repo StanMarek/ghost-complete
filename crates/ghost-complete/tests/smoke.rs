@@ -12,8 +12,9 @@ const POPUP_RENDER_MARKER: &[u8] = b"\x1b7";
 const POPUP_RESTORE_MARKER: &[u8] = b"\x1b8";
 const REDRAW_MARKER: &[u8] = b"@";
 const NO_POPUP_BEFORE_REDRAW_TIMEOUT: Duration = Duration::from_millis(500);
-const NO_POPUP_DURING_DEBOUNCE_TIMEOUT: Duration = Duration::from_millis(300);
 const OSC_ONLY_DEBOUNCE_DELAY_MS: u64 = 1000;
+const NO_POPUP_DURING_DEBOUNCE_TIMEOUT: Duration =
+    Duration::from_millis(OSC_ONLY_DEBOUNCE_DELAY_MS - 100);
 
 trait PopupSmokeProcess {
     fn wait_for_bytes_after(&self, needle: &[u8], start_offset: usize, timeout: Duration) -> bool;
@@ -497,18 +498,20 @@ fn test_multiple_commands() {
 ///   `buffer_dirty = true`, which Task B (stdout -> terminal loop) notices.
 ///   OSC-only reports are intentionally deferred until later display output
 ///   proves the terminal has advanced/redrawn after the report.
-/// - No manual Ctrl+/ is needed in this test; emitting an OSC buffer report
-///   directly exercises Task B's auto-trigger/debounce path. zsh production
-///   integration uses OSC 7772 from zle-line-pre-redraw, while OSC 7770
-///   remains accepted for legacy compatibility and is convenient for this
-///   smoke harness.
+/// - No manual Ctrl+/ is needed in this test. The typed shell command around
+///   the OSC report contains literal default trigger characters, so it can
+///   leave a pending trigger before the shell emits the OSC bytes. The trailing
+///   space in the reported `git ` buffer is shell output consumed by gc-parser;
+///   it is not typed through `InputHandler::process_key_hidden`. The
+///   no-pending debounce test below avoids typed trigger characters and covers
+///   the pure OSC-only dirty-buffer path.
 ///
 /// Assumptions:
 ///   - Embedded `git` spec declares well-known subcommands such as status,
 ///     commit, branch, checkout, clone, and add, and is always embedded via
 ///     include_str!.
-///   - Trigger char ' ' is in the default `auto_chars` list, so the space
-///     at the end of "git " activates the auto-trigger path.
+///   - The OSC payload's trailing space updates parser state only; it is not a
+///     typed auto-trigger character.
 ///   - `clear_popup` emits DECSC (`\x1b7`) followed by blanking writes and
 ///     DECRC (`\x1b8`). DECRC appearing after our ESC mark = dismissed.
 ///   - Default dismiss keybind is ESC (see Keybindings::default()).
@@ -655,6 +658,7 @@ fn test_osc_only_report_without_pending_trigger_waits_for_debounce_after_redraw(
             String::from_utf8_lossy(since_redraw),
         );
     }
+    let redraw_observed_at = Instant::now();
 
     let snapshot_after_redraw = proc.output_snapshot();
     let since_redraw = &snapshot_after_redraw[mark_before_redraw..];
@@ -678,8 +682,12 @@ fn test_osc_only_report_without_pending_trigger_waits_for_debounce_after_redraw(
         let snapshot = proc.output_snapshot();
         let during_debounce = &snapshot[mark_after_redraw..];
         panic!(
-            "OSC-only buffer report rendered before the configured debounce elapsed.\n\
+            "OSC-only buffer report rendered {:?} after redraw observation, before the {:?} \
+             debounce guard elapsed (configured delay: {} ms).\n\
              Bytes during debounce guard ({} bytes, lossy UTF-8):\n{:?}",
+            redraw_observed_at.elapsed(),
+            NO_POPUP_DURING_DEBOUNCE_TIMEOUT,
+            OSC_ONLY_DEBOUNCE_DELAY_MS,
             during_debounce.len(),
             String::from_utf8_lossy(during_debounce),
         );
