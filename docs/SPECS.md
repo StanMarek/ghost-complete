@@ -116,14 +116,15 @@ with `schema_version: "1.0"` and one row per release. Each row records:
   bumps so older `BaselineRelease` consumers keep parsing.)
 - `native_providers`, `corrected_generators`, `hand_audit_required` — not
   derivable from the scanned specs alone; maintained manually per release.
-- **UX-9 Phase 0 additions** (carried in the same release row, parsed via the
+- **UX-9 additions** (carried in the same release row, parsed via the
   flatten-extra map for forward compatibility):
   `spec_files_total`, `commands_addressable`,
   `commands_(fully|partially|non)functional`,
   `requires_js_generators_(total|supported|unsupported)`,
   `command_alias_conflicts`. See `docs/COMPLETION_SPEC.md` for the
-  classification rules. Phase 0 surfaces these as derived counts; Phase 4
-  starts populating `requires_js_generators_supported` above zero.
+  classification rules. `requires_js_generators_supported` is broken down
+  per `js_runtime.kind` (`post_process`, `script_function`, `custom`) in
+  schema 1.2 of `status --json`.
 
 `ghost-complete status --json` emits a `spec_counts` object whose UX-9
 Phase 0 keys mirror the new baseline fields one-to-one. The legacy keys
@@ -135,11 +136,10 @@ keys unchanged.
 
 The output also carries a top-level `file_scan` block (`spec_files_total`,
 `requires_js_generators_total`) that is computed independently from the
-runtime loader index. This is on purpose: the loader keys SpecStore on the
-JSON `name` field and applies first-match-wins dedup, so the loader-level
-count can differ from the file-level count. Phase 1 will close that gap
-(commands addressable by file stem, alias conflicts surfaced as
-load-side warnings).
+runtime loader index. This is on purpose: SpecStore is keyed by filename
+stem so commands stay addressable even when two files declare the same
+`name`; alias conflicts are surfaced as load-side warnings and exposed
+through `status --json` and `ghost-complete doctor`.
 
 Refresh workflow at release time:
 

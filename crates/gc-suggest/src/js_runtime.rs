@@ -16,23 +16,21 @@
 //!    `build_post_process_program`, `build_script_function_program`, and
 //!    `build_custom_program`.
 //! 3. **Diagnostic logging.** Every [`gc_jsrt::JsDiagnostic`] is mapped to a
-//!    structured `tracing` event so Phase 7 (status / doctor) can pick them
-//!    up without re-implementing the rendering.
+//!    structured `tracing` event so the doctor / status surfaces can render
+//!    them without re-implementing the rendering.
 //!
 //! The adapter is intentionally narrow — no caching, no transform pipeline,
 //! no source-hashing. Those live in the engine; we only run JS.
 //!
-//! # Phase scope
-//!
-//! Phase 4 added [`JsRuntimeAdapter::post_process`]. Phase 5 adds
+//! Three public methods route on [`gc_jsrt::JsExecutionKind`]:
+//! [`JsRuntimeAdapter::post_process`] (script stdout in, suggestions out),
 //! [`JsRuntimeAdapter::script_function`] (returns argv for an engine-side
-//! script invocation) and [`JsRuntimeAdapter::custom`] (returns
+//! script invocation), and [`JsRuntimeAdapter::custom`] (returns
 //! suggestions directly via host-API calls).
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
-use std::sync::Arc;
-use std::sync::OnceLock;
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 
 use gc_jsrt::{
@@ -50,6 +48,9 @@ use gc_jsrt::{
 #[derive(Default)]
 pub struct JsRuntimeAdapter {
     worker: OnceLock<JsWorker>,
+    /// Serialises concurrent spawn attempts so only one thread pays the
+    /// JsWorker spawn cost on first use; see [`JsRuntimeAdapter::worker`].
+    spawn_lock: Mutex<()>,
 }
 
 impl std::fmt::Debug for JsRuntimeAdapter {
@@ -69,15 +70,24 @@ impl JsRuntimeAdapter {
     /// callers get the same worker handle. Errors from the initial spawn are
     /// not memoised — a later caller may successfully spawn even if an
     /// earlier attempt failed (e.g. transient EAGAIN from `pthread_create`).
+    ///
+    /// We serialise concurrent spawn attempts behind a [`Mutex`]: spawning
+    /// a [`JsWorker`] costs an OS thread + a 5 MB QuickJS runtime, and the
+    /// loser of a race would synchronously join its discarded worker on
+    /// drop. Holding the mutex around the get_or_try_init equivalent
+    /// guarantees only one spawn attempt is in flight at a time.
     fn worker(&self) -> Result<&JsWorker, JsRuntimeError> {
         if let Some(w) = self.worker.get() {
             return Ok(w);
         }
+        let _guard = self.spawn_lock.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(w) = self.worker.get() {
+            return Ok(w);
+        }
         let spawned = JsWorker::spawn()?;
-        // OnceLock::set returns Err if another thread won the race; that's
-        // fine, we just drop our spawn and use whichever worker landed.
-        let _ = self.worker.set(spawned);
-        // `get` after either `set` or a race-loser is guaranteed to succeed.
+        self.worker
+            .set(spawned)
+            .map_err(|_| JsRuntimeError::Internal("OnceLock unexpectedly populated".into()))?;
         Ok(self.worker.get().expect("OnceLock populated above"))
     }
 
@@ -157,8 +167,7 @@ impl JsRuntimeAdapter {
 
 /// Caller-side shape that captures the host context the engine wants to
 /// expose to a JS generator. The adapter copies the contents into the
-/// final [`JsRuntimeInput`] without inspecting them — Phase 5 keeps the
-/// crate boundary simple.
+/// final [`JsRuntimeInput`] without inspecting them.
 #[derive(Debug, Clone, Default)]
 pub struct JsExecContext {
     pub tokens: Vec<String>,
@@ -186,19 +195,13 @@ impl JsExecContext {
 }
 
 /// Construct the wrapper expression that invokes the generator body with
-/// the script's stdout. We embed `stdout` as a JS string literal so the
-/// JS function body sees the exact bytes we captured. The lone caveat:
-/// `String.fromCharCode` would lose data for non-BMP code points, so we
-/// use `JSON.parse` of a quoted JSON string instead — that preserves the
-/// full UTF-8 byte sequence.
+/// the script's stdout. The stdout bytes are embedded as a JSON-encoded
+/// string literal that doubles as a valid JS string token; the encoded
+/// form is spliced directly into the program text without a runtime
+/// `JSON.parse` call. See [`json_string_literal`] for the encoding
+/// invariant the splice relies on.
 fn build_post_process_program(source: &str, stdout: &str) -> String {
     let stdout_literal = json_string_literal(stdout);
-    // JSON string literals are a subset of JavaScript string literals — every
-    // legal JSON escape (`\n`, `\t`, `\uXXXX`, etc.) is also a legal JS
-    // escape — so the encoded stdout doubles as a JS string token. Splicing
-    // it directly into the program avoids a `JSON.parse` round-trip whose
-    // semantics differ subtly: `JSON.parse` would reject inputs containing
-    // raw control characters that JS string literals tolerate.
     format!(
         "(({source})({stdout_literal}))",
         source = source,
@@ -206,20 +209,22 @@ fn build_post_process_program(source: &str, stdout: &str) -> String {
     )
 }
 
-/// Encode a Rust string as a JSON string literal, suitable for embedding
-/// inside the JS program text we hand to QuickJS. We rely on `serde_json`
-/// rather than hand-rolling escapes so we cannot get e.g. ` ` /
-/// ` ` (line separator / paragraph separator) wrong — both are
-/// permitted in JSON but ARE allowed in JS string literals so the JSON
-/// path is safe to splice directly.
+/// Encode a Rust string as a JSON string literal that is also a safe JS
+/// string token to splice into program text.
+///
+/// `serde_json` escapes every byte JavaScript would reject in a single-line
+/// string literal — control chars, the surrounding quote, and the backslash
+/// itself — and produces `\uXXXX` for non-BMP code points and lone
+/// surrogates. The encoded output is therefore consumable as either a JSON
+/// string or a JS string literal with no extra special-casing.
 fn json_string_literal(s: &str) -> String {
     serde_json::Value::String(s.to_string()).to_string()
 }
 
 /// Construct the wrapper expression for a `script_function` generator.
 ///
-/// Phase 5 contract: the JS source is a function (typically arrow-form)
-/// that takes `(tokens, ctx)` and returns either an argv array or a
+/// The JS source is a function (typically arrow-form) that takes
+/// `(tokens, ctx)` and returns either an argv array or a
 /// `{command, args}` descriptor. Host bindings (cwd / env / etc.) are
 /// available as both top-level globals AND inside `ctx`. We pass the
 /// `tokens` array explicitly so generators that destructure
@@ -258,7 +263,7 @@ fn build_script_function_program(source: &str) -> String {
 
 /// Construct the wrapper expression for a `custom` generator.
 ///
-/// Phase 5 contract: the JS source is an async function that takes
+/// The JS source is an async function that takes
 /// `(tokens, executeShellCommand, ctx)` and returns suggestions.
 /// `executeShellCommand` and the ctx fields are also available as
 /// top-level globals so legacy specs keep working.
@@ -288,9 +293,10 @@ fn build_custom_program(source: &str) -> String {
     )
 }
 
-/// Log a structured `tracing` event for each diagnostic so Phase 7 can pick
-/// them up without re-implementing renderer logic. Diagnostics never abort
-/// the suggestion pipeline; they are ALWAYS warnings or info, never errors.
+/// Log a structured `tracing` event for each diagnostic so the doctor /
+/// status surfaces can render them without re-implementing renderer logic.
+/// Diagnostics never abort the suggestion pipeline; they are ALWAYS
+/// warnings or info, never errors.
 fn log_diagnostics(generator_id: &str, output: &JsRuntimeOutput) {
     for diag in &output.diagnostics {
         match diag.code {

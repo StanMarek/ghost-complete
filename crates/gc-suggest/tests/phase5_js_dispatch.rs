@@ -144,6 +144,28 @@ fn custom_generator(source: &str) -> Arc<GeneratorSpec> {
     })
 }
 
+fn custom_generator_with_shell_string(source: &str) -> Arc<GeneratorSpec> {
+    Arc::new(GeneratorSpec {
+        generator_type: None,
+        script: None,
+        script_template: None,
+        transforms: Vec::new(),
+        cache: None,
+        requires_js: true,
+        js_source: None,
+        js_runtime: Some(Arc::new(JsRuntimeSpec {
+            kind: JsRuntimeKind::Custom,
+            source: source.to_string(),
+            self_contained: true,
+            input: None,
+            timeout_ms: None,
+            allow_shell_command: true,
+        })),
+        corrected_in: None,
+        template: None,
+    })
+}
+
 fn cached_custom_generator(source: &str) -> Arc<GeneratorSpec> {
     Arc::new(GeneratorSpec {
         generator_type: None,
@@ -608,4 +630,54 @@ async fn phase5_supported_count_lifts_to_full_corpus() {
     assert!(names.iter().any(|n| n.starts_with("pp:")), "got: {names:?}");
     assert!(names.contains(&"sf"), "got: {names:?}");
     assert!(names.contains(&"cu"), "got: {names:?}");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn phase5_custom_allow_shell_command_dispatches_via_shlex() {
+    // `executeShellCommand("printf foo")` is the string form. The runner
+    // routes through `shlex::split` and dispatches as argv. The runtime
+    // requires `allow_shell_command: true` to honour the string form;
+    // without that flag the call would surface a `ShellCommandStringDenied`
+    // diagnostic instead.
+    let source = "async (tokens, run, ctx) => { \
+        const { stdout } = await run('printf foo'); \
+        return [{ name: 'shlex:' + stdout }]; \
+    }";
+    let gen = custom_generator_with_shell_string(source);
+    let engine = make_engine();
+    let ctx = make_ctx("phase5-test", Vec::new(), "");
+    let results = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch");
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(names, vec!["shlex:foo"]);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn phase5_custom_allow_shell_command_shlex_failure_surfaces_diagnostic() {
+    // An unmatched quote can't be parsed by shlex; the runner returns
+    // `ShellRunError::ArgvParse`, which the host translates to a
+    // `ShellCommandFailed` diagnostic. The spec catches the JS exception
+    // and surfaces its `code` field as a suggestion.
+    let source = "async (tokens, run, ctx) => { \
+        try { \
+            await run('echo \"unmatched'); \
+        } catch (e) { \
+            return [{ name: 'caught:' + e.code }]; \
+        } \
+        return [{ name: 'no-error' }]; \
+    }";
+    let gen = custom_generator_with_shell_string(source);
+    let engine = make_engine();
+    let ctx = make_ctx("phase5-test", Vec::new(), "");
+    let results = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch");
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert!(
+        names.contains(&"caught:ShellCommandFailed"),
+        "expected ShellCommandFailed diagnostic, got: {names:?}"
+    );
 }

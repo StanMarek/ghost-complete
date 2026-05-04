@@ -316,16 +316,13 @@ pub struct StatusOutcome {
     /// Per-dir spec-load error strings, already sanitised for terminal
     /// output. Retained so the JSON path can surface them too.
     pub parse_error_lines: Vec<String>,
-    /// UX-9 counters. Most are computed from the runtime loader index
-    /// (so they mirror what completion would actually see), but
-    /// `requires_js_generators_total` is sourced from the file-level
-    /// walk in `scan_spec_files`, NOT from `SpecStore`. The loader still
-    /// undercounts requires_js generators today (`OptionSpec.args`
-    /// truncates the array to its first entry, ~80 generators) so it
-    /// reports below the file-level count. The file-walk count is the
-    /// source of truth for that single field; Phase 6 will close the
-    /// remaining gap. Phase 1 closed the name-keyed-dedupe gap by
-    /// switching SpecStore to filename-stem keying.
+    /// Most counters mirror the runtime loader index (so they reflect what
+    /// completion actually sees), but `requires_js_generators_total` is
+    /// sourced from `scan_spec_files`'s raw-JSON walk, NOT from
+    /// `SpecStore`. The structured loader keeps the first option arg in
+    /// `OptionSpec.args` and the rest in `extra_args`, so naive sums over
+    /// `args` would underreport against the on-disk corpus; the file-walk
+    /// count is the source of truth for that single field.
     pub commands_addressable: usize,
     pub commands_partially_functional: usize,
     pub commands_nonfunctional: usize,
@@ -333,19 +330,18 @@ pub struct StatusOutcome {
     pub requires_js_generators_supported: usize,
     pub requires_js_generators_unsupported: usize,
     pub command_alias_conflicts: usize,
-    /// Per-conflict details surfaced from `SpecStore::conflicts()`.
-    /// Phase 7 surfaces the structured list to text + JSON output so users
-    /// can spot specs whose declared `name` was rejected.
+    /// Per-conflict details surfaced from `SpecStore::conflicts()`. Drives
+    /// the structured alias-conflict list in both text and JSON output so
+    /// users can spot specs whose declared `name` was rejected.
     pub command_alias_conflict_details: Vec<AliasConflictRecord>,
     /// JS runtime kill switch state (`suggest.providers.js_runtime`).
-    /// Phase 7 surfaces this so users can see at-a-glance whether their
-    /// requires_js generators will run.
+    /// Surfaced so users can see at a glance whether their requires_js
+    /// generators will run.
     pub js_runtime_enabled: bool,
     /// File-level scan results — independent of the loader-level index so
     /// any divergence between `spec_files_total` and the loader's entry
-    /// count remains visible. After Phase 1 the entry count equals
-    /// `spec_files_total` (every committed file becomes an entry; no
-    /// silent loss to name-keyed dedupe).
+    /// count remains visible. SpecStore keys on filename stem, so the
+    /// entry count equals `spec_files_total` per addressable spec.
     pub file_scan: FileScan,
 }
 
@@ -414,18 +410,15 @@ pub struct FileScan {
     pub spec_files_total: usize,
     /// Total count of `requires_js: true` generators across ALL spec files
     /// (including ones that lose their addressability slot to a duplicate
-    /// `name` entry). Sourced from the raw-JSON walk; the loader-level
-    /// count diverges by ~135 today (~80 from `OptionSpec.args` truncation,
-    /// ~55 from name-keyed dedupe), so the file walk is the source of
-    /// truth for this counter until Phase 1 closes the gap.
+    /// `name` entry). Sourced from the raw-JSON walk because the
+    /// structured loader stores trailing option args in `extra_args`, so a
+    /// naive sum over `OptionSpec.args` would underreport.
     pub requires_js_generators_total: usize,
-    /// Subset of `requires_js_generators_total` that the engine can dispatch
-    /// after Phase 5 — generators carrying any of the three supported
+    /// Subset of `requires_js_generators_total` that the engine can
+    /// dispatch — generators carrying any of the three supported
     /// `js_runtime.kind` shapes (post_process+script, script_function,
-    /// custom). Sourced from the same raw-JSON walk so this number is
-    /// consistent with `requires_js_generators_total` even when
-    /// `OptionSpec.args` truncation hides generators from the structured
-    /// loader.
+    /// custom). Sourced from the same raw-JSON walk so this number stays
+    /// consistent with `requires_js_generators_total`.
     pub requires_js_generators_supported: usize,
     /// Class breakdown of `requires_js_generators_supported`. The three
     /// per-kind fields sum to `requires_js_generators_supported`. Status
@@ -478,32 +471,31 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
 
     js_commands.sort();
 
-    // File-level scan is the source of truth for `requires_js_generators_total`.
-    // The structured deserializer truncates `OptionSpec.args[N>0]` (~80
-    // generators today), so summing `count_requires_js_generators` over
-    // SpecStore underreports against a raw JSON walk. Phase 1 closed the
-    // name-keyed dedupe gap; the OptionSpec truncation gap is tracked
-    // for Phase 6.
+    // File-level scan is the source of truth for
+    // `requires_js_generators_total`. The structured loader stores
+    // trailing option args in `extra_args`, so summing
+    // `count_requires_js_generators` over SpecStore underreports against a
+    // raw JSON walk.
     //
     // Walk the SpecStore's resolved entries instead of read_dir-ing every
     // configured spec_dir: when two dirs ship a copy of the same spec
     // (e.g. user-config + workspace), first-match-wins keeps only one
     // entry, but a per-directory walk would still sum every dir's copy
-    // and double-count the requires_js generators. UX-9 fix-up.
+    // and double-count the requires_js generators.
     let file_scan = scan_spec_files(&store)?;
     let requires_js_generators_total = file_scan.requires_js_generators_total;
-    // Phase 5: classify every requires_js generator on disk into
-    // supported/unsupported buckets. `post_process` requires non-empty
-    // source plus an accompanying script/script_template; `script_function`
-    // and `custom` require non-empty source.
+    // Classify every requires_js generator on disk into supported /
+    // unsupported buckets. `post_process` requires non-empty source plus
+    // an accompanying script/script_template; `script_function` and
+    // `custom` require non-empty source.
     let requires_js_generators_supported = file_scan.requires_js_generators_supported;
     let requires_js_generators_unsupported =
         requires_js_generators_total.saturating_sub(requires_js_generators_supported);
 
     // commands_addressable: the alias index size, i.e. the number of
     // unique command keys users can type on the shell to reach a spec.
-    // After Phase 1 this is ≥ entry count (709 entries + N non-conflict
-    // name aliases against the embedded corpus).
+    // Always ≥ entry count because each spec contributes its filename
+    // stem plus optionally a non-conflicting `name` alias.
     let commands_addressable = store.aliases_count();
     let commands_nonfunctional = total_parse_errors;
 
@@ -543,19 +535,18 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
 }
 
 /// Walk the spec entries the runtime loader actually kept and count
-/// `requires_js: true` generators across them. Phase 1 keys SpecStore
-/// on filename stem so the entry count equals `spec_files_total` per
-/// addressable spec, but the loader's structured deserializer truncates
-/// `OptionSpec.args[N>0]` (~80 generators) — so the file-level walk
-/// stays the source of truth for `requires_js_generators_total`.
+/// `requires_js: true` generators across them. SpecStore keys on filename
+/// stem so the entry count equals `spec_files_total` per addressable
+/// spec, but the loader stores trailing option args in `extra_args` —
+/// the file-level walk stays the source of truth for
+/// `requires_js_generators_total`.
 ///
 /// Counts `requires_js: true` via a raw `serde_json::Value` walk rather
 /// than going through `parse_spec_checked_and_sanitized`. The structured
-/// deserializer truncates `OptionSpec.args[N>0]` because it stores
-/// `Option<ArgSpec>` and `vec.into_iter().next()`s the rest away (see
-/// `deserialize_option_args`, ~80 generators), so summing the loader's
-/// view underreports against the on-disk corpus. Phase 6 will close
-/// that gap by relaxing `OptionSpec.args` to a real `Vec<ArgSpec>`.
+/// deserializer keeps the first option arg in `OptionSpec.args` and the
+/// rest in `extra_args` (see `deserialize_option_args`); a sum that only
+/// reads `args` would underreport against the on-disk corpus, so the raw
+/// JSON walk is the source of truth for this counter.
 ///
 /// Iterates [`SpecStore::canonical_paths`] so two overlapping spec_dirs
 /// shipping copies of the same filename do NOT cause every copy's
@@ -613,7 +604,7 @@ struct JsClassCounts {
 }
 
 /// Walk a raw `serde_json::Value` and classify every object with
-/// `"requires_js": true` according to the Phase 4-5 dispatch rules:
+/// `"requires_js": true` according to the runtime dispatch rules:
 ///
 /// - `total` increments for every `requires_js: true` occurrence.
 /// - `supported` increments when the generator carries supportable
@@ -669,8 +660,8 @@ enum SupportedKind {
 /// Returns the supported `js_runtime.kind` class when a generator object has
 /// the shape the runtime can dispatch, or `None` otherwise.
 ///
-/// Mirrors `collect_generators` in `gc-suggest::specs`. After Phase 5
-/// the engine handles all three `js_runtime.kind` variants:
+/// Mirrors `collect_generators` in `gc-suggest::specs`. The engine handles
+/// all three `js_runtime.kind` variants:
 ///   * `post_process` requires an accompanying `script` / `script_template`.
 ///   * `script_function` and `custom` only need a non-empty `source`.
 fn supported_kind(map: &serde_json::Map<String, serde_json::Value>) -> Option<SupportedKind> {
@@ -748,12 +739,11 @@ fn run_status_inner(
         )?;
     }
 
-    // Coverage / dynamic-generator / addressability / runtime sections
-    // (Phase 7). Always rendered — even when zero specs are loaded — so
-    // users running on a fresh box see what classification each metric
-    // means. The text format intentionally mirrors `status --json` field
-    // names so users can move between the two views without re-learning
-    // labels.
+    // Coverage / dynamic-generator / addressability / runtime sections.
+    // Always rendered — even when zero specs are loaded — so users
+    // running on a fresh box see what classification each metric means.
+    // The text format mirrors `status --json` field names so users can
+    // move between the two views without re-learning labels.
     let nonfunctional = outcome.commands_nonfunctional;
     writeln!(out, "\nCoverage:")?;
     writeln!(
@@ -862,17 +852,17 @@ fn run_status_inner_with_trend(
 /// output. Bumped when the output shape changes in a backward-incompatible
 /// way.
 ///
-/// 1.0 — original shape (UX-8 era).
-/// 1.1 — UX-9 Phase 0: adds `commands_addressable`,
+/// 1.0 — original shape.
+/// 1.1 — adds `commands_addressable`,
 ///       `commands_(fully|partially|non)functional`,
 ///       `requires_js_generators_(total|supported|unsupported)`,
 ///       `command_alias_conflicts` to `spec_counts`, plus a top-level
 ///       `file_scan` block. All additions are purely additive — old
 ///       fields keep their meaning so existing JSON consumers still
 ///       parse the output unchanged.
-/// 1.2 — UX-9 Phase 7: serialises individual alias conflict records as
-///       a structured `command_alias_conflict_details` array (each entry
-///       is an object with `alias`, `kind`, `winner`, `loser`), splits
+/// 1.2 — serialises individual alias conflict records as a structured
+///       `command_alias_conflict_details` array (each entry is an object
+///       with `alias`, `kind`, `winner`, `loser`), splits
 ///       `requires_js_generators_supported` into a per-kind class
 ///       breakdown under `requires_js_generators_supported_by_kind`
 ///       (`post_process`, `script_function`, `custom`), and surfaces
@@ -896,7 +886,7 @@ struct StatusReport {
     /// alongside `spec_counts` so consumers can distinguish a
     /// loader-deduped count from a raw file count.
     file_scan: FileScan,
-    /// Phase 7 (schema 1.2): JS runtime kill switch state. Reflects
+    /// JS runtime kill switch state (schema 1.2). Reflects
     /// `suggest.providers.js_runtime`. `enabled = false` means the
     /// engine will not dispatch any requires_js generators even if their
     /// metadata is fully populated.
@@ -910,8 +900,8 @@ struct JsRuntimeStatus {
     enabled: bool,
 }
 
-/// Counters surfaced under `spec_counts`. UX-9 Phase 0 adds the new
-/// command_* and requires_js_generators_* fields; the legacy fields
+/// Counters surfaced under `spec_counts`. Schema 1.1 added the
+/// `command_*` and `requires_js_generators_*` fields; the legacy fields
 /// (`total`, `fully_functional`, `partially_functional`, `embedded`,
 /// `filesystem_overrides`, `parse_errors`, `parse_error_details`) keep
 /// their meaning so 1.0 consumers keep working unchanged.
@@ -930,10 +920,12 @@ struct SpecCounts {
     /// `commands_fully_functional + commands_partially_functional`
     /// because a single spec can register multiple aliases.
     commands_addressable: usize,
-    /// Aliased to `fully_functional` until Phase 4 changes the definition
-    /// (a partially-functional command with all its requires_js generators
-    /// successfully activated will be promoted to fully functional). For
-    /// Phase 0 the two fields are numerically identical.
+    /// Numerically identical to `fully_functional`. Kept as a separate
+    /// field so consumers can distinguish "spec is fully functional" from
+    /// "command-level rollup is fully functional" once the definitions
+    /// diverge (e.g. when partially-functional commands whose requires_js
+    /// generators all activate get promoted into the fully-functional
+    /// bucket).
     commands_fully_functional: usize,
     commands_partially_functional: usize,
     /// Specs that failed to load and are therefore absent from the runtime
@@ -948,21 +940,23 @@ struct SpecCounts {
     /// slots (see `scan_spec_files`). Equal to
     /// `file_scan.requires_js_generators_total`.
     requires_js_generators_total: usize,
-    /// Today: 0. Phase 4 lifts this as post-process generators activate.
+    /// Subset of `requires_js_generators_total` whose `js_runtime` metadata
+    /// matches a shape the engine can dispatch (`post_process` with an
+    /// accompanying script, `script_function`, or `custom`).
     requires_js_generators_supported: usize,
     /// `requires_js_generators_total - requires_js_generators_supported`.
     /// Surfaced as its own field so consumers don't need to subtract.
     requires_js_generators_unsupported: usize,
-    /// Runtime alias collisions surfaced by the loader. After Phase 1
-    /// SpecStore keys on filename stem (canonical id) plus the spec's
-    /// `name` field as a secondary alias when free; an entry here means
-    /// either a `name` alias was rejected because another file already
-    /// owned that key (DuplicateName / NameMatchesOtherStem) or a stem
-    /// lost to a higher-precedence source dir (DirectoryPrecedence).
-    /// Each conflict carries source-dir + alias diagnostics in
+    /// Runtime alias collisions surfaced by the loader. SpecStore keys
+    /// on filename stem (canonical id) plus the spec's `name` field as a
+    /// secondary alias when free; an entry here means either a `name`
+    /// alias was rejected because another file already owned that key
+    /// (DuplicateName / NameMatchesOtherStem) or a stem lost to a
+    /// higher-precedence source dir (DirectoryPrecedence). Each conflict
+    /// carries source-dir + alias diagnostics in
     /// `SpecStore::conflicts()`. The structured per-conflict breakdown
-    /// is exposed under `command_alias_conflict_details` (Phase 7,
-    /// schema 1.2); this count remains in 1.1 for backwards compat.
+    /// is exposed under `command_alias_conflict_details` (schema 1.2);
+    /// this count remains in 1.1 for backwards compat.
     command_alias_conflicts: usize,
     /// Per-conflict structured details (schema 1.2). Each entry is an
     /// object with `alias`, `kind`, `winner_*`, `loser_*` fields.
@@ -1278,9 +1272,9 @@ mod tests {
         assert_eq!(outcome.js_commands, vec!["only-fallback"]);
     }
 
-    /// UX-9 fix-up: when two resolved spec_dirs ship copies of the same
-    /// filename, the file-level walk MUST count only the entry SpecStore
-    /// kept (first-match-wins), not every dir's copy. Without the
+    /// When two resolved spec_dirs ship copies of the same filename,
+    /// the file-level walk MUST count only the entry SpecStore kept
+    /// (first-match-wins), not every dir's copy. Without the
     /// `canonical_paths`-based scan the second dir's `git.json` would
     /// re-enter the totals and double the requires_js count.
     #[test]
@@ -1703,7 +1697,7 @@ mod tests {
             parsed["spec_counts"]["parse_error_details"].is_array(),
             "parse_error_details must be an array (empty when no errors)"
         );
-        // UX-9 Phase 0 additions — schema 1.1.
+        // schema 1.1 additions.
         assert!(parsed["spec_counts"]["commands_addressable"].is_number());
         assert!(parsed["spec_counts"]["commands_fully_functional"].is_number());
         assert!(parsed["spec_counts"]["commands_partially_functional"].is_number());
@@ -1718,7 +1712,7 @@ mod tests {
         );
         assert!(parsed["file_scan"]["spec_files_total"].is_number());
         assert!(parsed["file_scan"]["requires_js_generators_total"].is_number());
-        // UX-9 Phase 7 additions — schema 1.2.
+        // schema 1.2 additions.
         assert!(
             parsed["spec_counts"]["command_alias_conflict_details"].is_array(),
             "command_alias_conflict_details must be an array (1.2)"
@@ -1806,10 +1800,9 @@ mod tests {
         );
     }
 
-    /// UX-9 Phase 0: `status --json` schema 1.1 must expose every new
-    /// counter field. This test exercises the wiring without depending on
-    /// the corpus content (uses two synthetic fixtures so the numbers are
-    /// pinned).
+    /// `status --json` schema 1.1 must expose every counter field. This
+    /// test exercises the wiring without depending on the corpus content
+    /// (uses two synthetic fixtures so the numbers are pinned).
     #[test]
     fn status_json_exposes_new_counters() {
         let tmp = tempfile::TempDir::new().unwrap();
@@ -1863,7 +1856,7 @@ mod tests {
         assert_eq!(
             counts["requires_js_generators_supported"].as_u64().unwrap(),
             0,
-            "Phase 0 supports zero requires_js generators"
+            "fixture predates js_runtime metadata so it stays unsupported"
         );
         assert_eq!(
             counts["requires_js_generators_unsupported"]
@@ -1961,8 +1954,8 @@ mod tests {
         );
     }
 
-    /// UX-9 Phase 0: `commands_partially_functional` is the count of specs
-    /// where at least one generator carries `requires_js: true`. The runtime
+    /// `commands_partially_functional` is the count of specs where at
+    /// least one generator carries `requires_js: true`. The runtime
     /// loader is the source of truth — not a raw jq scan — so this test
     /// covers the wiring through `scan_specs`.
     #[test]
@@ -2004,7 +1997,7 @@ mod tests {
         assert_eq!(outcome.command_alias_conflicts, 0);
     }
 
-    /// UX-9 Phase 0 fixtures parse cleanly and produce the expected counter
+    /// The active fixtures parse cleanly and produce the expected counter
     /// classifications. Guards the on-disk fixture files in
     /// `crates/gc-suggest/tests/fixtures/ux9/` against bit-rot.
     #[test]
@@ -2032,8 +2025,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
         let outcome = scan_specs(Some(cfg.to_str().unwrap())).unwrap();
 
-        // The active fixture set, after Phase 1 stem-keying and Phase 2
-        // activating the two formerly-parked js_runtime fixtures:
+        // The active fixture set:
         //   static_only.json                    → stem `static_only`, name `static-only`,
         //                                          fully functional, 0 requires_js
         //   partial_unsupported_js.json         → stem `partial_unsupported_js`,
@@ -2049,21 +2041,19 @@ mod tests {
         //                                          second surfaces a DuplicateName
         //                                          conflict but stays addressable
         //                                          via its stem.
-        //   post_process_supported.json (Phase 2) → stem `post_process_supported`,
+        //   post_process_supported.json         → stem `post_process_supported`,
         //                                          name `post-process-supported`,
         //                                          partially functional, 1 requires_js
-        //                                          (js_runtime.kind = post_process;
-        //                                          Phase 4 wires runtime evaluation,
-        //                                          today still skipped).
-        //   custom_unsupported.json (Phase 2)   → stem `custom_unsupported`,
+        //                                          (js_runtime.kind = post_process).
+        //   custom_unsupported.json             → stem `custom_unsupported`,
         //                                          name `custom-unsupported`,
         //                                          partially functional, 1 requires_js
         //                                          (js_runtime.kind = custom;
-        //                                          historical filename — Phase 5 now
-        //                                          DOES support custom generators, so
-        //                                          this fixture is supported in the
-        //                                          counter even though the name
-        //                                          predates the change).
+        //                                          historical filename — the engine
+        //                                          DOES support custom generators
+        //                                          now, so this fixture lands in the
+        //                                          supported bucket even though the
+        //                                          name predates the change).
         //
         // file_scan sees all 7 files; SpecStore keeps all 7 entries (filename
         // stems unique). commands_addressable counts the 7 stems plus 6
@@ -2073,7 +2063,7 @@ mod tests {
         assert_eq!(outcome.file_scan.spec_files_total, 7);
         assert_eq!(
             outcome.fs_specs, 7,
-            "Phase 1: every committed file is a unique entry"
+            "every committed file is a unique entry"
         );
         assert_eq!(
             outcome.commands_addressable, 13,
@@ -2086,12 +2076,12 @@ mod tests {
         assert_eq!(outcome.partially_functional, 3);
         assert_eq!(outcome.fully_functional, 4);
         assert_eq!(outcome.requires_js_generators_total, 3);
-        // Phase 4 wired `post_process_supported`. Phase 5 adds the
-        // `script_function` and `custom` shapes, so the
-        // `custom_unsupported` fixture lifts to supported as well —
-        // its source is non-empty and the `Custom` dispatch path now
-        // exists. `partial_unsupported_js` predates `js_runtime`
-        // metadata entirely so it stays in the unsupported bucket.
+        // The engine dispatches `post_process_supported`,
+        // `script_function`, and `custom` shapes, so the
+        // `custom_unsupported` fixture lifts to supported (its source is
+        // non-empty and the `Custom` dispatch path now exists).
+        // `partial_unsupported_js` predates `js_runtime` metadata
+        // entirely so it stays in the unsupported bucket.
         assert_eq!(outcome.requires_js_generators_supported, 2);
         assert_eq!(outcome.requires_js_generators_unsupported, 1);
 
@@ -2287,11 +2277,11 @@ mod tests {
     }
 
     // -------------------------------------------------------------------------
-    // UX-9 Phase 7 — text-mode coverage sections + JSON 1.2 alias conflicts.
+    // text-mode coverage sections + JSON 1.2 alias conflicts.
     // -------------------------------------------------------------------------
 
-    /// Phase 7: text mode renders the new Coverage / Dynamic generators /
-    /// Command addressability / JS runtime sections with the right counts.
+    /// Text mode renders the Coverage / Dynamic generators / Command
+    /// addressability / JS runtime sections with the right counts.
     #[test]
     fn status_text_mode_renders_coverage_section() {
         let tmp = tempfile::TempDir::new().unwrap();
@@ -2398,8 +2388,8 @@ mod tests {
         );
     }
 
-    /// Phase 7: when the kill switch is off, text output names the disabled
-    /// state and points at the config key to flip back on.
+    /// When the kill switch is off, text output names the disabled state
+    /// and points at the config key to flip back on.
     #[test]
     fn status_text_mode_shows_disabled_runtime() {
         let tmp = tempfile::TempDir::new().unwrap();
@@ -2426,8 +2416,8 @@ mod tests {
         );
     }
 
-    /// Phase 7 (schema 1.2): JSON output exposes the structured alias
-    /// conflict list and the per-kind breakdown.
+    /// Schema 1.2: JSON output exposes the structured alias conflict
+    /// list and the per-kind breakdown.
     #[test]
     fn status_json_v12_includes_alias_conflicts_breakdown() {
         let tmp = tempfile::TempDir::new().unwrap();
@@ -2469,7 +2459,7 @@ mod tests {
         );
     }
 
-    /// Phase 7 (schema 1.2): the per-kind breakdown sums to
+    /// Schema 1.2: the per-kind breakdown sums to
     /// `requires_js_generators_supported`, including non-trivial mixes.
     #[test]
     fn status_json_v12_per_kind_breakdown_sums() {

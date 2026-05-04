@@ -2294,6 +2294,8 @@ fn build_env_snapshot(has_providers: bool) -> std::collections::HashMap<String, 
 }
 
 fn generator_depends_on_current_word(gen: &gc_suggest::specs::GeneratorSpec) -> bool {
+    use gc_suggest::specs::JsRuntimeKind;
+
     if gen
         .script_template
         .as_ref()
@@ -2302,7 +2304,14 @@ fn generator_depends_on_current_word(gen: &gc_suggest::specs::GeneratorSpec) -> 
         return true;
     }
 
-    gen.requires_js && gen.js_runtime.is_some()
+    // PostProcess JS bodies receive only the script's stdout — the live
+    // current_word never reaches them. Pin the dependency only for the
+    // shapes that actually read it (Custom, ScriptFunction).
+    gen.requires_js
+        && matches!(
+            gen.js_runtime.as_ref().map(|rt| rt.kind.clone()),
+            Some(JsRuntimeKind::Custom) | Some(JsRuntimeKind::ScriptFunction)
+        )
 }
 
 /// Two borrowed `HashSet<&str>`s (existing + per-batch) — keeping references

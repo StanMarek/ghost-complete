@@ -231,9 +231,9 @@ function buildSelfContainedJsRuntime(kind, source) {
  * 5. custom → js_runtime.kind = "custom"
  * 6. Template-only → pass through
  *
- * Exported (since UX-9 Phase 2) so the converter test suite can pin the
- * native-first / requires_js / js_runtime emission seams without spinning
- * up the upstream loader for a full spec.
+ * Exported so the converter test suite can pin the native-first /
+ * requires_js / js_runtime emission seams without spinning up the upstream
+ * loader for a full spec.
  *
  * @param {object} gen - Intermediate generator from static-converter
  * @param {string} specName - The spec name
@@ -258,11 +258,9 @@ export function processGenerator(gen, specName) {
       if (gen.cache) result.cache = gen.cache;
       return result;
     }
-    // Phase 2 (UX-9): emit `js_runtime.kind = "custom"` carrying the
-    // function source only when the body is self-contained. Function
-    // sources produced by Function.prototype.toString() can close over
-    // bundled/minified helpers; QuickJS evaluates in a fresh host context,
-    // so unresolved free identifiers must remain unsupported.
+    // Function sources produced by Function.prototype.toString() can close
+    // over bundled/minified helpers; QuickJS evaluates in a fresh host
+    // context, so unresolved free identifiers must remain unsupported.
     const result = { requires_js: true };
     const runtime = buildSelfContainedJsRuntime('custom', gen._customSource);
     if (runtime) {
@@ -282,9 +280,9 @@ export function processGenerator(gen, specName) {
       if (gen.cache) result.cache = gen.cache;
       return result;
     }
-    // Phase 2 (UX-9): emit `js_runtime.kind = "script_function"` carrying
-    // the function source only when it has no converter/bundler helper
-    // dependencies.
+    // Only attach the source when it has no converter/bundler helper
+    // dependencies — closures over external helpers cannot resolve in the
+    // fresh QuickJS context.
     const result = { requires_js: true };
     const runtime = buildSelfContainedJsRuntime('script_function', gen._scriptSource);
     if (runtime) {
@@ -310,13 +308,11 @@ export function processGenerator(gen, specName) {
 
       if (match.requires_js) {
         result.requires_js = true;
-        // Phase 2 (UX-9): when the matcher couldn't lower postProcess to
-        // declarative transforms but DID extract a usable JS body, attach
-        // it as `js_runtime.kind = "post_process"`. The runtime layer
-        // (Phase 4) executes the script and feeds stdout through this
-        // function. When `match.js_source` is empty the matcher had no
-        // usable body to preserve; emit just `requires_js: true` so the
-        // runtime knows there is no JS to evaluate (today's behaviour).
+        // The matcher couldn't lower postProcess to declarative transforms
+        // but may have extracted a usable JS body. When present, attach it
+        // so the runtime can feed the script's stdout through the function.
+        // When absent, leaving `js_runtime` off signals the runtime that
+        // there is no JS to evaluate.
         if (match.js_source) {
           result.js_runtime = { kind: 'post_process', source: match.js_source };
         }

@@ -1,7 +1,7 @@
 //! Public types for [`crate::JsWorker`].
 //!
-//! Kept in their own module so downstream callers in `gc-suggest` (Phase 4+)
-//! can `use gc_jsrt::{JsRuntimeInput, JsRuntimeOutput, ...}` without pulling
+//! Kept in their own module so downstream callers can
+//! `use gc_jsrt::{JsRuntimeInput, JsRuntimeOutput, ...}` without pulling
 //! in the worker implementation details.
 
 use std::collections::BTreeMap;
@@ -15,7 +15,7 @@ use std::time::Duration;
 /// Mirrors the surface a Fig spec author would see if they were running
 /// in the original Fig host: a string of stdout, the exit status, and
 /// stderr surfaced separately for completeness. Soft-failure semantics —
-/// non-zero exit produces an `Err`, never a panic, so Phase 5's bounded
+/// non-zero exit produces an `Err`, never a panic, so the bounded
 /// recursion cap can deny further calls cleanly.
 #[derive(Debug, Clone, Default)]
 pub struct ShellRunOutput {
@@ -33,8 +33,8 @@ pub struct ShellRunOutput {
 /// the JS worker.
 ///
 /// Each variant maps to a JS-side exception with a stable diagnostic
-/// code so the Phase 7 doctor / status views can bucket runtime
-/// failures without re-parsing message strings.
+/// code so the doctor / status views can bucket runtime failures
+/// without re-parsing message strings.
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum ShellRunError {
     /// Caller passed a string command and the spec did not opt into
@@ -110,32 +110,22 @@ pub trait ShellRunner: Send + Sync {
 }
 
 /// Selects the JS dispatch shape the worker should use for a given job.
-///
-/// Phase 4 covered only [`Self::PostProcess`]. Phase 5 introduces the
-/// remaining two shapes and reuses the shared sandbox / interrupt
-/// machinery for all three.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum JsExecutionKind {
     /// JS receives the script's stdout and returns suggestions.
-    /// (Phase 4.)
     #[default]
     PostProcess,
     /// JS receives the parsed tokens + context and returns argv. The
     /// engine then runs the argv as a normal script generator and feeds
-    /// the stdout through the optional transform pipeline. (Phase 5.)
+    /// the stdout through the optional transform pipeline.
     ScriptFunction,
     /// JS receives the parsed tokens + a host `executeShellCommand`
     /// binding and returns suggestions directly. May spawn 0–N child
-    /// processes during evaluation. (Phase 5.)
+    /// processes during evaluation.
     Custom,
 }
 
 /// Input handed to a JS evaluation job.
-///
-/// All fields are populated by the caller (Phase 4+ in `gc-suggest`).
-/// Phase 5 wired the `tokens` / `current_token` / `cwd` / `env` /
-/// `previous_token` fields to the host bindings; Phase 4 only reads
-/// `stdout`.
 #[derive(Clone, Default)]
 pub struct JsRuntimeInput {
     /// Captured stdout from a script generator. Populated for the
@@ -152,15 +142,14 @@ pub struct JsRuntimeInput {
     pub previous_token: String,
     /// Working directory for the shell.
     pub cwd: PathBuf,
-    /// Environment snapshot provided by the caller. The Phase 5 dispatch path
+    /// Environment snapshot provided by the caller. The dispatch path
     /// strips `GHOST_COMPLETE_ACTIVE` and surfaces the rest verbatim.
     pub env: BTreeMap<String, String>,
     /// Human-readable identifier for diagnostics. Typically
     /// `<spec-id>:<generator-index>`.
     pub generator_id: String,
-    /// Shape selector. `PostProcess` (Phase 4) is the historical default;
-    /// `ScriptFunction` / `Custom` are new in Phase 5 and require the
-    /// optional fields above.
+    /// Shape selector. `PostProcess` is the historical default;
+    /// `ScriptFunction` / `Custom` require the optional fields above.
     pub kind: JsExecutionKind,
     /// Whether a `Custom` generator may pass a shell-string to
     /// `executeShellCommand`. Mirrors the spec's
@@ -252,27 +241,27 @@ pub enum JsDiagnosticCode {
     /// JS code attempted to use a stripped/disabled global (e.g. `fetch`).
     UnsupportedApi,
     /// JS evaluated to `undefined` / `null` / an empty array. Distinct
-    /// from `InvalidShape` because the Phase 4+ dispatch path may treat
-    /// it as an empty success.
+    /// from `InvalidShape` because the dispatch path may treat it as
+    /// an empty success.
     EmptyOutput,
-    /// Phase 5: JS reached for a host API the runtime does not expose
+    /// JS reached for a host API the runtime does not expose
     /// (e.g. `fig.fs.readFile`). The string slot identifies the API name
     /// for telemetry without leaking arguments.
     UnsupportedHostApi,
-    /// Phase 5: a `Custom` generator called `executeShellCommand("…")`
-    /// with the shell-string form when `allow_shell_command` was false.
+    /// A `Custom` generator called `executeShellCommand("…")` with the
+    /// shell-string form when `allow_shell_command` was false.
     ShellCommandStringDenied,
-    /// Phase 5: a `Custom` generator exceeded the per-evaluation
+    /// A `Custom` generator exceeded the per-evaluation
     /// `executeShellCommand` recursion cap.
     ShellCommandLimitExceeded,
-    /// Phase 5: `executeShellCommand` returned a non-zero exit, timed
-    /// out, or otherwise failed to produce stdout. The JS-level call
-    /// throws so the spec author can catch it; this diagnostic is the
-    /// fallback when it bubbles up uncaught.
+    /// `executeShellCommand` returned a non-zero exit, timed out, or
+    /// otherwise failed to produce stdout. The JS-level call throws so
+    /// the spec author can catch it; this diagnostic is the fallback
+    /// when it bubbles up uncaught.
     ShellCommandFailed,
-    /// Phase 5: a `script_function` generator returned something other
-    /// than a non-empty argv array. Distinct from `InvalidShape` so the
-    /// engine can keep its argv-validation rules close to home.
+    /// A `script_function` generator returned something other than a
+    /// non-empty argv array. Distinct from `InvalidShape` so the engine
+    /// can keep its argv-validation rules close to home.
     InvalidArgv,
 }
 

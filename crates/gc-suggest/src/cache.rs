@@ -17,9 +17,9 @@ use crate::types::Suggestion;
 ///   same script but ship different `js_runtime.source` bodies can never
 ///   cross-contaminate, because the source hash partitions their slots.
 ///
-/// All variants compose `(spec_name, resolved_argv, cwd_if_cache_by_directory)`
-/// the way the pre-Phase-4 single key did. The `argv` field is the FULLY
-/// RESOLVED command (post-substitution for `script_template`).
+/// All variants compose `(spec_name, resolved_argv, cwd_if_cache_by_directory)`.
+/// The `argv` field is the FULLY RESOLVED command (post-substitution for
+/// `script_template`).
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum CacheKey {
     /// Raw script stdout. Shared by every consumer of the same argv —
@@ -63,9 +63,8 @@ impl CacheKey {
         }
     }
 
-    /// Build a key for the post-processed cache layer (Phase 4 `js_runtime`
-    /// dispatch). `source_hash` should be derived from the JS source via
-    /// [`hash_js_source`].
+    /// Build a key for the post-processed cache layer. `source_hash` should
+    /// be derived from the JS source via [`hash_js_source`].
     pub fn js_processed(
         spec_name: &str,
         argv: &[String],
@@ -138,10 +137,10 @@ impl GeneratorCache {
         }
     }
 
-    /// Legacy lookup. Returns the cached suggestion vector if the key is
-    /// present (under either key variant) and the payload is the suggestion
-    /// shape. Used by callers that pre-Phase-4 stored suggestion vectors
-    /// directly under [`CacheKey::Stdout`] keys via [`Self::insert`].
+    /// Returns the cached suggestion vector if the key is present (under
+    /// either key variant) and the payload is the suggestion shape. Stdout
+    /// payloads stored via [`Self::insert_stdout`] are skipped — see
+    /// [`Self::get_stdout`] for that read path.
     pub fn get(&self, key: &CacheKey) -> Option<Vec<Suggestion>> {
         let mut entries = self.entries.lock().unwrap_or_else(|e| e.into_inner());
         let now = Instant::now();
@@ -161,9 +160,9 @@ impl GeneratorCache {
         }
     }
 
-    /// Insert a suggestion-vector payload. Pre-Phase-4 callers use the
-    /// `CacheKey::Stdout` variant for this; Phase-4 callers store JS
-    /// post-processed output under `CacheKey::JsProcessed`.
+    /// Insert a suggestion-vector payload. Suggestion vectors keyed by
+    /// `CacheKey::Stdout` come from non-JS generators; `CacheKey::JsProcessed`
+    /// holds JS post-processed output.
     pub fn insert(&self, key: CacheKey, suggestions: Vec<Suggestion>, ttl: Duration) {
         let mut entries = self.entries.lock().unwrap_or_else(|e| e.into_inner());
         let now = Instant::now();
@@ -199,9 +198,8 @@ impl GeneratorCache {
         }
     }
 
-    /// Insert a raw-stdout payload. Used by Phase-4 dispatch so two different
-    /// JS post-processors operating on the same script can share the spawn
-    /// cost.
+    /// Insert a raw-stdout payload so two different JS post-processors
+    /// operating on the same script can share the spawn cost.
     pub fn insert_stdout(&self, key: CacheKey, stdout: String, ttl: Duration) {
         let mut entries = self.entries.lock().unwrap_or_else(|e| e.into_inner());
         let now = Instant::now();
@@ -510,10 +508,8 @@ mod tests {
 
     #[test]
     fn test_stdout_payload_is_not_returned_via_get() {
-        // Pre-Phase-4 callers only ever wrote suggestion vectors via
-        // `insert`, then read them back with `get`. The new `insert_stdout`
-        // path keys raw strings — `get()` must skip those slots so a stdout
-        // value never bleeds into the suggestion-shaped API.
+        // `insert_stdout` keys raw strings; `get()` must skip those slots
+        // so a stdout value never bleeds into the suggestion-shaped API.
         let cache = GeneratorCache::new();
         let key = CacheKey::Stdout {
             spec_name: "kubectl".into(),

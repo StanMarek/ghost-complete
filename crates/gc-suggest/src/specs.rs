@@ -273,8 +273,13 @@ pub struct OptionSpec {
     /// holds only element 0; additional positional option args live in
     /// `extra_args` so resolution can preserve array boundaries without
     /// changing the public field shape during this PR.
+    ///
+    /// Callers that need every option arg should iterate
+    /// `args.iter().chain(extra_args.iter())`.
     pub args: Option<ArgSpec>,
-    pub(crate) extra_args: Vec<ArgSpec>,
+    /// Additional positional option args beyond the first. See [`Self::args`]
+    /// for the iteration pattern that walks every arg the option declares.
+    pub extra_args: Vec<ArgSpec>,
     pub priority: Option<Priority>,
 }
 
@@ -462,9 +467,6 @@ pub struct CacheConfig {
 ///   evaluates to an `argv` array which is then spawned.
 /// - `Custom` — Fig's `custom: async (...) => [...]` shape: the JS body
 ///   returns suggestions directly without any subprocess invocation.
-///
-/// Phase 2 stores this metadata at load time but does not yet evaluate it;
-/// Phase 4+ wire the runtime dispatch path.
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum JsRuntimeKind {
@@ -483,12 +485,9 @@ pub enum JsRuntimeInput {
     Argv,
 }
 
-/// Runtime JS metadata for generators that need QuickJS evaluation.
-///
-/// Phase 2 stores this at load time but does not yet execute it; the dispatch
-/// path that honours [`JsRuntimeSpec`] in preference to the legacy `requires_js`
-/// short-circuit is wired in Phase 4 (`PostProcess`) and Phase 5
-/// (`ScriptFunction` / `Custom`).
+/// Runtime JS metadata for generators that need QuickJS evaluation. The
+/// engine routes on [`Self::kind`] to drive QuickJS dispatch via
+/// [`gc_jsrt::JsWorker`].
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct JsRuntimeSpec {
@@ -527,9 +526,9 @@ pub struct GeneratorSpec {
     #[serde(default)]
     pub requires_js: bool,
     pub js_source: Option<String>,
-    /// Runtime JS metadata for generators that need QuickJS evaluation.
-    /// Phase 2 stores this at load time; Phase 4+ wire the dispatch path
-    /// that honours it in preference to the legacy `requires_js` short-circuit.
+    /// Runtime JS metadata for generators that need QuickJS evaluation. The
+    /// engine honours it in preference to the legacy `requires_js`
+    /// short-circuit.
     ///
     /// Wrapped in `Arc` so the dispatch hot path can share it with the
     /// spawned worker task without deep-cloning the embedded JS source on
@@ -905,9 +904,7 @@ fn register_entries(
             //     even its stem under an unrelated path). The losing
             //     spec is still addressable by ITS stem only if no other
             //     entry owns that stem; in this branch it doesn't, so
-            //     the file is dropped. Classify as NameMatchesOtherStem
-            //     so Phase 7 doctor diagnostics can render the right
-            //     hint (rename one of the files / drop a `name` claim).
+            //     the file is dropped. Classify as NameMatchesOtherStem.
             let kind = if existing.filename_stem == filename_stem {
                 AliasConflictKind::DirectoryPrecedence
             } else {
@@ -1423,14 +1420,6 @@ fn collect_generators(
 ) {
     for gen in generators {
         if gen.requires_js {
-            // Phase 5: supported `js_runtime` kinds have engine dispatch
-            // paths:
-            // - `post_process` runs the `script` (or `script_template`)
-            //   then post-processes stdout via JS.
-            // - `script_function` runs JS first to derive argv, then
-            //   spawns the resulting argv as a script.
-            // - `custom` runs JS directly with a host `executeShellCommand`
-            //   binding.
             // Generators with `requires_js: true` but no populated
             // `js_runtime`, no source, or custom/script_function source that
             // was not proven self-contained stay skipped — there is nothing
@@ -1515,12 +1504,11 @@ fn collect_generators(
         } else {
             false
         };
-        // Phase 5 widens the script-bucket criterion: a JS-only
-        // generator (script_function / custom) has neither `script`
-        // nor `script_template` populated, but the engine still needs
-        // a slot in the script-generator vec to dispatch it. Funnel
-        // anything with a populated `js_runtime` through the same
-        // queue and let `engine::run_generators` switch on `kind`.
+        // JS-only generators (script_function / custom) have neither `script`
+        // nor `script_template` populated, but the engine still needs a slot
+        // in the script-generator vec to dispatch them. Funnel anything with
+        // a populated `js_runtime` through the same queue and let
+        // `engine::run_generators` switch on `kind`.
         let is_js_dispatchable = gen.requires_js && gen.js_runtime.is_some();
         if !handled_by_type
             && (gen.script.is_some() || gen.script_template.is_some() || is_js_dispatchable)
@@ -1610,6 +1598,23 @@ fn validate_arg_generators(arg_spec: &mut ArgSpec, spec_name: &str, warnings: &m
             "{spec_name}: removed {} generator(s) with invalid transform pipelines",
             original_len - arg_spec.generators.len()
         );
+    }
+
+    // `js_runtime.input` is only meaningful for `PostProcess` (where it
+    // selects between stdout and argv as the JS function's argument).
+    // For `ScriptFunction` and `Custom` the dispatch shape is fixed by
+    // the kind, so a populated `input` field is dead schema. Surface it
+    // once at load time so spec authors don't silently rely on a switch
+    // the engine ignores.
+    for gen in &arg_spec.generators {
+        if let Some(rt) = gen.js_runtime.as_ref() {
+            if rt.input.is_some() && rt.kind != JsRuntimeKind::PostProcess {
+                warnings.push(format!(
+                    "generator in {spec_name} sets `js_runtime.input` on a {kind:?} generator; the field is currently honoured only for PostProcess",
+                    kind = rt.kind
+                ));
+            }
+        }
     }
 
     let original_suggestions_len = arg_spec.suggestions.len();
@@ -4303,8 +4308,8 @@ mod tests {
         // The two files have DIFFERENT filename stems (`foo` vs
         // `kubectl`), so this is NOT the user-override scenario —
         // classifying it as DirectoryPrecedence would mislead doctor
-        // (Phase 7) into telling the user one dir is shadowing another
-        // when in reality it's a name-claim collision. Correct kind is
+        // into telling the user one dir is shadowing another when in
+        // reality it's a name-claim collision. Correct kind is
         // NameMatchesOtherStem (from the inverted perspective: the new
         // file's stem matches what the earlier file's name already
         // owns).

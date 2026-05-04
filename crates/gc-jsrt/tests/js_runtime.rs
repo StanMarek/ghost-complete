@@ -347,13 +347,11 @@ async fn worker_clone_keeps_thread_alive() {
 }
 
 #[tokio::test]
-async fn worker_dead_error_variant_exists() {
-    // We can't easily provoke WorkerDead without panicking the worker,
-    // but we can verify the variant compiles -- the production code
-    // depends on it. Combined with the spawn->evaluate happy path,
-    // this exercises the error-construction surface.
-    let _: fn() -> JsRuntimeError = || JsRuntimeError::WorkerDead;
-    let worker = JsWorker::spawn().expect("spawn worker");
-    let out = run(&worker, "'ok'").await;
-    assert_eq!(out.suggestions[0].name, "ok");
+async fn worker_dead_error_when_thread_exits_before_send() {
+    let worker = JsWorker::spawn_for_test_with_failing_thread().expect("spawn helper");
+    let res = worker.evaluate("'ok'", empty_input(), FAST_TIMEOUT).await;
+    assert!(
+        matches!(res, Err(JsRuntimeError::WorkerDead)),
+        "expected WorkerDead, got {res:?}"
+    );
 }

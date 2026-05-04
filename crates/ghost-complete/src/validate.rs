@@ -10,9 +10,9 @@ use serde::Serialize;
 
 use crate::sanitize::sanitize_for_terminal;
 
-/// Phase 7 (UX-9): walk a parsed spec and emit warnings for every
-/// `requires_js: true` generator that lacks `js_runtime` metadata (or whose
-/// `js_runtime.source` is empty). These are not produced by the standard
+/// Walk a parsed spec and emit warnings for every `requires_js: true`
+/// generator that lacks `js_runtime` metadata (or whose `js_runtime.source`
+/// is empty). These are not produced by the standard
 /// `validate_spec_generators` (which focuses on transform-pipeline shape)
 /// but are surfaced via `--strict` so converter regressions cannot land
 /// silently.
@@ -42,11 +42,20 @@ fn collect_missing_js_runtime_warnings(spec: &CompletionSpec) -> Vec<String> {
 
     fn walk_opts(opts: &[OptionSpec], path: &str, warnings: &mut Vec<String>) {
         for (i, o) in opts.iter().enumerate() {
-            if let Some(arg) = o.args.as_ref() {
+            // OptionSpec stores the first arg in `args` and the rest in
+            // `extra_args` (see `deserialize_option_args`); both slots must be
+            // walked or non-first-arg regressions ship silently.
+            for (k, arg) in o
+                .args
+                .as_ref()
+                .into_iter()
+                .chain(o.extra_args.iter())
+                .enumerate()
+            {
                 for (j, g) in arg.generators.iter().enumerate() {
                     if missing(g) {
                         warnings.push(format!(
-                            "{path}/options[{i}]/args/generators[{j}]: requires_js=true without js_runtime metadata"
+                            "{path}/options[{i}]/args[{k}]/generators[{j}]: requires_js=true without js_runtime metadata"
                         ));
                     }
                 }
@@ -224,10 +233,10 @@ fn validate_dir(
             Ok(mut spec) => {
                 let (subs, opts) = count_spec_items(&spec);
                 let mut warnings = validate_spec_generators(&mut spec);
-                // Phase 7 (UX-9): in --strict mode, surface specs with
-                // requires_js generators that are missing js_runtime
-                // metadata. The check is strict-only because today's corpus
-                // is fully populated; a non-strict invocation should not
+                // In --strict mode, surface specs with requires_js
+                // generators that are missing js_runtime metadata. The
+                // check is strict-only because the current corpus is
+                // fully populated; a non-strict invocation should not
                 // suddenly start warning on every existing on-disk spec
                 // that hasn't yet been re-converted.
                 if strict {
@@ -814,10 +823,9 @@ mod tests {
         assert!(!txt.contains("specs valid"), "got: {txt}");
     }
 
-    /// Phase 7 (UX-9): in `--strict` mode a spec with `requires_js: true`
-    /// but no `js_runtime` metadata flips `strict_failed`. Catches a
-    /// converter regression where the regen would silently drop the
-    /// metadata field.
+    /// In `--strict` mode a spec with `requires_js: true` but no
+    /// `js_runtime` metadata flips `strict_failed`. Catches a converter
+    /// regression where the regen would silently drop the metadata field.
     #[test]
     fn validate_strict_fails_on_missing_js_runtime() {
         let tmp = tempfile::TempDir::new().unwrap();
@@ -907,7 +915,7 @@ mod tests {
         );
     }
 
-    /// Phase 7: a spec with `requires_js: true` and a properly populated
+    /// A spec with `requires_js: true` and a properly populated
     /// `js_runtime` block does NOT flip strict_failed. Companion test to
     /// `validate_strict_fails_on_missing_js_runtime` so a regression can
     /// be triangulated to either side of the predicate.
@@ -940,9 +948,9 @@ mod tests {
         assert!(!outcome.strict_failed);
     }
 
-    /// Phase 7: empty `js_runtime.source` is also rejected in strict
-    /// mode — the converter must not regress to dropping the body but
-    /// keeping the wrapper.
+    /// Empty `js_runtime.source` is also rejected in strict mode — the
+    /// converter must not regress to dropping the body but keeping the
+    /// wrapper.
     #[test]
     fn validate_strict_fails_on_empty_js_runtime_source() {
         let tmp = tempfile::TempDir::new().unwrap();

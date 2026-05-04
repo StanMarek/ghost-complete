@@ -9,9 +9,11 @@ self-contained dependency target — `gc-suggest` calls into it via the
 
 ## Status
 
-Phase 5 is active. The runtime foundation, bounded sandbox, output
-normalization, engine dispatch, cache partitioning, and provider kill
-switch are wired into the suggestion path.
+The runtime foundation, bounded sandbox, output normalization, engine
+dispatch, cache partitioning, and provider kill switch are wired into
+the suggestion path. `ghost-complete doctor` and `status --json`
+surface per-runtime diagnostics, and a coverage regression gate guards
+against silent drops in `requires_js_generators_supported`.
 
 `gc-suggest` dispatches all populated `js_runtime.kind` variants:
 `post_process`, `script_function`, and `custom`. The dispatch wiring
@@ -22,8 +24,9 @@ argument hints.
 
 ## Class A / B / C distinctions
 
-The 180 `requires_js` specs split into three runtime classes,
-mirrored by [`JsRuntimeKind`](../crates/gc-suggest/src/specs.rs):
+Every `requires_js` spec splits into one of three runtime classes,
+mirrored by [`JsRuntimeKind`](../crates/gc-suggest/src/specs.rs).
+The live count is reported by `ghost-complete status --json`:
 
 | Class | Kind             | Pattern                                            | Status |
 | ----- | ---------------- | -------------------------------------------------- | ------ |

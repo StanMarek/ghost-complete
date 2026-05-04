@@ -15,7 +15,7 @@
 //! - The [`rquickjs::Context`] is **fresh per job** so two unrelated
 //!   specs cannot pollute each other's globals.
 
-use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread::{self, JoinHandle};
@@ -52,10 +52,6 @@ const GC_THRESHOLD_BYTES: usize = 2 * 1024 * 1024;
 /// One job submitted to the worker.
 struct Job {
     program: String,
-    /// Caller-provided context. Phase 4 only uses `stdout`; Phase 5
-    /// reads `tokens` / `cwd` / `env` / `current_token` / `previous_token`
-    /// to populate the host bindings, and the `kind` discriminator
-    /// chooses the dispatch shape.
     input: JsRuntimeInput,
     deadline: Instant,
     reply: oneshot::Sender<Result<JsRuntimeOutput, JsRuntimeError>>,
@@ -78,22 +74,24 @@ struct WorkerHandle {
 
 impl Drop for WorkerHandle {
     fn drop(&mut self) {
-        // Closing the channel implicitly happens when `JsWorker.sender`
-        // is dropped — but `JsWorker` is `Clone` so we can't take it
-        // here. Instead the worker loop exits when it observes the
-        // channel disconnect; we just join.
-        //
-        // TODO(ux-9 follow-up): `thread.join()` blocks until the current
-        // JS evaluation finishes (capped only by the per-job interrupt
-        // deadline, which can still be seconds). A long-running custom
-        // generator can therefore stall process shutdown. Replace with a
-        // bounded shutdown — e.g. a stop-signal channel that the worker
-        // loop polls between jobs, plus a `JoinHandle::is_finished` +
-        // ~2s ceiling so a slow evaluator never blocks `Drop` longer than
-        // the wall-clock budget already promises. Tracked as a follow-up
-        // post-UX-9.
+        // The worker loop exits on channel disconnect (which fires when
+        // the last `JsWorker.sender` clone drops). We can't drop the
+        // sender here because `JsWorker` is `Clone`; we just join.
         if let Some(thread) = self.thread.take() {
-            let _ = thread.join();
+            match thread.join() {
+                Ok(()) => {}
+                Err(payload) => {
+                    let msg = payload
+                        .downcast_ref::<&'static str>()
+                        .map(|s| (*s).to_string())
+                        .or_else(|| payload.downcast_ref::<String>().cloned())
+                        .unwrap_or_else(|| "<non-string panic payload>".into());
+                    tracing::error!(
+                        panic = %msg,
+                        "gc-jsrt worker thread panicked during shutdown"
+                    );
+                }
+            }
         }
     }
 }
@@ -148,6 +146,27 @@ impl JsWorker {
             .map_err(|_| JsRuntimeError::WorkerDead)?;
         reply_rx.await.map_err(|_| JsRuntimeError::WorkerDead)?
     }
+
+    /// Test-only helper that returns a worker whose thread exits
+    /// immediately, leaving the channel disconnected. Used to assert
+    /// the recovery path on a dead worker.
+    #[doc(hidden)]
+    pub fn spawn_for_test_with_failing_thread() -> Result<Self, JsRuntimeError> {
+        let (tx, rx) = mpsc::channel::<Job>();
+        let thread = thread::Builder::new()
+            .name("gc-jsrt-worker-failing".into())
+            .spawn(move || {
+                drop(rx);
+            })
+            .map_err(|e| JsRuntimeError::Internal(format!("spawn worker: {e}")))?;
+        // Wait for the thread to finish so the receiver is definitely
+        // dropped before any caller tries to send.
+        let _ = thread.join();
+        Ok(Self {
+            sender: tx,
+            _handle: Arc::new(WorkerHandle { thread: None }),
+        })
+    }
 }
 
 /// Enclosed error type so the worker can fail-fast at startup.
@@ -181,7 +200,7 @@ fn worker_main(rx: mpsc::Receiver<Job>) -> Result<(), WorkerStartupError> {
     // `i64::MAX` means "no deadline" (no JS currently running).
     let process_start = Instant::now();
     let deadline_relative_ns = Arc::new(AtomicI64::new(i64::MAX));
-    let interrupted_flag = Arc::new(AtomicU64::new(0));
+    let interrupted_flag = Arc::new(AtomicBool::new(false));
 
     {
         let deadline = deadline_relative_ns.clone();
@@ -195,7 +214,7 @@ fn worker_main(rx: mpsc::Receiver<Job>) -> Result<(), WorkerStartupError> {
             if elapsed >= limit {
                 // Latch the flag so the post-eval branch can tell a
                 // timeout apart from a regular exception.
-                interrupted.store(1, Ordering::SeqCst);
+                interrupted.store(true, Ordering::SeqCst);
                 return true;
             }
             false
@@ -221,11 +240,11 @@ fn run_job(
     runtime: &Runtime,
     job: &Job,
     deadline: &AtomicI64,
-    interrupted: &AtomicU64,
+    interrupted: &AtomicBool,
     process_start: Instant,
 ) -> Result<JsRuntimeOutput, JsRuntimeError> {
     // Reset the timeout latch and arm the interrupt handler.
-    interrupted.store(0, Ordering::SeqCst);
+    interrupted.store(false, Ordering::SeqCst);
     let deadline_ns = deadline_relative_to(process_start, job.deadline);
     deadline.store(deadline_ns, Ordering::Relaxed);
 
@@ -259,10 +278,9 @@ fn run_job(
             });
         }
 
-        // Phase 5: install host bindings for ScriptFunction / Custom
-        // jobs. PostProcess jobs do not need them — but installing
-        // unconditionally is cheap (a few property sets on a fresh
-        // context) and gives spec authors a consistent surface.
+        // Host bindings install unconditionally because the per-job
+        // context is fresh — even PostProcess jobs that never touch them
+        // pay only a few property sets.
         if let Err(e) = install_host_api(&ctx, &job.input, host_state.clone(), job.deadline) {
             return JsRuntimeOutput::empty_with(JsDiagnostic {
                 code: JsDiagnosticCode::Exception,
@@ -500,14 +518,14 @@ fn deadline_relative_to(start: Instant, deadline: Instant) -> i64 {
 /// Map a caught rquickjs error into the diagnostic the user will see.
 fn classify_error(
     err: rquickjs::CaughtError<'_>,
-    interrupted: &AtomicU64,
+    interrupted: &AtomicBool,
     timeout_ms: u64,
 ) -> JsRuntimeOutput {
     use rquickjs::CaughtError;
 
     // The interrupt handler latched first — it's a timeout regardless of
     // the rquickjs-level error type (interrupts surface as exceptions).
-    if interrupted.load(Ordering::SeqCst) != 0 {
+    if interrupted.load(Ordering::SeqCst) {
         return JsRuntimeOutput::empty_with(JsDiagnostic {
             code: JsDiagnosticCode::Timeout,
             message: format!("evaluation aborted after ~{timeout_ms}ms wall clock"),

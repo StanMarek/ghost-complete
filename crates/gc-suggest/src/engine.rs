@@ -258,10 +258,10 @@ pub struct SuggestionEngine {
     ssh_host_cache: Option<SshHostCache>,
     alias_map: AliasStore,
     generator_cache: Arc<GeneratorCache>,
-    /// Lazily-spawned QuickJS worker. Only paid for when a Phase-4
-    /// `post_process` generator (or, in later phases, a `script_function` /
-    /// `custom`) actually fires. Held in an `Arc` so per-generator tasks can
-    /// share it without taking `&self` references across `tokio::spawn`.
+    /// Lazily-spawned QuickJS worker. Only paid for when a `requires_js`
+    /// generator (`post_process`, `script_function`, or `custom`) actually
+    /// fires. Held in an `Arc` so per-generator tasks can share it without
+    /// taking `&self` references across `tokio::spawn`.
     js_runtime: Arc<JsRuntimeAdapter>,
     frecency_db: FrecencyDb,
     max_results: usize,
@@ -270,11 +270,10 @@ pub struct SuggestionEngine {
     providers_filesystem: bool,
     providers_specs: bool,
     providers_git: bool,
-    /// Kill switch for the JS evaluator. When `false`, every Phase-4 dispatch
-    /// path is bypassed and `requires_js` generators with `post_process`
-    /// metadata behave as if their `js_runtime` were missing — they're
-    /// dropped from the generator pool. Mirrors
-    /// `ProvidersConfig::js_runtime` from `gc-config`.
+    /// Kill switch for the JS evaluator. When `false`, every JS dispatch
+    /// path is bypassed and `requires_js` generators behave as if their
+    /// `js_runtime` were missing — they're dropped from the generator
+    /// pool. Mirrors `ProvidersConfig::js_runtime` from `gc-config`.
     providers_js_runtime: bool,
 }
 
@@ -430,7 +429,7 @@ impl SuggestionEngine {
             // Arc wrapper was added.
             let gen: &specs::GeneratorSpec = gen.as_ref();
 
-            // Phase 5: routing decisions based on `js_runtime.kind`:
+            // Routing decisions based on `js_runtime.kind`:
             //   - `PostProcess`: spec carries the script argv; JS runs after.
             //   - `ScriptFunction`: JS evaluates first to produce argv;
             //     then we execute the resolved argv through `run_script`.
@@ -474,15 +473,10 @@ impl SuggestionEngine {
                 continue;
             }
 
-            // Phase 4: a `requires_js` post_process generator is gated on the
-            // user-controlled `[suggest.providers] js_runtime` switch. When
-            // disabled, behave as if the runtime never landed: skip the
-            // dispatch entirely.
-            //
-            // `js_runtime` is now `Arc<JsRuntimeSpec>` at the schema layer, so
-            // the hot path Arc-clones (cheap pointer bump) instead of
-            // deep-copying the embedded JS source on every keystroke. Some of
-            // the corpus generators (notably AWS) carry several KB of source.
+            // `js_runtime` is `Arc<JsRuntimeSpec>` at the schema layer so the
+            // hot path Arc-clones (cheap pointer bump) instead of deep-copying
+            // the embedded JS source on every keystroke. Some corpus
+            // generators (notably AWS) carry several KB of source.
             let js_dispatch: Option<Arc<JsRuntimeSpec>> = match (gen.requires_js, &gen.js_runtime) {
                 (true, Some(rt)) if rt.kind == JsRuntimeKind::PostProcess => Some(Arc::clone(rt)),
                 _ => None,
@@ -495,7 +489,15 @@ impl SuggestionEngine {
             if matches!(js_kind, Some(JsRuntimeKind::ScriptFunction)) {
                 let rt = match gen.js_runtime.as_ref() {
                     Some(rt) => Arc::clone(rt),
-                    None => continue,
+                    None => {
+                        tracing::warn!(
+                            spec = %command,
+                            generator_index = idx,
+                            kind = ?js_kind,
+                            "requires_js generator with ScriptFunction/Custom kind has no js_runtime metadata — skipping"
+                        );
+                        continue;
+                    }
                 };
                 let exec_ctx = make_js_exec_context(ctx, cwd);
                 let cmd_name = command.to_string();
@@ -531,7 +533,15 @@ impl SuggestionEngine {
             if matches!(js_kind, Some(JsRuntimeKind::Custom)) {
                 let rt = match gen.js_runtime.as_ref() {
                     Some(rt) => Arc::clone(rt),
-                    None => continue,
+                    None => {
+                        tracing::warn!(
+                            spec = %command,
+                            generator_index = idx,
+                            kind = ?js_kind,
+                            "requires_js generator with ScriptFunction/Custom kind has no js_runtime metadata — skipping"
+                        );
+                        continue;
+                    }
                 };
                 let exec_ctx = make_js_exec_context(ctx, cwd);
                 let cmd_name = command.to_string();
@@ -1421,14 +1431,14 @@ fn is_supported_script_generator(gen: &GeneratorSpec) -> bool {
     }
 }
 
-/// Pack the parsed command line into the host-API context for a Phase 5
-/// JS dispatch. The token slice is `[command, ...completed_args,
+/// Pack the parsed command line into the host-API context for a JS
+/// dispatch. The token slice is `[command, ...completed_args,
 /// current_word]`, including an empty final slot at a word boundary, so
 /// Fig-style code that reads `tokens[tokens.length - 1]` sees the live
 /// cursor token.
 ///
-/// Phase 5 mirrors the full process environment except
-/// `GHOST_COMPLETE_ACTIVE`, matching `script::run_script`.
+/// Mirrors the full process environment except `GHOST_COMPLETE_ACTIVE`
+/// (matching `script::run_script`).
 fn make_js_exec_context(ctx: &CommandContext, cwd: &Path) -> JsExecContext {
     let mut tokens: Vec<String> = Vec::with_capacity(2 + ctx.args.len());
     if let Some(cmd) = ctx.command.as_ref() {
@@ -1437,10 +1447,9 @@ fn make_js_exec_context(ctx: &CommandContext, cwd: &Path) -> JsExecContext {
     tokens.extend(ctx.args.iter().cloned());
     tokens.push(ctx.current_word.clone());
 
-    // Phase 5 mirrors the full process env into JS so generators that
-    // read `env.HOME` / `env.PATH` keep working. The map is a snapshot
-    // — mutations inside JS are confined to the host object and do not
-    // leak back into the engine.
+    // Snapshot the process env so generators that read `env.HOME` /
+    // `env.PATH` keep working. Mutations inside JS are confined to the
+    // host object and do not leak back into the engine.
     let mut env = std::collections::BTreeMap::new();
     for (k, v) in std::env::vars() {
         if k == "GHOST_COMPLETE_ACTIVE" {
@@ -1462,10 +1471,10 @@ fn make_js_exec_context(ctx: &CommandContext, cwd: &Path) -> JsExecContext {
     }
 }
 
-/// Phase 5 dispatch: run a `script_function` generator. JS produces
-/// argv; the engine then runs the argv through `run_script` with the
-/// generator's transform pipeline. Returns the resulting suggestions
-/// (post-transform, post-cache).
+/// Run a `script_function` generator. JS produces argv; the engine then
+/// runs the argv through `run_script` with the generator's transform
+/// pipeline. Returns the resulting suggestions (post-transform,
+/// post-cache).
 #[allow(clippy::too_many_arguments)]
 async fn run_script_function_dispatch(
     rt: Arc<specs::JsRuntimeSpec>,
@@ -1566,10 +1575,10 @@ async fn run_script_function_dispatch(
     Ok(suggestions)
 }
 
-/// Phase 5 dispatch: run a `custom` generator. JS evaluates with the
-/// host `executeShellCommand` binding and returns suggestions
-/// directly. The engine never touches the script path — the runner
-/// trait does that on JS's behalf.
+/// Run a `custom` generator. JS evaluates with the host
+/// `executeShellCommand` binding and returns suggestions directly. The
+/// engine never touches the script path — the runner trait does that
+/// on JS's behalf.
 #[allow(clippy::too_many_arguments)]
 async fn run_custom_dispatch(
     rt: Arc<specs::JsRuntimeSpec>,
@@ -1591,6 +1600,12 @@ async fn run_custom_dispatch(
     // engine's existing cache shape doesn't have a "tokens" axis, so
     // we fold the tokens into the source-hash slot to keep the change
     // local.
+    //
+    // cwd is unconditionally included even when `cache_by_directory` is
+    // false: a Custom generator typically reads cwd through the JS host
+    // API, so two invocations in different dirs would otherwise share a
+    // cache slot (`git checkout` in repo A would surface repo B's
+    // branches).
     let token_fingerprint = exec_ctx.tokens.join("\u{1}");
     let key_source = format!(
         "custom:{src}#tokens:{tokens}#current:{current}#previous:{previous}",
@@ -1599,11 +1614,10 @@ async fn run_custom_dispatch(
         current = exec_ctx.current_token,
         previous = exec_ctx.previous_token,
     );
-    let cache_cwd = cache_cwd_owned(&cache, &cwd);
     let cache_key = CacheKey::js_processed(
         &cmd_name,
         std::slice::from_ref(&cmd_name), // argv slot is unused for custom
-        cache_cwd,
+        Some(cwd.as_path()),
         hash_js_source(&key_source),
     );
     if let Some(cached) = cache_store.get(&cache_key) {

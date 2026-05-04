@@ -284,7 +284,7 @@ fn count_corrected_generators_in_spec(spec: &gc_suggest::CompletionSpec) -> usiz
     fn count_in_options(options: &[OptionSpec]) -> usize {
         options
             .iter()
-            .filter_map(|o| o.args.as_ref())
+            .flat_map(|o| o.args.as_ref().into_iter().chain(o.extra_args.iter()))
             .flat_map(|a| a.generators.iter())
             .filter(|g| g.corrected_in.is_some())
             .count()
@@ -374,7 +374,7 @@ fn check_corrections_for_store(store: &gc_suggest::SpecStore) -> CheckResult {
     ))
 }
 
-/// Phase 7: spec addressability check. Iterates `SpecStore::conflicts()` and
+/// Spec addressability check. Iterates `SpecStore::conflicts()` and
 /// reports each rejected alias with a kind-specific hint so users can spot
 /// commands whose declared `name` was rejected (or whose stem was shadowed
 /// by a user override). Pure helper — operates against an in-memory store
@@ -455,7 +455,7 @@ fn check_alias_conflicts_for_store(store: &gc_suggest::SpecStore) -> CheckResult
     }
 }
 
-/// Phase 7 entry point that resolves spec dirs and dispatches to
+/// Entry point that resolves spec dirs and dispatches to
 /// [`check_alias_conflicts_for_store`].
 fn check_alias_conflicts(config: &gc_config::GhostConfig) -> CheckResult {
     let dirs = gc_suggest::spec_dirs::resolve_spec_dirs(&config.paths.spec_dirs);
@@ -470,8 +470,8 @@ fn check_alias_conflicts(config: &gc_config::GhostConfig) -> CheckResult {
     check_alias_conflicts_for_store(&result.store)
 }
 
-/// Phase 7: JS runtime kill switch check. Reports a Warn when the runtime
-/// is disabled — users running with `js_runtime = false` still see all
+/// JS runtime kill switch check. Reports a Warn when the runtime is
+/// disabled — users running with `js_runtime = false` still see all
 /// static completions, but their requires_js generators become inert.
 /// Disabling is a valid choice (e.g., to skip QuickJS overhead in
 /// resource-constrained environments), so this is informational, not an
@@ -510,7 +510,7 @@ fn count_missing_js_runtime_in_spec(spec: &CompletionSpec) -> usize {
     fn count_in_options(options: &[OptionSpec]) -> usize {
         options
             .iter()
-            .filter_map(|o| o.args.as_ref())
+            .flat_map(|o| o.args.as_ref().into_iter().chain(o.extra_args.iter()))
             .flat_map(|a| a.generators.iter())
             .filter(|g| missing(g))
             .count()
@@ -525,10 +525,10 @@ fn count_missing_js_runtime_in_spec(spec: &CompletionSpec) -> usize {
     total
 }
 
-/// Phase 7: embedded specs runtime-source check. Walks every entry in the
+/// Embedded specs runtime-source check. Walks every entry in the
 /// SpecStore (including embedded fallback) and asserts every requires_js
-/// generator carries js_runtime metadata. Should be 0 today (Phase 2 wired
-/// the converter); a non-zero result is a hard corpus defect.
+/// generator carries js_runtime metadata. A non-zero result indicates an
+/// incomplete converter regen or a hand-edited spec.
 fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> CheckResult {
     let mut affected: Vec<(&str, usize)> = store
         .iter()
@@ -571,7 +571,7 @@ fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> C
     ))
 }
 
-/// Phase 7 entry point that resolves spec dirs and dispatches to
+/// Entry point that resolves spec dirs and dispatches to
 /// [`check_embedded_runtime_metadata_for_store`].
 fn check_embedded_runtime_metadata(config: &gc_config::GhostConfig) -> CheckResult {
     let dirs = gc_suggest::spec_dirs::resolve_spec_dirs(&config.paths.spec_dirs);
@@ -667,15 +667,12 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
         )),
     }
 
-    // Phase 7 checks (UX-9):
-    //   - Spec addressability: surface AliasConflicts so users can spot
-    //     a `name` that lost to another file's stem, etc.
-    //   - JS runtime: warn when the kill switch is off so a user who
-    //     forgot they disabled it sees why their dynamic completions are
-    //     inert.
-    //   - Embedded specs: assert every requires_js generator in the
-    //     loaded corpus carries js_runtime metadata. Catches an
-    //     incomplete converter regen or a hand-edited spec.
+    // Spec addressability surfaces AliasConflicts so users can spot a
+    // `name` that lost to another file's stem. The JS runtime check warns
+    // when the kill switch is off so a user who forgot they disabled it
+    // sees why their dynamic completions are inert. The embedded specs
+    // check asserts every requires_js generator in the loaded corpus
+    // carries js_runtime metadata.
     match &config {
         Some(cfg) => {
             results.push(check_alias_conflicts(cfg));
@@ -1017,7 +1014,7 @@ mod tests {
     }
 
     // -------------------------------------------------------------------------
-    // UX-9 Phase 7 — alias conflicts / JS runtime / embedded specs
+    // alias conflicts / JS runtime / embedded specs
     // -------------------------------------------------------------------------
 
     #[test]
@@ -1091,7 +1088,7 @@ mod tests {
     #[test]
     fn doctor_passes_when_runtime_metadata_complete() {
         // Spec with a requires_js generator that carries js_runtime
-        // metadata (typical post-Phase-2 state). Should be OK.
+        // metadata. Should be OK.
         let (store, _dir) = store_from_json_fixtures(&[(
             "ok.json",
             r#"{

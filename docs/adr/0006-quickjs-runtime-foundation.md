@@ -1,9 +1,23 @@
 # 0006. QuickJS runtime foundation for `requires_js` specs
 
-- **Status:** Accepted
+- **Status:** Accepted; extended in the same release (see Status note)
 - **Date:** 2026-05-03
 - **Supersedes:** —
 - **Superseded by:** —
+
+## Status note (added post-merge)
+
+This ADR was drafted assuming Phase 3 (the `gc-jsrt` foundation) would
+ship ahead of Phases 4–8. The release that landed this ADR also landed
+those follow-on phases: `gc-suggest` dispatches all three
+`js_runtime.kind` variants (`post_process`, `script_function`,
+`custom`), the kill switch defaults to on, `ghost-complete doctor` and
+`status --json` surface per-runtime diagnostics, and a coverage
+regression gate is wired in CI. The Decision and Consequences sections
+below describe the snapshot the ADR was written against; treat the
+"Phase 4 will…" / "Phase 4 follow-up" wording as historical scoping,
+not as a description of what the merged tree does. See
+[`docs/JS_RUNTIME.md`](../JS_RUNTIME.md) for the current behaviour.
 
 ## Context
 

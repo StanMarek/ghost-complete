@@ -1,11 +1,9 @@
 //! Preprocess embedded completion specs at build time.
 //!
-//! Reads every `../../specs/*.json`, drops any straggler `js_source`
-//! field from generators (a no-op for newly-converted specs since UX-9
-//! Phase 2 — the converter now emits `js_runtime.source` directly and
-//! `js_source` is not produced — but kept defensively so a stale
-//! user-installed spec doesn't pollute the embedded format), serialises
-//! the result compactly (no pretty-print whitespace) into
+//! Reads every `../../specs/*.json`, defensively drops any straggler
+//! `js_source` field from generators (no-op for freshly-converted specs;
+//! catches stale user-installed specs from older converter versions),
+//! serialises the result compactly (no pretty-print whitespace) into
 //! `$OUT_DIR/specs-min/`, and writes an `embedded_specs.rs` include that
 //! the `embedded` module `include!`s.
 //!
@@ -15,15 +13,14 @@
 //!
 //! ## Why this exists
 //!
-//! Binary-size intervention. The original embedded pattern
-//! baked 21 MB of pretty-printed JSON directly via `include_str!`, which
-//! landed as ~42 MB of `__const` data in the release binary (each
-//! whitespace byte round-trips verbatim through rustc). Minifying drops
-//! that to ~11 MB of source bytes. Stripping the legacy `js_source` field
-//! used to trim another ~435 KB; UX-9 Phase 2 restored the JS source on
-//! `js_runtime.source` (so the runtime can evaluate it) — that data is
-//! retained in the binary but stripping `js_source` at the same depth
-//! still costs nothing and keeps the embed format clean.
+//! Binary-size intervention. The original embedded pattern baked 21 MB
+//! of pretty-printed JSON directly via `include_str!`, which landed as
+//! ~42 MB of `__const` data in the release binary (each whitespace byte
+//! round-trips verbatim through rustc). Minifying drops that to ~11 MB
+//! of source bytes. Stripping the legacy `js_source` field shaved
+//! another ~435 KB; that data is now carried on `js_runtime.source` so
+//! the runtime can evaluate it — `js_source` itself stays stripped for
+//! compatibility with stale user-installed specs.
 //!
 //! ## Invariants
 //!
@@ -33,10 +30,10 @@
 //! - `_corrected_in` is intentionally NOT stripped — it is consumed at
 //!   runtime by `ghost-complete doctor` to surface generators that
 //!   previously mis-converted.
-//! - `js_runtime` is intentionally NOT stripped — Phase 4+ will read the
-//!   `source` field at runtime to drive the QuickJS evaluator. The
-//!   post-strip assertion below catches a regression where a future
-//!   stripper accidentally walks into `js_runtime`.
+//! - `js_runtime` survives the strip pass — the runtime reads its
+//!   `source` field to drive the QuickJS evaluator. The post-strip
+//!   assertion below catches a regression where a future stripper
+//!   accidentally walks into the runtime metadata.
 //! - If a spec is not valid JSON, we bail loudly rather than silently
 //!   emit the broken source — a malformed spec in the binary would
 //!   manifest as a load-time parse error with no hint why.
@@ -98,9 +95,9 @@ fn main() {
         let mut value: serde_json::Value = serde_json::from_str(&src)
             .unwrap_or_else(|e| panic!("parse {}: {e}", src_path.display()));
         strip_legacy_js_source(&mut value);
-        // Sanity: the strip must NOT have touched js_runtime.source. Phase 4+
-        // will read this field at runtime; an accidental strip would
-        // silently disable JS-driven generators across the corpus.
+        // Sanity: the strip must NOT have touched js_runtime.source. The
+        // runtime reads it to drive the JS evaluator; an accidental strip
+        // would silently disable JS-driven generators across the corpus.
         assert_js_runtime_source_preserved(&value, src_path);
         let minified = serde_json::to_string(&value)
             .unwrap_or_else(|e| panic!("serialize {}: {e}", src_path.display()));
@@ -138,12 +135,11 @@ fn main() {
 
 /// Strip the legacy `js_source` field from generators in-place.
 ///
-/// Since UX-9 Phase 2 the converter no longer emits `js_source` (it has been
-/// replaced by structured `js_runtime.source` metadata that the runtime can
-/// actually consume). This stripper is now defensive: if a user-installed
-/// spec carries a stale `js_source` field — for example, copied from an older
-/// converter run before Phase 2 — drop it so the embedded format stays
-/// consistent. For freshly-converted specs this is a no-op.
+/// `js_source` has been replaced by structured `js_runtime.source` metadata
+/// that the runtime can actually consume. This stripper is defensive: it
+/// drops `js_source` from stale user-installed specs (copied from older
+/// converter versions) so the embedded format stays consistent. For
+/// freshly-converted specs this is a no-op.
 fn strip_legacy_js_source(v: &mut serde_json::Value) {
     match v {
         serde_json::Value::Object(map) => {

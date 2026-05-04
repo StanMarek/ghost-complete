@@ -110,7 +110,7 @@ To refresh the baseline: run `ghost-complete status --json` and follow the proce
 
 **Job name in CI:** `Coverage regression`
 **YAML key:** `coverage-regression`
-**Trigger:** `needs: [check]` — runs after the `check` job succeeds. Wired with `continue-on-error: true` for the initial rollout (UX-9 Phase 7).
+**Trigger:** `needs: [check]` — runs after the `check` job succeeds. Wired with `continue-on-error: true` pending promotion to a hard gate.
 
 **Purpose:** fails when the live `requires_js_generators_unsupported` count from `ghost-complete status --json` rises above the latest `docs/coverage-baseline.json` row by more than the configured tolerance (default: 0), or when any command is reported `commands_nonfunctional > 0`. Catches regressions where:
 

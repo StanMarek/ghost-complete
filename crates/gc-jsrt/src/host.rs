@@ -1,18 +1,17 @@
-//! Phase 5 host bindings: the minimal Fig-compatible API surface
-//! exposed to `script_function` and `custom` JS generators.
+//! Minimal Fig-compatible host bindings exposed to `script_function`
+//! and `custom` JS generators.
 //!
-//! The bindings are installed into the same fresh per-job [`Ctx`] used
-//! by Phase 4. All values are immutable for the duration of evaluation:
-//! the JS code reads them, possibly invokes `executeShellCommand`, and
-//! returns. There is no mechanism to write back into the host.
+//! The bindings install into the per-job [`Ctx`] and are immutable for
+//! the duration of evaluation. JS reads them, possibly invokes
+//! `executeShellCommand`, and returns; there is no write-back path.
 //!
 //! # Surface
 //!
 //! ```js
 //! const __ghost = {
 //!   cwd: "<absolute path>",
-//!   env: { HOME: "...", PATH: "...", ... },        // caller snapshot
-//!   searchTerm: "<current_token>",                 // alias
+//!   env: { HOME: "...", PATH: "...", ... },
+//!   searchTerm: "<current_token>",
 //!   currentToken: "<current_token>",
 //!   previousToken: "<previous_token>",
 //!   tokens: ["git", "checkout", "main"],
@@ -21,33 +20,24 @@
 //! ```
 //!
 //! `__ghost` is also installed as `globalThis.fig` in a backwards-compat
-//! shape so the corpus' `fig.executeShellCommand(...)` call sites
-//! resolve. Note this is NOT a perfect Fig emulation — the original Fig
-//! API surface is large; we expose only what current shipped specs
-//! actually need at evaluation time.
+//! shape so corpus call sites of the form `fig.executeShellCommand(...)`
+//! resolve. This is NOT a perfect Fig emulation — only the bits current
+//! shipped specs actually need.
 //!
-//! # Recursion cap
-//!
-//! `executeShellCommand` is metered by [`MAX_SHELL_CALLS_PER_EVALUATION`].
-//! The first five calls succeed/fail per the runner's verdict; the
-//! sixth raises a JS exception with diagnostic
+//! `executeShellCommand` is metered by [`MAX_SHELL_CALLS_PER_EVALUATION`];
+//! the next call after that throws
 //! [`crate::JsDiagnosticCode::ShellCommandLimitExceeded`].
 //!
-//! # Synchronous semantics
-//!
-//! JS sees `executeShellCommand` as a synchronous function returning a
-//! Fig-compatible result object with `stdout`, `stderr`, and `exitCode`.
-//! Spec authors typically do
-//! `await executeShellCommand(...)`, which works fine: awaiting a
-//! non-Promise returns the value as-is. We don't wrap in a Promise to
-//! keep the worker thread (which is a regular OS thread, not a tokio
-//! task) able to call `tokio::runtime::Handle::block_on(...)` from
-//! inside the runner without worrying about nesting two async
-//! interpreters.
+//! JS sees `executeShellCommand` as synchronous (returning a Fig-shape
+//! result with `stdout` / `stderr` / `exitCode`). `await` on a non-Promise
+//! returns the value as-is, so the corpus' `await ...` style works.
+//! We avoid wrapping in a Promise so the worker thread (a regular OS
+//! thread, not a tokio task) can `Handle::block_on(...)` inside the runner
+//! without nesting two async interpreters.
 
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use rquickjs::function::{Constructor, Rest};
@@ -58,10 +48,9 @@ use crate::types::{JsRuntimeInput, ShellRunError, ShellRunner};
 
 /// Maximum number of `executeShellCommand` calls a single JS evaluation
 /// may make before further calls throw
-/// [`crate::JsDiagnosticCode::ShellCommandLimitExceeded`]. Phase 5 picks
-/// 5 because every shipped `Custom` generator we audited uses ≤ 2 calls
-/// in a single completion turn; 5 covers padding for branches that
-/// fan out by configuration step.
+/// [`crate::JsDiagnosticCode::ShellCommandLimitExceeded`]. Bounded at 5
+/// because every shipped `Custom` generator uses ≤ 2 calls per turn;
+/// 5 leaves headroom for fan-out without enabling abuse.
 pub const MAX_SHELL_CALLS_PER_EVALUATION: usize = 5;
 
 const DEFAULT_SHELL_TIMEOUT_MS: u64 = 5_000;
@@ -74,7 +63,7 @@ pub(crate) struct HostState {
     pub call_count: AtomicUsize,
     /// Whether a host call observed `UnsupportedHostApi` and emitted a
     /// diagnostic. Surfaced through `consume_unsupported_apis`.
-    pub unsupported_apis: parking_lot_lite::Mutex<Vec<String>>,
+    pub unsupported_apis: Mutex<Vec<String>>,
 }
 
 impl HostState {
@@ -84,78 +73,24 @@ impl HostState {
 
     /// Drain the accumulated unsupported-API names for diagnostics.
     pub(crate) fn drain_unsupported(&self) -> Vec<String> {
-        let mut guard = self.unsupported_apis.lock();
+        let mut guard = self
+            .unsupported_apis
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         std::mem::take(&mut *guard)
     }
 
     /// Record a missing host API name. Idempotent for the same name in
     /// a single evaluation.
     pub(crate) fn record_unsupported(&self, name: &str) {
-        let mut guard = self.unsupported_apis.lock();
+        let mut guard = self
+            .unsupported_apis
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         if !guard.iter().any(|n| n == name) {
             guard.push(name.to_string());
         }
     }
-}
-
-/// Tiny `parking_lot`-shaped mutex implemented over `std::sync::Mutex`
-/// to avoid taking a new dependency. Same trait surface (`lock`)
-/// without the poisoning that `std::sync::Mutex` carries.
-pub(crate) mod parking_lot_lite {
-    use std::cell::UnsafeCell;
-    use std::ops::{Deref, DerefMut};
-    use std::sync::Mutex as StdMutex;
-
-    /// One-trick mutex returning `MutexGuard` that ignores poisoning.
-    pub struct Mutex<T>(StdMutex<UnsafeCell<T>>);
-
-    impl<T> Default for Mutex<T>
-    where
-        T: Default,
-    {
-        fn default() -> Self {
-            Self(StdMutex::new(UnsafeCell::new(T::default())))
-        }
-    }
-
-    impl<T> Mutex<T> {
-        pub fn lock(&self) -> Guard<'_, T> {
-            // Recover from a poisoned mutex by taking the inner state
-            // verbatim — Phase 5 host state has no invariants that a
-            // panic could leave invalid; the worst case is an empty
-            // unsupported-APIs vec and a zero call counter on a dead
-            // worker, neither of which is dangerous.
-            let lock = match self.0.lock() {
-                Ok(g) => g,
-                Err(poisoned) => poisoned.into_inner(),
-            };
-            Guard { _lock: lock }
-        }
-    }
-
-    pub struct Guard<'a, T> {
-        _lock: std::sync::MutexGuard<'a, UnsafeCell<T>>,
-    }
-
-    impl<T> Deref for Guard<'_, T> {
-        type Target = T;
-        fn deref(&self) -> &T {
-            // Safety: holding the std MutexGuard means we have unique
-            // access to the UnsafeCell contents.
-            unsafe { &*self._lock.get() }
-        }
-    }
-
-    impl<T> DerefMut for Guard<'_, T> {
-        fn deref_mut(&mut self) -> &mut T {
-            // Safety: see Deref.
-            unsafe { &mut *self._lock.get() }
-        }
-    }
-
-    // The `UnsafeCell<T>` makes `Mutex<T>` not auto-Sync; re-assert it.
-    unsafe impl<T: Send> Send for Mutex<T> {}
-    unsafe impl<T: Send> Sync for Mutex<T> {}
 }
 
 /// Install the Fig-compatible host API onto `ctx`'s globals.
@@ -287,13 +222,11 @@ fn build_execute_shell_command<'js>(
                 )
             })?;
 
-            // Optional second argument: an options object with `cwd`
-            // / `timeout` overrides. Phase 5 only honours these two
-            // fields; everything else is ignored without a
-            // diagnostic so legacy specs that pass extra options
-            // (e.g. `splitOn`) keep working.
+            // Unknown options fields are silently ignored so legacy specs
+            // that pass extras (e.g. `splitOn`) keep working.
             let opts_arg = iter.next();
-            let (cwd_override, timeout_override) = parse_exec_options(&ctx, opts_arg.as_ref());
+            let (cwd_override, timeout_override) =
+                parse_exec_options(&ctx, opts_arg.as_ref(), &state);
 
             let mut cwd = cwd_override.unwrap_or_else(|| default_cwd.clone());
             let mut timeout_override = timeout_override;
@@ -308,10 +241,7 @@ fn build_execute_shell_command<'js>(
 
             let result = if let Some(s) = cmd_arg.as_string() {
                 let s = s.to_string()?;
-                let timeout = bounded_shell_timeout(timeout_override, shell_deadline);
-                if allow_shell_command {
-                    runner.run_string(&s, &cwd, timeout)
-                } else {
+                if !allow_shell_command {
                     return Err(throw_with_code(
                         &ctx,
                         "ShellCommandStringDenied",
@@ -320,6 +250,10 @@ fn build_execute_shell_command<'js>(
                                  {s:?}"
                         ),
                     ));
+                }
+                match bounded_shell_timeout(timeout_override, shell_deadline) {
+                    Some(timeout) => runner.run_string(&s, &cwd, timeout),
+                    None => Err(ShellRunError::Timeout),
                 }
             } else if let Some(arr) = cmd_arg.as_array() {
                 let mut argv: Vec<String> = Vec::with_capacity(arr.len());
@@ -341,13 +275,16 @@ fn build_execute_shell_command<'js>(
                         "argv array must have at least one element",
                     ));
                 }
-                let timeout = bounded_shell_timeout(timeout_override, shell_deadline);
-                runner.run_argv(&argv, &cwd, timeout)
+                match bounded_shell_timeout(timeout_override, shell_deadline) {
+                    Some(timeout) => runner.run_argv(&argv, &cwd, timeout),
+                    None => Err(ShellRunError::Timeout),
+                }
             } else if let Some(obj) = cmd_arg.as_object() {
                 // Fig also supports `{ command: "...", args: [...] }`
                 // descriptors. We accept both `command` (single
                 // executable name) and `args` (rest of argv).
-                let (descriptor_cwd, descriptor_timeout) = parse_exec_options(&ctx, Some(&cmd_arg));
+                let (descriptor_cwd, descriptor_timeout) =
+                    parse_exec_options(&ctx, Some(&cmd_arg), &state);
                 if let Some(descriptor_cwd) = descriptor_cwd {
                     cwd = descriptor_cwd;
                 }
@@ -399,8 +336,10 @@ fn build_execute_shell_command<'js>(
                         argv.push(s.to_string()?);
                     }
                 }
-                let timeout = bounded_shell_timeout(timeout_override, shell_deadline);
-                runner.run_argv(&argv, &cwd, timeout)
+                match bounded_shell_timeout(timeout_override, shell_deadline) {
+                    Some(timeout) => runner.run_argv(&argv, &cwd, timeout),
+                    None => Err(ShellRunError::Timeout),
+                }
             } else {
                 return Err(throw_with_code(
                     &ctx,
@@ -436,10 +375,18 @@ fn build_execute_shell_command<'js>(
     )
 }
 
-fn bounded_shell_timeout(requested_timeout_ms: Option<u64>, deadline: Instant) -> Duration {
+/// Below this threshold the runner is bypassed entirely — `tokio::time::timeout`
+/// would still fork+reap a subprocess before resolving Elapsed, paying ~5–15ms
+/// on macOS for nothing.
+const SHELL_TIMEOUT_FLOOR: Duration = Duration::from_millis(5);
+
+fn bounded_shell_timeout(requested_timeout_ms: Option<u64>, deadline: Instant) -> Option<Duration> {
     let requested = Duration::from_millis(requested_timeout_ms.unwrap_or(DEFAULT_SHELL_TIMEOUT_MS));
     let remaining = deadline.saturating_duration_since(Instant::now());
-    requested.min(remaining)
+    if remaining < SHELL_TIMEOUT_FLOOR {
+        return None;
+    }
+    Some(requested.min(remaining))
 }
 
 /// Parse the optional options descriptor that JS may pass as the second
@@ -448,10 +395,14 @@ fn bounded_shell_timeout(requested_timeout_ms: Option<u64>, deadline: Instant) -
 ///   * `cwd: string`  – override the default cwd for this call.
 ///   * `timeout: number` – override the default timeout (milliseconds).
 ///
-/// Unknown fields are silently ignored.
+/// Unknown fields are silently ignored so legacy specs that pass extras
+/// (e.g. `splitOn`) keep working. Wrong-typed values for known fields
+/// emit an `UnsupportedHostApi` diagnostic so a spec author hunting
+/// "why is my timeout not honored" gets a signal.
 fn parse_exec_options<'js>(
     _ctx: &Ctx<'js>,
     opts: Option<&Value<'js>>,
+    state: &Arc<HostState>,
 ) -> (Option<std::path::PathBuf>, Option<u64>) {
     let Some(opts) = opts else {
         return (None, None);
@@ -459,15 +410,26 @@ fn parse_exec_options<'js>(
     let Some(obj) = opts.as_object() else {
         return (None, None);
     };
-    let cwd = obj.get::<_, Value<'js>>("cwd").ok().and_then(|v| {
-        v.as_string()
-            .and_then(|s| s.to_string().ok())
-            .map(std::path::PathBuf::from)
-    });
-    let timeout = obj
-        .get::<_, Value<'js>>("timeout")
-        .ok()
-        .and_then(|v| v.as_number().map(|n| n as u64));
+    let cwd = match obj.get::<_, Value<'js>>("cwd") {
+        Ok(v) if !v.is_undefined() && !v.is_null() => match v.as_string() {
+            Some(s) => s.to_string().ok().map(std::path::PathBuf::from),
+            None => {
+                state.record_unsupported("executeShellCommand.options.cwd<bad-type>");
+                None
+            }
+        },
+        _ => None,
+    };
+    let timeout = match obj.get::<_, Value<'js>>("timeout") {
+        Ok(v) if !v.is_undefined() && !v.is_null() => match v.as_number() {
+            Some(n) => Some(n as u64),
+            None => {
+                state.record_unsupported("executeShellCommand.options.timeout<bad-type>");
+                None
+            }
+        },
+        _ => None,
+    };
     (cwd, timeout)
 }
 
@@ -481,12 +443,19 @@ fn throw_with_code<'js>(ctx: &Ctx<'js>, code: &str, message: &str) -> rquickjs::
     let exc = match build_error_object(ctx, code, message) {
         Ok(v) => v,
         Err(_) => {
-            // If we can't build the structured error, fall back to a
-            // raw string throw so the worker still classifies as
-            // Exception with the message text.
+            // Fall back to a raw string throw so the worker still
+            // classifies as Exception with the message text.
             let fallback = match message.into_js(ctx) {
                 Ok(v) => v,
-                Err(_) => Value::new_undefined(ctx.clone()),
+                Err(e) => {
+                    tracing::error!(
+                        code = %code,
+                        message = %message,
+                        error = ?e,
+                        "throw_with_code: could not construct any JS exception payload"
+                    );
+                    Value::new_undefined(ctx.clone())
+                }
             };
             return ctx.throw(fallback);
         }
@@ -510,18 +479,15 @@ fn build_error_object<'js>(
     Ok(err)
 }
 
-/// Install thrower stubs for namespaces that the corpus references but
-/// the Phase 5 runtime cannot fulfil (e.g. `fig.fs.readFile`,
-/// `fig.path.join`). Each unknown call is reported via `state.record_unsupported`
-/// so the engine can emit a diagnostic.
+/// Install thrower stubs for namespaces the corpus references but the
+/// runtime cannot fulfil (e.g. `fig.fs.readFile`, `fig.path.join`).
+/// Each unknown call is reported via `state.record_unsupported` so the
+/// engine can emit a diagnostic.
 fn install_unsupported_namespaces<'js>(
     ctx: &Ctx<'js>,
     fig: &Object<'js>,
     state: &Arc<HostState>,
 ) -> rquickjs::Result<()> {
-    // Top-level namespaces we lower with throwers. Adding `fs`, `path`,
-    // and `keychain` covers the dominant API names the inventory shows
-    // outside of executeShellCommand.
     for ns_name in ["fs", "path", "keychain", "ipc", "ui"] {
         let namespace = Object::new(ctx.clone())?;
         for method in ["readFile", "writeFile", "stat", "exists", "join", "resolve"] {

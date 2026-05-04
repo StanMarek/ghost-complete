@@ -6,13 +6,13 @@
 //! `gc-jsrt` defines the [`gc_jsrt::ShellRunner`] trait without taking
 //! a tokio dependency, so it can be used in pure-test contexts. The
 //! engine-side implementation is the only place that knows how to
-//! reach `script::run_script`, so it lives here next to the rest of
-//! the engine.
+//! reach `script::run_script_full`, so it lives here next to the rest
+//! of the engine.
 //!
 //! # Threading model
 //!
-//! Phase 5 calls `executeShellCommand` synchronously from the JS
-//! worker thread. That worker is a regular OS thread (spawned by
+//! `executeShellCommand` is invoked synchronously from the JS worker
+//! thread. That worker is a regular OS thread (spawned by
 //! `JsWorker::spawn` inside `gc-jsrt`), NOT a tokio task. Calling
 //! `tokio::runtime::Handle::block_on(...)` from a non-runtime thread
 //! is supported by tokio and is the documented way to bridge sync ↔
@@ -30,12 +30,12 @@ use tokio::runtime::Handle;
 
 use gc_jsrt::{ShellRunError, ShellRunOutput, ShellRunner};
 
-use crate::script::run_script;
+use crate::script::run_script_full;
 
 /// Engine-side [`ShellRunner`] backed by `tokio::process::Command` via
-/// the existing `script::run_script` helper.
+/// the existing `script::run_script_full` helper.
 pub struct EngineShellRunner {
-    /// Tokio handle the worker thread uses to drive `run_script`.
+    /// Tokio handle the worker thread uses to drive `run_script_full`.
     handle: Handle,
 }
 
@@ -68,36 +68,10 @@ impl ShellRunner for EngineShellRunner {
         // it parks the calling (worker) thread until the future
         // resolves on the runtime threadpool. We are NEVER on a tokio
         // task here — see the module-level safety note.
-        let result = self.handle.block_on(async move {
+        self.handle.block_on(async move {
             let argv_refs: Vec<&str> = argv_owned.iter().map(|s| s.as_str()).collect();
-            run_script(&argv_refs, &cwd_owned, timeout_ms).await
-        });
-        match result {
-            Ok(stdout) => Ok(ShellRunOutput {
-                stdout,
-                stderr: String::new(),
-                exit_code: Some(0),
-            }),
-            Err(e) => {
-                // `run_script` collapses several distinct failure modes
-                // into a single `anyhow::Error`. We pattern-match on
-                // the message string for the common cases (timeout,
-                // non-zero exit) so the JS-side diagnostic carries a
-                // tighter classification.
-                let msg = e.to_string();
-                if msg.contains("timed out") {
-                    Err(ShellRunError::Timeout)
-                } else if msg.contains("exited with status") {
-                    Err(ShellRunError::NonZeroExit {
-                        exit_code: None,
-                        stdout: String::new(),
-                        stderr: msg,
-                    })
-                } else {
-                    Err(ShellRunError::Spawn(msg))
-                }
-            }
-        }
+            run_script_full(&argv_refs, &cwd_owned, timeout_ms).await
+        })
     }
 
     fn run_string(
@@ -106,11 +80,10 @@ impl ShellRunner for EngineShellRunner {
         cwd: &Path,
         timeout: Duration,
     ) -> Result<ShellRunOutput, ShellRunError> {
-        // Phase 5 ships with `allow_shell_command=false` for every
-        // shipped spec; this branch only fires when a future spec
-        // explicitly opts in. Parse via `shlex::split` (the workspace's
-        // existing shell-tokeniser) and dispatch through `run_argv` so
-        // we keep the same exec path.
+        // `allow_shell_command=false` is the spec default; this branch
+        // fires only for explicitly-opted-in specs. Parse via
+        // `shlex::split` (the workspace's existing shell-tokeniser) and
+        // dispatch through `run_argv` so we keep the same exec path.
         let argv = match shlex::split(command) {
             Some(v) if !v.is_empty() => v,
             Some(_) => {
@@ -125,5 +98,123 @@ impl ShellRunner for EngineShellRunner {
             }
         };
         self.run_argv(&argv, cwd, timeout)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // The runner contract requires `block_on` from a non-runtime thread
+    // (tokio panics if called from inside a tokio task). The helpers
+    // build a multi-threaded runtime, hand its handle to a fresh OS
+    // thread, and drive the runner there — mirroring the JS-worker
+    // production caller exactly.
+    fn drive_argv(argv: Vec<String>, timeout_ms: u64) -> Result<ShellRunOutput, ShellRunError> {
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(1)
+            .enable_all()
+            .build()
+            .expect("tokio runtime");
+        let handle = rt.handle().clone();
+        std::thread::spawn(move || {
+            let runner = EngineShellRunner { handle };
+            runner.run_argv(
+                &argv,
+                std::path::Path::new("/tmp"),
+                Duration::from_millis(timeout_ms),
+            )
+        })
+        .join()
+        .expect("thread join")
+    }
+
+    fn drive_string(command: String, timeout_ms: u64) -> Result<ShellRunOutput, ShellRunError> {
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(1)
+            .enable_all()
+            .build()
+            .expect("tokio runtime");
+        let handle = rt.handle().clone();
+        std::thread::spawn(move || {
+            let runner = EngineShellRunner { handle };
+            runner.run_string(
+                &command,
+                std::path::Path::new("/tmp"),
+                Duration::from_millis(timeout_ms),
+            )
+        })
+        .join()
+        .expect("thread join")
+    }
+
+    #[test]
+    fn run_argv_timeout_classifies_as_timeout() {
+        let err = drive_argv(vec!["/bin/sleep".into(), "5".into()], 50)
+            .expect_err("sleep 5 with 50ms timeout must error");
+        assert!(
+            matches!(err, ShellRunError::Timeout),
+            "expected Timeout, got: {err:?}"
+        );
+    }
+
+    #[test]
+    fn run_argv_nonzero_exit_classifies_as_nonzero_with_real_code() {
+        let err = drive_argv(vec!["sh".into(), "-c".into(), "exit 1".into()], 5_000)
+            .expect_err("exit 1 must surface as error");
+        match err {
+            ShellRunError::NonZeroExit { exit_code, .. } => {
+                assert_eq!(exit_code, Some(1), "real exit code must surface");
+            }
+            other => panic!("expected NonZeroExit, got: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn run_argv_nonzero_exit_carries_real_stderr() {
+        let err = drive_argv(
+            vec![
+                "sh".into(),
+                "-c".into(),
+                "echo real-stderr-msg >&2; exit 7".into(),
+            ],
+            5_000,
+        )
+        .expect_err("script with stderr + non-zero exit must error");
+        match err {
+            ShellRunError::NonZeroExit {
+                exit_code, stderr, ..
+            } => {
+                assert_eq!(exit_code, Some(7));
+                assert!(
+                    stderr.contains("real-stderr-msg"),
+                    "stderr must reach JS verbatim, got: {stderr:?}"
+                );
+            }
+            other => panic!("expected NonZeroExit, got: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn run_argv_spawn_failure_classifies_as_spawn() {
+        let err = drive_argv(
+            vec!["/nonexistent/binary/that/should/never/exist".into()],
+            5_000,
+        )
+        .expect_err("missing binary must surface as error");
+        assert!(
+            matches!(err, ShellRunError::Spawn(_)),
+            "expected Spawn, got: {err:?}"
+        );
+    }
+
+    #[test]
+    fn run_string_shlex_failure_classifies_as_argv_parse() {
+        let err = drive_string("echo \"unmatched".into(), 5_000)
+            .expect_err("unmatched quote must surface as error");
+        assert!(
+            matches!(err, ShellRunError::ArgvParse(_)),
+            "expected ArgvParse, got: {err:?}"
+        );
     }
 }

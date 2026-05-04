@@ -5,8 +5,9 @@
 //! state into the next. [`configure_context`] is therefore called
 //! once per job, immediately after the new context is created.
 
+use rquickjs::function::Rest;
 use rquickjs::prelude::Func;
-use rquickjs::{CatchResultExt, Ctx, Object};
+use rquickjs::{CatchResultExt, Ctx, Object, Value};
 
 /// Globals we strip from the freshly-created context.
 ///
@@ -81,24 +82,19 @@ pub(crate) fn configure_context<'js>(ctx: &Ctx<'js>) -> rquickjs::Result<()> {
     let globals: Object<'js> = ctx.globals();
 
     for name in STRIPPED_GLOBALS {
-        // `Object::remove` is idempotent in QuickJS — a missing key is a
-        // no-op. We swallow the result type for ergonomic reasons; the
-        // explicit `.ok()` is intentional.
         let _ = globals.remove(*name);
     }
 
     for name in DISABLED_INTRINSICS {
-        // The closure body intentionally does not return a value — we
-        // throw immediately. We use `Ctx::throw` to surface a typed
-        // exception that JS code can catch (or that bubbles up cleanly
-        // to our exception handler in `worker.rs`).
         let disabled_name = *name;
         globals.set(
             *name,
-            Func::new(move |ctx: Ctx<'js>| -> rquickjs::Result<()> {
-                let msg = format!("{disabled_name} is disabled in gc-jsrt");
-                Err(ctx.throw(rquickjs::String::from_str(ctx.clone(), &msg)?.into()))
-            }),
+            Func::new(
+                move |ctx: Ctx<'js>, _args: Rest<Value<'js>>| -> rquickjs::Result<()> {
+                    let msg = format!("{disabled_name} is disabled in gc-jsrt");
+                    Err(ctx.throw(rquickjs::String::from_str(ctx.clone(), &msg)?.into()))
+                },
+            ),
         )?;
     }
 

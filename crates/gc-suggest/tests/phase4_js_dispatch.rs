@@ -475,3 +475,121 @@ async fn phase4_kill_switch_disables_dispatch() {
         "kill switch must drop js_runtime generators entirely, got: {results:?}"
     );
 }
+
+#[tokio::test]
+async fn phase5_custom_zero_ttl_skips_cache_insert() {
+    // A custom generator that returns an empty suggestion list with
+    // `ttl_seconds: 0` must NOT populate the post-processed cache —
+    // caching empty results would suppress retries for the full TTL window.
+    // We exercise the gate by running a generator with a side effect: each
+    // invocation appends to a counter file. With caching off (or empty
+    // results not cached) the second dispatch must re-run the script.
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let counter = tmp.path().join("count");
+    let counter_path = counter.display().to_string();
+    let source = format!(
+        "async (tokens, run, ctx) => {{ \
+            await run(['sh', '-c', 'echo run >> {path}']); \
+            return []; \
+        }}",
+        path = counter_path,
+    );
+    let gen = Arc::new(GeneratorSpec {
+        generator_type: None,
+        script: None,
+        script_template: None,
+        transforms: Vec::new(),
+        cache: Some(CacheConfig {
+            ttl_seconds: 0,
+            cache_by_directory: false,
+        }),
+        requires_js: true,
+        js_source: None,
+        js_runtime: Some(Arc::new(JsRuntimeSpec {
+            kind: JsRuntimeKind::Custom,
+            source,
+            self_contained: true,
+            input: None,
+            timeout_ms: None,
+            allow_shell_command: false,
+        })),
+        corrected_in: None,
+        template: None,
+    });
+
+    let engine = make_engine();
+    let ctx = make_ctx("phase5-empty-cache", Vec::new(), "");
+
+    let _first = engine
+        .run_generators(std::slice::from_ref(&gen), &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("first dispatch");
+    let _second = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("second dispatch");
+
+    let counter_contents = std::fs::read_to_string(&counter).expect("counter file written");
+    let runs = counter_contents.lines().count();
+    assert_eq!(
+        runs, 2,
+        "ttl_seconds=0 must skip caching the empty-suggestions result; got {runs} script runs (contents: {counter_contents:?})"
+    );
+}
+
+#[tokio::test]
+async fn phase4_post_process_ttl_zero_means_no_caching() {
+    // Drive a post_process generator with `ttl_seconds: 0`. The script
+    // body increments a counter file each time it runs; the second
+    // dispatch must NOT short-circuit through the cache, so the counter
+    // ends at 2 instead of 1.
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let counter = tmp.path().join("count");
+    let script_src = format!(
+        "echo run >> {path}; printf 'one\\n'",
+        path = counter.display(),
+    );
+    let body = "out => out.split('\\n').filter(Boolean).map(name => ({ name }))";
+
+    let gen = Arc::new(GeneratorSpec {
+        generator_type: None,
+        script: Some(vec!["sh".into(), "-c".into(), script_src.clone()]),
+        script_template: None,
+        transforms: Vec::new(),
+        cache: Some(CacheConfig {
+            ttl_seconds: 0,
+            cache_by_directory: false,
+        }),
+        requires_js: true,
+        js_source: None,
+        js_runtime: Some(Arc::new(JsRuntimeSpec {
+            kind: JsRuntimeKind::PostProcess,
+            source: body.to_string(),
+            self_contained: true,
+            input: None,
+            timeout_ms: None,
+            allow_shell_command: false,
+        })),
+        corrected_in: None,
+        template: None,
+    });
+
+    let engine = make_engine();
+    let ctx = make_ctx("phase4-zero-ttl", Vec::new(), "");
+
+    let _first = engine
+        .run_generators(std::slice::from_ref(&gen), &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("first dispatch");
+    let _second = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("second dispatch");
+
+    let counter_contents = std::fs::read_to_string(&counter).expect("counter file written");
+    let runs = counter_contents.lines().count();
+    assert_eq!(
+        runs, 2,
+        "ttl_seconds=0 must skip caching; got {runs} script runs (contents: {counter_contents:?})"
+    );
+}

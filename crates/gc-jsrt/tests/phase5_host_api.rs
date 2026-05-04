@@ -30,7 +30,7 @@ use std::time::Duration;
 
 use gc_jsrt::{
     JsDiagnosticCode, JsExecutionKind, JsRuntimeInput, JsWorker, ShellRunError, ShellRunOutput,
-    ShellRunner,
+    ShellRunner, MAX_SHELL_CALLS_PER_EVALUATION,
 };
 
 const FAST_TIMEOUT: Duration = Duration::from_millis(1_500);
@@ -354,7 +354,7 @@ async fn custom_shell_string_allowed_when_flagged() {
 }
 
 #[tokio::test]
-async fn custom_execute_shell_command_recursion_cap_at_5() {
+async fn custom_execute_shell_command_recursion_cap_enforced() {
     let worker = JsWorker::spawn().expect("spawn");
     let runner = MockShellRunner::new(vec![(
         "echo x",
@@ -368,38 +368,30 @@ async fn custom_execute_shell_command_recursion_cap_at_5() {
     let mut input = input_with_kind(JsExecutionKind::Custom);
     input.shell_runner = Some(runner);
 
-    // Six calls — the sixth must throw ShellCommandLimitExceeded.
-    let program = "(async () => { \
-        const tags = []; \
-        for (let i = 0; i < 6; i++) { \
-            try { \
-                await executeShellCommand(['echo', 'x']); \
-                tags.push('ok'); \
-            } catch (e) { \
-                tags.push('err:' + e.code); \
-                break; \
-            } \
-        } \
-        return tags.map(t => ({ name: t })); \
-    })()";
+    let total_calls = MAX_SHELL_CALLS_PER_EVALUATION + 1;
+    let program = format!(
+        "(async () => {{ \
+            const tags = []; \
+            for (let i = 0; i < {total_calls}; i++) {{ \
+                try {{ \
+                    await executeShellCommand(['echo', 'x']); \
+                    tags.push('ok'); \
+                }} catch (e) {{ \
+                    tags.push('err:' + e.code); \
+                    break; \
+                }} \
+            }} \
+            return tags.map(t => ({{ name: t }})); \
+        }})()"
+    );
     let out = worker
         .evaluate(program, input, FAST_TIMEOUT)
         .await
         .expect("infra");
     let names: Vec<&str> = out.suggestions.iter().map(|s| s.name.as_str()).collect();
-    assert_eq!(
-        names,
-        vec![
-            "ok",
-            "ok",
-            "ok",
-            "ok",
-            "ok",
-            "err:ShellCommandLimitExceeded"
-        ],
-        "diagnostics: {:?}",
-        out.diagnostics,
-    );
+    let mut expected: Vec<&str> = vec!["ok"; MAX_SHELL_CALLS_PER_EVALUATION];
+    expected.push("err:ShellCommandLimitExceeded");
+    assert_eq!(names, expected, "diagnostics: {:?}", out.diagnostics);
 }
 
 #[tokio::test]
@@ -549,12 +541,12 @@ async fn uncaught_shell_call_cap_is_typed_diagnostic() {
     let mut input = input_with_kind(JsExecutionKind::Custom);
     input.shell_runner = Some(runner);
 
+    let total_calls = MAX_SHELL_CALLS_PER_EVALUATION + 1;
+    let program = format!(
+        "(async () => {{ for (let i = 0; i < {total_calls}; i++) await executeShellCommand(['echo', 'x']); return [{{ name: 'no-error' }}]; }})()"
+    );
     let out = worker
-        .evaluate(
-            "(async () => { for (let i = 0; i < 6; i++) await executeShellCommand(['echo', 'x']); return [{ name: 'no-error' }]; })()",
-            input,
-            FAST_TIMEOUT,
-        )
+        .evaluate(program, input, FAST_TIMEOUT)
         .await
         .expect("infra");
     assert!(out.suggestions.is_empty());
@@ -648,6 +640,48 @@ async fn custom_unsupported_host_api_throws() {
         "expected UnsupportedHostApi diagnostic, got {:?}",
         out.diagnostics,
     );
+}
+
+#[tokio::test]
+async fn phase5_unsupported_host_namespaces_throw() {
+    let worker = JsWorker::spawn().expect("spawn");
+    let cases = [
+        ("fs.readFile", "fig.fs.readFile('/etc/hosts')"),
+        ("path.join", "fig.path.join('a', 'b')"),
+        ("keychain.exists", "fig.keychain.exists('id')"),
+        ("ipc.readFile", "fig.ipc.readFile('msg')"),
+        ("ui.readFile", "fig.ui.readFile('view')"),
+    ];
+    for (label, call) in cases {
+        let mut input = input_with_kind(JsExecutionKind::Custom);
+        input.shell_runner = Some(MockShellRunner::new(Vec::new()).into_arc());
+        let program = format!(
+            "(async () => {{ \
+                try {{ \
+                    {call}; \
+                }} catch (e) {{ \
+                    return [{{ name: 'caught:' + e.code }}]; \
+                }} \
+                return [{{ name: 'no-error' }}]; \
+            }})()"
+        );
+        let out = worker
+            .evaluate(program, input, FAST_TIMEOUT)
+            .await
+            .expect("infra");
+        assert_eq!(
+            out.suggestions[0].name, "caught:UnsupportedHostApi",
+            "{label}: diagnostics={:?}",
+            out.diagnostics,
+        );
+        assert!(
+            out.diagnostics
+                .iter()
+                .any(|d| d.code == JsDiagnosticCode::UnsupportedHostApi),
+            "{label}: expected UnsupportedHostApi diagnostic, got {:?}",
+            out.diagnostics,
+        );
+    }
 }
 
 #[tokio::test]
