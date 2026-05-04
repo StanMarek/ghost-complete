@@ -151,7 +151,7 @@ fn post_process_generator(script: &[&str], source: &str) -> Arc<GeneratorSpec> {
 }
 
 #[tokio::test]
-async fn phase4_suggest_sync_returns_supported_requires_js_post_process_fixture() {
+async fn suggest_sync_returns_supported_requires_js_post_process_fixture() {
     let engine = fixture_engine();
     let ctx = make_ctx("post-process-supported", vec!["names"], "");
 
@@ -175,7 +175,7 @@ async fn phase4_suggest_sync_returns_supported_requires_js_post_process_fixture(
 }
 
 #[tokio::test]
-async fn phase4_post_process_returns_suggestions() {
+async fn post_process_returns_suggestions() {
     // Real /bin/printf is unhelpful here because escapes vary across
     // platforms; use `sh -c` to write a deterministic 3-line stdout.
     let gen = post_process_generator(
@@ -197,7 +197,7 @@ async fn phase4_post_process_returns_suggestions() {
 }
 
 #[tokio::test]
-async fn phase4_two_js_sources_same_stdout_dont_cross_contaminate() {
+async fn two_js_sources_same_stdout_dont_cross_contaminate() {
     // Both generators run the same script; they differ only in the JS body.
     // The first body produces names; the second decorates them with a
     // description. The cache must not let the first result leak into the
@@ -244,7 +244,7 @@ async fn phase4_two_js_sources_same_stdout_dont_cross_contaminate() {
 }
 
 #[tokio::test]
-async fn phase4_unsupported_kind_skipped_when_source_empty() {
+async fn unsupported_kind_skipped_when_source_empty() {
     // `custom` generators with a populated source dispatch through the
     // JS host API. A generator with an EMPTY source has nothing to run
     // and stays skipped — this is the only "unsupported shape" path
@@ -285,7 +285,7 @@ async fn phase4_unsupported_kind_skipped_when_source_empty() {
 }
 
 #[tokio::test]
-async fn phase4_js_timeout_diagnostic_logged() {
+async fn js_timeout_diagnostic_logged() {
     // Tight timeout + infinite loop: the JS interrupt handler must abort
     // and the dispatch must return empty suggestions instead of hanging.
     // Install a tracing capture and assert the expected `code = "Timeout"`
@@ -349,7 +349,7 @@ async fn phase4_js_timeout_diagnostic_logged() {
 }
 
 #[tokio::test]
-async fn phase4_js_exception_diagnostic_logged() {
+async fn js_exception_diagnostic_logged() {
     let (captured, _guard) = install_log_capture();
 
     let gen = Arc::new(GeneratorSpec {
@@ -401,7 +401,7 @@ async fn phase4_js_exception_diagnostic_logged() {
 }
 
 #[tokio::test]
-async fn phase4_stdout_cache_shared_across_js_sources() {
+async fn stdout_cache_shared_across_js_sources() {
     // Sanity for the stdout cache layer: a script with a side effect (writes
     // to a counter file) should run exactly once even when two different JS
     // post-processors reach for it. The first generator warms the stdout
@@ -451,8 +451,8 @@ async fn phase4_stdout_cache_shared_across_js_sources() {
 }
 
 #[tokio::test]
-async fn phase4_kill_switch_disables_dispatch() {
-    // Same generator that worked in `phase4_post_process_returns_suggestions`,
+async fn kill_switch_disables_dispatch() {
+    // Same generator that worked in `post_process_returns_suggestions`,
     // but the engine has `js_runtime = false` set. The dispatch must
     // skip the generator entirely; no script spawn either, since we never
     // reach the spawn body.
@@ -473,7 +473,7 @@ async fn phase4_kill_switch_disables_dispatch() {
 }
 
 #[tokio::test]
-async fn phase5_custom_zero_ttl_skips_cache_insert() {
+async fn custom_zero_ttl_skips_cache_insert() {
     // A custom generator that returns an empty suggestion list with
     // `ttl_seconds: 0` must NOT populate the post-processed cache —
     // caching empty results would suppress retries for the full TTL window.
@@ -533,7 +533,7 @@ async fn phase5_custom_zero_ttl_skips_cache_insert() {
 }
 
 #[tokio::test]
-async fn phase4_post_process_ttl_zero_means_no_caching() {
+async fn post_process_ttl_zero_means_no_caching() {
     // Drive a post_process generator with `ttl_seconds: 0`. The script
     // body increments a counter file each time it runs; the second
     // dispatch must NOT short-circuit through the cache, so the counter

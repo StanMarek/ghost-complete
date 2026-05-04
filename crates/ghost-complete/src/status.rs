@@ -679,8 +679,9 @@ enum SupportedKind {
 /// the shape the runtime can dispatch, or `None` otherwise.
 ///
 /// Mirrors `collect_generators` in `gc-suggest::specs` and the dispatch
-/// gate in `gc-suggest::engine::js_runtime_supported`. The engine handles
-/// all three `js_runtime.kind` variants, but with subtly different gates:
+/// gate in `gc-suggest::engine::is_supported_script_generator`. The
+/// engine handles all three `js_runtime.kind` variants, but with subtly
+/// different gates:
 ///   * `post_process` requires an accompanying `script` / `script_template`
 ///     plus a non-empty `js_runtime.source`. `self_contained` is irrelevant
 ///     because the JS body only post-processes shell stdout — there is no
@@ -689,11 +690,13 @@ enum SupportedKind {
 ///     `js_runtime.self_contained == true`. The latter is the converter's
 ///     proof that the embedded JS does not close over bundler/minifier
 ///     helper bindings (`__exports__`, `__webpack_require__`, etc.) that
-///     the QuickJS host will not install. The current corpus has zero
-///     `self_contained: true` generators, so until the converter regains
-///     the ability to prove self-containment for non-trivial shapes,
-///     every `script_function` / `custom` here lands in the unsupported
-///     bucket — which is the truthful state the engine actually dispatches.
+///     the QuickJS host will not install. Any generator without
+///     `self_contained: true` is therefore dropped into the unsupported
+///     bucket — the same truthful state the engine actually dispatches
+///     against. (The bucket size is a function of how many generators
+///     the converter has been able to prove self-contained for and
+///     fluctuates between releases; see CHANGELOG.md for the snapshot
+///     count at any given version.)
 fn supported_kind(map: &serde_json::Map<String, serde_json::Value>) -> Option<SupportedKind> {
     let runtime = map.get("js_runtime").and_then(|v| v.as_object())?;
     let kind = runtime
@@ -2121,8 +2124,8 @@ mod tests {
         //     non-empty source → supported.
         //   * `custom_unsupported` — kind=custom but NO `self_contained:
         //     true`. The engine refuses to dispatch unproven custom
-        //     sources (see gc_suggest::engine::js_runtime_supported) so
-        //     the status counter must mirror that decision.
+        //     sources (see gc_suggest::engine::is_supported_script_generator)
+        //     so the status counter must mirror that decision.
         //   * `partial_unsupported_js` predates `js_runtime` metadata
         //     entirely so it stays in the unsupported bucket.
         assert_eq!(outcome.requires_js_generators_supported, 1);
@@ -2506,8 +2509,8 @@ mod tests {
     /// `requires_js_generators_supported`, including non-trivial mixes.
     /// Each non-PostProcess fixture carries `self_contained: true` so
     /// the engine's dispatch gate accepts it — without that flag the
-    /// engine's `js_runtime_supported` predicate (and therefore the
-    /// status mirror) treat it as unsupported. See
+    /// engine's `is_supported_script_generator` predicate (and
+    /// therefore the status mirror) treat it as unsupported. See
     /// `script_function_without_self_contained_is_unsupported` for the
     /// negative direction.
     #[test]
@@ -2576,7 +2579,7 @@ mod tests {
     }
 
     /// Regression guard for code-1: the engine
-    /// (gc-suggest::engine::js_runtime_supported and
+    /// (gc-suggest::engine::is_supported_script_generator and
     /// specs::collect_generators) gates `script_function` / `custom`
     /// dispatch on `js_runtime.self_contained == true`. Without that
     /// proof the engine silently skips the generator. The status
@@ -2695,6 +2698,88 @@ mod tests {
                 Some(super::SupportedKind::PostProcess)
             ),
             "post_process must remain supported without self_contained"
+        );
+    }
+
+    /// Regression guard for test-iter3-1: `supported_kind` reads
+    /// `self_contained` via raw `Value::as_bool()`, which silently
+    /// returns `None` for any non-bool JSON type. A future converter
+    /// regression that emits a JS-truthy non-bool (e.g. `1`, `"true"`,
+    /// `null`) for `self_contained` MUST land the generator in the
+    /// unsupported bucket — otherwise the coverage gate
+    /// (`scripts/check-coverage-regression.sh`) reads a fake-100%
+    /// baseline. The companion serde-typed path in doctor.rs already
+    /// rejects these (the spec is dropped from `SpecStore` entirely),
+    /// so this test pins the loose-JSON path to the same outcome —
+    /// keeping the two surfaces symmetric under malformed input.
+    #[test]
+    fn supported_kind_treats_non_bool_self_contained_as_unsupported() {
+        // `self_contained: "true"` — JS-truthy string, NOT a boolean.
+        let map: serde_json::Map<String, serde_json::Value> = serde_json::from_str(
+            r#"{
+                "requires_js": true,
+                "js_runtime": {
+                    "kind": "script_function",
+                    "source": "() => ['a']",
+                    "self_contained": "true"
+                }
+            }"#,
+        )
+        .unwrap();
+        assert!(
+            super::supported_kind(&map).is_none(),
+            "self_contained as a string must be treated as unsupported"
+        );
+
+        // `self_contained: 1` — JS-truthy number, NOT a boolean.
+        let map: serde_json::Map<String, serde_json::Value> = serde_json::from_str(
+            r#"{
+                "requires_js": true,
+                "js_runtime": {
+                    "kind": "script_function",
+                    "source": "() => ['a']",
+                    "self_contained": 1
+                }
+            }"#,
+        )
+        .unwrap();
+        assert!(
+            super::supported_kind(&map).is_none(),
+            "self_contained as a number must be treated as unsupported"
+        );
+
+        // `self_contained: null` — explicitly null, NOT a boolean.
+        let map: serde_json::Map<String, serde_json::Value> = serde_json::from_str(
+            r#"{
+                "requires_js": true,
+                "js_runtime": {
+                    "kind": "script_function",
+                    "source": "() => ['a']",
+                    "self_contained": null
+                }
+            }"#,
+        )
+        .unwrap();
+        assert!(
+            super::supported_kind(&map).is_none(),
+            "self_contained as null must be treated as unsupported"
+        );
+
+        // `custom` mirrors the same gate.
+        let map: serde_json::Map<String, serde_json::Value> = serde_json::from_str(
+            r#"{
+                "requires_js": true,
+                "js_runtime": {
+                    "kind": "custom",
+                    "source": "async () => [{name: 'a'}]",
+                    "self_contained": "true"
+                }
+            }"#,
+        )
+        .unwrap();
+        assert!(
+            super::supported_kind(&map).is_none(),
+            "custom with non-bool self_contained must be unsupported"
         );
     }
 }

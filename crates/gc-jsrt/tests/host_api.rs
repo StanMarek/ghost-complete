@@ -662,7 +662,7 @@ async fn custom_unsupported_host_api_throws() {
 }
 
 #[tokio::test]
-async fn phase5_unsupported_host_namespaces_throw() {
+async fn unsupported_host_namespaces_throw() {
     let worker = JsWorker::spawn().expect("spawn");
     let cases = [
         ("fs.readFile", "fig.fs.readFile('/etc/hosts')"),
@@ -906,6 +906,50 @@ async fn custom_execute_shell_command_non_object_opts_emits_diagnostic() {
             .any(|d| d.code == JsDiagnosticCode::UnsupportedHostApi
                 && d.message == "executeShellCommand.options<not-object>"),
         "expected options<not-object> diagnostic, got {:?}",
+        out.diagnostics,
+    );
+}
+
+/// Pins the `executeShellCommand.options.cwd<decode-failure>` branch:
+/// QuickJS exposes JS strings as UTF-16 internally and `to_string()`
+/// fails when asked to materialise a lone unpaired surrogate as UTF-8.
+/// The host code records an `UnsupportedHostApi` diagnostic so the
+/// spec author hunting "why is my custom cwd silently ignored" gets a
+/// signal rather than a silent fallback to the input cwd.
+///
+/// Without this pin, a future refactor that swaps `s.to_string().ok()?`
+/// for an infallible accessor (or that silently drops the diagnostic
+/// line) would erase the typed signal without test failure.
+#[tokio::test]
+async fn custom_execute_shell_command_cwd_decode_failure_emits_diagnostic() {
+    let worker = JsWorker::spawn().expect("spawn");
+    let runner = RecordingShellRunner::default().into_arc();
+    let mut input = input_with_kind(JsExecutionKind::Custom);
+    input.shell_runner = Some(runner);
+
+    // `String.fromCharCode(0xD800)` constructs a single UTF-16 code unit
+    // that is a lone surrogate — invalid by itself in UTF-8. QuickJS'
+    // `to_string()` rejects the conversion, which trips the typed
+    // diagnostic in the host parser.
+    let out = worker
+        .evaluate(
+            "(async () => { \
+                const badCwd = String.fromCharCode(0xD800); \
+                await executeShellCommand(['echo', 'x'], { cwd: badCwd }); \
+                return [{ name: 'ok' }]; \
+            })()",
+            input,
+            FAST_TIMEOUT,
+        )
+        .await
+        .expect("infra");
+    assert_eq!(out.suggestions()[0].name, "ok");
+    assert!(
+        out.diagnostics
+            .iter()
+            .any(|d| d.code == JsDiagnosticCode::UnsupportedHostApi
+                && d.message == "executeShellCommand.options.cwd<decode-failure>"),
+        "expected cwd<decode-failure> diagnostic, got {:?}",
         out.diagnostics,
     );
 }

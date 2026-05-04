@@ -490,10 +490,13 @@ fn check_js_runtime(config: &gc_config::GhostConfig) -> CheckResult {
 /// the engine cannot dispatch:
 ///   * missing `js_runtime` metadata entirely, OR
 ///   * `js_runtime.source` is empty/whitespace, OR
+///   * `js_runtime.kind` is `post_process` AND neither `script` nor
+///     `script_template` is attached (the engine has no shell stdout
+///     to feed into the post-processor), OR
 ///   * `js_runtime.kind` is `script_function` / `custom` AND
 ///     `self_contained != true`. Mirrors the engine's
-///     `js_runtime_supported` predicate (gc-suggest::engine) — the
-///     converter must prove a non-PostProcess source has no
+///     `is_supported_script_generator` predicate (gc-suggest::engine) —
+///     the converter must prove a non-PostProcess source has no
 ///     bundler/minifier helper closure (`__webpack_require__`,
 ///     `__exports__`, etc.) before QuickJS can run it. Without that
 ///     proof the engine silently skips the generator at dispatch time,
@@ -518,14 +521,16 @@ fn count_missing_js_runtime_in_spec(spec: &CompletionSpec) -> usize {
                 if rt.source.trim().is_empty() {
                     return true;
                 }
-                // Mirror gc-suggest::engine::js_runtime_supported:
-                // post_process is gated on script presence (checked by
-                // the engine, not here), but script_function/custom
-                // additionally require `self_contained:true`. Without
-                // that proof the engine refuses to dispatch — so the
-                // doctor must count these as silently-skipped.
+                // Mirror gc-suggest::engine::is_supported_script_generator:
+                // post_process is dispatchable iff an accompanying
+                // `script` / `script_template` is present (the engine
+                // has shell stdout to feed into the post-processor).
+                // script_function/custom additionally require
+                // `self_contained:true`. Without those guarantees the
+                // engine refuses to dispatch — so the doctor must count
+                // these as silently-skipped.
                 match rt.kind {
-                    JsRuntimeKind::PostProcess => false,
+                    JsRuntimeKind::PostProcess => g.script.is_none() && g.script_template.is_none(),
                     JsRuntimeKind::ScriptFunction | JsRuntimeKind::Custom => !rt.self_contained,
                 }
             }
@@ -558,7 +563,7 @@ fn count_missing_js_runtime_in_spec(spec: &CompletionSpec) -> usize {
 /// Embedded specs runtime-source check. Walks every entry in the
 /// SpecStore (including embedded fallback) and asserts every requires_js
 /// generator can actually be dispatched by the engine (mirrors
-/// `js_runtime_supported` in gc-suggest::engine — see
+/// `is_supported_script_generator` in gc-suggest::engine — see
 /// [`count_missing_js_runtime_in_spec`] for the full predicate). A
 /// non-zero result indicates an incomplete converter regen, a
 /// hand-edited spec, OR a `script_function`/`custom` generator the
@@ -1248,9 +1253,9 @@ mod tests {
     /// Regression guard for code-1: a `script_function` / `custom`
     /// generator whose `self_contained` is missing or `false` cannot be
     /// dispatched by the engine (see
-    /// `gc_suggest::engine::js_runtime_supported`). Doctor must surface
-    /// it as Fail — otherwise the regression gate stays blind to the
-    /// 1697-generator silent-skip surface that motivated this fix.
+    /// `gc_suggest::engine::is_supported_script_generator`). Doctor must
+    /// surface it as Fail — otherwise the regression gate stays blind
+    /// to the 1697-generator silent-skip surface that motivated this fix.
     #[test]
     fn doctor_fails_when_script_function_lacks_self_contained() {
         let (store, _dir) = store_from_json_fixtures(&[(
@@ -1366,6 +1371,74 @@ mod tests {
         assert!(
             matches!(result.severity, Severity::Ok),
             "post_process without self_contained must remain OK, got: {}",
+            result.message
+        );
+    }
+
+    /// Regression guard for sf-iter3-2: `post_process` requires an
+    /// accompanying `script` or `script_template` (the engine has no
+    /// shell stdout to feed the post-processor). The engine's
+    /// `is_supported_script_generator` predicate enforces this — the
+    /// doctor must too, otherwise an operator gets a green doctor
+    /// result while the engine silently filters the generator at
+    /// dispatch.
+    #[test]
+    fn doctor_fails_when_post_process_lacks_script() {
+        let (store, _dir) = store_from_json_fixtures(&[(
+            "pp_no_script.json",
+            r#"{
+                "name": "pp_no_script",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "requires_js": true,
+                        "js_runtime": {
+                            "kind": "post_process",
+                            "source": "out => out.split('\n')"
+                        }
+                    }]
+                }]
+            }"#,
+        )]);
+        let result = check_embedded_runtime_metadata_for_store(&store);
+        assert!(
+            matches!(result.severity, Severity::Fail),
+            "post_process without script/script_template must Fail, got: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("pp_no_script"),
+            "must name affected spec: {}",
+            result.message
+        );
+    }
+
+    /// Companion: `post_process` with a `script_template` (rather than
+    /// `script`) is also dispatchable — the engine treats the two as
+    /// interchangeable inputs to the post-processor.
+    #[test]
+    fn doctor_passes_when_post_process_has_script_template() {
+        let (store, _dir) = store_from_json_fixtures(&[(
+            "pp_template.json",
+            r#"{
+                "name": "pp_template",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "script_template": ["echo {current_token}"],
+                        "requires_js": true,
+                        "js_runtime": {
+                            "kind": "post_process",
+                            "source": "out => out.split('\n')"
+                        }
+                    }]
+                }]
+            }"#,
+        )]);
+        let result = check_embedded_runtime_metadata_for_store(&store);
+        assert!(
+            matches!(result.severity, Severity::Ok),
+            "post_process with script_template must be OK, got: {}",
             result.message
         );
     }

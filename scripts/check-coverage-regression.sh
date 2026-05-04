@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/check-coverage-regression.sh — CI gate (introduced in UX-9 Phase 7)
+# scripts/check-coverage-regression.sh — Coverage regression gate.
 #
 # Reads the latest release row from docs/coverage-baseline.json and the live
 # corpus counters from `ghost-complete status --json`, then fails when the
@@ -105,8 +105,9 @@ if [[ ! -f "$baseline" ]]; then
 fi
 
 # Latest row = last entry in the releases array. Read both the legacy
-# fields and the UX-9 fields. The UX-9 fields may be absent on older
-# baseline rows — `// 0` fills them in so the comparison still works.
+# fields and the extended fields added in v0.11.0. The extended fields
+# may be absent on older baseline rows — `// 0` fills them in so the
+# comparison still works.
 baseline_unsupported="$(jq -r '.releases[-1].requires_js_generators_unsupported // 0' "$baseline")"
 baseline_supported="$(jq -r '.releases[-1].requires_js_generators_supported // 0' "$baseline")"
 baseline_total="$(jq -r '.releases[-1].requires_js_generators_total // .releases[-1].requires_js_generators // 0' "$baseline")"

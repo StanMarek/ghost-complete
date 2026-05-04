@@ -51,7 +51,7 @@ fn doctor_with_clean_config_runs_to_completion() {
     // lack the `self_contained:true` proof, so the runtime-metadata
     // check Fails and doctor exits 1. That's the truthful state the
     // engine actually dispatches against (see `check_embedded_runtime_metadata`
-    // and `js_runtime_supported` in gc-suggest::engine). The CRITICAL
+    // and `is_supported_script_generator` in gc-suggest::engine). The CRITICAL
     // assertion this test guards against is that doctor doesn't panic
     // or hang — both 0 (corpus clean) and 1 (corpus defect surfaced) are
     // valid outcomes; only an absent / negative status code is a regression.

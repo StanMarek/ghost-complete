@@ -171,10 +171,9 @@ pub struct ProvidersConfig {
     pub specs: bool,
     pub git: bool,
     /// Global kill switch for the QuickJS evaluator that backs
-    /// `requires_js` generators (UX-9). Defaults to `true` so the
-    /// runtime ships enabled the moment the `gc-jsrt` foundation is
-    /// merged; users can disable it locally with
-    /// `[suggest.providers] js_runtime = false` in their
+    /// `requires_js` generators. Default `true` so JS-backed
+    /// completions work out of the box; users can disable locally
+    /// with `[suggest.providers] js_runtime = false` in their
     /// `config.toml`.
     ///
     /// When `false`, the suggestion engine skips every JS-backed

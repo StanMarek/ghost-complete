@@ -187,7 +187,7 @@ fn cached_custom_generator(source: &str) -> Arc<GeneratorSpec> {
 }
 
 #[tokio::test]
-async fn phase5_script_function_returns_dynamic_suggestions() {
+async fn script_function_returns_dynamic_suggestions() {
     // JS produces argv `["sh", "-c", "printf alpha\nbeta\n"]`.
     // The engine then spawns the argv and the default transform
     // pipeline (split_lines, filter_empty) yields two suggestions.
@@ -204,7 +204,7 @@ async fn phase5_script_function_returns_dynamic_suggestions() {
 }
 
 #[tokio::test]
-async fn phase5_script_function_descriptor_form() {
+async fn script_function_descriptor_form() {
     // Structured descriptor `{ command, args }` resolves the same way.
     let gen = script_function_generator(
         "(tokens, ctx) => ({ command: 'sh', args: ['-c', 'printf \"one\\nthree\\n\"'] })",
@@ -220,7 +220,7 @@ async fn phase5_script_function_descriptor_form() {
 }
 
 #[tokio::test]
-async fn phase5_script_function_can_read_fig_context_aliases() {
+async fn script_function_can_read_fig_context_aliases() {
     let home = std::env::var("HOME").expect("HOME should be set in test environment");
     let cwd = tempfile::tempdir().expect("tempdir");
     let expected_cwd = cwd.path().to_string_lossy().into_owned();
@@ -248,9 +248,14 @@ async fn phase5_script_function_can_read_fig_context_aliases() {
 }
 
 #[tokio::test]
-async fn phase5_script_function_invalid_argv_yields_empty() {
+async fn script_function_invalid_argv_yields_empty() {
     // Returning a number is invalid — the runtime emits InvalidArgv and
-    // the engine surfaces zero suggestions.
+    // the engine surfaces zero suggestions. We also assert the structured
+    // diagnostic warn fires (`code = "invalid_argv"`) so a future refactor
+    // that demotes it to trace! or drops it entirely cannot silently erase
+    // the operator-visible signal that doctor / log scrapers depend on.
+    let (captured, _guard) = install_log_capture();
+
     let gen = script_function_generator("(tokens) => 42");
     let engine = make_engine();
     let ctx = make_ctx("phase5-test", Vec::new(), "");
@@ -259,10 +264,27 @@ async fn phase5_script_function_invalid_argv_yields_empty() {
         .await
         .expect("dispatch tolerates invalid argv");
     assert!(results.is_empty());
+
+    let logs =
+        String::from_utf8_lossy(&captured.lock().expect("capture buffer poisoned")).into_owned();
+    assert!(
+        logs.contains("code=\"invalid_argv\""),
+        "expected a structured warn with `code = \"invalid_argv\"` (the lowercase \
+         tag from JsDiagnosticCode::tag) in captured logs:\n{logs}"
+    );
+    assert!(
+        logs.contains("script_function returned invalid argv"),
+        "expected the human-readable invalid-argv message in captured logs:\n{logs}"
+    );
+    assert!(
+        logs.contains("generator_id=phase5-test#0"),
+        "expected the generator_id field with the test fixture's name in \
+         captured logs:\n{logs}"
+    );
 }
 
 #[tokio::test]
-async fn phase5_custom_uses_host_runner() {
+async fn custom_uses_host_runner() {
     // Custom generator runs `printf foo\\nbar` via the host runner
     // binding and turns the lines into suggestions.
     let source = "async (tokens, run, ctx) => { \
@@ -281,7 +303,7 @@ async fn phase5_custom_uses_host_runner() {
 }
 
 #[tokio::test]
-async fn phase5_custom_can_read_cwd_and_tokens() {
+async fn custom_can_read_cwd_and_tokens() {
     // Custom that reflects the host context as suggestions, no shell.
     // Uses an empty current_word so the engine returns the raw pool
     // without fuzzy-ranking (which would filter our literal-prefix
@@ -303,7 +325,7 @@ async fn phase5_custom_can_read_cwd_and_tokens() {
 }
 
 #[tokio::test]
-async fn phase5_custom_tokens_include_non_empty_current_word() {
+async fn custom_tokens_include_non_empty_current_word() {
     let source = "async (tokens, run, ctx) => [{ \
         name: 'last:' + tokens[tokens.length - 1], \
         description: 'current:' + ctx.currentToken + ',previous:' + ctx.previousToken, \
@@ -326,7 +348,7 @@ async fn phase5_custom_tokens_include_non_empty_current_word() {
 }
 
 #[tokio::test]
-async fn phase5_script_function_tokens_include_empty_cursor_slot_after_space() {
+async fn script_function_tokens_include_empty_cursor_slot_after_space() {
     let gen = script_function_generator(
         "(tokens, ctx) => ['printf', '%s\\n%s\\n%s\\n', \
             'last:' + tokens[tokens.length - 1], \
@@ -344,7 +366,7 @@ async fn phase5_script_function_tokens_include_empty_cursor_slot_after_space() {
 }
 
 #[tokio::test]
-async fn phase5_custom_cache_key_includes_current_and_previous_token() {
+async fn custom_cache_key_includes_current_and_previous_token() {
     let source = "async (tokens, run, ctx) => [{ \
         name: 'current:' + ctx.currentToken + ',previous:' + ctx.previousToken, \
     }]";
@@ -375,7 +397,7 @@ async fn phase5_custom_cache_key_includes_current_and_previous_token() {
 }
 
 #[tokio::test]
-async fn phase5_custom_can_read_fig_context_aliases() {
+async fn custom_can_read_fig_context_aliases() {
     let home = std::env::var("HOME").expect("HOME should be set in test environment");
     let source = "async (tokens, run, ctx) => [ \
         { name: 'cwd:' + ctx.currentWorkingDirectory }, \
@@ -397,7 +419,7 @@ async fn phase5_custom_can_read_fig_context_aliases() {
 }
 
 #[tokio::test]
-async fn phase5_suggest_sync_schedules_requires_js_custom_generator() {
+async fn suggest_sync_schedules_requires_js_custom_generator() {
     let home = std::env::var("HOME").expect("HOME should be set in test environment");
     let engine = engine_from_spec_json(
         "phase5-sync-custom.json",
@@ -447,7 +469,7 @@ async fn phase5_suggest_sync_schedules_requires_js_custom_generator() {
 }
 
 #[tokio::test]
-async fn phase5_custom_unsupported_host_api_logs_diagnostic() {
+async fn custom_unsupported_host_api_logs_diagnostic() {
     // Reach for an unsupported Fig API; the spec catches the throw and
     // surfaces the diagnostic code as a suggestion. Engine returns the
     // resulting suggestion verbatim AND emits a structured warn so
@@ -491,7 +513,7 @@ async fn phase5_custom_unsupported_host_api_logs_diagnostic() {
 }
 
 #[tokio::test]
-async fn phase5_custom_kill_switch_disables_dispatch() {
+async fn custom_kill_switch_disables_dispatch() {
     let source = "async () => [{ name: 'should-not-run' }]";
     let gen = custom_generator(source);
     let engine = make_engine().with_suggest_config(50, true, 5, true, true, true, false);
@@ -507,7 +529,7 @@ async fn phase5_custom_kill_switch_disables_dispatch() {
 }
 
 #[tokio::test]
-async fn phase5_custom_aws_describe_regions_corpus_fixture() {
+async fn custom_aws_describe_regions_corpus_fixture() {
     // Real corpus fixture: Fig's AWS spec invokes
     // `aws ec2 describe-regions` and JSON-parses the output. We mock
     // the aws binary by inlining the JSON in the JS source, exercising
@@ -530,7 +552,7 @@ async fn phase5_custom_aws_describe_regions_corpus_fixture() {
 }
 
 #[tokio::test]
-async fn phase5_custom_kubectl_get_pods_corpus_fixture() {
+async fn custom_kubectl_get_pods_corpus_fixture() {
     // kubectl-style spec: `kubectl get pods -o name` would produce one
     // line per pod. The custom generator splits and surfaces each one.
     let source = "async (tokens, run, ctx) => { \
@@ -549,7 +571,7 @@ async fn phase5_custom_kubectl_get_pods_corpus_fixture() {
 }
 
 #[tokio::test]
-async fn phase5_custom_docker_images_corpus_fixture() {
+async fn custom_docker_images_corpus_fixture() {
     // docker-style spec: `docker images --format` would emit a list.
     // We exercise the same shape via printf for hermeticity.
     let source = "async (tokens, run, ctx) => { \
@@ -568,7 +590,7 @@ async fn phase5_custom_docker_images_corpus_fixture() {
 }
 
 #[tokio::test]
-async fn phase5_script_function_cargo_workspace_corpus_fixture() {
+async fn script_function_cargo_workspace_corpus_fixture() {
     // cargo-style: a script_function that derives `cargo --color=never
     // metadata --format-version=1 --no-deps` argv at runtime, then the
     // engine spawns it. We exercise the JS argv path with a printf
@@ -586,7 +608,7 @@ async fn phase5_script_function_cargo_workspace_corpus_fixture() {
 }
 
 #[tokio::test]
-async fn phase5_supported_count_lifts_to_full_corpus() {
+async fn supported_count_lifts_to_full_corpus() {
     // Smoke test: every kind dispatches successfully through
     // run_generators when a non-empty source is supplied. The
     // ghost-complete status walker mirrors this same classification —
@@ -627,7 +649,7 @@ async fn phase5_supported_count_lifts_to_full_corpus() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn phase5_custom_allow_shell_command_dispatches_via_shlex() {
+async fn custom_allow_shell_command_dispatches_via_shlex() {
     // `executeShellCommand("printf foo")` is the string form. The runner
     // routes through `shlex::split` and dispatches as argv. The runtime
     // requires `allow_shell_command: true` to honour the string form;
@@ -649,7 +671,7 @@ async fn phase5_custom_allow_shell_command_dispatches_via_shlex() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn phase5_custom_allow_shell_command_shlex_failure_surfaces_diagnostic() {
+async fn custom_allow_shell_command_shlex_failure_surfaces_diagnostic() {
     // An unmatched quote can't be parsed by shlex; the runner returns
     // `ShellRunError::ArgvParse`, which the host translates to a
     // `ShellCommandFailed` diagnostic. The spec catches the JS exception

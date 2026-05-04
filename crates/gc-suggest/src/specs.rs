@@ -744,10 +744,12 @@ impl SpecStore {
     ///
     /// Used by `ghost-complete status` to count requires_js generators
     /// without double-counting when overlapping spec_dirs each ship a
-    /// copy of the same filename. Pre-Phase-4 the file scan walked every
-    /// configured directory and summed their generator counts, which
-    /// inflated the reported number on configs where the embedded specs
-    /// dir and a user override dir both contained `git.json`.
+    /// copy of the same filename. A naïve file scan that walked every
+    /// configured directory and summed their generator counts would
+    /// inflate the reported number on configs where the embedded specs
+    /// dir and a user override dir both contained `git.json`; this
+    /// method de-duplicates by stem so the count reflects the live
+    /// resolved set.
     pub fn canonical_paths(&self) -> Vec<(String, PathBuf)> {
         self.entries
             .iter()
@@ -4062,7 +4064,7 @@ mod tests {
     // ------------------------------------------------------------------
 
     #[test]
-    fn phase1_kubecolor_resolves_by_filename_stem_and_kubectl_wins_alias() {
+    fn kubecolor_resolves_by_filename_stem_and_kubectl_wins_alias() {
         // Real-corpus shape: kubecolor.json declares `name: "kubectl"`,
         // kubectl.json also declares `name: "kubectl"`. Under a
         // name-keyed loader one of the two silently won the `kubectl`
@@ -4113,7 +4115,7 @@ mod tests {
     }
 
     #[test]
-    fn phase1_duplicate_name_collision_surfaces_conflict() {
+    fn duplicate_name_collision_surfaces_conflict() {
         // Two files declare the same `name`. The alphabetically-first
         // file wins the alias; the second keeps its stem alias and the
         // collision is recorded as DuplicateName.
@@ -4160,7 +4162,7 @@ mod tests {
     }
 
     #[test]
-    fn phase1_uppercase_lowercase_stems_are_case_sensitive() {
+    fn uppercase_lowercase_stems_are_case_sensitive() {
         // The corpus has both R.json and Rscript.json, plus r.json and
         // rscript.json. Filename stems are case-sensitive: `R` and `r`
         // are distinct addressable commands (matches the on-shell
@@ -4196,7 +4198,7 @@ mod tests {
     }
 
     #[test]
-    fn phase1_user_override_replaces_embedded_with_directory_precedence() {
+    fn user_override_replaces_embedded_with_directory_precedence() {
         // The classic user-override scenario: the same filename in two
         // configured dirs. The earlier dir wins — the embedded copy is
         // demoted to a DirectoryPrecedence conflict at debug level
@@ -4243,7 +4245,7 @@ mod tests {
     }
 
     #[test]
-    fn phase1_cross_dir_stem_matches_earlier_name_alias_is_not_directory_precedence() {
+    fn cross_dir_stem_matches_earlier_name_alias_is_not_directory_precedence() {
         // Cross-dir name-vs-stem collision: dir1 owns the `kubectl`
         // alias via foo.json's `name: "kubectl"` claim, then dir2's
         // kubectl.json arrives whose stem is the same string.
@@ -4317,7 +4319,7 @@ mod tests {
     }
 
     #[test]
-    fn phase1_iter_yields_one_tuple_per_unique_spec_not_per_alias() {
+    fn iter_yields_one_tuple_per_unique_spec_not_per_alias() {
         // SpecStore::iter() must enumerate entries (one per file), not
         // alias keys (which would double-count specs that register both
         // a stem and a name alias). Without this, status counts would
@@ -4355,7 +4357,7 @@ mod tests {
     }
 
     #[test]
-    fn phase1_addressability_holds_against_full_corpus() {
+    fn addressability_holds_against_full_corpus() {
         // The on-disk corpus must load without silent loss: every
         // committed `*.json` becomes a SpecEntry (709 entries against
         // the embedded corpus), and aliases_count() equals 709 + the

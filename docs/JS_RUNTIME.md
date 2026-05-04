@@ -1,7 +1,7 @@
 # JS Runtime (`gc-jsrt`)
 
 Reference for the bounded QuickJS evaluator that backs `requires_js`
-spec generators (UX-9).
+spec generators.
 
 The crate lives at [`crates/gc-jsrt/`](../crates/gc-jsrt/) and is a
 self-contained dependency target — `gc-suggest` calls into it via the

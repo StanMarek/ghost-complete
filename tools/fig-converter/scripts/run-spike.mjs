@@ -56,9 +56,9 @@ function* walkGenerators(obj, path) {
         for (let i = 0; i < v.length; i++) {
           const g = v[i];
           if (g && typeof g === 'object') {
-            // Phase 5: the converter now emits `js_runtime.source`
-            // instead of `js_source`. Accept both so the spike works
-            // against pre- and post-Phase 2 corpora.
+            // The converter now emits `js_runtime.source`; accept
+            // both shapes so the spike works against legacy and
+            // current corpora.
             const legacy =
               g.requires_js === true && typeof g.js_source === 'string';
             const runtimeSource =
@@ -68,8 +68,8 @@ function* walkGenerators(obj, path) {
               g.js_runtime.source.length > 0;
             if (legacy || runtimeSource) {
               // Synthesise a `js_source`-shaped record for the
-              // analyser. Prefer the runtime form when both exist;
-              // they should always agree post-Phase 2.
+              // analyser. Prefer the runtime form when both exist —
+              // they should always agree.
               const source = runtimeSource
                 ? g.js_runtime.source
                 : g.js_source;

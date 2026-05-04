@@ -248,8 +248,11 @@ impl JsRuntimeOutput {
     }
 
     /// Move the suggestions out if the payload holds them; returns
-    /// `None` otherwise so the caller can react to a wire-protocol
-    /// mismatch (e.g. PostProcess job returning argv).
+    /// `None` otherwise (i.e. the payload is `Argv` or `None`). The
+    /// worker's `run_job` routes each [`JsExecutionKind`] through a
+    /// fixed normaliser (`normalize_value` for PostProcess/Custom,
+    /// `normalize_argv` for ScriptFunction), so the `None` arm in the
+    /// caller is the normal empty/failed path — not a contract violation.
     pub fn into_suggestions(self) -> Option<Vec<JsSuggestion>> {
         match self.payload {
             JsRuntimeOutputPayload::Suggestions(v) => Some(v),
@@ -258,7 +261,10 @@ impl JsRuntimeOutput {
     }
 
     /// Move the argv out if the payload holds it; returns `None`
-    /// otherwise so the caller can react to a wire-protocol mismatch.
+    /// otherwise (i.e. the payload is `Suggestions` or `None`). See
+    /// [`Self::into_suggestions`] for why the `None` arm in the caller
+    /// is the normal empty/failed path under the worker's per-kind
+    /// normaliser routing.
     pub fn into_argv(self) -> Option<Vec<String>> {
         match self.payload {
             JsRuntimeOutputPayload::Argv(v) => Some(v),
@@ -362,4 +368,116 @@ pub enum JsRuntimeError {
     /// We could not even start evaluation (e.g. context creation failed).
     #[error("internal gc-jsrt error: {0}")]
     Internal(String),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_suggestion() -> JsSuggestion {
+        JsSuggestion {
+            name: "alpha".into(),
+            description: None,
+        }
+    }
+
+    fn sample_argv() -> Vec<String> {
+        vec!["echo".into(), "hello".into()]
+    }
+
+    /// Defensive: a Suggestions payload must report an empty argv slice
+    /// from `.argv()` so cross-variant probes don't surface stale data.
+    #[test]
+    fn argv_returns_empty_slice_for_suggestions_payload() {
+        let out = JsRuntimeOutput {
+            payload: JsRuntimeOutputPayload::Suggestions(vec![sample_suggestion()]),
+            diagnostics: vec![],
+        };
+        assert!(out.argv().is_empty());
+    }
+
+    /// Mirror of the above for the inverse cross-variant probe.
+    #[test]
+    fn suggestions_returns_empty_slice_for_argv_payload() {
+        let out = JsRuntimeOutput {
+            payload: JsRuntimeOutputPayload::Argv(sample_argv()),
+            diagnostics: vec![],
+        };
+        assert!(out.suggestions().is_empty());
+    }
+
+    /// Both accessors must report empty for the `None` payload — that's
+    /// the empty/failed sentinel and neither slot holds usable data.
+    #[test]
+    fn argv_and_suggestions_return_empty_slice_for_none_payload() {
+        let out = JsRuntimeOutput {
+            payload: JsRuntimeOutputPayload::None,
+            diagnostics: vec![],
+        };
+        assert!(out.argv().is_empty());
+        assert!(out.suggestions().is_empty());
+    }
+
+    /// Owning consumers must see a `None` from `into_argv` when the
+    /// payload was Suggestions — the worker's per-kind normalisation
+    /// guarantees this branch is structurally unreachable in practice
+    /// but the contract pin keeps a future refactor honest.
+    #[test]
+    fn into_argv_returns_none_when_payload_is_suggestions() {
+        let out = JsRuntimeOutput {
+            payload: JsRuntimeOutputPayload::Suggestions(vec![sample_suggestion()]),
+            diagnostics: vec![],
+        };
+        assert!(out.into_argv().is_none());
+    }
+
+    /// Inverse of [`into_argv_returns_none_when_payload_is_suggestions`].
+    #[test]
+    fn into_suggestions_returns_none_when_payload_is_argv() {
+        let out = JsRuntimeOutput {
+            payload: JsRuntimeOutputPayload::Argv(sample_argv()),
+            diagnostics: vec![],
+        };
+        assert!(out.into_suggestions().is_none());
+    }
+
+    /// Both owning consumers see `None` for the `None` payload.
+    #[test]
+    fn into_argv_and_into_suggestions_return_none_for_none_payload() {
+        let out_a = JsRuntimeOutput {
+            payload: JsRuntimeOutputPayload::None,
+            diagnostics: vec![],
+        };
+        let out_b = JsRuntimeOutput {
+            payload: JsRuntimeOutputPayload::None,
+            diagnostics: vec![],
+        };
+        assert!(out_a.into_argv().is_none());
+        assert!(out_b.into_suggestions().is_none());
+    }
+
+    /// Positive control: a Suggestions payload yields the original Vec
+    /// from `into_suggestions` and is observable through `suggestions()`.
+    #[test]
+    fn suggestions_accessors_return_data_when_payload_matches() {
+        let s = sample_suggestion();
+        let out = JsRuntimeOutput {
+            payload: JsRuntimeOutputPayload::Suggestions(vec![s.clone()]),
+            diagnostics: vec![],
+        };
+        assert_eq!(out.suggestions(), std::slice::from_ref(&s));
+        assert_eq!(out.into_suggestions(), Some(vec![s]));
+    }
+
+    /// Positive control mirror for the Argv payload.
+    #[test]
+    fn argv_accessors_return_data_when_payload_matches() {
+        let argv = sample_argv();
+        let out = JsRuntimeOutput {
+            payload: JsRuntimeOutputPayload::Argv(argv.clone()),
+            diagnostics: vec![],
+        };
+        assert_eq!(out.argv(), argv.as_slice());
+        assert_eq!(out.into_argv(), Some(argv));
+    }
 }

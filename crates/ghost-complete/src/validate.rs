@@ -987,4 +987,81 @@ mod tests {
         assert!(outcome.counts.warnings > 0);
         assert!(outcome.strict_failed);
     }
+
+    /// Regression guard for test-iter3-2: the iterative `walk_subs`
+    /// descent (intentionally non-recursive to handle AWS-style
+    /// ~10-level subcommand nesting without stack overflow) must
+    /// preserve the same `$/subcommands[i]/subcommands[j]/.../args[k]`
+    /// JSON-pointer shape the recursive form produced. A future
+    /// refactor that breaks the path concatenation (e.g. dropping the
+    /// `parent_path` join) would silently emit malformed warning
+    /// paths to operators without test failure. We synthesise a
+    /// 6-level-deep nest with `requires_js: true` (no `js_runtime`)
+    /// at the leaf and assert the warning path is exactly the
+    /// expected JSON pointer — pinning both that the iteration
+    /// completes (test passes at all) AND that the path shape
+    /// matches.
+    #[test]
+    fn validate_strict_warning_path_survives_deep_nested_subcommands() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        // 6 levels of nested subcommands (root → l1 → l2 → l3 → l4 →
+        // l5 → l6) with the missing-js_runtime defect at the deepest
+        // level. The root spec has no args/options of its own; each
+        // intermediate level carries exactly one subcommand. The
+        // expected warning path therefore traverses six
+        // `subcommands[0]` segments before landing on the
+        // `args[0]/generators[0]` defect.
+        write_spec(
+            &spec_dir,
+            "deep.json",
+            r#"{
+                "name": "deep",
+                "subcommands": [{
+                    "name": "l1",
+                    "subcommands": [{
+                        "name": "l2",
+                        "subcommands": [{
+                            "name": "l3",
+                            "subcommands": [{
+                                "name": "l4",
+                                "subcommands": [{
+                                    "name": "l5",
+                                    "subcommands": [{
+                                        "name": "l6",
+                                        "args": [{
+                                            "name": "x",
+                                            "generators": [{"requires_js": true}]
+                                        }]
+                                    }]
+                                }]
+                            }]
+                        }]
+                    }]
+                }]
+            }"#,
+        );
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        let outcome =
+            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        assert!(
+            outcome.counts.warnings > 0,
+            "strict mode must warn on missing js_runtime at deep nesting"
+        );
+        assert!(outcome.strict_failed);
+
+        let txt = String::from_utf8_lossy(&out);
+        let expected_path = "$/subcommands[0]/subcommands[0]/subcommands[0]\
+                             /subcommands[0]/subcommands[0]/subcommands[0]\
+                             /args[0]/generators[0]: requires_js=true without js_runtime metadata";
+        assert!(
+            txt.contains(expected_path),
+            "expected exact JSON-pointer path for the deep-nested defect.\n\
+             expected substring: {expected_path}\n\
+             got output:\n{txt}"
+        );
+    }
 }

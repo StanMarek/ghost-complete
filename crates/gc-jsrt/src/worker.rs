@@ -413,7 +413,26 @@ fn normalize_argv<'js>(_ctx: &rquickjs::Ctx<'js>, value: Value<'js>) -> JsRuntim
 
     if let Some(obj) = value.as_object() {
         let mut argv: Vec<String> = Vec::new();
-        if obj.contains_key("command").unwrap_or(false) {
+        // Mirror the host.rs hardening for `executeShellCommand` descriptor
+        // inspection: a Proxy with a throwing `has` trap (or any other
+        // failure inside `contains_key`) must surface as a typed
+        // InvalidArgv diagnostic rather than silently producing an empty
+        // argv slot. Keeps the host-API contract uniform across both
+        // call sites.
+        let has_command = match obj.contains_key("command") {
+            Ok(b) => b,
+            Err(e) => {
+                diagnostics.push(JsDiagnostic {
+                    code: JsDiagnosticCode::InvalidArgv,
+                    message: format!("failed to inspect descriptor.command: {e}"),
+                });
+                return JsRuntimeOutput {
+                    payload: JsRuntimeOutputPayload::None,
+                    diagnostics,
+                };
+            }
+        };
+        if has_command {
             let v: Value<'js> = match obj.get("command") {
                 Ok(v) => v,
                 Err(e) => {
@@ -461,7 +480,20 @@ fn normalize_argv<'js>(_ctx: &rquickjs::Ctx<'js>, value: Value<'js>) -> JsRuntim
                 }
             }
         }
-        if obj.contains_key("args").unwrap_or(false) {
+        let has_args = match obj.contains_key("args") {
+            Ok(b) => b,
+            Err(e) => {
+                diagnostics.push(JsDiagnostic {
+                    code: JsDiagnosticCode::InvalidArgv,
+                    message: format!("failed to inspect descriptor.args: {e}"),
+                });
+                return JsRuntimeOutput {
+                    payload: JsRuntimeOutputPayload::None,
+                    diagnostics,
+                };
+            }
+        };
+        if has_args {
             let v: Value<'js> = match obj.get("args") {
                 Ok(v) => v,
                 Err(e) => {

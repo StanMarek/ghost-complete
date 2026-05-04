@@ -662,12 +662,12 @@ impl SuggestionEngine {
                                     ..Default::default()
                                 })
                                 .collect(),
-                            None => {
-                                // None payload is the normal "empty / failed" path
-                                // for PostProcess; diagnostics already logged inside
-                                // the adapter.
-                                Vec::new()
-                            }
+                            // PostProcess jobs always normalise through
+                            // `normalize_value` in the worker, which only emits
+                            // Suggestions or None — so this arm is the normal
+                            // empty/failed path, not a wire-protocol mismatch.
+                            // Diagnostics already logged inside the adapter.
+                            None => Vec::new(),
                         },
                         Err(e) => {
                             tracing::warn!(
@@ -930,11 +930,9 @@ impl SuggestionEngine {
         };
         let resolve_ctx = self.resolve_ctx_for_spec_walk(ctx);
         let resolution = specs::resolve_spec(spec, resolve_ctx.as_ref());
-        let generators: Vec<_> = resolution
-            .script_generators
-            .into_iter()
-            .filter(|g| is_supported_script_generator(g))
-            .collect();
+        let spec_name = ctx.command.as_deref().unwrap_or("<unknown>");
+        let generators =
+            filter_supported_script_generators(spec_name, resolution.script_generators);
         self.run_generators(&generators, ctx, cwd, timeout_ms).await
     }
 
@@ -1203,10 +1201,8 @@ impl SuggestionEngine {
         }
 
         // Script generators are dispatched asynchronously by the caller.
-        let script_generators: Vec<_> = script_generators
-            .into_iter()
-            .filter(|g| is_supported_script_generator(g))
-            .collect();
+        let spec_name = ctx.command.as_deref().unwrap_or("<unknown>");
+        let script_generators = filter_supported_script_generators(spec_name, script_generators);
 
         let suggestions = self.rank_with_history(ctx, cwd, buffer, candidates, true);
 
@@ -1423,8 +1419,13 @@ fn is_supported_script_generator(gen: &GeneratorSpec) -> bool {
     }
 
     match gen.js_runtime.as_ref() {
+        // Mirror doctor::count_missing_js_runtime_in_spec / validate.rs
+        // emptiness check so a hand-written user spec with empty source
+        // can't slip past the engine while the doctor flags it as
+        // missing — the engine would otherwise build a JS program that
+        // surfaces a SyntaxError diagnostic on every keystroke.
         Some(rt) if rt.kind == JsRuntimeKind::PostProcess => {
-            gen.script.is_some() || gen.script_template.is_some()
+            (gen.script.is_some() || gen.script_template.is_some()) && !rt.source.trim().is_empty()
         }
         Some(rt)
             if matches!(
@@ -1436,6 +1437,43 @@ fn is_supported_script_generator(gen: &GeneratorSpec) -> bool {
         }
         _ => false,
     }
+}
+
+/// Filter a generator slice through [`is_supported_script_generator`]
+/// while emitting a `tracing::trace!` for each rejected generator.
+///
+/// The filter itself is on the keystroke hot path, so the log level is
+/// deliberately `trace` (off by default) — operators chasing "this
+/// completion stopped working after I edited my user spec" can opt in
+/// via `RUST_LOG=gc_suggest=trace` and see the spec name + generator
+/// index + a coarse reason without the spec author having to re-run
+/// `ghost-complete doctor`. The doctor remains the actionable surface;
+/// this trace is purely a correlation aid.
+fn filter_supported_script_generators(
+    spec_name: &str,
+    generators: impl IntoIterator<Item = Arc<GeneratorSpec>>,
+) -> Vec<Arc<GeneratorSpec>> {
+    generators
+        .into_iter()
+        .enumerate()
+        .filter_map(|(idx, g)| {
+            if is_supported_script_generator(&g) {
+                Some(g)
+            } else {
+                tracing::trace!(
+                    spec = %spec_name,
+                    generator_index = idx,
+                    requires_js = g.requires_js,
+                    kind = ?g.js_runtime.as_ref().map(|rt| &rt.kind),
+                    has_script = g.script.is_some(),
+                    has_script_template = g.script_template.is_some(),
+                    "engine: dropping requires_js generator that fails dispatch predicate \
+                     (see ghost-complete doctor for the actionable surface)"
+                );
+                None
+            }
+        })
+        .collect()
 }
 
 /// Pack the parsed command line into the host-API context for a JS
@@ -1514,23 +1552,15 @@ async fn run_script_function_dispatch(
             return Ok(Vec::new());
         }
     };
-    // Pattern-match on the discriminated payload so a wire-protocol bug
-    // (PostProcess result smuggled into a ScriptFunction slot, etc.) is
-    // visible at this seam rather than degrading silently into "no
-    // completions". Diagnostics from the runtime are already logged by
-    // the adapter on the way out.
+    // ScriptFunction jobs always normalise through `normalize_argv` in
+    // the worker (see worker.rs `run_job`), which only emits Argv or
+    // None — so the wildcard arms below are defensive but unreachable.
+    // Diagnostics from the runtime are already logged by the adapter on
+    // the way out.
     let argv: Vec<String> = match js_output.into_argv() {
         Some(v) if !v.is_empty() => v,
         Some(_) => return Ok(Vec::new()),
-        None => {
-            tracing::warn!(
-                spec = %cmd_name,
-                generator_index,
-                "js_runtime returned non-Argv payload for ScriptFunction job — \
-                 returning empty suggestions"
-            );
-            return Ok(Vec::new());
-        }
+        None => return Ok(Vec::new()),
     };
 
     // Run the resolved argv. We honour the same caching scheme as a
@@ -1671,9 +1701,11 @@ async fn run_custom_dispatch(
             return Ok(Vec::new());
         }
     };
-    // Pattern-match on the discriminated payload so a wire-protocol bug
-    // (ScriptFunction argv smuggled into a Custom slot, etc.) is visible
-    // at this seam rather than degrading silently.
+    // Custom jobs always normalise through `normalize_value` in the
+    // worker (see worker.rs `run_job`), which only emits Suggestions or
+    // None — so the None arm here is the normal "empty / failed" path,
+    // not a wire-protocol mismatch. Diagnostics from the runtime are
+    // already logged by the adapter on the way out.
     let suggestions: Vec<Suggestion> = match js_output.into_suggestions() {
         Some(suggs) => suggs
             .into_iter()
@@ -1685,12 +1717,7 @@ async fn run_custom_dispatch(
                 ..Default::default()
             })
             .collect(),
-        None => {
-            // None payload is the normal "empty / failed" path; log a
-            // warn only if the worker returned a non-Suggestions payload
-            // (which would be a contract violation we want to know about).
-            Vec::new()
-        }
+        None => Vec::new(),
     };
 
     if let Some(ref cache_cfg) = cache {
