@@ -219,14 +219,16 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
     // Debounce task: fires suggestions after a typing pause
     let debounce_notify = Arc::new(Notify::new());
+    let debounce_state = Arc::new(Mutex::new(DebounceState::default()));
     let delay_ms = config.trigger.delay_ms;
 
     let debounce_handle = if delay_ms > 0 {
         let notify = Arc::clone(&debounce_notify);
+        let debounce_state_d = Arc::clone(&debounce_state);
         let handler_d = Arc::clone(&handler);
         let parser_d = Arc::clone(&parser);
         Some(tokio::spawn(async move {
-            debounce_loop(notify, handler_d, parser_d, delay_ms).await;
+            debounce_loop(notify, debounce_state_d, handler_d, parser_d, delay_ms).await;
         }))
     } else {
         None
@@ -481,6 +483,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     let parser_for_stdout = Arc::clone(&parser);
     let handler_for_stdout = Arc::clone(&handler);
     let debounce_notify_b = Arc::clone(&debounce_notify);
+    let debounce_state_b = Arc::clone(&debounce_state);
     let stdout_handle = tokio::task::spawn_blocking(move || {
         let mut buf = [0u8; 8192];
         let mut display_epoch = 0_u64;
@@ -609,13 +612,22 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 }
             }
 
-            // Check if shell reported a buffer update via OSC 7770.
-            // Trigger suggestions here (Task B) instead of Task A to ensure
-            // we have the shell's updated buffer, fixing the stale-buffer bug.
+            // Handle shell buffer updates in Task B instead of Task A so trigger/debounce
+            // decisions see the parser's updated buffer. OSC-only reports may be deferred
+            // until a later display epoch to avoid rendering before the terminal redraws.
             if let Some(latest_buffer_epoch) = latest_buffer_epoch {
+                let buffer_generation = {
+                    let mut state = match debounce_state_b.lock() {
+                        Ok(state) => state,
+                        Err(e) => {
+                            tracing::warn!("debounce state mutex poisoned in stdout task: {e}");
+                            break;
+                        }
+                    };
+                    state.next_buffer_generation()
+                };
                 let display_after_latest_buffer = display_epoch > latest_buffer_epoch;
-                let mut render_buf = Vec::new();
-                let render_ticket = {
+                let action = {
                     let mut h = match handler_for_stdout.lock() {
                         Ok(h) => h,
                         Err(e) => {
@@ -634,60 +646,111 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     if had_pending_trigger {
                         h.clear_trigger_request();
                     }
-                    match apply_buffer_dirty_action(
-                        &mut deferred_buffer_dirty,
-                        latest_buffer_epoch,
-                        action,
-                    ) {
-                        ResolvedBufferDirtyAction::Trigger => {
-                            h.trigger(&parser_for_stdout, &mut render_buf)
-                        }
-                        ResolvedBufferDirtyAction::NotifyDebounce => debounce_notify_b.notify_one(),
-                        ResolvedBufferDirtyAction::None => {}
-                    }
-                    h.overlay_write_ticket()
+                    action
                 };
-                if !render_buf.is_empty() {
-                    if let Err(e) =
-                        write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
-                    {
-                        tracing::debug!("Task B overlay write/flush failed: {e}");
-                        break;
+
+                let resolved_action = {
+                    let mut state = match debounce_state_b.lock() {
+                        Ok(state) => state,
+                        Err(e) => {
+                            tracing::warn!("debounce state mutex poisoned in stdout task: {e}");
+                            break;
+                        }
+                    };
+                    apply_buffer_dirty_action(
+                        &mut deferred_buffer_dirty,
+                        &mut state,
+                        latest_buffer_epoch,
+                        buffer_generation,
+                        action,
+                    )
+                };
+
+                match resolved_action {
+                    ResolvedBufferDirtyAction::Trigger => {
+                        let mut render_buf = Vec::new();
+                        let render_ticket = {
+                            let mut h = match handler_for_stdout.lock() {
+                                Ok(h) => h,
+                                Err(e) => {
+                                    tracing::warn!("handler mutex poisoned in stdout task: {e}");
+                                    break;
+                                }
+                            };
+                            h.trigger(&parser_for_stdout, &mut render_buf);
+                            h.overlay_write_ticket()
+                        };
+                        if !render_buf.is_empty() {
+                            if let Err(e) = write_overlay_if_current(
+                                &handler_for_stdout,
+                                render_ticket,
+                                &render_buf,
+                            ) {
+                                tracing::debug!("Task B overlay write/flush failed: {e}");
+                                break;
+                            }
+                        }
                     }
+                    ResolvedBufferDirtyAction::NotifyDebounce => debounce_notify_b.notify_one(),
+                    ResolvedBufferDirtyAction::None => {}
                 }
             }
 
             if deferred_buffer_dirty.is_some_and(|pending| display_epoch > pending.display_epoch) {
-                let mut render_buf = Vec::new();
-                let render_ticket = {
-                    let mut h = match handler_for_stdout.lock() {
+                let (auto_trigger_enabled, debounce_suppressed) = {
+                    let h = match handler_for_stdout.lock() {
                         Ok(h) => h,
                         Err(e) => {
                             tracing::warn!("handler mutex poisoned in stdout task: {e}");
                             break;
                         }
                     };
-                    match resolve_deferred_buffer_dirty(
-                        &mut deferred_buffer_dirty,
-                        display_epoch,
-                        h.auto_trigger_enabled(),
-                        h.is_debounce_suppressed(),
-                    ) {
-                        ResolvedBufferDirtyAction::Trigger => {
-                            h.trigger(&parser_for_stdout, &mut render_buf);
-                        }
-                        ResolvedBufferDirtyAction::NotifyDebounce => debounce_notify_b.notify_one(),
-                        ResolvedBufferDirtyAction::None => {}
-                    }
-                    h.overlay_write_ticket()
+                    (h.auto_trigger_enabled(), h.is_debounce_suppressed())
                 };
-                if !render_buf.is_empty() {
-                    if let Err(e) =
-                        write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
-                    {
-                        tracing::debug!("Task B deferred overlay write/flush failed: {e}");
-                        break;
+                let resolved_action = {
+                    let mut state = match debounce_state_b.lock() {
+                        Ok(state) => state,
+                        Err(e) => {
+                            tracing::warn!("debounce state mutex poisoned in stdout task: {e}");
+                            break;
+                        }
+                    };
+                    resolve_deferred_buffer_dirty(
+                        &mut deferred_buffer_dirty,
+                        &mut state,
+                        display_epoch,
+                        auto_trigger_enabled,
+                        debounce_suppressed,
+                    )
+                };
+
+                match resolved_action {
+                    ResolvedBufferDirtyAction::Trigger => {
+                        let mut render_buf = Vec::new();
+                        let render_ticket = {
+                            let mut h = match handler_for_stdout.lock() {
+                                Ok(h) => h,
+                                Err(e) => {
+                                    tracing::warn!("handler mutex poisoned in stdout task: {e}");
+                                    break;
+                                }
+                            };
+                            h.trigger(&parser_for_stdout, &mut render_buf);
+                            h.overlay_write_ticket()
+                        };
+                        if !render_buf.is_empty() {
+                            if let Err(e) = write_overlay_if_current(
+                                &handler_for_stdout,
+                                render_ticket,
+                                &render_buf,
+                            ) {
+                                tracing::debug!("Task B deferred overlay write/flush failed: {e}");
+                                break;
+                            }
+                        }
                     }
+                    ResolvedBufferDirtyAction::NotifyDebounce => debounce_notify_b.notify_one(),
+                    ResolvedBufferDirtyAction::None => {}
                 }
             }
 
@@ -703,26 +766,40 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             };
 
             if cwd_dirty {
-                let mut render_buf = Vec::new();
-                let render_ticket = {
-                    let mut h = match handler_for_stdout.lock() {
+                let auto_trigger_enabled = {
+                    let h = match handler_for_stdout.lock() {
                         Ok(h) => h,
                         Err(e) => {
                             tracing::warn!("handler mutex poisoned in stdout task: {e}");
                             break;
                         }
                     };
-                    if h.auto_trigger_enabled() {
-                        h.trigger(&parser_for_stdout, &mut render_buf);
-                    }
-                    h.overlay_write_ticket()
+                    h.auto_trigger_enabled()
                 };
-                if !render_buf.is_empty() {
-                    if let Err(e) =
-                        write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
-                    {
-                        tracing::debug!("Task B overlay write/flush failed: {e}");
-                        break;
+                let cwd_deferred = auto_trigger_enabled
+                    && defer_cwd_trigger_until_buffer_display(&mut deferred_buffer_dirty);
+                if auto_trigger_enabled && !cwd_deferred {
+                    let mut render_buf = Vec::new();
+                    let render_ticket = {
+                        let mut h = match handler_for_stdout.lock() {
+                            Ok(h) => h,
+                            Err(e) => {
+                                tracing::warn!("handler mutex poisoned in stdout task: {e}");
+                                break;
+                            }
+                        };
+                        h.trigger(&parser_for_stdout, &mut render_buf);
+                        h.overlay_write_ticket()
+                    };
+                    if !render_buf.is_empty() {
+                        if let Err(e) = write_overlay_if_current(
+                            &handler_for_stdout,
+                            render_ticket,
+                            &render_buf,
+                        ) {
+                            tracing::debug!("Task B overlay write/flush failed: {e}");
+                            break;
+                        }
                     }
                 }
             }
@@ -986,10 +1063,52 @@ enum DeferredBufferDirtyAction {
     NotifyDebounce,
 }
 
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+struct DebounceState {
+    current_generation: u64,
+    notified_generation: Option<u64>,
+    deferred_generation: Option<u64>,
+}
+
+impl DebounceState {
+    fn next_buffer_generation(&mut self) -> u64 {
+        self.current_generation += 1;
+        self.current_generation
+    }
+
+    fn notify_generation(&mut self, generation: u64) {
+        self.notified_generation = Some(generation);
+        if self.deferred_generation == Some(generation) {
+            self.deferred_generation = None;
+        }
+    }
+
+    fn defer_generation(&mut self, generation: u64) {
+        self.deferred_generation = Some(generation);
+    }
+
+    fn clear_deferred_generation(&mut self, generation: u64) {
+        if self.deferred_generation == Some(generation) {
+            self.deferred_generation = None;
+        }
+    }
+
+    fn latest_notified_generation(&self) -> Option<u64> {
+        self.notified_generation
+    }
+
+    fn can_fire_generation(&self, generation: u64) -> bool {
+        self.current_generation == generation
+            && self.notified_generation == Some(generation)
+            && self.deferred_generation.is_none()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct DeferredBufferDirty {
     action: DeferredBufferDirtyAction,
     display_epoch: u64,
+    generation: u64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1039,34 +1158,57 @@ fn buffer_dirty_action(
 
 fn apply_buffer_dirty_action(
     deferred: &mut Option<DeferredBufferDirty>,
+    debounce_state: &mut DebounceState,
     buffer_epoch: u64,
+    buffer_generation: u64,
     action: BufferDirtyAction,
 ) -> ResolvedBufferDirtyAction {
     match action {
         BufferDirtyAction::Trigger => {
-            *deferred = None;
+            clear_deferred_buffer_dirty(deferred, debounce_state);
             ResolvedBufferDirtyAction::Trigger
         }
         BufferDirtyAction::Debounce => {
-            *deferred = None;
+            clear_deferred_buffer_dirty(deferred, debounce_state);
+            debounce_state.notify_generation(buffer_generation);
             ResolvedBufferDirtyAction::NotifyDebounce
         }
         BufferDirtyAction::DeferUntilDisplay(action) => {
             *deferred = Some(DeferredBufferDirty {
                 action,
                 display_epoch: buffer_epoch,
+                generation: buffer_generation,
             });
+            debounce_state.defer_generation(buffer_generation);
             ResolvedBufferDirtyAction::None
         }
         BufferDirtyAction::Ignore => {
-            *deferred = None;
+            clear_deferred_buffer_dirty(deferred, debounce_state);
             ResolvedBufferDirtyAction::None
         }
     }
 }
 
+fn clear_deferred_buffer_dirty(
+    deferred: &mut Option<DeferredBufferDirty>,
+    debounce_state: &mut DebounceState,
+) {
+    if let Some(pending) = deferred.take() {
+        debounce_state.clear_deferred_generation(pending.generation);
+    }
+}
+
+fn defer_cwd_trigger_until_buffer_display(deferred: &mut Option<DeferredBufferDirty>) -> bool {
+    let Some(pending) = deferred.as_mut() else {
+        return false;
+    };
+    pending.action = DeferredBufferDirtyAction::TriggerNow;
+    true
+}
+
 fn resolve_deferred_buffer_dirty(
     deferred: &mut Option<DeferredBufferDirty>,
+    debounce_state: &mut DebounceState,
     display_epoch: u64,
     auto_trigger_enabled: bool,
     debounce_suppressed: bool,
@@ -1079,6 +1221,7 @@ fn resolve_deferred_buffer_dirty(
     }
 
     *deferred = None;
+    debounce_state.clear_deferred_generation(pending.generation);
     match pending.action {
         DeferredBufferDirtyAction::TriggerNow => {
             if auto_trigger_enabled {
@@ -1089,6 +1232,7 @@ fn resolve_deferred_buffer_dirty(
         }
         DeferredBufferDirtyAction::NotifyDebounce => {
             if auto_trigger_enabled && !debounce_suppressed {
+                debounce_state.notify_generation(pending.generation);
                 ResolvedBufferDirtyAction::NotifyDebounce
             } else {
                 ResolvedBufferDirtyAction::None
@@ -1167,6 +1311,7 @@ fn write_overlay_if_current(
 /// new notification, and fires suggestions once the timer expires (typing pause).
 async fn debounce_loop(
     notify: Arc<Notify>,
+    debounce_state: Arc<Mutex<DebounceState>>,
     handler: Arc<Mutex<InputHandler>>,
     parser: Arc<Mutex<TerminalParser>>,
     delay_ms: u64,
@@ -1175,13 +1320,51 @@ async fn debounce_loop(
     loop {
         // Wait for first buffer change notification
         notify.notified().await;
+        let mut generation = {
+            let state = match debounce_state.lock() {
+                Ok(state) => state,
+                Err(e) => {
+                    tracing::warn!("debounce skipped (state lock poisoned): {e}");
+                    continue;
+                }
+            };
+            match state.latest_notified_generation() {
+                Some(generation) => generation,
+                None => continue,
+            }
+        };
 
         // Debounce: reset timer on every new notification
         loop {
             tokio::select! {
-                _ = notify.notified() => { continue; }
+                _ = notify.notified() => {
+                    let state = match debounce_state.lock() {
+                        Ok(state) => state,
+                        Err(e) => {
+                            tracing::warn!("debounce skipped (state lock poisoned): {e}");
+                            break;
+                        }
+                    };
+                    if let Some(next_generation) = state.latest_notified_generation() {
+                        generation = next_generation;
+                    }
+                    continue;
+                }
                 _ = tokio::time::sleep(delay) => { break; }
             }
+        }
+        let should_fire = {
+            let state = match debounce_state.lock() {
+                Ok(state) => state,
+                Err(e) => {
+                    tracing::warn!("debounce skipped (state lock poisoned): {e}");
+                    continue;
+                }
+            };
+            state.can_fire_generation(generation)
+        };
+        if !should_fire {
+            continue;
         }
 
         // Timer expired — fire trigger with bounded-block support.
@@ -1507,7 +1690,7 @@ mod tests {
         assert_eq!(
             buffer_dirty_action(true, 150, true, true, false),
             BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::TriggerNow),
-            "OSC-only buffer reports must not render before the matching ZLE redraw moves the cursor"
+            "OSC-only buffer reports must not render before a later display epoch advances after the report"
         );
     }
 
@@ -1524,16 +1707,22 @@ mod tests {
         let mut deferred = Some(DeferredBufferDirty {
             action: DeferredBufferDirtyAction::TriggerNow,
             display_epoch: 3,
+            generation: 1,
         });
+        let mut debounce_state = DebounceState {
+            current_generation: 1,
+            notified_generation: None,
+            deferred_generation: Some(1),
+        };
 
         let action = buffer_dirty_action(false, 150, true, true, false);
         assert_eq!(
-            apply_buffer_dirty_action(&mut deferred, 3, action),
+            apply_buffer_dirty_action(&mut deferred, &mut debounce_state, 3, 1, action),
             ResolvedBufferDirtyAction::None
         );
         assert_eq!(deferred, None);
         assert_eq!(
-            resolve_deferred_buffer_dirty(&mut deferred, 4, true, true),
+            resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 4, true, true),
             ResolvedBufferDirtyAction::None
         );
     }
@@ -1541,10 +1730,12 @@ mod tests {
     #[test]
     fn deferred_debounce_notifies_only_after_later_display() {
         let mut deferred = None;
+        let mut debounce_state = DebounceState::default();
+        let generation = debounce_state.next_buffer_generation();
         let action = buffer_dirty_action(false, 150, true, false, false);
 
         assert_eq!(
-            apply_buffer_dirty_action(&mut deferred, 8, action),
+            apply_buffer_dirty_action(&mut deferred, &mut debounce_state, 8, generation, action),
             ResolvedBufferDirtyAction::None
         );
         assert_eq!(
@@ -1552,17 +1743,93 @@ mod tests {
             Some(DeferredBufferDirty {
                 action: DeferredBufferDirtyAction::NotifyDebounce,
                 display_epoch: 8,
+                generation,
             })
         );
         assert_eq!(
-            resolve_deferred_buffer_dirty(&mut deferred, 8, true, false),
+            resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 8, true, false),
             ResolvedBufferDirtyAction::None
         );
         assert_eq!(
-            resolve_deferred_buffer_dirty(&mut deferred, 9, true, false),
+            resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 9, true, false),
             ResolvedBufferDirtyAction::NotifyDebounce
         );
         assert_eq!(deferred, None);
+        assert!(debounce_state.can_fire_generation(generation));
+    }
+
+    #[test]
+    fn deferred_debounce_generation_blocks_prior_timer_until_redraw() {
+        let mut deferred = None;
+        let mut debounce_state = DebounceState::default();
+
+        let first_generation = debounce_state.next_buffer_generation();
+        assert_eq!(
+            apply_buffer_dirty_action(
+                &mut deferred,
+                &mut debounce_state,
+                3,
+                first_generation,
+                BufferDirtyAction::Debounce,
+            ),
+            ResolvedBufferDirtyAction::NotifyDebounce
+        );
+        assert!(debounce_state.can_fire_generation(first_generation));
+
+        let second_generation = debounce_state.next_buffer_generation();
+        assert_eq!(
+            apply_buffer_dirty_action(
+                &mut deferred,
+                &mut debounce_state,
+                4,
+                second_generation,
+                BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::NotifyDebounce),
+            ),
+            ResolvedBufferDirtyAction::None
+        );
+        assert!(!debounce_state.can_fire_generation(first_generation));
+        assert!(!debounce_state.can_fire_generation(second_generation));
+
+        assert_eq!(
+            resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 4, true, false),
+            ResolvedBufferDirtyAction::None
+        );
+        assert!(!debounce_state.can_fire_generation(first_generation));
+
+        assert_eq!(
+            resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 5, true, false),
+            ResolvedBufferDirtyAction::NotifyDebounce
+        );
+        assert!(!debounce_state.can_fire_generation(first_generation));
+        assert!(debounce_state.can_fire_generation(second_generation));
+    }
+
+    #[test]
+    fn cwd_dirty_upgrades_pending_deferred_buffer_to_trigger_after_redraw() {
+        let generation = 2;
+        let mut deferred = Some(DeferredBufferDirty {
+            action: DeferredBufferDirtyAction::NotifyDebounce,
+            display_epoch: 4,
+            generation,
+        });
+        let mut debounce_state = DebounceState {
+            current_generation: generation,
+            notified_generation: Some(1),
+            deferred_generation: Some(generation),
+        };
+
+        assert!(defer_cwd_trigger_until_buffer_display(&mut deferred));
+        assert_eq!(
+            deferred.map(|pending| pending.action),
+            Some(DeferredBufferDirtyAction::TriggerNow)
+        );
+        assert!(!debounce_state.can_fire_generation(1));
+        assert_eq!(
+            resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 5, true, false),
+            ResolvedBufferDirtyAction::Trigger
+        );
+        assert_eq!(deferred, None);
+        assert!(!debounce_state.can_fire_generation(1));
     }
 
     #[test]
@@ -1570,10 +1837,16 @@ mod tests {
         let mut deferred = Some(DeferredBufferDirty {
             action: DeferredBufferDirtyAction::NotifyDebounce,
             display_epoch: 4,
+            generation: 1,
         });
+        let mut debounce_state = DebounceState {
+            current_generation: 1,
+            notified_generation: None,
+            deferred_generation: Some(1),
+        };
 
         assert_eq!(
-            resolve_deferred_buffer_dirty(&mut deferred, 5, true, true),
+            resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 5, true, true),
             ResolvedBufferDirtyAction::None
         );
         assert_eq!(deferred, None);
@@ -1584,16 +1857,22 @@ mod tests {
         let mut deferred = Some(DeferredBufferDirty {
             action: DeferredBufferDirtyAction::TriggerNow,
             display_epoch: 1,
+            generation: 1,
         });
+        let mut debounce_state = DebounceState {
+            current_generation: 2,
+            notified_generation: None,
+            deferred_generation: Some(1),
+        };
         let action = buffer_dirty_action(true, 150, true, false, true);
 
         assert_eq!(
-            apply_buffer_dirty_action(&mut deferred, 2, action),
+            apply_buffer_dirty_action(&mut deferred, &mut debounce_state, 2, 2, action),
             ResolvedBufferDirtyAction::Trigger
         );
         assert_eq!(deferred, None);
         assert_eq!(
-            resolve_deferred_buffer_dirty(&mut deferred, 2, true, false),
+            resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 2, true, false),
             ResolvedBufferDirtyAction::None
         );
     }
@@ -1619,6 +1898,38 @@ mod tests {
         let events = process_pty_read(&mut parser, b"\x1b]7770;4;git \x07x", &mut display_epoch);
 
         assert!(events.display_dirty);
+        assert!(display_epoch > events.latest_buffer_epoch.unwrap());
+    }
+
+    #[test]
+    fn pty_read_uses_latest_buffer_epoch_when_reports_coalesce() {
+        let mut parser = TerminalParser::new(24, 80);
+        let mut display_epoch = 0;
+        let events = process_pty_read(
+            &mut parser,
+            b"\x1b]7770;4;git \x07x\x1b]7770;5;git s\x07",
+            &mut display_epoch,
+        );
+
+        assert!(events.display_dirty);
+        assert_eq!(display_epoch, 1);
+        assert_eq!(events.latest_buffer_epoch, Some(1));
+        assert!(display_epoch <= events.latest_buffer_epoch.unwrap());
+    }
+
+    #[test]
+    fn pty_read_allows_display_after_latest_coalesced_buffer_report() {
+        let mut parser = TerminalParser::new(24, 80);
+        let mut display_epoch = 0;
+        let events = process_pty_read(
+            &mut parser,
+            b"\x1b]7770;4;git \x07x\x1b]7770;5;git s\x07y",
+            &mut display_epoch,
+        );
+
+        assert!(events.display_dirty);
+        assert_eq!(display_epoch, 2);
+        assert_eq!(events.latest_buffer_epoch, Some(1));
         assert!(display_epoch > events.latest_buffer_epoch.unwrap());
     }
 
