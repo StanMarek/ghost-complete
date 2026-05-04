@@ -504,17 +504,19 @@ fn test_multiple_commands() {
 ///   smoke harness.
 ///
 /// Assumptions:
-///   - Embedded `git` spec contains well-known subcommands (status, commit,
-///     branch, etc.). Verified: specs/git.json has ~30 `"name": "status"`
-///     occurrences and is always embedded via include_str!.
+///   - Embedded `git` spec declares well-known subcommands such as status,
+///     commit, branch, checkout, clone, and add, and is always embedded via
+///     include_str!.
 ///   - Trigger char ' ' is in the default `auto_chars` list, so the space
 ///     at the end of "git " activates the auto-trigger path.
 ///   - `clear_popup` emits DECSC (`\x1b7`) followed by blanking writes and
 ///     DECRC (`\x1b8`). DECRC appearing after our ESC mark = dismissed.
 ///   - Default dismiss keybind is ESC (see Keybindings::default()).
 ///
-/// Determinism: byte-level polling with condvar-based wakeup, 5s timeouts,
-/// no blind sleeps.
+/// Determinism: positive readiness waits use byte-level polling with
+/// condvar-based wakeups and bounded timeouts. Startup settling and negative
+/// guards still use bounded sleeps/timeouts where the test needs to prove
+/// absence before redraw.
 #[test]
 fn test_popup_renders_and_dismisses_on_git_trigger() {
     let mut proc = GhostProcess::spawn();

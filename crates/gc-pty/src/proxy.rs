@@ -220,15 +220,26 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     // Debounce task: fires suggestions after a typing pause
     let debounce_notify = Arc::new(Notify::new());
     let debounce_state = Arc::new(Mutex::new(DebounceState::default()));
+    // Keeps debounce generation checks atomic with the parser snapshot they render from.
+    let trigger_snapshot_gate = Arc::new(Mutex::new(()));
     let delay_ms = config.trigger.delay_ms;
 
     let debounce_handle = if delay_ms > 0 {
         let notify = Arc::clone(&debounce_notify);
         let debounce_state_d = Arc::clone(&debounce_state);
+        let trigger_snapshot_gate_d = Arc::clone(&trigger_snapshot_gate);
         let handler_d = Arc::clone(&handler);
         let parser_d = Arc::clone(&parser);
         Some(tokio::spawn(async move {
-            debounce_loop(notify, debounce_state_d, handler_d, parser_d, delay_ms).await;
+            debounce_loop(
+                notify,
+                debounce_state_d,
+                trigger_snapshot_gate_d,
+                handler_d,
+                parser_d,
+                delay_ms,
+            )
+            .await;
         }))
     } else {
         None
@@ -484,6 +495,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     let handler_for_stdout = Arc::clone(&handler);
     let debounce_notify_b = Arc::clone(&debounce_notify);
     let debounce_state_b = Arc::clone(&debounce_state);
+    let trigger_snapshot_gate_b = Arc::clone(&trigger_snapshot_gate);
     let stdout_handle = tokio::task::spawn_blocking(move || {
         let mut buf = [0u8; 8192];
         let mut display_epoch = 0_u64;
@@ -497,7 +509,20 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             };
 
             // Feed bytes through the VT parser to track terminal state
-            let (needs_cpr, display_dirty, viewport_scrolls, latest_buffer_epoch) = {
+            let (
+                needs_cpr,
+                display_dirty,
+                viewport_scrolls,
+                latest_buffer_epoch,
+                latest_buffer_generation,
+            ) = {
+                let _snapshot_guard = match trigger_snapshot_gate_b.lock() {
+                    Ok(guard) => guard,
+                    Err(e) => {
+                        tracing::warn!("trigger snapshot gate poisoned in stdout task: {e}");
+                        break;
+                    }
+                };
                 let mut p = match parser_for_stdout.lock() {
                     Ok(p) => p,
                     Err(e) => {
@@ -505,12 +530,22 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         break;
                     }
                 };
-                let events = process_pty_read(&mut p, &buf[..n], &mut display_epoch);
+                let mut debounce_state = match debounce_state_b.lock() {
+                    Ok(state) => state,
+                    Err(e) => {
+                        tracing::warn!("debounce state mutex poisoned in stdout task: {e}");
+                        break;
+                    }
+                };
+                let events = process_pty_read(&mut p, &buf[..n], &mut display_epoch, || {
+                    debounce_state.next_buffer_generation()
+                });
                 (
                     events.needs_cpr,
                     events.display_dirty,
                     events.viewport_scrolls,
                     events.latest_buffer_epoch,
+                    events.latest_buffer_generation,
                 )
             };
 
@@ -616,15 +651,9 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             // decisions see the parser's updated buffer. OSC-only reports may be deferred
             // until a later display epoch to avoid rendering before the terminal redraws.
             if let Some(latest_buffer_epoch) = latest_buffer_epoch {
-                let buffer_generation = {
-                    let mut state = match debounce_state_b.lock() {
-                        Ok(state) => state,
-                        Err(e) => {
-                            tracing::warn!("debounce state mutex poisoned in stdout task: {e}");
-                            break;
-                        }
-                    };
-                    state.next_buffer_generation()
+                let Some(buffer_generation) = latest_buffer_generation else {
+                    tracing::warn!("buffer report missing generation in stdout task");
+                    break;
                 };
                 let display_after_latest_buffer = display_epoch > latest_buffer_epoch;
                 let action = {
@@ -776,8 +805,24 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     };
                     h.auto_trigger_enabled()
                 };
-                let cwd_deferred = auto_trigger_enabled
-                    && defer_cwd_trigger_until_buffer_display(&mut deferred_buffer_dirty);
+                let cwd_deferred = if auto_trigger_enabled {
+                    let mut state = match debounce_state_b.lock() {
+                        Ok(state) => state,
+                        Err(e) => {
+                            tracing::warn!("debounce state mutex poisoned in stdout task: {e}");
+                            break;
+                        }
+                    };
+                    defer_cwd_trigger_until_buffer_display(
+                        &mut deferred_buffer_dirty,
+                        &mut state,
+                        latest_buffer_epoch,
+                        latest_buffer_generation,
+                        display_epoch,
+                    )
+                } else {
+                    false
+                };
                 if auto_trigger_enabled && !cwd_deferred {
                     let mut render_buf = Vec::new();
                     let render_ticket = {
@@ -1028,12 +1073,14 @@ struct PtyReadEvents {
     display_dirty: bool,
     viewport_scrolls: u16,
     latest_buffer_epoch: Option<u64>,
+    latest_buffer_generation: Option<u64>,
 }
 
 fn process_pty_read(
     parser: &mut TerminalParser,
     bytes: &[u8],
     display_epoch: &mut u64,
+    mut next_buffer_generation: impl FnMut() -> u64,
 ) -> PtyReadEvents {
     let mut events = PtyReadEvents::default();
     for byte in bytes {
@@ -1052,6 +1099,7 @@ fn process_pty_read(
 
         if state.take_buffer_dirty() {
             events.latest_buffer_epoch = Some(*display_epoch);
+            events.latest_buffer_generation = Some(next_buffer_generation());
         }
     }
     events
@@ -1198,11 +1246,33 @@ fn clear_deferred_buffer_dirty(
     }
 }
 
-fn defer_cwd_trigger_until_buffer_display(deferred: &mut Option<DeferredBufferDirty>) -> bool {
-    let Some(pending) = deferred.as_mut() else {
+fn defer_cwd_trigger_until_buffer_display(
+    deferred: &mut Option<DeferredBufferDirty>,
+    debounce_state: &mut DebounceState,
+    latest_buffer_epoch: Option<u64>,
+    latest_buffer_generation: Option<u64>,
+    display_epoch: u64,
+) -> bool {
+    if let Some(pending) = deferred.as_mut() {
+        pending.action = DeferredBufferDirtyAction::TriggerNow;
+        return true;
+    }
+
+    let (Some(buffer_epoch), Some(buffer_generation)) =
+        (latest_buffer_epoch, latest_buffer_generation)
+    else {
         return false;
     };
-    pending.action = DeferredBufferDirtyAction::TriggerNow;
+    if display_epoch > buffer_epoch {
+        return false;
+    }
+
+    *deferred = Some(DeferredBufferDirty {
+        action: DeferredBufferDirtyAction::TriggerNow,
+        display_epoch: buffer_epoch,
+        generation: buffer_generation,
+    });
+    debounce_state.defer_generation(buffer_generation);
     true
 }
 
@@ -1312,6 +1382,7 @@ fn write_overlay_if_current(
 async fn debounce_loop(
     notify: Arc<Notify>,
     debounce_state: Arc<Mutex<DebounceState>>,
+    trigger_snapshot_gate: Arc<Mutex<()>>,
     handler: Arc<Mutex<InputHandler>>,
     parser: Arc<Mutex<TerminalParser>>,
     delay_ms: u64,
@@ -1353,20 +1424,6 @@ async fn debounce_loop(
                 _ = tokio::time::sleep(delay) => { break; }
             }
         }
-        let should_fire = {
-            let state = match debounce_state.lock() {
-                Ok(state) => state,
-                Err(e) => {
-                    tracing::warn!("debounce skipped (state lock poisoned): {e}");
-                    continue;
-                }
-            };
-            state.can_fire_generation(generation)
-        };
-        if !should_fire {
-            continue;
-        }
-
         // Timer expired — fire trigger with bounded-block support.
         //
         // Phase 1: run suggest_sync under the handler lock and paint sync-only
@@ -1375,6 +1432,26 @@ async fn debounce_loop(
         // the channel receiver and sync geometry.
         let mut render_buf = Vec::new();
         let (prepared, render_ticket) = {
+            let _snapshot_guard = match trigger_snapshot_gate.lock() {
+                Ok(guard) => guard,
+                Err(e) => {
+                    tracing::warn!("debounce skipped (trigger snapshot gate poisoned): {e}");
+                    continue;
+                }
+            };
+            let should_fire = {
+                let state = match debounce_state.lock() {
+                    Ok(state) => state,
+                    Err(e) => {
+                        tracing::warn!("debounce skipped (state lock poisoned): {e}");
+                        continue;
+                    }
+                };
+                state.can_fire_generation(generation)
+            };
+            if !should_fire {
+                continue;
+            }
             let mut h = match handler.lock() {
                 Ok(h) => h,
                 Err(e) => {
@@ -1805,6 +1882,75 @@ mod tests {
     }
 
     #[test]
+    fn pty_read_records_buffer_generation_when_report_updates_parser() {
+        let mut parser = TerminalParser::new(24, 80);
+        let mut display_epoch = 0;
+        let mut next_generation = 0;
+        let events = process_pty_read(
+            &mut parser,
+            b"\x1b]7770;4;git \x07",
+            &mut display_epoch,
+            || {
+                next_generation += 1;
+                next_generation
+            },
+        );
+
+        assert_eq!(events.latest_buffer_epoch, Some(display_epoch));
+        assert_eq!(events.latest_buffer_generation, Some(1));
+        assert_eq!(next_generation, 1);
+        assert!(!parser.state_mut().take_buffer_dirty());
+    }
+
+    #[test]
+    fn cwd_dirty_defers_after_ignored_undisplayed_buffer_report() {
+        let mut deferred = None;
+        let mut debounce_state = DebounceState::default();
+        let prior_generation = debounce_state.next_buffer_generation();
+        debounce_state.notify_generation(prior_generation);
+        assert!(debounce_state.can_fire_generation(prior_generation));
+
+        let current_generation = debounce_state.next_buffer_generation();
+        assert_eq!(
+            apply_buffer_dirty_action(
+                &mut deferred,
+                &mut debounce_state,
+                4,
+                current_generation,
+                BufferDirtyAction::Ignore,
+            ),
+            ResolvedBufferDirtyAction::None
+        );
+        assert_eq!(deferred, None);
+
+        assert!(defer_cwd_trigger_until_buffer_display(
+            &mut deferred,
+            &mut debounce_state,
+            Some(4),
+            Some(current_generation),
+            4,
+        ));
+        assert_eq!(
+            deferred,
+            Some(DeferredBufferDirty {
+                action: DeferredBufferDirtyAction::TriggerNow,
+                display_epoch: 4,
+                generation: current_generation,
+            })
+        );
+        assert!(!debounce_state.can_fire_generation(prior_generation));
+
+        assert_eq!(
+            resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 4, true, false),
+            ResolvedBufferDirtyAction::None
+        );
+        assert_eq!(
+            resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 5, true, false),
+            ResolvedBufferDirtyAction::Trigger
+        );
+    }
+
+    #[test]
     fn cwd_dirty_upgrades_pending_deferred_buffer_to_trigger_after_redraw() {
         let generation = 2;
         let mut deferred = Some(DeferredBufferDirty {
@@ -1818,7 +1964,13 @@ mod tests {
             deferred_generation: Some(generation),
         };
 
-        assert!(defer_cwd_trigger_until_buffer_display(&mut deferred));
+        assert!(defer_cwd_trigger_until_buffer_display(
+            &mut deferred,
+            &mut debounce_state,
+            None,
+            None,
+            4,
+        ));
         assert_eq!(
             deferred.map(|pending| pending.action),
             Some(DeferredBufferDirtyAction::TriggerNow)
@@ -1881,7 +2033,12 @@ mod tests {
     fn pty_read_tracks_display_epoch_before_latest_buffer_report() {
         let mut parser = TerminalParser::new(24, 80);
         let mut display_epoch = 0;
-        let events = process_pty_read(&mut parser, b"x\x1b]7770;4;git \x07", &mut display_epoch);
+        let events = process_pty_read(
+            &mut parser,
+            b"x\x1b]7770;4;git \x07",
+            &mut display_epoch,
+            || 1,
+        );
 
         assert!(events.display_dirty);
         assert_eq!(events.latest_buffer_epoch, Some(display_epoch));
@@ -1895,7 +2052,12 @@ mod tests {
     fn pty_read_tracks_display_epoch_after_latest_buffer_report() {
         let mut parser = TerminalParser::new(24, 80);
         let mut display_epoch = 0;
-        let events = process_pty_read(&mut parser, b"\x1b]7770;4;git \x07x", &mut display_epoch);
+        let events = process_pty_read(
+            &mut parser,
+            b"\x1b]7770;4;git \x07x",
+            &mut display_epoch,
+            || 1,
+        );
 
         assert!(events.display_dirty);
         assert!(display_epoch > events.latest_buffer_epoch.unwrap());
@@ -1909,6 +2071,7 @@ mod tests {
             &mut parser,
             b"\x1b]7770;4;git \x07x\x1b]7770;5;git s\x07",
             &mut display_epoch,
+            || 1,
         );
 
         assert!(events.display_dirty);
@@ -1925,6 +2088,7 @@ mod tests {
             &mut parser,
             b"\x1b]7770;4;git \x07x\x1b]7770;5;git s\x07y",
             &mut display_epoch,
+            || 1,
         );
 
         assert!(events.display_dirty);
