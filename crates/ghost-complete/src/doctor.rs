@@ -564,10 +564,13 @@ fn count_missing_js_runtime_in_spec(spec: &CompletionSpec) -> usize {
 /// SpecStore (including embedded fallback) and asserts every requires_js
 /// generator can actually be dispatched by the engine (mirrors
 /// `is_supported_script_generator` in gc-suggest::engine — see
-/// [`count_missing_js_runtime_in_spec`] for the full predicate). A
-/// non-zero result indicates an incomplete converter regen, a
-/// hand-edited spec, OR a `script_function`/`custom` generator the
-/// converter has not yet proven `self_contained:true`.
+/// [`count_missing_js_runtime_in_spec`] for the full predicate, which
+/// is the source of truth for the four undispatchable classes:
+/// missing js_runtime metadata, empty `js_runtime.source`,
+/// `post_process` without an accompanying `script`/`script_template`,
+/// or `script_function`/`custom` without `self_contained:true`). A
+/// non-zero result indicates an incomplete converter regen or a
+/// hand-edited spec.
 fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> CheckResult {
     let mut affected: Vec<(&str, usize)> = store
         .iter()
@@ -605,9 +608,10 @@ fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> C
 
     CheckResult::fail(format!(
         "Embedded specs: {total} requires_js generator(s) across {spec_count} spec(s) cannot be \
-         dispatched (missing js_runtime metadata, empty source, or non-PostProcess kind without \
-         `self_contained:true`). Indicates an incomplete converter regen or a hand-edited spec. \
-         Affected: {preview_str}{tail}"
+         dispatched (missing js_runtime metadata, empty `js_runtime.source`, `post_process` kind \
+         without an accompanying `script`/`script_template`, or `script_function`/`custom` kind \
+         without `self_contained:true`). Indicates an incomplete converter regen or a hand-edited \
+         spec. Affected: {preview_str}{tail}"
     ))
 }
 
@@ -1440,6 +1444,52 @@ mod tests {
             matches!(result.severity, Severity::Ok),
             "post_process with script_template must be OK, got: {}",
             result.message
+        );
+    }
+
+    /// Regression guard for comment-1: the user-facing fail message must
+    /// enumerate ALL four undispatchable classes the predicate counts —
+    /// missing js_runtime metadata, empty source, post_process without
+    /// script/script_template, and script_function/custom without
+    /// self_contained:true. Iter-3's predicate broadening added the
+    /// post_process+missing-script branch but left the message stale,
+    /// so an operator hitting that case saw a count without a clue.
+    #[test]
+    fn doctor_fail_message_enumerates_all_four_undispatchable_classes() {
+        let (store, _dir) = store_from_json_fixtures(&[(
+            "pp_no_script.json",
+            r#"{
+                "name": "pp_no_script",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "requires_js": true,
+                        "js_runtime": {
+                            "kind": "post_process",
+                            "source": "out => out.split('\n')"
+                        }
+                    }]
+                }]
+            }"#,
+        )]);
+        let result = check_embedded_runtime_metadata_for_store(&store);
+        assert!(matches!(result.severity, Severity::Fail));
+        let msg = &result.message;
+        assert!(
+            msg.contains("missing js_runtime metadata"),
+            "must name the missing-metadata class: {msg}"
+        );
+        assert!(
+            msg.contains("empty `js_runtime.source`"),
+            "must name the empty-source class: {msg}"
+        );
+        assert!(
+            msg.contains("`post_process` kind") && msg.contains("`script`/`script_template`"),
+            "must name the post_process+missing-script class: {msg}"
+        );
+        assert!(
+            msg.contains("`script_function`/`custom`") && msg.contains("`self_contained:true`"),
+            "must name the script_function/custom+missing-self_contained class: {msg}"
         );
     }
 }

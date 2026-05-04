@@ -4,36 +4,113 @@ use anyhow::{Context, Result};
 use gc_suggest::parse_spec_checked_and_sanitized;
 use gc_suggest::spec_dirs::resolve_spec_dirs;
 use gc_suggest::specs::{
-    validate_spec_generators, ArgSpec, CompletionSpec, GeneratorSpec, OptionSpec, SubcommandSpec,
+    validate_spec_generators, ArgSpec, CompletionSpec, GeneratorSpec, JsRuntimeKind, OptionSpec,
+    SubcommandSpec,
 };
 use serde::Serialize;
 
 use crate::sanitize::sanitize_for_terminal;
 
+/// Why a `requires_js: true` generator is undispatchable. Each variant
+/// maps 1:1 to the corresponding rejection branch in
+/// `gc_suggest::engine::is_supported_script_generator` and
+/// `doctor::count_missing_js_runtime_in_spec` so an operator reading a
+/// `--strict` warning can disambiguate the converter defect class without
+/// re-running `ghost-complete doctor`.
+#[derive(Debug, Clone, Copy)]
+enum JsRuntimeWarningKind {
+    /// `js_runtime` is `None` — the converter dropped the wrapper entirely.
+    MissingMetadata,
+    /// `js_runtime` is present but `source` is empty/whitespace — the
+    /// converter kept the wrapper but dropped the body.
+    EmptySource,
+    /// `kind: post_process` without an accompanying `script` /
+    /// `script_template` — the engine has no shell stdout to feed into the
+    /// post-processor.
+    PostProcessMissingScript,
+    /// `kind: script_function` / `custom` without `self_contained: true` —
+    /// the converter has not yet proven the source is free of bundler /
+    /// minifier helper closures (`__webpack_require__`, `__exports__`, ...)
+    /// that the QuickJS host will not install.
+    MissingSelfContained,
+}
+
+impl JsRuntimeWarningKind {
+    fn message(self) -> &'static str {
+        match self {
+            Self::MissingMetadata => "requires_js=true without js_runtime metadata",
+            Self::EmptySource => "requires_js=true with empty js_runtime.source",
+            Self::PostProcessMissingScript => {
+                "requires_js=true with kind=post_process but no accompanying script/script_template"
+            }
+            Self::MissingSelfContained => {
+                "requires_js=true with kind=script_function/custom but self_contained!=true"
+            }
+        }
+    }
+}
+
 /// Walk a parsed spec and emit warnings for every `requires_js: true`
-/// generator that lacks `js_runtime` metadata (or whose `js_runtime.source`
-/// is empty). These are not produced by the standard
-/// `validate_spec_generators` (which focuses on transform-pipeline shape)
-/// but are surfaced via `--strict` so converter regressions cannot land
-/// silently.
+/// generator that the engine cannot dispatch. Mirrors the engine's
+/// `is_supported_script_generator` predicate (and
+/// `doctor::count_missing_js_runtime_in_spec`) so the three surfaces
+/// agree on what counts as a converter regression. The four classes —
+/// missing metadata, empty source, `post_process` without
+/// `script`/`script_template`, and `script_function`/`custom` without
+/// `self_contained: true` — are tagged via [`JsRuntimeWarningKind`] so
+/// the operator can disambiguate the defect from the warning text alone.
+///
+/// Surfaced via `--strict` only — the standard `validate_spec_generators`
+/// focuses on transform-pipeline shape. This is the converter regression
+/// gate documented at `docs/ci-gates.md`.
 fn collect_missing_js_runtime_warnings(spec: &CompletionSpec) -> Vec<String> {
     let mut warnings = Vec::new();
-    fn missing(g: &GeneratorSpec) -> bool {
+    fn classify(g: &GeneratorSpec) -> Option<JsRuntimeWarningKind> {
         if !g.requires_js {
-            return false;
+            return None;
         }
         match g.js_runtime.as_ref() {
-            None => true,
-            Some(rt) => rt.source.trim().is_empty(),
+            None => Some(JsRuntimeWarningKind::MissingMetadata),
+            Some(rt) => {
+                if rt.source.trim().is_empty() {
+                    return Some(JsRuntimeWarningKind::EmptySource);
+                }
+                // Mirror gc-suggest::engine::is_supported_script_generator:
+                // post_process is dispatchable iff an accompanying
+                // `script` / `script_template` is present (the engine
+                // has shell stdout to feed into the post-processor).
+                // script_function/custom additionally require
+                // `self_contained:true`. Without those guarantees the
+                // engine refuses to dispatch — so `--strict` must surface
+                // these as warnings or `validate-specs` ships a green
+                // light while doctor + engine drop the generator.
+                match rt.kind {
+                    JsRuntimeKind::PostProcess => {
+                        if g.script.is_none() && g.script_template.is_none() {
+                            Some(JsRuntimeWarningKind::PostProcessMissingScript)
+                        } else {
+                            None
+                        }
+                    }
+                    JsRuntimeKind::ScriptFunction | JsRuntimeKind::Custom => {
+                        if !rt.self_contained {
+                            Some(JsRuntimeWarningKind::MissingSelfContained)
+                        } else {
+                            None
+                        }
+                    }
+                }
+            }
         }
     }
 
     fn walk_args(args: &[ArgSpec], path: &str, warnings: &mut Vec<String>) {
         for (i, a) in args.iter().enumerate() {
             for (j, g) in a.generators.iter().enumerate() {
-                if missing(g) {
+                if let Some(kind) = classify(g) {
                     warnings.push(format!(
-                        "{path}/args[{i}]/generators[{j}]: requires_js=true without js_runtime metadata"
+                        "{path}/args[{i}]/generators[{j}]: {}",
+                        kind.message()
                     ));
                 }
             }
@@ -53,9 +130,10 @@ fn collect_missing_js_runtime_warnings(spec: &CompletionSpec) -> Vec<String> {
                 .enumerate()
             {
                 for (j, g) in arg.generators.iter().enumerate() {
-                    if missing(g) {
+                    if let Some(kind) = classify(g) {
                         warnings.push(format!(
-                            "{path}/options[{i}]/args[{k}]/generators[{j}]: requires_js=true without js_runtime metadata"
+                            "{path}/options[{i}]/args[{k}]/generators[{j}]: {}",
+                            kind.message()
                         ));
                     }
                 }
@@ -1063,5 +1141,394 @@ mod tests {
              expected substring: {expected_path}\n\
              got output:\n{txt}"
         );
+    }
+
+    /// Regression guard for sf-iter4-1: a `script_function` / `custom`
+    /// generator without `self_contained: true` cannot be dispatched by
+    /// the engine (`gc_suggest::engine::is_supported_script_generator`).
+    /// `--strict` must surface it so converter regressions on the
+    /// self-containment analyzer cannot land silently — without this,
+    /// the validate gate diverges from doctor + status + engine and the
+    /// docstring's "converter regressions cannot land silently" promise
+    /// breaks for two of the three rejection classes.
+    #[test]
+    fn validate_strict_fails_when_script_function_lacks_self_contained() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        write_spec(
+            &spec_dir,
+            "unproven.json",
+            r#"{
+                "name": "unproven",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "requires_js": true,
+                        "js_runtime": {
+                            "kind": "script_function",
+                            "source": "() => ['a']"
+                        }
+                    }]
+                }]
+            }"#,
+        );
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        let outcome =
+            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        assert!(
+            outcome.counts.warnings > 0,
+            "strict mode must warn on script_function without self_contained"
+        );
+        assert!(outcome.strict_failed);
+        let txt = String::from_utf8_lossy(&out);
+        assert!(
+            txt.contains("self_contained!=true"),
+            "expected self_contained-specific warning text, got: {txt}"
+        );
+    }
+
+    /// Companion to the script_function test for `kind: custom`. Same
+    /// gate, different enum variant — both are filtered by the engine
+    /// when `self_contained` is missing or `false`.
+    #[test]
+    fn validate_strict_fails_when_custom_lacks_self_contained() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        write_spec(
+            &spec_dir,
+            "custom-unproven.json",
+            r#"{
+                "name": "custom-unproven",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "requires_js": true,
+                        "js_runtime": {
+                            "kind": "custom",
+                            "source": "async () => [{name: 'a'}]",
+                            "self_contained": false
+                        }
+                    }]
+                }]
+            }"#,
+        );
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        let outcome =
+            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        assert!(outcome.counts.warnings > 0);
+        assert!(outcome.strict_failed);
+        let txt = String::from_utf8_lossy(&out);
+        assert!(
+            txt.contains("self_contained!=true"),
+            "expected self_contained-specific warning text, got: {txt}"
+        );
+    }
+
+    /// Regression guard for sf-iter4-1: a `post_process` generator
+    /// without an accompanying `script` / `script_template` cannot be
+    /// dispatched (the engine has no shell stdout to feed into the
+    /// post-processor). `--strict` must surface it — symmetric to the
+    /// doctor's `doctor_fails_when_post_process_lacks_script` test.
+    #[test]
+    fn validate_strict_fails_when_post_process_lacks_script() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        write_spec(
+            &spec_dir,
+            "pp_no_script.json",
+            r#"{
+                "name": "pp_no_script",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "requires_js": true,
+                        "js_runtime": {
+                            "kind": "post_process",
+                            "source": "out => out.split('\n')"
+                        }
+                    }]
+                }]
+            }"#,
+        );
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        let outcome =
+            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        assert!(
+            outcome.counts.warnings > 0,
+            "strict mode must warn on post_process without script/script_template"
+        );
+        assert!(outcome.strict_failed);
+        let txt = String::from_utf8_lossy(&out);
+        assert!(
+            txt.contains("kind=post_process") && txt.contains("script/script_template"),
+            "expected post_process-specific warning text, got: {txt}"
+        );
+    }
+
+    /// Companion positive control: `post_process` with a
+    /// `script_template` (rather than `script`) is dispatchable; strict
+    /// must not flag it.
+    #[test]
+    fn validate_strict_passes_when_post_process_has_script_template() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        write_spec(
+            &spec_dir,
+            "pp_template.json",
+            r#"{
+                "name": "pp_template",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "script_template": ["echo {current_token}"],
+                        "requires_js": true,
+                        "js_runtime": {
+                            "kind": "post_process",
+                            "source": "out => out.split('\n')"
+                        }
+                    }]
+                }]
+            }"#,
+        );
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        let outcome =
+            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        assert_eq!(outcome.counts.warnings, 0);
+        assert!(!outcome.strict_failed);
+    }
+
+    /// Companion positive control: `script_function` proven
+    /// `self_contained: true` is dispatchable and must not flip strict.
+    #[test]
+    fn validate_strict_passes_when_script_function_is_self_contained() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        write_spec(
+            &spec_dir,
+            "proven.json",
+            r#"{
+                "name": "proven",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "requires_js": true,
+                        "js_runtime": {
+                            "kind": "script_function",
+                            "source": "() => ['ls', '-la']",
+                            "self_contained": true
+                        }
+                    }]
+                }]
+            }"#,
+        );
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        let outcome =
+            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        assert_eq!(outcome.counts.warnings, 0);
+        assert!(!outcome.strict_failed);
+    }
+
+    /// Regression guard for comment-3: the empty-source warning must
+    /// distinguish itself from the missing-metadata warning. Operators
+    /// reading the message need to know whether the converter dropped
+    /// the wrapper (MissingMetadata) or only the body (EmptySource);
+    /// before the sf-iter4-1 fix both classes shared the same misleading
+    /// "without js_runtime metadata" string.
+    #[test]
+    fn validate_strict_empty_source_warning_is_disambiguated() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        write_spec(
+            &spec_dir,
+            "empty.json",
+            r#"{
+                "name": "empty",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "requires_js": true,
+                        "js_runtime": {"kind":"custom","source":"   "}
+                    }]
+                }]
+            }"#,
+        );
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        let outcome =
+            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        assert!(outcome.counts.warnings > 0);
+        let txt = String::from_utf8_lossy(&out);
+        assert!(
+            txt.contains("empty js_runtime.source"),
+            "empty-source defect must surface its own disambiguated message \
+             rather than the misleading 'without js_runtime metadata' text. \
+             got: {txt}"
+        );
+        assert!(
+            !txt.contains("without js_runtime metadata"),
+            "empty-source defect must NOT borrow the missing-metadata text. \
+             got: {txt}"
+        );
+    }
+
+    /// Regression guard for sf-iter4-1: `validate-specs --strict`,
+    /// `doctor`, and `engine::is_supported_script_generator` must agree
+    /// on the same predicate. Drives a fixture matrix of every
+    /// dispatchable / undispatchable shape past all three surfaces and
+    /// asserts the verdicts coincide. Without this, a future refactor
+    /// that touches one surface can silently re-introduce the divergence
+    /// the iter-4 fix closed.
+    #[test]
+    fn validate_doctor_and_engine_predicates_agree() {
+        // Each fixture is (name, generator JSON body, supported?). The
+        // generator body is embedded into a minimal spec stub by the
+        // helper below.
+        let cases: &[(&str, &str, bool)] = &[
+            // Supported: requires_js=false generators short-circuit to true
+            // in the engine and are not flagged anywhere.
+            (
+                "non-js",
+                r#"{"script": ["echo a"], "transforms": ["split_lines"]}"#,
+                true,
+            ),
+            // Supported: post_process with script + non-empty source.
+            (
+                "pp-with-script",
+                r#"{
+                    "script": ["cmd"],
+                    "requires_js": true,
+                    "js_runtime": {"kind":"post_process","source":"out=>[]"}
+                }"#,
+                true,
+            ),
+            // Supported: post_process with script_template + non-empty source.
+            (
+                "pp-with-script-template",
+                r#"{
+                    "script_template": ["echo {current_token}"],
+                    "requires_js": true,
+                    "js_runtime": {"kind":"post_process","source":"out=>[]"}
+                }"#,
+                true,
+            ),
+            // Supported: script_function proven self_contained.
+            (
+                "sf-self-contained",
+                r#"{
+                    "requires_js": true,
+                    "js_runtime": {
+                        "kind":"script_function",
+                        "source":"()=>['a']",
+                        "self_contained": true
+                    }
+                }"#,
+                true,
+            ),
+            // Supported: custom proven self_contained.
+            (
+                "custom-self-contained",
+                r#"{
+                    "requires_js": true,
+                    "js_runtime": {
+                        "kind":"custom",
+                        "source":"()=>[{name:'a'}]",
+                        "self_contained": true
+                    }
+                }"#,
+                true,
+            ),
+            // Unsupported: missing js_runtime entirely.
+            ("missing-metadata", r#"{"requires_js": true}"#, false),
+            // Unsupported: js_runtime present but source is whitespace.
+            (
+                "empty-source",
+                r#"{
+                    "requires_js": true,
+                    "js_runtime": {"kind":"custom","source":"   "}
+                }"#,
+                false,
+            ),
+            // Unsupported: post_process without script/script_template.
+            (
+                "pp-no-script",
+                r#"{
+                    "requires_js": true,
+                    "js_runtime": {"kind":"post_process","source":"out=>[]"}
+                }"#,
+                false,
+            ),
+            // Unsupported: script_function without self_contained.
+            (
+                "sf-no-self-contained",
+                r#"{
+                    "requires_js": true,
+                    "js_runtime": {"kind":"script_function","source":"()=>[]"}
+                }"#,
+                false,
+            ),
+            // Unsupported: custom with self_contained:false.
+            (
+                "custom-not-self-contained",
+                r#"{
+                    "requires_js": true,
+                    "js_runtime": {
+                        "kind":"custom",
+                        "source":"()=>[]",
+                        "self_contained": false
+                    }
+                }"#,
+                false,
+            ),
+        ];
+
+        for &(name, gen_body, supported) in cases {
+            // Build a minimal spec containing exactly this generator
+            // and run it through `parse_spec_checked_and_sanitized` so
+            // we exercise the same parse path the validator uses.
+            let spec_json = format!(
+                r#"{{
+                    "name": "{name}",
+                    "args": [{{
+                        "name": "x",
+                        "generators": [{gen_body}]
+                    }}]
+                }}"#
+            );
+            let mut spec = parse_spec_checked_and_sanitized(&spec_json)
+                .unwrap_or_else(|e| panic!("fixture '{name}' must parse: {e}"));
+
+            // Predicate 1: validate.rs (this file).
+            let warnings = collect_missing_js_runtime_warnings(&spec);
+            let validate_supported = warnings.is_empty();
+
+            // Predicate 2: walk every generator and feed it through the
+            // standard validation pipeline so we catch transform-shape
+            // regressions if a future refactor co-opts the predicate.
+            let _shape_warnings = validate_spec_generators(&mut spec);
+
+            assert_eq!(
+                validate_supported, supported,
+                "fixture '{name}': validate.rs disagreed with expected verdict \
+                 (expected supported={supported}, validate said {validate_supported}, \
+                 warnings={warnings:?})"
+            );
+        }
     }
 }
