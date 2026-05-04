@@ -4430,31 +4430,103 @@ mod tests {
         assert!(snap.spawned_current_word.is_none());
     }
 
-    #[test]
-    fn js_runtime_generators_are_current_word_dependent() {
-        let gen = gc_suggest::specs::GeneratorSpec {
+    /// Helper: build a minimal generator with the given js_runtime kind +
+    /// source (or no js_runtime if `kind` is None). Keeps the trio of
+    /// predicate tests below readable.
+    fn js_runtime_generator(
+        kind: Option<gc_suggest::specs::JsRuntimeKind>,
+    ) -> gc_suggest::specs::GeneratorSpec {
+        gc_suggest::specs::GeneratorSpec {
             generator_type: None,
             script: None,
             script_template: None,
             transforms: Vec::new(),
             cache: None,
-            requires_js: true,
+            requires_js: kind.is_some(),
             js_source: None,
-            js_runtime: Some(std::sync::Arc::new(gc_suggest::specs::JsRuntimeSpec {
-                kind: gc_suggest::specs::JsRuntimeKind::Custom,
-                source: "async (tokens, run, ctx) => [{ name: ctx.searchTerm }]".to_string(),
-                self_contained: true,
-                input: None,
-                timeout_ms: None,
-                allow_shell_command: false,
-            })),
+            js_runtime: kind.map(|kind| {
+                std::sync::Arc::new(gc_suggest::specs::JsRuntimeSpec {
+                    kind,
+                    source: "(_, _, _) => []".to_string(),
+                    self_contained: true,
+                    timeout_ms: None,
+                    allow_shell_command: false,
+                })
+            }),
+            corrected_in: None,
+            template: None,
+        }
+    }
+
+    #[test]
+    fn js_runtime_custom_pins_current_word() {
+        let gen = js_runtime_generator(Some(gc_suggest::specs::JsRuntimeKind::Custom));
+        assert!(
+            generator_depends_on_current_word(&gen),
+            "Custom JS bodies see currentToken/searchTerm/tokens — must pin current_word"
+        );
+    }
+
+    #[test]
+    fn js_runtime_script_function_pins_current_word() {
+        let gen = js_runtime_generator(Some(gc_suggest::specs::JsRuntimeKind::ScriptFunction));
+        assert!(
+            generator_depends_on_current_word(&gen),
+            "ScriptFunction bodies receive (tokens, ctx) — must pin current_word"
+        );
+    }
+
+    #[test]
+    fn js_runtime_post_process_does_not_pin_current_word() {
+        // PostProcess JS bodies receive only the upstream script's stdout —
+        // the live current_word never reaches them, so pinning it would
+        // re-introduce the prefix-extension staleness bug.
+        let gen = js_runtime_generator(Some(gc_suggest::specs::JsRuntimeKind::PostProcess));
+        assert!(
+            !generator_depends_on_current_word(&gen),
+            "PostProcess only sees stdout — must not pin current_word"
+        );
+    }
+
+    #[test]
+    fn script_template_with_current_token_pins_current_word() {
+        let gen = gc_suggest::specs::GeneratorSpec {
+            generator_type: None,
+            script: None,
+            script_template: Some(vec!["echo".to_string(), "{current_token}".to_string()]),
+            transforms: Vec::new(),
+            cache: None,
+            requires_js: false,
+            js_source: None,
+            js_runtime: None,
             corrected_in: None,
             template: None,
         };
-
         assert!(
             generator_depends_on_current_word(&gen),
-            "JS runtime generators receive currentToken/searchTerm/tokens and must pin current_word"
+            "{{current_token}} placeholder requires the live current_word"
+        );
+    }
+
+    #[test]
+    fn script_template_without_current_token_does_not_pin() {
+        // A template that interpolates only `{prev_token}` has no live
+        // current-word dependency and must NOT pin.
+        let gen = gc_suggest::specs::GeneratorSpec {
+            generator_type: None,
+            script: None,
+            script_template: Some(vec!["echo".to_string(), "{prev_token}".to_string()]),
+            transforms: Vec::new(),
+            cache: None,
+            requires_js: false,
+            js_source: None,
+            js_runtime: None,
+            corrected_in: None,
+            template: None,
+        };
+        assert!(
+            !generator_depends_on_current_word(&gen),
+            "templates without {{current_token}} have no live current-word dependency"
         );
     }
 

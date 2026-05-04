@@ -475,16 +475,6 @@ pub enum JsRuntimeKind {
     Custom,
 }
 
-/// Selector for which input the runtime feeds to a [`JsRuntimeSpec`]'s JS
-/// function. Optional: when omitted, the runtime defaults to `Stdout` for
-/// `PostProcess` and `Argv` otherwise.
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub enum JsRuntimeInput {
-    Stdout,
-    Argv,
-}
-
 /// Runtime JS metadata for generators that need QuickJS evaluation. The
 /// engine routes on [`Self::kind`] to drive QuickJS dispatch via
 /// [`gc_jsrt::JsWorker`].
@@ -493,10 +483,6 @@ pub enum JsRuntimeInput {
 pub struct JsRuntimeSpec {
     pub kind: JsRuntimeKind,
     pub source: String,
-    /// Optional input feed selector (default: stdout for `post_process`; argv
-    /// otherwise).
-    #[serde(default)]
-    pub input: Option<JsRuntimeInput>,
     /// Optional per-generator timeout override.
     #[serde(default)]
     pub timeout_ms: Option<u64>,
@@ -1600,23 +1586,6 @@ fn validate_arg_generators(arg_spec: &mut ArgSpec, spec_name: &str, warnings: &m
         );
     }
 
-    // `js_runtime.input` is only meaningful for `PostProcess` (where it
-    // selects between stdout and argv as the JS function's argument).
-    // For `ScriptFunction` and `Custom` the dispatch shape is fixed by
-    // the kind, so a populated `input` field is dead schema. Surface it
-    // once at load time so spec authors don't silently rely on a switch
-    // the engine ignores.
-    for gen in &arg_spec.generators {
-        if let Some(rt) = gen.js_runtime.as_ref() {
-            if rt.input.is_some() && rt.kind != JsRuntimeKind::PostProcess {
-                warnings.push(format!(
-                    "generator in {spec_name} sets `js_runtime.input` on a {kind:?} generator; the field is currently honoured only for PostProcess",
-                    kind = rt.kind
-                ));
-            }
-        }
-    }
-
     let original_suggestions_len = arg_spec.suggestions.len();
     arg_spec.suggestions.retain(|entry| {
         if entry.is_empty_name() {
@@ -1733,9 +1702,9 @@ pub fn estimated_heap_bytes(spec: &CompletionSpec) -> usize {
             .unwrap_or(0);
         // 180 specs carry inline JS source; this is the largest single field.
         let js = opt_string_heap(&g.js_source);
-        // Phase 2: js_runtime.source replaces js_source for newly-converted
-        // specs. Account for both during the migration so the heap estimate
-        // doesn't undercount specs that already carry the runtime metadata.
+        // Account for both legacy `js_source` and `js_runtime.source` — the
+        // converter emits the latter, but stale user-installed specs may still
+        // carry the former.
         let js_runtime = g.js_runtime.as_ref().map(|jr| jr.source.len()).unwrap_or(0);
         let tmpl = opt_string_heap(&g.template);
         let transforms_vec = g.transforms.capacity() * std::mem::size_of::<Transform>();
@@ -2320,10 +2289,10 @@ mod tests {
 
     #[test]
     fn test_deserialize_js_runtime_post_process() {
-        // Phase 2 (UX-9): the post_process kind covers requires_js generators
-        // whose post-process body could not be lowered to declarative
-        // transforms. The script still runs natively; stdout is fed through
-        // the JS source.
+        // The post_process kind covers requires_js generators whose
+        // post-process body could not be lowered to declarative transforms.
+        // The script still runs natively; stdout is fed through the JS
+        // source.
         let gen: GeneratorSpec = serde_json::from_str(
             r#"{
                 "requires_js": true,
@@ -2339,7 +2308,6 @@ mod tests {
         let jr = gen.js_runtime.expect("js_runtime should parse");
         assert_eq!(jr.kind, JsRuntimeKind::PostProcess);
         assert_eq!(jr.source, "out => [{ name: out }]");
-        assert!(jr.input.is_none(), "input defaults are kind-specific");
         assert!(jr.timeout_ms.is_none(), "timeout_ms defaults to None");
         assert!(
             !jr.allow_shell_command,
@@ -2349,9 +2317,9 @@ mod tests {
 
     #[test]
     fn test_deserialize_js_runtime_script_function() {
-        // Phase 2 (UX-9): the script_function kind covers Fig's
-        // `script: (...) => [...]` shape — the JS body evaluates to an argv
-        // array that the runtime then spawns.
+        // The script_function kind covers Fig's `script: (...) => [...]`
+        // shape — the JS body evaluates to an argv array that the runtime
+        // then spawns.
         let gen: GeneratorSpec = serde_json::from_str(
             r#"{
                 "requires_js": true,
@@ -2370,9 +2338,8 @@ mod tests {
 
     #[test]
     fn test_deserialize_js_runtime_custom() {
-        // Phase 2 (UX-9): the custom kind covers Fig's
-        // `custom: async (...) => [...]` shape — no script, the JS body
-        // returns suggestions directly.
+        // The custom kind covers Fig's `custom: async (...) => [...]`
+        // shape — no script, the JS body returns suggestions directly.
         let gen: GeneratorSpec = serde_json::from_str(
             r#"{
                 "requires_js": true,
@@ -2391,14 +2358,13 @@ mod tests {
 
     #[test]
     fn test_deserialize_js_runtime_with_optional_fields() {
-        // Phase 2 (UX-9): all four optional fields populate together.
+        // The optional fields populate together.
         let gen: GeneratorSpec = serde_json::from_str(
             r#"{
                 "requires_js": true,
                 "js_runtime": {
                     "kind": "post_process",
                     "source": "x => x",
-                    "input": "stdout",
                     "timeout_ms": 5000,
                     "allow_shell_command": true
                 }
@@ -2407,34 +2373,15 @@ mod tests {
         .unwrap();
         let jr = gen.js_runtime.expect("js_runtime should parse");
         assert_eq!(jr.kind, JsRuntimeKind::PostProcess);
-        assert_eq!(jr.input, Some(JsRuntimeInput::Stdout));
         assert_eq!(jr.timeout_ms, Some(5000));
         assert!(jr.allow_shell_command);
-
-        // The argv input variant must also parse — covers script_function
-        // and custom whose default input is argv.
-        let gen2: GeneratorSpec = serde_json::from_str(
-            r#"{
-                "requires_js": true,
-                "js_runtime": {
-                    "kind": "script_function",
-                    "source": "() => ['x']",
-                    "input": "argv"
-                }
-            }"#,
-        )
-        .unwrap();
-        assert_eq!(
-            gen2.js_runtime.as_ref().and_then(|jr| jr.input.clone()),
-            Some(JsRuntimeInput::Argv)
-        );
     }
 
     #[test]
     fn test_deserialize_js_runtime_unknown_kind_rejected() {
-        // Phase 2 (UX-9): JsRuntimeKind is a closed enum (no serde(other)).
-        // An unknown kind must hard-fail deserialization so a typo'd
-        // converter emission can't sneak past load-time validation.
+        // JsRuntimeKind is a closed enum (no serde(other)). An unknown kind
+        // must hard-fail deserialization so a typo'd converter emission
+        // can't sneak past load-time validation.
         let bad = r#"{
             "requires_js": true,
             "js_runtime": {
@@ -2474,14 +2421,12 @@ mod tests {
     }
 
     #[test]
-    fn test_phase2_corpus_has_js_runtime_for_requires_js() {
-        // Phase 2 (UX-9) corpus invariant: after the converter regen, every
-        // requires_js generator in the embedded corpus must carry a populated
-        // `js_runtime` object. The plan target is "at least 1000 generators
-        // with requires_js: true have js_runtime populated"; today's regen
-        // produces ~3641, so this is a comfortable lower bound that still
-        // catches a regression where the converter silently stops emitting
-        // the metadata.
+    fn test_corpus_has_js_runtime_for_requires_js() {
+        // Corpus invariant: every requires_js generator in the embedded
+        // corpus must carry a populated `js_runtime` object. The lower
+        // bound of 1000 is a comfortable floor — today's regen produces
+        // ~3641 — that still catches a regression where the converter
+        // silently stops emitting the metadata.
         const MIN_REQUIRES_JS_WITH_RUNTIME: usize = 1000;
 
         fn count(v: &serde_json::Value) -> (usize, usize) {
@@ -2532,8 +2477,8 @@ mod tests {
             total_with_runtime >= MIN_REQUIRES_JS_WITH_RUNTIME,
             "embedded corpus invariant violated: only {total_with_runtime} requires_js \
              generators have js_runtime populated (out of {total_requires_js} total). \
-             After Phase 2 every requires_js generator emitted by the converter should \
-             carry js_runtime. Lower bound is {MIN_REQUIRES_JS_WITH_RUNTIME}."
+             Every requires_js generator emitted by the converter should carry \
+             js_runtime. Lower bound is {MIN_REQUIRES_JS_WITH_RUNTIME}."
         );
         // Strict correctness: every requires_js in the embedded corpus
         // should now carry js_runtime (the converter emits it for all three
@@ -3428,7 +3373,6 @@ mod tests {
             "js_runtime": {
                 "kind": "post_process",
                 "source": "out => out.split('\\n').map(name => ({ name }))",
-                "input": "stdout",
                 "timeout_ms": 5000,
                 "allow_shell_command": false
             },
@@ -3442,7 +3386,6 @@ mod tests {
         assert_eq!(gen.template.as_deref(), Some("filepaths"));
         let jr = gen.js_runtime.as_ref().expect("js_runtime should parse");
         assert_eq!(jr.kind, JsRuntimeKind::PostProcess);
-        assert_eq!(jr.input, Some(JsRuntimeInput::Stdout));
         assert_eq!(jr.timeout_ms, Some(5000));
         assert!(!jr.allow_shell_command);
     }
@@ -4108,7 +4051,7 @@ mod tests {
     }
 
     // ------------------------------------------------------------------
-    // UX-9 Phase 1: addressability tests
+    // Addressability tests
     //
     // These tests pin the contract that a spec is reachable by its
     // filename stem (the "canonical id") and, when free, by its
@@ -4121,11 +4064,11 @@ mod tests {
     #[test]
     fn phase1_kubecolor_resolves_by_filename_stem_and_kubectl_wins_alias() {
         // Real-corpus shape: kubecolor.json declares `name: "kubectl"`,
-        // kubectl.json also declares `name: "kubectl"`. Pre-Phase-1 one
-        // of the two silently won the `kubectl` HashMap slot and the
-        // other was dropped. Now both load: each is addressable by its
-        // filename stem, and the alphabetically-first file wins the
-        // `kubectl` alias.
+        // kubectl.json also declares `name: "kubectl"`. Under a
+        // name-keyed loader one of the two silently won the `kubectl`
+        // HashMap slot and the other was dropped. Now both load: each
+        // is addressable by its filename stem, and the alphabetically-
+        // first file wins the `kubectl` alias.
         let dir = tempfile::TempDir::new().unwrap();
         std::fs::write(
             dir.path().join("kubecolor.json"),
@@ -4413,10 +4356,10 @@ mod tests {
 
     #[test]
     fn phase1_addressability_holds_against_full_corpus() {
-        // The on-disk corpus must load without silent loss. After
-        // Phase 1: every committed `*.json` becomes a SpecEntry (709
-        // entries against the embedded corpus), and aliases_count()
-        // equals 709 + the number of non-conflicting `name` aliases.
+        // The on-disk corpus must load without silent loss: every
+        // committed `*.json` becomes a SpecEntry (709 entries against
+        // the embedded corpus), and aliases_count() equals 709 + the
+        // number of non-conflicting `name` aliases.
         let spec_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
         if !spec_dir.is_dir() {
             // Repo-test guard: this test runs from the workspace where
@@ -4447,16 +4390,16 @@ mod tests {
             store.entries().len()
         );
 
-        // The 6 currently-lost commands MUST now address by stem.
+        // The 6 historically-lost commands MUST address by stem.
         // These are the spec files whose `name` collides with another
         // spec's stem in the embedded corpus (kubecolor wants
-        // `kubectl`, j wants `autojump`, etc.). Pre-Phase-1 they were
-        // silently dropped from the loader's HashMap; now their stem
-        // is the canonical command key.
+        // `kubectl`, j wants `autojump`, etc.). The legacy name-keyed
+        // HashMap silently dropped them; the stem is now the canonical
+        // command key.
         for stem in ["kubecolor", "br", "j", "nativescript", "tns", "sta"] {
             assert!(
                 store.get(stem).is_some(),
-                "stem `{stem}` must be addressable after Phase 1"
+                "stem `{stem}` must be addressable by filename"
             );
         }
 

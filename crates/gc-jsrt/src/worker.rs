@@ -30,7 +30,7 @@ use crate::normalize::normalize_value;
 use crate::sandbox::configure_or_internal;
 use crate::types::{
     JsDiagnostic, JsDiagnosticCode, JsExecutionKind, JsRuntimeError, JsRuntimeInput,
-    JsRuntimeOutput,
+    JsRuntimeOutput, JsRuntimeOutputPayload,
 };
 
 /// Hard cap on QuickJS heap usage per worker, in bytes (8 MiB).
@@ -345,12 +345,14 @@ fn attach_host_diagnostics(output: &mut JsRuntimeOutput, state: &HostState) {
 ///   * `["cmd", "arg1", "arg2"]`            – plain argv array
 ///   * `{ command: "cmd", args: ["arg1"] }` – Fig structured descriptor
 ///
-/// Anything else surfaces as `InvalidArgv`. The output's
-/// `argv` field is populated in place; the suggestions vec stays empty
-/// because `script_function` produces no suggestions of its own — those
+/// Anything else surfaces as `InvalidArgv`. On success the returned
+/// output carries [`JsRuntimeOutputPayload::Argv`]; on any failure it
+/// carries [`JsRuntimeOutputPayload::None`] with the explanation in
+/// `diagnostics`. The Suggestions variant is intentionally never used
+/// here — `script_function` produces no suggestions of its own; those
 /// come from the follow-up script invocation in the engine.
 fn normalize_argv<'js>(_ctx: &rquickjs::Ctx<'js>, value: Value<'js>) -> JsRuntimeOutput {
-    let mut output = JsRuntimeOutput::default();
+    let mut diagnostics: Vec<JsDiagnostic> = Vec::new();
 
     // Accept both `["cmd", "arg"]` and `{ command, args }`.
     if let Some(arr) = value.as_array() {
@@ -359,40 +361,54 @@ fn normalize_argv<'js>(_ctx: &rquickjs::Ctx<'js>, value: Value<'js>) -> JsRuntim
             let v: Value<'js> = match arr.get(i) {
                 Ok(v) => v,
                 Err(e) => {
-                    output.diagnostics.push(JsDiagnostic {
+                    diagnostics.push(JsDiagnostic {
                         code: JsDiagnosticCode::InvalidArgv,
                         message: format!("argv element [{i}] read failed: {e}"),
                     });
-                    return output;
+                    return JsRuntimeOutput {
+                        payload: JsRuntimeOutputPayload::None,
+                        diagnostics,
+                    };
                 }
             };
             let Some(s) = v.as_string() else {
-                output.diagnostics.push(JsDiagnostic {
+                diagnostics.push(JsDiagnostic {
                     code: JsDiagnosticCode::InvalidArgv,
                     message: format!("argv element [{i}] is not a string"),
                 });
-                return output;
+                return JsRuntimeOutput {
+                    payload: JsRuntimeOutputPayload::None,
+                    diagnostics,
+                };
             };
             match s.to_string() {
                 Ok(s) => argv.push(s),
                 Err(e) => {
-                    output.diagnostics.push(JsDiagnostic {
+                    diagnostics.push(JsDiagnostic {
                         code: JsDiagnosticCode::InvalidArgv,
                         message: format!("argv element [{i}] decode failed: {e}"),
                     });
-                    return output;
+                    return JsRuntimeOutput {
+                        payload: JsRuntimeOutputPayload::None,
+                        diagnostics,
+                    };
                 }
             }
         }
         if argv.is_empty() {
-            output.diagnostics.push(JsDiagnostic {
+            diagnostics.push(JsDiagnostic {
                 code: JsDiagnosticCode::InvalidArgv,
                 message: "argv array must have at least one element".into(),
             });
-            return output;
+            return JsRuntimeOutput {
+                payload: JsRuntimeOutputPayload::None,
+                diagnostics,
+            };
         }
-        output.argv = argv;
-        return output;
+        return JsRuntimeOutput {
+            payload: JsRuntimeOutputPayload::Argv(argv),
+            diagnostics,
+        };
     }
 
     if let Some(obj) = value.as_object() {
@@ -401,35 +417,47 @@ fn normalize_argv<'js>(_ctx: &rquickjs::Ctx<'js>, value: Value<'js>) -> JsRuntim
             let v: Value<'js> = match obj.get("command") {
                 Ok(v) => v,
                 Err(e) => {
-                    output.diagnostics.push(JsDiagnostic {
+                    diagnostics.push(JsDiagnostic {
                         code: JsDiagnosticCode::InvalidArgv,
                         message: format!("structured argv command read failed: {e}"),
                     });
-                    return output;
+                    return JsRuntimeOutput {
+                        payload: JsRuntimeOutputPayload::None,
+                        diagnostics,
+                    };
                 }
             };
             let Some(s) = v.as_string() else {
-                output.diagnostics.push(JsDiagnostic {
+                diagnostics.push(JsDiagnostic {
                     code: JsDiagnosticCode::InvalidArgv,
                     message: "structured argv command is not a string".into(),
                 });
-                return output;
+                return JsRuntimeOutput {
+                    payload: JsRuntimeOutputPayload::None,
+                    diagnostics,
+                };
             };
             match s.to_string() {
                 Ok(s) if !s.is_empty() => argv.push(s),
                 Ok(_) => {
-                    output.diagnostics.push(JsDiagnostic {
+                    diagnostics.push(JsDiagnostic {
                         code: JsDiagnosticCode::InvalidArgv,
                         message: "structured argv command must not be empty".into(),
                     });
-                    return output;
+                    return JsRuntimeOutput {
+                        payload: JsRuntimeOutputPayload::None,
+                        diagnostics,
+                    };
                 }
                 Err(e) => {
-                    output.diagnostics.push(JsDiagnostic {
+                    diagnostics.push(JsDiagnostic {
                         code: JsDiagnosticCode::InvalidArgv,
                         message: format!("structured argv command decode failed: {e}"),
                     });
-                    return output;
+                    return JsRuntimeOutput {
+                        payload: JsRuntimeOutputPayload::None,
+                        diagnostics,
+                    };
                 }
             }
         }
@@ -437,66 +465,89 @@ fn normalize_argv<'js>(_ctx: &rquickjs::Ctx<'js>, value: Value<'js>) -> JsRuntim
             let v: Value<'js> = match obj.get("args") {
                 Ok(v) => v,
                 Err(e) => {
-                    output.diagnostics.push(JsDiagnostic {
+                    diagnostics.push(JsDiagnostic {
                         code: JsDiagnosticCode::InvalidArgv,
                         message: format!("structured argv args read failed: {e}"),
                     });
-                    return output;
+                    return JsRuntimeOutput {
+                        payload: JsRuntimeOutputPayload::None,
+                        diagnostics,
+                    };
                 }
             };
             let Some(args_arr) = v.as_array() else {
-                output.diagnostics.push(JsDiagnostic {
+                diagnostics.push(JsDiagnostic {
                     code: JsDiagnosticCode::InvalidArgv,
                     message: "structured argv args is not an array".into(),
                 });
-                return output;
+                return JsRuntimeOutput {
+                    payload: JsRuntimeOutputPayload::None,
+                    diagnostics,
+                };
             };
             for i in 0..args_arr.len() {
                 let elem: Value<'js> = match args_arr.get(i) {
                     Ok(e) => e,
                     Err(e) => {
-                        output.diagnostics.push(JsDiagnostic {
+                        diagnostics.push(JsDiagnostic {
                             code: JsDiagnosticCode::InvalidArgv,
                             message: format!("structured argv args[{i}] read failed: {e}"),
                         });
-                        return output;
+                        return JsRuntimeOutput {
+                            payload: JsRuntimeOutputPayload::None,
+                            diagnostics,
+                        };
                     }
                 };
                 let Some(s) = elem.as_string() else {
-                    output.diagnostics.push(JsDiagnostic {
+                    diagnostics.push(JsDiagnostic {
                         code: JsDiagnosticCode::InvalidArgv,
                         message: format!("structured argv args[{i}] is not a string"),
                     });
-                    return output;
+                    return JsRuntimeOutput {
+                        payload: JsRuntimeOutputPayload::None,
+                        diagnostics,
+                    };
                 };
                 match s.to_string() {
                     Ok(s) => argv.push(s),
                     Err(e) => {
-                        output.diagnostics.push(JsDiagnostic {
+                        diagnostics.push(JsDiagnostic {
                             code: JsDiagnosticCode::InvalidArgv,
                             message: format!("structured argv args[{i}] decode failed: {e}"),
                         });
-                        return output;
+                        return JsRuntimeOutput {
+                            payload: JsRuntimeOutputPayload::None,
+                            diagnostics,
+                        };
                     }
                 }
             }
         }
         if argv.is_empty() {
-            output.diagnostics.push(JsDiagnostic {
+            diagnostics.push(JsDiagnostic {
                 code: JsDiagnosticCode::InvalidArgv,
                 message: "structured argv descriptor produced empty argv".into(),
             });
-            return output;
+            return JsRuntimeOutput {
+                payload: JsRuntimeOutputPayload::None,
+                diagnostics,
+            };
         }
-        output.argv = argv;
-        return output;
+        return JsRuntimeOutput {
+            payload: JsRuntimeOutputPayload::Argv(argv),
+            diagnostics,
+        };
     }
 
-    output.diagnostics.push(JsDiagnostic {
+    diagnostics.push(JsDiagnostic {
         code: JsDiagnosticCode::InvalidArgv,
         message: "script_function must return an argv array or {command, args}".into(),
     });
-    output
+    JsRuntimeOutput {
+        payload: JsRuntimeOutputPayload::None,
+        diagnostics,
+    }
 }
 
 struct DeadlineGuard<'a> {

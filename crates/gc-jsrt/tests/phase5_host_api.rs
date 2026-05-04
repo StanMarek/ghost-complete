@@ -1,15 +1,15 @@
-//! Phase 5 (UX-9) integration tests: `script_function`, `custom`, and
-//! the Fig host API surface.
+//! Integration tests for the Fig-compatible host API: `script_function`,
+//! `custom`, and the synchronous `executeShellCommand` binding.
 //!
 //! Each test spins up its own [`gc_jsrt::JsWorker`] so a stuck worker
 //! cannot bleed into a sibling test. The worker is cheap to spawn —
 //! tests still complete in well under a second on a debug build.
 //!
-//! Phase 5 contracts under test:
+//! Contracts under test:
 //!
 //! - `script_function`: JS evaluates with `(tokens, ctx)` and returns
-//!   either an argv array or `{command, args}`. The runtime exposes
-//!   the resolved argv via `JsRuntimeOutput.argv`.
+//!   either an argv array or `{command, args}`. The runtime exposes the
+//!   resolved argv via `JsRuntimeOutputPayload::Argv`.
 //! - `custom`: JS evaluates with `(tokens, executeShellCommand, ctx)`
 //!   and returns suggestions directly. The runtime mirrors any
 //!   `executeShellCommand` calls into the supplied [`ShellRunner`].
@@ -29,8 +29,8 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use gc_jsrt::{
-    JsDiagnosticCode, JsExecutionKind, JsRuntimeInput, JsWorker, ShellRunError, ShellRunOutput,
-    ShellRunner, MAX_SHELL_CALLS_PER_EVALUATION,
+    JsDiagnosticCode, JsExecutionKind, JsRuntimeInput, JsRuntimeOutputPayload, JsWorker,
+    ShellRunError, ShellRunOutput, ShellRunner, MAX_SHELL_CALLS_PER_EVALUATION,
 };
 
 const FAST_TIMEOUT: Duration = Duration::from_millis(1_500);
@@ -188,14 +188,18 @@ async fn script_function_returns_argv_array() {
         )
         .await
         .expect("evaluation infra ok");
-    assert_eq!(
-        out.argv,
-        vec!["echo".to_string(), "git".to_string(), "ma".to_string()],
-        "script_function argv should preserve token order; got diagnostics={:?}",
+    assert!(
+        matches!(
+            out.payload,
+            JsRuntimeOutputPayload::Argv(ref v)
+                if v == &["echo", "git", "ma"]
+        ),
+        "script_function argv should preserve token order; got payload={:?}, diagnostics={:?}",
+        out.payload,
         out.diagnostics
     );
     assert!(
-        out.suggestions.is_empty(),
+        out.suggestions().is_empty(),
         "script_function never produces suggestions directly"
     );
 }
@@ -212,7 +216,14 @@ async fn script_function_accepts_structured_descriptor() {
         )
         .await
         .expect("evaluation infra ok");
-    assert_eq!(out.argv, vec!["echo".to_string(), "hello".to_string()]);
+    assert!(
+        matches!(
+            out.payload,
+            JsRuntimeOutputPayload::Argv(ref v) if v == &["echo", "hello"]
+        ),
+        "expected Argv payload, got {:?}",
+        out.payload
+    );
 }
 
 #[tokio::test]
@@ -227,7 +238,12 @@ async fn script_function_invalid_argv_diagnostic() {
         )
         .await
         .expect("evaluation infra ok");
-    assert!(out.argv.is_empty());
+    assert!(out.argv().is_empty());
+    assert!(
+        matches!(out.payload, JsRuntimeOutputPayload::None),
+        "expected None payload, got {:?}",
+        out.payload
+    );
     assert!(
         out.diagnostics
             .iter()
@@ -249,7 +265,7 @@ async fn script_function_rejects_non_string_structured_args() {
         )
         .await
         .expect("evaluation infra ok");
-    assert!(out.argv.is_empty());
+    assert!(out.argv().is_empty());
     assert!(
         out.diagnostics
             .iter()
@@ -285,7 +301,7 @@ async fn custom_calls_execute_shell_command_argv_form() {
         .evaluate(program, input, FAST_TIMEOUT)
         .await
         .expect("infra");
-    let names: Vec<&str> = out.suggestions.iter().map(|s| s.name.as_str()).collect();
+    let names: Vec<&str> = out.suggestions().iter().map(|s| s.name.as_str()).collect();
     assert_eq!(
         names,
         vec!["hello", "world"],
@@ -315,7 +331,8 @@ async fn custom_shell_string_denied_by_default() {
         .await
         .expect("infra");
     assert_eq!(
-        out.suggestions[0].name, "caught:ShellCommandStringDenied",
+        out.suggestions()[0].name,
+        "caught:ShellCommandStringDenied",
         "diagnostics: {:?}",
         out.diagnostics,
     );
@@ -347,7 +364,8 @@ async fn custom_shell_string_allowed_when_flagged() {
         .await
         .expect("infra");
     assert_eq!(
-        out.suggestions[0].name, "ok",
+        out.suggestions()[0].name,
+        "ok",
         "diagnostics: {:?}",
         out.diagnostics
     );
@@ -388,7 +406,7 @@ async fn custom_execute_shell_command_recursion_cap_enforced() {
         .evaluate(program, input, FAST_TIMEOUT)
         .await
         .expect("infra");
-    let names: Vec<&str> = out.suggestions.iter().map(|s| s.name.as_str()).collect();
+    let names: Vec<&str> = out.suggestions().iter().map(|s| s.name.as_str()).collect();
     let mut expected: Vec<&str> = vec!["ok"; MAX_SHELL_CALLS_PER_EVALUATION];
     expected.push("err:ShellCommandLimitExceeded");
     assert_eq!(names, expected, "diagnostics: {:?}", out.diagnostics);
@@ -418,7 +436,8 @@ async fn custom_execute_shell_command_returns_fig_result_object() {
         .await
         .expect("infra");
     assert_eq!(
-        out.suggestions[0].name, "hello:note:7",
+        out.suggestions()[0].name,
+        "hello:note:7",
         "diagnostics: {:?}",
         out.diagnostics
     );
@@ -441,7 +460,7 @@ async fn custom_execute_shell_command_uses_input_cwd_by_default() {
         )
         .await
         .expect("infra");
-    assert_eq!(out.suggestions[0].name, "ok");
+    assert_eq!(out.suggestions()[0].name, "ok");
     assert_eq!(runner.cwd_calls(), vec![expected_cwd]);
 }
 
@@ -465,7 +484,7 @@ async fn custom_execute_shell_command_cwd_options_override_input_cwd() {
         )
         .await
         .expect("infra");
-    assert_eq!(out.suggestions[0].name, "ok");
+    assert_eq!(out.suggestions()[0].name, "ok");
     assert_eq!(
         runner.cwd_calls(),
         vec![
@@ -493,7 +512,7 @@ async fn custom_execute_shell_command_timeout_is_clamped_to_js_budget() {
         )
         .await
         .expect("infra");
-    assert_eq!(out.suggestions[0].name, "ok");
+    assert_eq!(out.suggestions()[0].name, "ok");
     let timeouts = runner.timeout_calls();
     assert_eq!(timeouts.len(), 1);
     assert!(
@@ -519,7 +538,7 @@ async fn uncaught_shell_string_denial_is_typed_diagnostic() {
         )
         .await
         .expect("infra");
-    assert!(out.suggestions.is_empty());
+    assert!(out.suggestions().is_empty());
     assert_eq!(
         out.diagnostics[0].code,
         JsDiagnosticCode::ShellCommandStringDenied
@@ -549,7 +568,7 @@ async fn uncaught_shell_call_cap_is_typed_diagnostic() {
         .evaluate(program, input, FAST_TIMEOUT)
         .await
         .expect("infra");
-    assert!(out.suggestions.is_empty());
+    assert!(out.suggestions().is_empty());
     assert_eq!(
         out.diagnostics[0].code,
         JsDiagnosticCode::ShellCommandLimitExceeded
@@ -575,7 +594,7 @@ async fn uncaught_shell_runner_failure_is_typed_diagnostic() {
         )
         .await
         .expect("infra");
-    assert!(out.suggestions.is_empty());
+    assert!(out.suggestions().is_empty());
     assert_eq!(
         out.diagnostics[0].code,
         JsDiagnosticCode::ShellCommandFailed
@@ -599,7 +618,7 @@ async fn custom_host_api_cwd_env_tokens_visible() {
         .evaluate(program, input, FAST_TIMEOUT)
         .await
         .expect("infra");
-    let names: Vec<&str> = out.suggestions.iter().map(|s| s.name.as_str()).collect();
+    let names: Vec<&str> = out.suggestions().iter().map(|s| s.name.as_str()).collect();
     assert_eq!(
         names,
         vec![
@@ -630,7 +649,7 @@ async fn custom_unsupported_host_api_throws() {
         .evaluate(program, input, FAST_TIMEOUT)
         .await
         .expect("infra");
-    assert_eq!(out.suggestions[0].name, "caught:UnsupportedHostApi");
+    assert_eq!(out.suggestions()[0].name, "caught:UnsupportedHostApi");
     // The diagnostic should also surface on the JsRuntimeOutput so the
     // engine's `log_diagnostics` path can pick it up.
     assert!(
@@ -670,7 +689,8 @@ async fn phase5_unsupported_host_namespaces_throw() {
             .await
             .expect("infra");
         assert_eq!(
-            out.suggestions[0].name, "caught:UnsupportedHostApi",
+            out.suggestions()[0].name,
+            "caught:UnsupportedHostApi",
             "{label}: diagnostics={:?}",
             out.diagnostics,
         );
@@ -707,7 +727,7 @@ async fn custom_shell_command_failure_propagates() {
         .evaluate(program, input, FAST_TIMEOUT)
         .await
         .expect("infra");
-    assert_eq!(out.suggestions[0].name, "caught:ShellCommandFailed");
+    assert_eq!(out.suggestions()[0].name, "caught:ShellCommandFailed");
 }
 
 #[tokio::test]
@@ -727,5 +747,217 @@ async fn execute_shell_command_with_no_runner_throws() {
         .evaluate(program, input, FAST_TIMEOUT)
         .await
         .expect("infra");
-    assert_eq!(out.suggestions[0].name, "caught:ShellCommandFailed");
+    assert_eq!(out.suggestions()[0].name, "caught:ShellCommandFailed");
+}
+
+/// Pins precedence: an explicit second `opts` argument wins over a
+/// descriptor-embedded `cwd`. The previous behaviour silently inverted
+/// this — descriptor cwd would override the more-specific opts cwd.
+#[tokio::test]
+async fn custom_execute_shell_command_opts_cwd_wins_over_descriptor_cwd() {
+    let worker = JsWorker::spawn().expect("spawn");
+    let runner = RecordingShellRunner::default().into_arc();
+    let mut input = input_with_kind(JsExecutionKind::Custom);
+    input.cwd = PathBuf::from("/default");
+    input.shell_runner = Some(runner.clone());
+
+    let out = worker
+        .evaluate(
+            "(async () => { \
+                await executeShellCommand( \
+                    { command: 'pwd-probe', cwd: '/from-descriptor' }, \
+                    { cwd: '/from-opts' } \
+                ); \
+                return [{ name: 'ok' }]; \
+            })()",
+            input,
+            FAST_TIMEOUT,
+        )
+        .await
+        .expect("infra");
+    assert_eq!(out.suggestions()[0].name, "ok");
+    assert_eq!(
+        runner.cwd_calls(),
+        vec![PathBuf::from("/from-opts")],
+        "explicit opts.cwd should win over descriptor.cwd",
+    );
+}
+
+/// Pins the operator-visible diagnostic when `opts.cwd` is the wrong
+/// type. The diagnostic string is part of the doctor surface — a future
+/// refactor that silently swaps the typed branch for `as_string().unwrap_or_default()`
+/// would erase the spec-author hint without this test catching it.
+#[tokio::test]
+async fn custom_execute_shell_command_bad_typed_cwd_emits_diagnostic() {
+    let worker = JsWorker::spawn().expect("spawn");
+    let runner = RecordingShellRunner::default().into_arc();
+    let mut input = input_with_kind(JsExecutionKind::Custom);
+    input.shell_runner = Some(runner);
+
+    let out = worker
+        .evaluate(
+            "(async () => { \
+                await executeShellCommand(['echo', 'x'], { cwd: 42 }); \
+                return [{ name: 'ok' }]; \
+            })()",
+            input,
+            FAST_TIMEOUT,
+        )
+        .await
+        .expect("infra");
+    assert_eq!(out.suggestions()[0].name, "ok");
+    assert!(
+        out.diagnostics
+            .iter()
+            .any(|d| d.code == JsDiagnosticCode::UnsupportedHostApi
+                && d.message == "executeShellCommand.options.cwd<bad-type>"),
+        "expected cwd<bad-type> diagnostic, got {:?}",
+        out.diagnostics,
+    );
+}
+
+/// Same as the cwd case but for timeouts.
+#[tokio::test]
+async fn custom_execute_shell_command_bad_typed_timeout_emits_diagnostic() {
+    let worker = JsWorker::spawn().expect("spawn");
+    let runner = RecordingShellRunner::default().into_arc();
+    let mut input = input_with_kind(JsExecutionKind::Custom);
+    input.shell_runner = Some(runner);
+
+    let out = worker
+        .evaluate(
+            "(async () => { \
+                await executeShellCommand(['echo', 'x'], { timeout: 'fast' }); \
+                return [{ name: 'ok' }]; \
+            })()",
+            input,
+            FAST_TIMEOUT,
+        )
+        .await
+        .expect("infra");
+    assert_eq!(out.suggestions()[0].name, "ok");
+    assert!(
+        out.diagnostics
+            .iter()
+            .any(|d| d.code == JsDiagnosticCode::UnsupportedHostApi
+                && d.message == "executeShellCommand.options.timeout<bad-type>"),
+        "expected timeout<bad-type> diagnostic, got {:?}",
+        out.diagnostics,
+    );
+}
+
+/// Pins the diagnostic for a non-finite or out-of-range timeout
+/// (NaN / Infinity / negative). Without this, `f64 as u64`'s saturating
+/// cast would silently turn `timeout: -1` into 0ms.
+#[tokio::test]
+async fn custom_execute_shell_command_out_of_range_timeout_emits_diagnostic() {
+    let worker = JsWorker::spawn().expect("spawn");
+    let runner = RecordingShellRunner::default().into_arc();
+    let mut input = input_with_kind(JsExecutionKind::Custom);
+    input.shell_runner = Some(runner);
+
+    let out = worker
+        .evaluate(
+            "(async () => { \
+                await executeShellCommand(['echo', 'x'], { timeout: -1 }); \
+                return [{ name: 'ok' }]; \
+            })()",
+            input,
+            FAST_TIMEOUT,
+        )
+        .await
+        .expect("infra");
+    assert_eq!(out.suggestions()[0].name, "ok");
+    assert!(
+        out.diagnostics
+            .iter()
+            .any(|d| d.code == JsDiagnosticCode::UnsupportedHostApi
+                && d.message == "executeShellCommand.options.timeout<out-of-range>"),
+        "expected timeout<out-of-range> diagnostic, got {:?}",
+        out.diagnostics,
+    );
+}
+
+/// Pins the diagnostic when the WHOLE opts argument is non-object — the
+/// typical mistake is a positional timeout: `executeShellCommand([...], 5000)`.
+/// Without this, the silent fallback would mask the misuse.
+#[tokio::test]
+async fn custom_execute_shell_command_non_object_opts_emits_diagnostic() {
+    let worker = JsWorker::spawn().expect("spawn");
+    let runner = RecordingShellRunner::default().into_arc();
+    let mut input = input_with_kind(JsExecutionKind::Custom);
+    input.shell_runner = Some(runner);
+
+    let out = worker
+        .evaluate(
+            "(async () => { \
+                await executeShellCommand(['echo', 'x'], 5000); \
+                return [{ name: 'ok' }]; \
+            })()",
+            input,
+            FAST_TIMEOUT,
+        )
+        .await
+        .expect("infra");
+    assert_eq!(out.suggestions()[0].name, "ok");
+    assert!(
+        out.diagnostics
+            .iter()
+            .any(|d| d.code == JsDiagnosticCode::UnsupportedHostApi
+                && d.message == "executeShellCommand.options<not-object>"),
+        "expected options<not-object> diagnostic, got {:?}",
+        out.diagnostics,
+    );
+}
+
+/// Pins the SHELL_TIMEOUT_FLOOR short-circuit: when the JS deadline has
+/// fewer than 5ms remaining, `bounded_shell_timeout` returns None and
+/// the runner is bypassed entirely. A regression that lowers the floor
+/// to 0 would silently re-introduce the 5–15ms macOS fork+reap waste
+/// cycle this guards against.
+#[tokio::test]
+async fn custom_execute_shell_command_below_floor_skips_spawn_and_returns_timeout() {
+    let worker = JsWorker::spawn().expect("spawn");
+    let runner = RecordingShellRunner::default().into_arc();
+    let mut input = input_with_kind(JsExecutionKind::Custom);
+    input.shell_runner = Some(runner.clone());
+
+    // Burn nearly the entire JS budget before issuing the shell call so
+    // the call sees < 5ms remaining and short-circuits without spawning.
+    // The JS busy-loop polls Date.now() so it's bounded by wall-clock
+    // rather than instruction count.
+    let out = worker
+        .evaluate(
+            "(async () => { \
+                const start = Date.now(); \
+                while (Date.now() - start < 95) { /* burn budget */ } \
+                try { \
+                    await executeShellCommand(['echo', 'x']); \
+                    return [{ name: 'no-error' }]; \
+                } catch (e) { \
+                    return [{ name: 'caught:' + e.code }]; \
+                } \
+            })()",
+            input,
+            Duration::from_millis(100),
+        )
+        .await
+        .expect("infra");
+    // Either the JS deadline tripped before the shell call (Timeout
+    // diagnostic, no suggestion) OR the shell call short-circuited
+    // (caught a ShellCommandFailed wrapping the timeout). In both cases
+    // the runner must NOT have spawned anything.
+    assert!(
+        runner.timeout_calls().is_empty(),
+        "no subprocess should have been spawned when the JS deadline is exhausted; got {} calls",
+        runner.timeout_calls().len(),
+    );
+    if !out.suggestions().is_empty() {
+        assert_eq!(
+            out.suggestions()[0].name,
+            "caught:ShellCommandFailed",
+            "if the shell call returned, it should have surfaced a ShellCommandFailed (timeout); diagnostics={:?}",
+            out.diagnostics,
+        );
+    }
 }

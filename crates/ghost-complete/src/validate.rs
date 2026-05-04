@@ -63,18 +63,27 @@ fn collect_missing_js_runtime_warnings(spec: &CompletionSpec) -> Vec<String> {
         }
     }
 
-    fn walk_subs(subs: &[SubcommandSpec], path: &str, warnings: &mut Vec<String>) {
-        for (i, s) in subs.iter().enumerate() {
-            let p = format!("{path}/subcommands[{i}]");
-            walk_args(&s.args, &p, warnings);
-            walk_opts(&s.options, &p, warnings);
-            walk_subs(&s.subcommands, &p, warnings);
-        }
-    }
-
     walk_args(&spec.args, "$", &mut warnings);
     walk_opts(&spec.options, "$", &mut warnings);
-    walk_subs(&spec.subcommands, "$", &mut warnings);
+
+    // Iterative descent — mirrors `count_corrected_generators_in_spec`
+    // in doctor.rs (lines 295-300). Hand-edited specs or upstream
+    // `@withfig/autocomplete` regen with a deeper subcommand tree must
+    // not be able to overflow the validator's stack — the AWS spec
+    // already nests ~10 levels and `validate-specs --strict` is the
+    // converter regression gate per `docs/ci-gates.md`. The stack
+    // stores `(slice, parent_path)` pairs so the warning message
+    // formatter retains the same `$/subcommands[i]/...` JSON-pointer
+    // shape the recursive form produced.
+    let mut stack: Vec<(&[SubcommandSpec], String)> = vec![(&spec.subcommands, "$".to_string())];
+    while let Some((subs, parent_path)) = stack.pop() {
+        for (i, s) in subs.iter().enumerate() {
+            let p = format!("{parent_path}/subcommands[{i}]");
+            walk_args(&s.args, &p, &mut warnings);
+            walk_opts(&s.options, &p, &mut warnings);
+            stack.push((&s.subcommands, p));
+        }
+    }
     warnings
 }
 

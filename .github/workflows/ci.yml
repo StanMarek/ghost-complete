@@ -151,12 +151,12 @@ jobs:
 
   coverage-regression:
     name: Coverage regression
-    # UX-9 Phase 7 introduces a regression gate that fails when the
-    # unsupported requires_js generator count rises above the baseline by
-    # more than the configured tolerance, OR when any command becomes
-    # nonfunctional. Wired as `continue-on-error: true` for the initial
-    # rollout so a baseline-refresh oversight does not block unrelated
-    # work; promotion to a hard gate is a separate follow-up.
+    # Coverage regression gate: fails when the unsupported requires_js
+    # generator count rises above the baseline by more than the configured
+    # tolerance, OR when any command becomes nonfunctional. Wired as
+    # `continue-on-error: true` during the initial rollout so a
+    # baseline-refresh oversight does not block unrelated work; promotion
+    # to a hard gate is a separate follow-up.
     needs: [check]
     runs-on: macos-latest
     continue-on-error: true

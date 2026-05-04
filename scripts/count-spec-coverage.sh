@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/count-spec-coverage.sh — UX-9 Phase 0 baseline counter
+# scripts/count-spec-coverage.sh — pre-loader spec corpus counter
 #
 # Reports the corpus-level metrics that `docs/coverage-baseline.json` rows
 # track. Reads from `specs/*.json` (the embedded spec source) by default.
@@ -12,17 +12,17 @@
 #   commands_addressable                — unique top-level `name` values.
 #   file_scan_fully_functional          — files with zero requires_js generators.
 #   file_scan_partially_functional      — files with ≥1 requires_js generator.
-#   commands_nonfunctional              — always 0 in this raw Phase 0 counter;
-#                                          use `ghost-complete status --json`
+#   commands_nonfunctional              — always 0 in this counter; load-failure
+#                                          classification is owned by the runtime.
+#                                          Use `ghost-complete status --json`
 #                                          for load-failure detection.
 #   requires_js_generators_total        — every {requires_js: true} object,
 #                                          counted via `[..|objects|select(.requires_js==true)]`.
-#   requires_js_generators_supported    — always 0 in this raw Phase 0 counter;
-#                                          use `ghost-complete status --json`
-#                                          for runtime-supported js_runtime
-#                                          coverage.
-#   requires_js_generators_unsupported  — always == total in this raw Phase 0
-#                                          counter.
+#   requires_js_generators_supported    — always 0 in this counter; runtime-supported
+#                                          coverage comes from
+#                                          `ghost-complete status --json`.
+#   requires_js_generators_unsupported  — always == total in this counter
+#                                          (no js_runtime inspection here).
 #   command_alias_conflicts             — files where the JSON `name` differs
 #                                          from the file stem.
 #
@@ -54,7 +54,7 @@ usage() {
 Usage:
   count-spec-coverage.sh [--specs PATH] [--json] [--help]
 
-Counts the UX-9 Phase 0 raw baseline metrics across the spec corpus.
+Counts the pre-loader baseline metrics across the spec corpus.
 It does not compute runtime-supported js_runtime coverage; use
 `ghost-complete status --json` for supported/unsupported runtime counts.
 
@@ -117,9 +117,9 @@ while IFS= read -r f; do
 done < <(find "$SPECS_DIR" -maxdepth 1 -name '*.json' -type f | sort)
 
 count_addressable="$(sort -u "$names_tmp" | wc -l | tr -d ' ')"
-# Phase 0 raw counter: status owns load-failure classification.
+# Pre-loader counter: load-failure classification is owned by the runtime.
 count_nonfunctional=0
-# Phase 0 raw counter: do not inspect js_runtime metadata here. The runtime
+# Pre-loader counter: js_runtime metadata is not inspected here. The runtime
 # coverage split comes from `ghost-complete status --json`.
 count_supported=0
 count_unsupported=$count_requires_js

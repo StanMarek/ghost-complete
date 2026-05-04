@@ -1,4 +1,4 @@
-//! Phase 4 (UX-9) end-to-end tests for the QuickJS post-process dispatch path.
+//! End-to-end tests for the QuickJS post-process dispatch path.
 //!
 //! These tests build a `SuggestionEngine`, hand it a synthetic
 //! `Arc<GeneratorSpec>` with a real `js_runtime.source`, and exercise
@@ -142,7 +142,6 @@ fn post_process_generator(script: &[&str], source: &str) -> Arc<GeneratorSpec> {
             kind: JsRuntimeKind::PostProcess,
             source: source.to_string(),
             self_contained: true,
-            input: None,
             timeout_ms: None,
             allow_shell_command: false,
         })),
@@ -246,10 +245,10 @@ async fn phase4_two_js_sources_same_stdout_dont_cross_contaminate() {
 
 #[tokio::test]
 async fn phase4_unsupported_kind_skipped_when_source_empty() {
-    // Phase 5 widened support so `custom` generators with a populated
-    // source dispatch through the JS host API. A generator with an
-    // EMPTY source still has nothing to run and stays skipped — this
-    // is the only "unsupported shape" path that survives Phase 5.
+    // `custom` generators with a populated source dispatch through the
+    // JS host API. A generator with an EMPTY source has nothing to run
+    // and stays skipped — this is the only "unsupported shape" path
+    // the engine still bypasses.
     let gen = Arc::new(GeneratorSpec {
         generator_type: None,
         script: None,
@@ -262,7 +261,6 @@ async fn phase4_unsupported_kind_skipped_when_source_empty() {
             kind: JsRuntimeKind::Custom,
             source: "".to_string(),
             self_contained: false,
-            input: None,
             timeout_ms: None,
             allow_shell_command: false,
         })),
@@ -292,8 +290,8 @@ async fn phase4_js_timeout_diagnostic_logged() {
     // and the dispatch must return empty suggestions instead of hanging.
     // Install a tracing capture and assert the expected `code = "Timeout"`
     // warn line was actually emitted — the diagnostics path is the
-    // primary signal Phase 7 will surface in `doctor`, so silent
-    // regressions here would erase a user-visible feature.
+    // primary signal `doctor` surfaces, so silent regressions here would
+    // erase a user-visible feature.
     let (captured, _guard) = install_log_capture();
 
     let gen = Arc::new(GeneratorSpec {
@@ -308,7 +306,6 @@ async fn phase4_js_timeout_diagnostic_logged() {
             kind: JsRuntimeKind::PostProcess,
             source: "out => { while (true) {} }".to_string(),
             self_contained: true,
-            input: None,
             timeout_ms: Some(50),
             allow_shell_command: false,
         })),
@@ -367,7 +364,6 @@ async fn phase4_js_exception_diagnostic_logged() {
             kind: JsRuntimeKind::PostProcess,
             source: "out => { throw new Error('boom') }".to_string(),
             self_contained: true,
-            input: None,
             timeout_ms: None,
             allow_shell_command: false,
         })),
@@ -509,7 +505,6 @@ async fn phase5_custom_zero_ttl_skips_cache_insert() {
             kind: JsRuntimeKind::Custom,
             source,
             self_contained: true,
-            input: None,
             timeout_ms: None,
             allow_shell_command: false,
         })),
@@ -566,7 +561,6 @@ async fn phase4_post_process_ttl_zero_means_no_caching() {
             kind: JsRuntimeKind::PostProcess,
             source: body.to_string(),
             self_contained: true,
-            input: None,
             timeout_ms: None,
             allow_shell_command: false,
         })),

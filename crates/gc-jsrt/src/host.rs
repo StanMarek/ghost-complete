@@ -112,13 +112,11 @@ pub(crate) fn install_host_api<'js>(
     let current_token = input.current_token.clone();
     let previous_token = input.previous_token.clone();
 
-    // Build the env object once.
     let env_obj = Object::new(ctx.clone())?;
     for (k, v) in &input.env {
         env_obj.set(k.as_str(), v.as_str())?;
     }
 
-    // Build the tokens array.
     let tokens_arr = rquickjs::Array::new(ctx.clone())?;
     for (idx, tok) in input.tokens.iter().enumerate() {
         tokens_arr.set(idx, tok.as_str())?;
@@ -149,10 +147,10 @@ pub(crate) fn install_host_api<'js>(
     globals.set("__ghost", ghost)?;
 
     // ---- Backwards-compat aliases the corpus typically reaches for ------
-    // Top-level bindings the Fig API exposes: spec authors write things
-    // like `searchTerm`, `currentWorkingDirectory`, `executeShellCommand`
-    // directly without going through a `ctx` object. Mirror those into
-    // the global scope so we don't force every spec to be rewritten.
+    // Fig spec authors write `searchTerm` / `currentWorkingDirectory` /
+    // `executeShellCommand` directly without going through any context
+    // object, so we mirror them into the global scope to avoid rewriting
+    // every spec.
     globals.set("currentWorkingDirectory", cwd_str.as_str())?;
     globals.set("environmentVariables", env_obj.clone())?;
     globals.set("searchTerm", search_term.as_str())?;
@@ -203,7 +201,6 @@ fn build_execute_shell_command<'js>(
     Function::new(
         ctx.clone(),
         move |ctx: Ctx<'js>, args: Rest<Value<'js>>| -> rquickjs::Result<Value<'js>> {
-            // Recursion cap.
             let prior = state.call_count.fetch_add(1, Ordering::SeqCst);
             if prior >= MAX_SHELL_CALLS_PER_EVALUATION {
                 let msg = format!(
@@ -228,6 +225,11 @@ fn build_execute_shell_command<'js>(
             let (cwd_override, timeout_override) =
                 parse_exec_options(&ctx, opts_arg.as_ref(), &state);
 
+            // Retain whether the explicit `opts` argument supplied a
+            // cwd/timeout — this drives precedence below when the
+            // command itself is a structured `{ command, cwd, ... }`
+            // descriptor that ALSO carries cwd/timeout fields.
+            let cwd_override_was_explicit = cwd_override.is_some();
             let mut cwd = cwd_override.unwrap_or_else(|| default_cwd.clone());
             let mut timeout_override = timeout_override;
 
@@ -283,12 +285,21 @@ fn build_execute_shell_command<'js>(
                 // Fig also supports `{ command: "...", args: [...] }`
                 // descriptors. We accept both `command` (single
                 // executable name) and `args` (rest of argv).
+                //
+                // Precedence: an explicit second `opts` argument wins
+                // over a descriptor-embedded `cwd`/`timeout`. Specs that
+                // pass both forms simultaneously are rare, but the
+                // standard `executeShellCommand(cmd, opts)` shape says
+                // the more-specific opts arg overrides anything baked
+                // into the command descriptor.
                 let (descriptor_cwd, descriptor_timeout) =
                     parse_exec_options(&ctx, Some(&cmd_arg), &state);
-                if let Some(descriptor_cwd) = descriptor_cwd {
-                    cwd = descriptor_cwd;
+                if !cwd_override_was_explicit {
+                    if let Some(descriptor_cwd) = descriptor_cwd {
+                        cwd = descriptor_cwd;
+                    }
                 }
-                if descriptor_timeout.is_some() {
+                if timeout_override.is_none() && descriptor_timeout.is_some() {
                     timeout_override = descriptor_timeout;
                 }
                 let mut argv: Vec<String> = Vec::new();
@@ -315,7 +326,17 @@ fn build_execute_shell_command<'js>(
                     ));
                 }
                 argv.push(command);
-                if obj.contains_key("args").unwrap_or(false) {
+                let has_args = match obj.contains_key("args") {
+                    Ok(b) => b,
+                    Err(e) => {
+                        return Err(throw_with_code(
+                            &ctx,
+                            "ShellCommandFailed",
+                            &format!("failed to inspect descriptor.args: {e}"),
+                        ));
+                    }
+                };
+                if has_args {
                     let v: Value<'js> = obj.get("args")?;
                     let Some(args_arr) = v.as_array() else {
                         return Err(throw_with_code(
@@ -396,9 +417,11 @@ fn bounded_shell_timeout(requested_timeout_ms: Option<u64>, deadline: Instant) -
 ///   * `timeout: number` – override the default timeout (milliseconds).
 ///
 /// Unknown fields are silently ignored so legacy specs that pass extras
-/// (e.g. `splitOn`) keep working. Wrong-typed values for known fields
-/// emit an `UnsupportedHostApi` diagnostic so a spec author hunting
-/// "why is my timeout not honored" gets a signal.
+/// (e.g. `splitOn`) keep working. Wrong-typed / out-of-range values for
+/// known fields emit an `UnsupportedHostApi` diagnostic so a spec
+/// author hunting "why is my timeout not honored" gets a signal. The
+/// SAME diagnostic shape is also emitted when the entire opts arg is
+/// the wrong shape (e.g. a positional number rather than `{ timeout: n }`).
 fn parse_exec_options<'js>(
     _ctx: &Ctx<'js>,
     opts: Option<&Value<'js>>,
@@ -407,12 +430,30 @@ fn parse_exec_options<'js>(
     let Some(opts) = opts else {
         return (None, None);
     };
+    // Treat an explicit `undefined`/`null` opts the same as a missing
+    // arg: both mean "no overrides". Any other non-object value is a
+    // misuse worth surfacing — the typical mistake is
+    // `executeShellCommand([...], 5000)` (positional timeout) which
+    // would otherwise silently fall back to defaults.
+    if opts.is_undefined() || opts.is_null() {
+        return (None, None);
+    }
     let Some(obj) = opts.as_object() else {
+        state.record_unsupported("executeShellCommand.options<not-object>");
         return (None, None);
     };
     let cwd = match obj.get::<_, Value<'js>>("cwd") {
         Ok(v) if !v.is_undefined() && !v.is_null() => match v.as_string() {
-            Some(s) => s.to_string().ok().map(std::path::PathBuf::from),
+            Some(s) => match s.to_string() {
+                Ok(s) => Some(std::path::PathBuf::from(s)),
+                Err(_) => {
+                    // QuickJS produced a string we couldn't decode to
+                    // UTF-8 — surface the failure so the spec author
+                    // doesn't get a silent fallback to the default cwd.
+                    state.record_unsupported("executeShellCommand.options.cwd<decode-failure>");
+                    None
+                }
+            },
             None => {
                 state.record_unsupported("executeShellCommand.options.cwd<bad-type>");
                 None
@@ -422,7 +463,19 @@ fn parse_exec_options<'js>(
     };
     let timeout = match obj.get::<_, Value<'js>>("timeout") {
         Ok(v) if !v.is_undefined() && !v.is_null() => match v.as_number() {
-            Some(n) => Some(n as u64),
+            Some(n) => {
+                // `f64 as u64` is saturating in Rust, but the SEMANTIC
+                // wrap (NaN → 0, negative → 0, Infinity → u64::MAX) is
+                // surprising. Emit a diagnostic and skip the override
+                // so the spec author sees the misuse instead of a
+                // silent 0ms or 18-quintillion-ms timeout.
+                if !n.is_finite() || n < 0.0 || n > u64::MAX as f64 {
+                    state.record_unsupported("executeShellCommand.options.timeout<out-of-range>");
+                    None
+                } else {
+                    Some(n as u64)
+                }
+            }
             None => {
                 state.record_unsupported("executeShellCommand.options.timeout<bad-type>");
                 None

@@ -1,9 +1,8 @@
-//! Phase 5 (UX-9) end-to-end tests for the `script_function` and
-//! `custom` JS dispatch paths.
+//! End-to-end tests for the `script_function` and `custom` JS dispatch
+//! paths.
 //!
-//! Phase 4 covered `post_process` (stdout-in / suggestions-out). Phase 5
-//! adds two new shapes that the engine routes through dedicated dispatch
-//! helpers (`run_script_function_dispatch`, `run_custom_dispatch`):
+//! Two shapes route through dedicated dispatch helpers
+//! (`run_script_function_dispatch`, `run_custom_dispatch`):
 //!
 //! - `script_function`: JS evaluates first to derive argv, the engine
 //!   then runs the argv as a script and applies the optional
@@ -26,7 +25,7 @@ use gc_suggest::SuggestionEngine;
 use tracing_subscriber::fmt::MakeWriter;
 
 /// Per-thread tracing capture writer (mirror of the helper in
-/// phase4_js_dispatch.rs — the integration-test crate doesn't share a
+/// js_post_process_dispatch.rs — the integration-test crate doesn't share a
 /// common module, so we duplicate the small writer here).
 #[derive(Clone)]
 struct CaptureWriter(Arc<Mutex<Vec<u8>>>);
@@ -113,7 +112,6 @@ fn script_function_generator(source: &str) -> Arc<GeneratorSpec> {
             kind: JsRuntimeKind::ScriptFunction,
             source: source.to_string(),
             self_contained: true,
-            input: None,
             timeout_ms: None,
             allow_shell_command: false,
         })),
@@ -135,7 +133,6 @@ fn custom_generator(source: &str) -> Arc<GeneratorSpec> {
             kind: JsRuntimeKind::Custom,
             source: source.to_string(),
             self_contained: true,
-            input: None,
             timeout_ms: None,
             allow_shell_command: false,
         })),
@@ -157,7 +154,6 @@ fn custom_generator_with_shell_string(source: &str) -> Arc<GeneratorSpec> {
             kind: JsRuntimeKind::Custom,
             source: source.to_string(),
             self_contained: true,
-            input: None,
             timeout_ms: None,
             allow_shell_command: true,
         })),
@@ -182,7 +178,6 @@ fn cached_custom_generator(source: &str) -> Arc<GeneratorSpec> {
             kind: JsRuntimeKind::Custom,
             source: source.to_string(),
             self_contained: true,
-            input: None,
             timeout_ms: None,
             allow_shell_command: false,
         })),
@@ -456,9 +451,9 @@ async fn phase5_custom_unsupported_host_api_logs_diagnostic() {
     // Reach for an unsupported Fig API; the spec catches the throw and
     // surfaces the diagnostic code as a suggestion. Engine returns the
     // resulting suggestion verbatim AND emits a structured warn so
-    // Phase 7's `doctor` can surface the misconfiguration. We assert
-    // both signals — the suggestion (user-visible behaviour) and the
-    // log line (operator-visible behaviour).
+    // `doctor` can surface the misconfiguration. We assert both signals —
+    // the suggestion (user-visible behaviour) and the log line
+    // (operator-visible behaviour).
     let (captured, _guard) = install_log_capture();
     let source = "async (tokens, run, ctx) => { \
         try { \
@@ -610,7 +605,6 @@ async fn phase5_supported_count_lifts_to_full_corpus() {
                 source: "out => out.split('\\n').filter(Boolean).map(n => ({ name: 'pp:' + n }))"
                     .to_string(),
                 self_contained: true,
-                input: None,
                 timeout_ms: None,
                 allow_shell_command: false,
             })),

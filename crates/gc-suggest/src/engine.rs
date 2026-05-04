@@ -651,17 +651,24 @@ impl SuggestionEngine {
                         .post_process(&rt.source, output.clone(), timeout, generator_id)
                         .await
                     {
-                        Ok(js_output) => js_output
-                            .suggestions
-                            .into_iter()
-                            .map(|js| Suggestion {
-                                text: js.name,
-                                description: js.description,
-                                kind: SuggestionKind::Command,
-                                source: SuggestionSource::Script,
-                                ..Default::default()
-                            })
-                            .collect(),
+                        Ok(js_output) => match js_output.into_suggestions() {
+                            Some(suggs) => suggs
+                                .into_iter()
+                                .map(|js| Suggestion {
+                                    text: js.name,
+                                    description: js.description,
+                                    kind: SuggestionKind::Command,
+                                    source: SuggestionSource::Script,
+                                    ..Default::default()
+                                })
+                                .collect(),
+                            None => {
+                                // None payload is the normal "empty / failed" path
+                                // for PostProcess; diagnostics already logged inside
+                                // the adapter.
+                                Vec::new()
+                            }
+                        },
                         Err(e) => {
                             tracing::warn!(
                                 spec = %cmd_name,
@@ -1507,11 +1514,24 @@ async fn run_script_function_dispatch(
             return Ok(Vec::new());
         }
     };
-    if js_output.argv.is_empty() {
-        // Diagnostics already logged inside the adapter.
-        return Ok(Vec::new());
-    }
-    let argv: Vec<String> = js_output.argv;
+    // Pattern-match on the discriminated payload so a wire-protocol bug
+    // (PostProcess result smuggled into a ScriptFunction slot, etc.) is
+    // visible at this seam rather than degrading silently into "no
+    // completions". Diagnostics from the runtime are already logged by
+    // the adapter on the way out.
+    let argv: Vec<String> = match js_output.into_argv() {
+        Some(v) if !v.is_empty() => v,
+        Some(_) => return Ok(Vec::new()),
+        None => {
+            tracing::warn!(
+                spec = %cmd_name,
+                generator_index,
+                "js_runtime returned non-Argv payload for ScriptFunction job — \
+                 returning empty suggestions"
+            );
+            return Ok(Vec::new());
+        }
+    };
 
     // Run the resolved argv. We honour the same caching scheme as a
     // declarative script generator — both stdout and the
@@ -1651,17 +1671,27 @@ async fn run_custom_dispatch(
             return Ok(Vec::new());
         }
     };
-    let suggestions: Vec<Suggestion> = js_output
-        .suggestions
-        .into_iter()
-        .map(|js| Suggestion {
-            text: js.name,
-            description: js.description,
-            kind: SuggestionKind::Command,
-            source: SuggestionSource::Script,
-            ..Default::default()
-        })
-        .collect();
+    // Pattern-match on the discriminated payload so a wire-protocol bug
+    // (ScriptFunction argv smuggled into a Custom slot, etc.) is visible
+    // at this seam rather than degrading silently.
+    let suggestions: Vec<Suggestion> = match js_output.into_suggestions() {
+        Some(suggs) => suggs
+            .into_iter()
+            .map(|js| Suggestion {
+                text: js.name,
+                description: js.description,
+                kind: SuggestionKind::Command,
+                source: SuggestionSource::Script,
+                ..Default::default()
+            })
+            .collect(),
+        None => {
+            // None payload is the normal "empty / failed" path; log a
+            // warn only if the worker returned a non-Suggestions payload
+            // (which would be a contract violation we want to know about).
+            Vec::new()
+        }
+    };
 
     if let Some(ref cache_cfg) = cache {
         if cache_cfg.ttl_seconds > 0 && !suggestions.is_empty() {
@@ -3235,6 +3265,124 @@ mod tests {
                 .iter()
                 .map(|s| (&s.text, &s.kind))
                 .collect::<Vec<_>>()
+        );
+    }
+
+    /// Pins the documented invariant that Custom dispatch always folds
+    /// `cwd` into the cache key, even when `cache_by_directory: false`.
+    /// A future cleanup that respects `cache_by_directory` for Custom
+    /// (parsing the doc as `false` → no cwd) would silently leak
+    /// cross-repo branches; this test fails before that ever ships.
+    #[tokio::test]
+    async fn custom_cache_key_includes_cwd_even_with_cache_by_directory_false() {
+        use crate::specs::{CacheConfig, GeneratorSpec, JsRuntimeKind, JsRuntimeSpec};
+        use std::sync::Arc;
+
+        // Counter-file body: each invocation appends to the file. If the
+        // cache key did NOT discriminate on cwd, two calls from
+        // different cwds would collide on the same slot and only one
+        // script run would happen.
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let counter = tmp.path().join("count");
+        let counter_path = counter.display().to_string();
+        let source = format!(
+            "async (tokens, run, ctx) => {{ \
+                await run(['sh', '-c', 'echo run >> {path}']); \
+                return [{{ name: 'ok' }}]; \
+            }}",
+            path = counter_path,
+        );
+        let gen = Arc::new(GeneratorSpec {
+            generator_type: None,
+            script: None,
+            script_template: None,
+            transforms: Vec::new(),
+            cache: Some(CacheConfig {
+                ttl_seconds: 60,
+                cache_by_directory: false,
+            }),
+            requires_js: true,
+            js_source: None,
+            js_runtime: Some(Arc::new(JsRuntimeSpec {
+                kind: JsRuntimeKind::Custom,
+                source,
+                self_contained: true,
+                timeout_ms: None,
+                allow_shell_command: false,
+            })),
+            corrected_in: None,
+            template: None,
+        });
+
+        let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;
+        let history = HistoryProvider::from_entries(Vec::new());
+        let commands = CommandsProvider::from_list(Vec::new());
+        let engine = SuggestionEngine::with_providers(spec_store, history, commands);
+
+        let cwd_a = tmp.path().join("repo-a");
+        let cwd_b = tmp.path().join("repo-b");
+        std::fs::create_dir_all(&cwd_a).expect("create cwd_a");
+        std::fs::create_dir_all(&cwd_b).expect("create cwd_b");
+
+        let ctx = make_ctx(Some("custom-cwd-cache-test"), Vec::new(), "", 1);
+
+        let _first = engine
+            .run_generators(std::slice::from_ref(&gen), &ctx, &cwd_a, 5_000)
+            .await
+            .expect("first dispatch");
+        let _second = engine
+            .run_generators(&[gen], &ctx, &cwd_b, 5_000)
+            .await
+            .expect("second dispatch");
+
+        let counter_contents = std::fs::read_to_string(&counter).expect("counter file written");
+        let runs = counter_contents.lines().count();
+        assert_eq!(
+            runs, 2,
+            "cache key must differentiate on cwd even with cache_by_directory=false; \
+             got {runs} script runs (contents: {counter_contents:?})"
+        );
+    }
+
+    /// Pins the warn-and-continue contract for hand-built specs that
+    /// claim `requires_js: true` but ship no `js_runtime` metadata. The
+    /// branch is unreachable through `SpecStore` (loader rejects it)
+    /// but reachable through hand-built in-memory specs in tests/fuzz/
+    /// embedded fallback. A future refactor that mistakes the `None`
+    /// arm for `unreachable!()` would panic the engine the first time
+    /// such a spec slipped through.
+    #[tokio::test]
+    async fn requires_js_with_none_js_runtime_returns_empty_without_panicking() {
+        use crate::specs::GeneratorSpec;
+        use std::sync::Arc;
+
+        let gen = Arc::new(GeneratorSpec {
+            generator_type: None,
+            script: None,
+            script_template: None,
+            transforms: Vec::new(),
+            cache: None,
+            requires_js: true,
+            js_source: None,
+            // The defensive None branch under test.
+            js_runtime: None,
+            corrected_in: None,
+            template: None,
+        });
+
+        let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;
+        let history = HistoryProvider::from_entries(Vec::new());
+        let commands = CommandsProvider::from_list(Vec::new());
+        let engine = SuggestionEngine::with_providers(spec_store, history, commands);
+
+        let ctx = make_ctx(Some("requires-js-no-runtime"), Vec::new(), "", 1);
+        let results = engine
+            .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+            .await
+            .expect("must not panic on hand-built malformed spec");
+        assert!(
+            results.is_empty(),
+            "requires_js without js_runtime must yield empty results, got {results:?}"
         );
     }
 }

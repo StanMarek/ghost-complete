@@ -2,8 +2,8 @@ use anyhow::Result;
 use std::path::PathBuf;
 
 use gc_suggest::specs::{
-    AliasConflict, AliasConflictKind, ArgSpec, CompletionSpec, GeneratorSpec, OptionSpec,
-    SubcommandSpec,
+    AliasConflict, AliasConflictKind, ArgSpec, CompletionSpec, GeneratorSpec, JsRuntimeKind,
+    OptionSpec, SubcommandSpec,
 };
 
 use crate::sanitize::sanitize_for_terminal;
@@ -487,10 +487,26 @@ fn check_js_runtime(config: &gc_config::GhostConfig) -> CheckResult {
 }
 
 /// Walk a parsed spec and yield the count of `requires_js: true` generators
-/// whose `js_runtime` metadata is missing (or whose `js_runtime.source` is
-/// empty). A non-zero count indicates the converter regen was incomplete or
-/// a spec was hand-edited to drop js_runtime — both are corpus defects and
-/// surface as a doctor Fail.
+/// the engine cannot dispatch:
+///   * missing `js_runtime` metadata entirely, OR
+///   * `js_runtime.source` is empty/whitespace, OR
+///   * `js_runtime.kind` is `script_function` / `custom` AND
+///     `self_contained != true`. Mirrors the engine's
+///     `js_runtime_supported` predicate (gc-suggest::engine) — the
+///     converter must prove a non-PostProcess source has no
+///     bundler/minifier helper closure (`__webpack_require__`,
+///     `__exports__`, etc.) before QuickJS can run it. Without that
+///     proof the engine silently skips the generator at dispatch time,
+///     so the doctor must surface it here as a corpus defect rather
+///     than passing the spec while the engine drops the generator on
+///     the floor.
+///
+/// A non-zero count therefore indicates an incomplete converter regen
+/// (missing/empty js_runtime), a hand-edited spec, OR — most commonly
+/// in the v0.12.x corpus — a `script_function` / `custom` generator
+/// the converter has not yet proven self-contained. All three are
+/// corpus defects that surface as a doctor Fail so the operator sees
+/// the same number the runtime is silently dropping.
 fn count_missing_js_runtime_in_spec(spec: &CompletionSpec) -> usize {
     fn missing(g: &GeneratorSpec) -> bool {
         if !g.requires_js {
@@ -498,7 +514,21 @@ fn count_missing_js_runtime_in_spec(spec: &CompletionSpec) -> usize {
         }
         match g.js_runtime.as_ref() {
             None => true,
-            Some(rt) => rt.source.trim().is_empty(),
+            Some(rt) => {
+                if rt.source.trim().is_empty() {
+                    return true;
+                }
+                // Mirror gc-suggest::engine::js_runtime_supported:
+                // post_process is gated on script presence (checked by
+                // the engine, not here), but script_function/custom
+                // additionally require `self_contained:true`. Without
+                // that proof the engine refuses to dispatch — so the
+                // doctor must count these as silently-skipped.
+                match rt.kind {
+                    JsRuntimeKind::PostProcess => false,
+                    JsRuntimeKind::ScriptFunction | JsRuntimeKind::Custom => !rt.self_contained,
+                }
+            }
         }
     }
     fn count_in_args(args: &[ArgSpec]) -> usize {
@@ -527,8 +557,12 @@ fn count_missing_js_runtime_in_spec(spec: &CompletionSpec) -> usize {
 
 /// Embedded specs runtime-source check. Walks every entry in the
 /// SpecStore (including embedded fallback) and asserts every requires_js
-/// generator carries js_runtime metadata. A non-zero result indicates an
-/// incomplete converter regen or a hand-edited spec.
+/// generator can actually be dispatched by the engine (mirrors
+/// `js_runtime_supported` in gc-suggest::engine — see
+/// [`count_missing_js_runtime_in_spec`] for the full predicate). A
+/// non-zero result indicates an incomplete converter regen, a
+/// hand-edited spec, OR a `script_function`/`custom` generator the
+/// converter has not yet proven `self_contained:true`.
 fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> CheckResult {
     let mut affected: Vec<(&str, usize)> = store
         .iter()
@@ -544,7 +578,7 @@ fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> C
 
     if affected.is_empty() {
         return CheckResult::ok(
-            "Embedded specs: every requires_js generator has js_runtime metadata",
+            "Embedded specs: every requires_js generator has dispatchable js_runtime metadata",
         );
     }
 
@@ -565,9 +599,10 @@ fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> C
     };
 
     CheckResult::fail(format!(
-        "Embedded specs: {total} requires_js generator(s) across {spec_count} spec(s) are \
-         missing js_runtime metadata. Indicates an incomplete converter regen or a \
-         hand-edited spec. Affected: {preview_str}{tail}"
+        "Embedded specs: {total} requires_js generator(s) across {spec_count} spec(s) cannot be \
+         dispatched (missing js_runtime metadata, empty source, or non-PostProcess kind without \
+         `self_contained:true`). Indicates an incomplete converter regen or a hand-edited spec. \
+         Affected: {preview_str}{tail}"
     ))
 }
 
@@ -1087,8 +1122,9 @@ mod tests {
 
     #[test]
     fn doctor_passes_when_runtime_metadata_complete() {
-        // Spec with a requires_js generator that carries js_runtime
-        // metadata. Should be OK.
+        // Spec with a requires_js generator that carries dispatchable
+        // js_runtime metadata (post_process + script + non-empty source).
+        // Should be OK.
         let (store, _dir) = store_from_json_fixtures(&[(
             "ok.json",
             r#"{
@@ -1108,7 +1144,7 @@ mod tests {
         assert!(
             result
                 .message
-                .contains("every requires_js generator has js_runtime metadata"),
+                .contains("every requires_js generator has dispatchable js_runtime metadata"),
             "got: {}",
             result.message
         );
@@ -1207,5 +1243,130 @@ mod tests {
         )]);
         let result = check_embedded_runtime_metadata_for_store(&store);
         assert!(matches!(result.severity, Severity::Fail));
+    }
+
+    /// Regression guard for code-1: a `script_function` / `custom`
+    /// generator whose `self_contained` is missing or `false` cannot be
+    /// dispatched by the engine (see
+    /// `gc_suggest::engine::js_runtime_supported`). Doctor must surface
+    /// it as Fail — otherwise the regression gate stays blind to the
+    /// 1697-generator silent-skip surface that motivated this fix.
+    #[test]
+    fn doctor_fails_when_script_function_lacks_self_contained() {
+        let (store, _dir) = store_from_json_fixtures(&[(
+            "unproven.json",
+            r#"{
+                "name": "unproven",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "requires_js": true,
+                        "js_runtime": {
+                            "kind": "script_function",
+                            "source": "() => ['a']"
+                        }
+                    }]
+                }]
+            }"#,
+        )]);
+        let result = check_embedded_runtime_metadata_for_store(&store);
+        assert!(
+            matches!(result.severity, Severity::Fail),
+            "script_function without self_contained must Fail, got: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("unproven"),
+            "must name affected spec: {}",
+            result.message
+        );
+    }
+
+    #[test]
+    fn doctor_fails_when_custom_lacks_self_contained() {
+        let (store, _dir) = store_from_json_fixtures(&[(
+            "custom-unproven.json",
+            r#"{
+                "name": "custom-unproven",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "requires_js": true,
+                        "js_runtime": {
+                            "kind": "custom",
+                            "source": "async () => [{name: 'a'}]",
+                            "self_contained": false
+                        }
+                    }]
+                }]
+            }"#,
+        )]);
+        let result = check_embedded_runtime_metadata_for_store(&store);
+        assert!(
+            matches!(result.severity, Severity::Fail),
+            "custom with self_contained:false must Fail, got: {}",
+            result.message
+        );
+    }
+
+    /// Companion positive control: a `script_function` proven
+    /// `self_contained: true` with a non-empty source IS dispatchable
+    /// and must not Fail. Without this we cannot triangulate a
+    /// regression in the new self_contained branch.
+    #[test]
+    fn doctor_passes_when_script_function_is_self_contained() {
+        let (store, _dir) = store_from_json_fixtures(&[(
+            "proven.json",
+            r#"{
+                "name": "proven",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "requires_js": true,
+                        "js_runtime": {
+                            "kind": "script_function",
+                            "source": "() => ['ls', '-la']",
+                            "self_contained": true
+                        }
+                    }]
+                }]
+            }"#,
+        )]);
+        let result = check_embedded_runtime_metadata_for_store(&store);
+        assert!(
+            matches!(result.severity, Severity::Ok),
+            "script_function with self_contained:true must be OK, got: {}",
+            result.message
+        );
+    }
+
+    /// `post_process` is exempt from the `self_contained` requirement —
+    /// the JS body only handles shell stdout, so the bundler-helper
+    /// closure surface that motivates the gate doesn't apply.
+    #[test]
+    fn doctor_passes_when_post_process_lacks_self_contained() {
+        let (store, _dir) = store_from_json_fixtures(&[(
+            "pp.json",
+            r#"{
+                "name": "pp",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "script": ["cmd"],
+                        "requires_js": true,
+                        "js_runtime": {
+                            "kind": "post_process",
+                            "source": "out => out.split('\n')"
+                        }
+                    }]
+                }]
+            }"#,
+        )]);
+        let result = check_embedded_runtime_metadata_for_store(&store);
+        assert!(
+            matches!(result.severity, Severity::Ok),
+            "post_process without self_contained must remain OK, got: {}",
+            result.message
+        );
     }
 }

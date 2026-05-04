@@ -137,10 +137,10 @@ describe('convertSingleSpec', () => {
       assert.equal(invert.type, undefined, 'tree --invert must not use workspace members');
       assert.equal(invert.requires_js, true);
       assert.deepStrictEqual(invert.script, ['cargo', 'metadata', '--format-version', '1']);
-      // Phase 2 (UX-9): converter no longer emits `js_source`; the JS body is
-      // preserved on `js_runtime.source` with `kind: "post_process"` so the
-      // runtime can pick it up in Phase 4.
-      assert.equal(invert.js_source, undefined, 'js_source replaced by js_runtime.source in Phase 2');
+      // Converter does not emit `js_source`; the JS body is preserved on
+      // `js_runtime.source` with `kind: "post_process"` so the runtime
+      // can pick it up.
+      assert.equal(invert.js_source, undefined, 'js_source must not be emitted; the converter writes the JS body to js_runtime.source instead');
       assert.equal(invert.js_runtime?.kind, 'post_process');
       assert.match(invert.js_runtime.source, /JSON\.parse\(e\)\.packages\.map/);
 
@@ -388,7 +388,7 @@ describe('cleanGenerator', () => {
   });
 });
 
-describe('processGenerator js_runtime emission (UX-9 Phase 2)', () => {
+describe('processGenerator js_runtime emission', () => {
   // These tests pin the contract that the converter emits structured
   // `js_runtime: { kind, source }` metadata for the three Fig generator shapes
   // that survive into runtime JS. Native maps and transform lowering still win
@@ -403,14 +403,14 @@ describe('processGenerator js_runtime emission (UX-9 Phase 2)', () => {
       _custom: true,
       _customSource: 'async (tokens, executeShellCommand, ctx) => [{ name: tokens[0] || ctx.searchTerm }]',
     };
-    const out = processGenerator(gen, '__phase2_test_spec__');
+    const out = processGenerator(gen, '__js_runtime_test_spec__');
     assert.equal(out.requires_js, true);
     assert.deepStrictEqual(out.js_runtime, {
       kind: 'custom',
       source: 'async (tokens, executeShellCommand, ctx) => [{ name: tokens[0] || ctx.searchTerm }]',
       self_contained: true,
     });
-    // Phase 2 stops emitting js_source on the new path — the runtime reads
+    // The converter does not emit js_source — the runtime reads
     // js_runtime.source instead.
     assert.equal(out.js_source, undefined);
   });
@@ -420,7 +420,7 @@ describe('processGenerator js_runtime emission (UX-9 Phase 2)', () => {
       _scriptFunction: true,
       _scriptSource: '(ctx) => ["echo", "hello"]',
     };
-    const out = processGenerator(gen, '__phase2_test_spec__');
+    const out = processGenerator(gen, '__js_runtime_test_spec__');
     assert.equal(out.requires_js, true);
     assert.deepStrictEqual(out.js_runtime, {
       kind: 'script_function',
@@ -435,7 +435,7 @@ describe('processGenerator js_runtime emission (UX-9 Phase 2)', () => {
       _custom: true,
       _customSource: 'async (tokens) => ue(tokens).map(v.getCurrentInsertedDirectory)',
     };
-    const out = processGenerator(gen, '__phase2_test_spec__');
+    const out = processGenerator(gen, '__js_runtime_test_spec__');
     assert.equal(out.requires_js, true);
     assert.equal(out.js_runtime, undefined);
     assert.equal(out.js_source, undefined);
@@ -446,7 +446,7 @@ describe('processGenerator js_runtime emission (UX-9 Phase 2)', () => {
       _scriptFunction: true,
       _scriptSource: '(tokens) => ge(tokens, v.getCurrentInsertedDirectory)',
     };
-    const out = processGenerator(gen, '__phase2_test_spec__');
+    const out = processGenerator(gen, '__js_runtime_test_spec__');
     assert.equal(out.requires_js, true);
     assert.equal(out.js_runtime, undefined);
     assert.equal(out.js_source, undefined);
@@ -454,15 +454,15 @@ describe('processGenerator js_runtime emission (UX-9 Phase 2)', () => {
 
   it('postProcess that the matcher cannot lower emits js_runtime.kind = "post_process"', () => {
     // A function the matcher can't reduce to declarative transforms (multiple
-    // returns, explicit loops). Phase 2 preserves the body on
-    // js_runtime.source so Phase 4 can evaluate it; the script remains for
+    // returns, explicit loops). The converter preserves the body on
+    // js_runtime.source so the runtime can evaluate it; the script remains for
     // the runtime to spawn before feeding stdout through the JS function.
     const gen = {
       script: ['some-cmd'],
       _postProcessSource:
         'function(out) { for (const l of out.split("\\n")) { if (l) return [{name: l}]; } return []; }',
     };
-    const out = processGenerator(gen, '__phase2_test_spec__');
+    const out = processGenerator(gen, '__js_runtime_test_spec__');
     assert.deepStrictEqual(out.script, ['some-cmd']);
     assert.equal(out.requires_js, true);
     assert.equal(out.js_runtime?.kind, 'post_process');
@@ -518,7 +518,7 @@ describe('processGenerator js_runtime emission (UX-9 Phase 2)', () => {
       _postProcessSource:
         'function(out){return out.split("\\n").map(line=>({name:line.substring(0,7)}))}',
     };
-    const out = processGenerator(gen, '__phase2_test_spec__');
+    const out = processGenerator(gen, '__js_runtime_test_spec__');
     assert.equal(out.requires_js, true);
     assert.equal(out.js_runtime?.kind, 'post_process');
     assert.match(out.js_runtime.source, /substring/);

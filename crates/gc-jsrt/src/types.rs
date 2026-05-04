@@ -181,25 +181,88 @@ impl std::fmt::Debug for JsRuntimeInput {
     }
 }
 
+/// Discriminated payload for [`JsRuntimeOutput`].
+///
+/// Each [`JsExecutionKind`] produces exactly one shape, so the payload
+/// matches the dispatch kind 1:1 and the engine cannot accidentally
+/// confuse "PostProcess returned no suggestions" with "ScriptFunction
+/// returned no argv". Empty/error paths surface as
+/// [`JsRuntimeOutputPayload::None`] with the explanation captured in the
+/// outer [`JsRuntimeOutput::diagnostics`] vec.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum JsRuntimeOutputPayload {
+    /// Normalised suggestions ready for fuzzy ranking. Produced by
+    /// [`JsExecutionKind::PostProcess`] and [`JsExecutionKind::Custom`].
+    Suggestions(Vec<JsSuggestion>),
+    /// Resolved argv from a [`JsExecutionKind::ScriptFunction`] job. The
+    /// engine spawns the resulting argv as a regular script generator.
+    Argv(Vec<String>),
+    /// No payload — evaluation failed, was empty, or did not produce a
+    /// usable value. The reason is recorded in the outer
+    /// [`JsRuntimeOutput::diagnostics`] vec.
+    #[default]
+    None,
+}
+
 /// Result of a JS evaluation job.
+///
+/// `payload` is the discriminated outcome (suggestions, argv, or none);
+/// `diagnostics` are kind-agnostic non-fatal observations the engine
+/// surfaces alongside whatever (if anything) was produced.
 #[derive(Debug, Clone, Default)]
 pub struct JsRuntimeOutput {
-    /// Normalized suggestions, ready for fuzzy ranking.
-    pub suggestions: Vec<JsSuggestion>,
+    /// Discriminated outcome of the JS evaluation. See
+    /// [`JsRuntimeOutputPayload`] for the variant ↔ dispatch-kind map.
+    pub payload: JsRuntimeOutputPayload,
     /// Non-fatal observations (truncation, exception text, etc.).
     pub diagnostics: Vec<JsDiagnostic>,
-    /// Resolved argv when the worker ran a `ScriptFunction` job. Empty
-    /// for `PostProcess` and `Custom` jobs. The engine reads this to
-    /// decide whether to spawn a follow-up script generator.
-    pub argv: Vec<String>,
 }
 
 impl JsRuntimeOutput {
     pub(crate) fn empty_with(diagnostic: JsDiagnostic) -> Self {
         Self {
-            suggestions: Vec::new(),
+            payload: JsRuntimeOutputPayload::None,
             diagnostics: vec![diagnostic],
-            argv: Vec::new(),
+        }
+    }
+
+    /// Borrow the suggestions slice if the payload is
+    /// [`JsRuntimeOutputPayload::Suggestions`]. Returns an empty slice
+    /// for any other payload variant — callers that need to disambiguate
+    /// should pattern-match on `payload` directly.
+    pub fn suggestions(&self) -> &[JsSuggestion] {
+        match &self.payload {
+            JsRuntimeOutputPayload::Suggestions(v) => v.as_slice(),
+            _ => &[],
+        }
+    }
+
+    /// Borrow the argv slice if the payload is
+    /// [`JsRuntimeOutputPayload::Argv`]. Returns an empty slice for any
+    /// other payload variant.
+    pub fn argv(&self) -> &[String] {
+        match &self.payload {
+            JsRuntimeOutputPayload::Argv(v) => v.as_slice(),
+            _ => &[],
+        }
+    }
+
+    /// Move the suggestions out if the payload holds them; returns
+    /// `None` otherwise so the caller can react to a wire-protocol
+    /// mismatch (e.g. PostProcess job returning argv).
+    pub fn into_suggestions(self) -> Option<Vec<JsSuggestion>> {
+        match self.payload {
+            JsRuntimeOutputPayload::Suggestions(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    /// Move the argv out if the payload holds it; returns `None`
+    /// otherwise so the caller can react to a wire-protocol mismatch.
+    pub fn into_argv(self) -> Option<Vec<String>> {
+        match self.payload {
+            JsRuntimeOutputPayload::Argv(v) => Some(v),
+            _ => None,
         }
     }
 }

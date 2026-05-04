@@ -77,6 +77,16 @@ impl JsRuntimeAdapter {
     /// drop. Holding the mutex around the get_or_try_init equivalent
     /// guarantees only one spawn attempt is in flight at a time.
     fn worker(&self) -> Result<&JsWorker, JsRuntimeError> {
+        self.worker_with(JsWorker::spawn)
+    }
+
+    /// Inner spawn-or-fetch helper, parameterised on the spawn function so
+    /// the concurrency test can substitute an instrumented spawner that
+    /// counts invocations.
+    fn worker_with<F>(&self, spawn: F) -> Result<&JsWorker, JsRuntimeError>
+    where
+        F: FnOnce() -> Result<JsWorker, JsRuntimeError>,
+    {
         if let Some(w) = self.worker.get() {
             return Ok(w);
         }
@@ -84,7 +94,7 @@ impl JsRuntimeAdapter {
         if let Some(w) = self.worker.get() {
             return Ok(w);
         }
-        let spawned = JsWorker::spawn()?;
+        let spawned = spawn()?;
         self.worker
             .set(spawned)
             .map_err(|_| JsRuntimeError::Internal("OnceLock unexpectedly populated".into()))?;
@@ -212,11 +222,12 @@ fn build_post_process_program(source: &str, stdout: &str) -> String {
 /// Encode a Rust string as a JSON string literal that is also a safe JS
 /// string token to splice into program text.
 ///
-/// `serde_json` escapes every byte JavaScript would reject in a single-line
-/// string literal — control chars, the surrounding quote, and the backslash
-/// itself — and produces `\uXXXX` for non-BMP code points and lone
-/// surrogates. The encoded output is therefore consumable as either a JSON
-/// string or a JS string literal with no extra special-casing.
+/// `serde_json` emits a valid JSON string token. QuickJS targets ES2020,
+/// which accepts JSON string syntax verbatim (including raw U+2028 /
+/// U+2029, which serde_json emits unescaped — these are line/paragraph
+/// separators that were illegal in JS string literals before ES2019). We
+/// splice the encoded form directly without an extra `JSON.parse` round
+/// trip.
 fn json_string_literal(s: &str) -> String {
     serde_json::Value::String(s.to_string()).to_string()
 }
@@ -433,6 +444,50 @@ mod tests {
         assert!(
             program.contains("\"a"),
             "expected encoded stdout literal in program: {program}"
+        );
+    }
+
+    /// Pins the perf contract for `worker()`: a burst of N concurrent
+    /// callers must produce exactly one [`JsWorker::spawn`] invocation,
+    /// even though every caller observes a `None` initial state. A
+    /// regression that drops the `spawn_lock` (or replaces the
+    /// double-check with a fence-less compare-exchange) would let
+    /// multiple threads each spawn a 5 MB QuickJS runtime + OS thread
+    /// before the OnceLock memoises the winner — invisible at the
+    /// behavioural level, expensive in practice.
+    #[test]
+    fn worker_serialises_concurrent_spawn_attempts() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::sync::{Arc, Barrier};
+        use std::thread;
+
+        let adapter = Arc::new(JsRuntimeAdapter::new());
+        let spawn_count = Arc::new(AtomicUsize::new(0));
+        // Synchronise threads so they all hit `worker_with` near-
+        // simultaneously, maximising the window for a racing spawn.
+        let barrier = Arc::new(Barrier::new(8));
+
+        let mut handles = Vec::with_capacity(8);
+        for _ in 0..8 {
+            let adapter = Arc::clone(&adapter);
+            let spawn_count = Arc::clone(&spawn_count);
+            let barrier = Arc::clone(&barrier);
+            handles.push(thread::spawn(move || {
+                barrier.wait();
+                let _ = adapter.worker_with(|| {
+                    spawn_count.fetch_add(1, Ordering::SeqCst);
+                    JsWorker::spawn()
+                });
+            }));
+        }
+        for h in handles {
+            h.join().expect("worker thread panicked");
+        }
+
+        assert_eq!(
+            spawn_count.load(Ordering::SeqCst),
+            1,
+            "exactly one JsWorker spawn should occur under concurrent first-use"
         );
     }
 }

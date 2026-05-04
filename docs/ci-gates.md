@@ -2,7 +2,7 @@
 
 ## Overview
 
-Five CI gates live in `.github/workflows/ci.yml`. Three were introduced in Phase 0.5 (binary size, snapshot diff, fig-converter oracle); a fourth (coverage baseline drift) was added in Phase 4; a fifth (coverage regression) landed with UX-9 Phase 7. Benchmark-regression checking is intentionally **not** a CI gate — it is run manually at release time (see [Release-time benchmark checking](#release-time-benchmark-checking) below). The gates are wired via `needs:` dependencies, which controls **ordering within a workflow run** — i.e. a gate waits for its prerequisite jobs before it starts. That is a separate concern from **branch protection**, which is what blocks the GitHub merge button on a PR. A repo admin must explicitly configure each status check as required in GitHub's branch-protection settings (see [Branch-protection configuration](#branch-protection-configuration) below). Without that step, the gates run and report results but cannot block a merge.
+Five CI gates live in `.github/workflows/ci.yml`: binary size, snapshot diff, fig-converter oracle, coverage baseline drift, and coverage regression. Benchmark-regression checking is intentionally **not** a CI gate — it is run manually at release time (see [Release-time benchmark checking](#release-time-benchmark-checking) below). The gates are wired via `needs:` dependencies, which controls **ordering within a workflow run** — i.e. a gate waits for its prerequisite jobs before it starts. That is a separate concern from **branch protection**, which is what blocks the GitHub merge button on a PR. A repo admin must explicitly configure each status check as required in GitHub's branch-protection settings (see [Branch-protection configuration](#branch-protection-configuration) below). Without that step, the gates run and report results but cannot block a merge.
 
 ---
 
@@ -24,7 +24,7 @@ Five CI gates live in `.github/workflows/ci.yml`. Three were introduced in Phase
 - Absolute ceiling failure: binary size exceeds 110 MB.
 - Delta budget failure: binary grew by more than `PHASE_BUDGET` since the baseline was recorded.
 
-**Status today:** production-live and **passing**. Phase 4 T8 landed the original binary-size intervention (minified embedded specs + stripped `js_source`) which dropped the binary to ~28.4 MB, under the original 30 MB ceiling. The `ux-8` AWS spec restoration brought the binary to ~102 MB; the ceiling moved to 110 MB to match plus headroom. See [`docs/phase-4-binary-size-findings.md`](./phase-4-binary-size-findings.md) for the original phase-4 attribution and the `ux-8` PR for the AWS-restoration delta. Ready to add to branch protection.
+**Status today:** production-live and **passing**. The binary-size intervention (minified embedded specs + stripped `js_source`) dropped the binary to ~28.4 MB, under the original 30 MB ceiling. The `ux-8` AWS spec restoration brought the binary to ~102 MB; the ceiling moved to 110 MB to match plus headroom. Ready to add to branch protection.
 
 **How to debug locally:**
 
@@ -34,7 +34,7 @@ scripts/check-binary-size.sh --absolute-max 110MB
 scripts/check-binary-size.sh --delta-max 2MB
 ```
 
-**Baseline maintenance:** when a phase legitimately grows the binary, update the baseline file:
+**Baseline maintenance:** when a change legitimately grows the binary, update the baseline file:
 
 ```bash
 du -b target/release/ghost-complete > benchmarks/binary-size-baseline.txt
@@ -183,7 +183,7 @@ These checks are added **alongside** any existing required checks (e.g. `Check`,
 | `Oracle gate (fig-converter)` | Ready to add. |
 | `Binary size gate` | Ready to add. |
 | `Coverage baseline drift` | Informational only (non-blocking warning). Do not add to branch protection. |
-| `Coverage regression` | Wired as `continue-on-error: true` for the initial UX-9 rollout. Promotion to a hard gate is a separate follow-up; the maintainer who promotes it is responsible for refreshing the baseline first. |
+| `Coverage regression` | Wired as `continue-on-error: true` during the initial rollout. Promotion to a hard gate is a separate follow-up; the maintainer who promotes it is responsible for refreshing the baseline first. |
 
 > **Note on job names vs. YAML keys:** GitHub branch protection displays the `name:` field of each job, not the YAML key. `Binary size gate` (the name) corresponds to `binary-size-gate` (the key). Using the YAML key in the search box will not match.
 
@@ -193,7 +193,7 @@ These checks are added **alongside** any existing required checks (e.g. `Check`,
 
 **"Why is the ceiling 110 MB?"**
 
-The 30 MB ceiling was set during the requires-js-specs initiative as the target the binary needed to reach after specs were trimmed. Phase 4 T8 landed the intervention (minified embedded specs + stripped `js_source`) and the release binary stabilised at ~28.4 MB, under budget. In `ux-8` the AWS spec was restored: 409 inlined service sub-specs (upstream ships 418 `.js` files but the top-level `aws.js` only references 408 via `loadSpec` — 9 deprecated services are unreferenced) carrying ~28 MB of upstream description text, which `include_str!` roundtrips into ~2× `__const` data. The release binary moved to ~102 MB; the ceiling moved to 110 MB to match plus ~8% headroom. The delta budget (`PHASE_BUDGET=2MB`) still handles the near-term constraint — "don't grow from the current baseline". These are two independent checks; both must pass. zstd-compressing embedded specs is tracked as a follow-on plan; landing it should let the ceiling drop back near the original 30 MB level.
+The 30 MB ceiling was set during the requires-js-specs initiative as the target the binary needed to reach after specs were trimmed. The intervention (minified embedded specs + stripped `js_source`) brought the release binary to ~28.4 MB, under budget. In `ux-8` the AWS spec was restored: 409 inlined service sub-specs (upstream ships 418 `.js` files but the top-level `aws.js` only references 408 via `loadSpec` — 9 deprecated services are unreferenced) carrying ~28 MB of upstream description text, which `include_str!` roundtrips into ~2× `__const` data. The release binary moved to ~102 MB; the ceiling moved to 110 MB to match plus ~8% headroom. The delta budget (`PHASE_BUDGET=2MB`) still handles the near-term constraint — "don't grow from the current baseline". These are two independent checks; both must pass. zstd-compressing embedded specs is tracked as a follow-on plan; landing it should let the ceiling drop back near the original 30 MB level.
 
 **"Can I skip a gate on a specific PR?"**
 

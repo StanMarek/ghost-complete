@@ -198,7 +198,7 @@ Like script generators, but with token interpolation. `{current_token}` is repla
 
 #### JS-backed generators (`requires_js`)
 
-Some Fig specs contain generators that require JavaScript execution. As of UX-9 Phase 5, all three `js_runtime.kind` variants execute via [`gc-jsrt`](../crates/gc-jsrt/) — a bounded QuickJS evaluator running on a dedicated worker thread. See [`docs/JS_RUNTIME.md`](./JS_RUNTIME.md) for the runtime model (sandbox, host API, resource caps, kill switch).
+Some Fig specs contain generators that require JavaScript execution. All three `js_runtime.kind` variants execute via [`gc-jsrt`](../crates/gc-jsrt/) — a bounded QuickJS evaluator running on a dedicated worker thread. See [`docs/JS_RUNTIME.md`](./JS_RUNTIME.md) for the runtime model (sandbox, host API, resource caps, kill switch).
 
 ```json
 {
@@ -213,15 +213,14 @@ Some Fig specs contain generators that require JavaScript execution. As of UX-9 
 
 | `js_runtime.kind` | Behaviour | Status |
 |-------------------|-----------|--------|
-| `post_process`    | Run `script` (or `script_template`) as a normal script generator, then pass stdout through the JS function in `js_runtime.source`. The function returns the suggestion list. | Active (UX-9 Phase 4). |
-| `script_function` | Evaluate `js_runtime.source` to produce an `argv`, spawn that argv, then parse stdout with the generator transforms or default line splitting. | Active (UX-9 Phase 5). |
-| `custom`          | No script — `js_runtime.source` is an async function that returns suggestions directly (the Fig `custom: async () => [...]` shape). | Active (UX-9 Phase 5). |
+| `post_process`    | Run `script` (or `script_template`) as a normal script generator, then pass stdout through the JS function in `js_runtime.source`. The function returns the suggestion list. | Active. |
+| `script_function` | Evaluate `js_runtime.source` to produce an `argv`, spawn that argv, then parse stdout with the generator transforms or default line splitting. | Active. |
+| `custom`          | No script — `js_runtime.source` is an async function that returns suggestions directly (the Fig `custom: async () => [...]` shape). | Active. |
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `kind` | string | Yes | One of `post_process`, `script_function`, `custom` (see table above). |
 | `source` | string | Yes | The JS function source. For `post_process` it receives stdout and returns suggestions; for `custom` it returns suggestions directly; for `script_function` its evaluation yields the argv to spawn. |
-| `input` | string | No | Which input is fed to the JS function (e.g. `"stdout"`, `"argv"`). Defaults are kind-specific; setting this overrides the default. |
 | `timeout_ms` | integer | No | Per-generator override of the global JS execution timeout. |
 | `allow_shell_command` | boolean | No | Default `false`. Currently effective only for `custom` generators that call the host `executeShellCommand` binding with a shell string. `script_function` generators return argv for the engine to spawn and are not given a shell runner. Required only for explicitly-audited shipped specs. |
 | `self_contained` | boolean | No | Default `false`. Required for `script_function` and `custom` dispatch; the converter sets it only after proving the source has no unresolved helper/module bindings. |

@@ -8,8 +8,8 @@ build time via `include_str!`, so the shipped `ghost-complete` has zero
 runtime spec-fetch cost and no network dependency. The embed is produced by
 [`crates/gc-suggest/build.rs`](../crates/gc-suggest/build.rs), which minifies
 each spec and defensively strips any straggler `js_source` field before
-`include_str!` bakes it into the binary. Since UX-9 Phase 2 the converter no
-longer emits `js_source` at all — runtime-needed JS is preserved on
+`include_str!` bakes it into the binary. The converter no longer emits
+`js_source` — runtime-needed JS is preserved on
 `js_runtime.source` (a structured object the build pipeline retains untouched).
 Stale user-installed specs from older converter versions are still tolerated:
 the embed pass drops their `js_source` so the embedded format stays uniform.
@@ -19,8 +19,8 @@ embedded corpus is the queued reclaim path). On-disk `specs/*.json` remain
 pretty-printed; only the binary-embedded copies are minified.
 
 **JavaScript runtime:** the JS runtime lives in [`gc-jsrt`](../crates/gc-jsrt/)
-and was activated across UX-9 Phase 3+ (bounded QuickJS via rquickjs, default
-on). Upstream specs that include inline JS generators (`postProcess`, `custom`,
+— a bounded QuickJS evaluator (via rquickjs, default on). Upstream specs
+that include inline JS generators (`postProcess`, `custom`,
 `trigger`, `script: () => [...]`) are still preferred to be lowered
 declaratively at convert time or replaced with a native Rust provider when the
 shape is reusable; otherwise the converter emits a `js_runtime` block on the
@@ -57,8 +57,8 @@ Stages:
    guards against silent large-scale regeneration drift.
 4. **`crates/gc-suggest/build.rs`** — minifies each spec into `OUT_DIR` so
    `include_str!` bakes a compact copy into the binary. Drops any legacy
-   `js_source` field defensively (post-Phase 2 the converter no longer emits
-   it; structured `js_runtime.source` survives untouched and is asserted
+   `js_source` field defensively (the converter no longer emits it;
+   structured `js_runtime.source` survives untouched and is asserted
    present at the same depth). Hand-editing the embed list (or bypassing
    `build.rs`) would break the binary-size gate.
 5. **Rust binary** — `crates/gc-suggest/src/specs.rs` deserializes via serde
@@ -83,7 +83,7 @@ editing the generated JSON for one spec. The axes:
 Extend the converter when the JS pattern is widespread, the shape is
 recognizable from the AST (or from a stable fingerprint of the generator
 `script` / `postProcess` body), and the resulting transformation maps onto
-runtime machinery we already have. Phase 4 shipped two instances of this:
+runtime machinery we already have. Two examples of this in action:
 dotted-path `json_extract` / `json_extract_array` (14 generators across
 `expo`, `expo-cli`, `pnpx`, `react-native`, `scarb`) and the new `suffix`
 transform that unlocked declarative output for template-literal concatenation.
@@ -116,8 +116,8 @@ with `schema_version: "1.0"` and one row per release. Each row records:
   bumps so older `BaselineRelease` consumers keep parsing.)
 - `native_providers`, `corrected_generators`, `hand_audit_required` — not
   derivable from the scanned specs alone; maintained manually per release.
-- **UX-9 additions** (carried in the same release row, parsed via the
-  flatten-extra map for forward compatibility):
+- **Coverage breakdown fields** (carried in the same release row, parsed via
+  the flatten-extra map for forward compatibility):
   `spec_files_total`, `commands_addressable`,
   `commands_(fully|partially|non)functional`,
   `requires_js_generators_(total|supported|unsupported)`,
@@ -126,8 +126,8 @@ with `schema_version: "1.0"` and one row per release. Each row records:
   per `js_runtime.kind` (`post_process`, `script_function`, `custom`) in
   schema 1.2 of `status --json`.
 
-`ghost-complete status --json` emits a `spec_counts` object whose UX-9
-Phase 0 keys mirror the new baseline fields one-to-one. The legacy keys
+`ghost-complete status --json` emits a `spec_counts` object whose keys
+mirror the new baseline fields one-to-one. The legacy keys
 (`total`, `fully_functional`, `partially_functional`, `embedded`,
 `filesystem_overrides`, `parse_errors`) are retained alongside for
 backwards compat. The schema_version field on the JSON output bumped from
@@ -200,11 +200,11 @@ see [`docs/ci-gates.md`](./ci-gates.md) for the full gate catalogue.
 
 ## The `_corrected_in` format extension
 
-Phase -1 discovered that the converter had silently emitted wrong completions
-for two patterns — `.substring(0, N)` / `.slice(0, N)` misconverted to
-`column_extract` (byte-offset mistaken for whitespace columns), and
-`JSON.parse` without a resolvable field access silently falling back to
-`json_extract: "name"`. Both were corrected by downgrading the affected
+The converter previously emitted wrong completions for two patterns —
+`.substring(0, N)` / `.slice(0, N)` misconverted to `column_extract`
+(byte-offset mistaken for whitespace columns), and `JSON.parse` without
+a resolvable field access silently falling back to `json_extract: "name"`.
+Both were corrected by downgrading the affected
 generators to `requires_js` until a proper fix lands, and a format-extension
 marker `_corrected_in: "vX.Y.Z"` was introduced so users can see which
 generators changed behaviour between releases.

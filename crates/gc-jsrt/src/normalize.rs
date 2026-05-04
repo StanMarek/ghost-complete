@@ -15,7 +15,9 @@
 //! is small (a few hundred suggestions) so this is comfortably under
 //! our latency budget.
 
-use crate::types::{JsDiagnostic, JsDiagnosticCode, JsRuntimeOutput, JsSuggestion};
+use crate::types::{
+    JsDiagnostic, JsDiagnosticCode, JsRuntimeOutput, JsRuntimeOutputPayload, JsSuggestion,
+};
 
 use rquickjs::{CatchResultExt, Ctx, Value};
 use serde_json::Value as Json;
@@ -106,17 +108,18 @@ pub(crate) fn normalize_value<'js>(ctx: &Ctx<'js>, value: Value<'js>) -> JsRunti
 /// Pure Rust normalization once we have a `serde_json::Value`. Split out
 /// for unit testing without spinning up QuickJS.
 pub(crate) fn normalize_json(json: Json) -> JsRuntimeOutput {
-    let mut output = JsRuntimeOutput::default();
+    let mut suggestions: Vec<JsSuggestion> = Vec::new();
+    let mut diagnostics: Vec<JsDiagnostic> = Vec::new();
 
     match json {
         Json::Null => {
-            output.diagnostics.push(JsDiagnostic {
+            diagnostics.push(JsDiagnostic {
                 code: JsDiagnosticCode::EmptyOutput,
                 message: "JS evaluation produced null".into(),
             });
         }
         Json::Bool(_) | Json::Number(_) => {
-            output.diagnostics.push(JsDiagnostic {
+            diagnostics.push(JsDiagnostic {
                 code: JsDiagnosticCode::InvalidShape,
                 message: format!(
                     "expected string / object / array, got {}",
@@ -124,23 +127,23 @@ pub(crate) fn normalize_json(json: Json) -> JsRuntimeOutput {
                 ),
             });
         }
-        Json::String(s) => match push_string(&mut output, s) {
+        Json::String(s) => match push_string(&mut suggestions, s) {
             Ok(()) => {}
-            Err(d) => output.diagnostics.push(d),
+            Err(d) => diagnostics.push(d),
         },
         Json::Array(arr) => {
             let oversized = arr.len() > MAX_SUGGESTIONS;
             let truncated_count = arr.len();
             for (idx, item) in arr.into_iter().enumerate() {
-                if output.suggestions.len() >= MAX_SUGGESTIONS {
+                if suggestions.len() >= MAX_SUGGESTIONS {
                     break;
                 }
-                if let Err(d) = push_array_item(&mut output, idx, item) {
-                    output.diagnostics.push(d);
+                if let Err(d) = push_array_item(&mut suggestions, &mut diagnostics, idx, item) {
+                    diagnostics.push(d);
                 }
             }
             if oversized {
-                output.diagnostics.push(JsDiagnostic {
+                diagnostics.push(JsDiagnostic {
                     code: JsDiagnosticCode::OversizedOutput,
                     message: format!(
                         "array of {truncated_count} items exceeded MAX_SUGGESTIONS \
@@ -148,25 +151,36 @@ pub(crate) fn normalize_json(json: Json) -> JsRuntimeOutput {
                     ),
                 });
             }
-            if output.suggestions.is_empty()
-                && !output
-                    .diagnostics
+            if suggestions.is_empty()
+                && !diagnostics
                     .iter()
                     .any(|d| d.code == JsDiagnosticCode::OversizedOutput)
             {
-                output.diagnostics.push(JsDiagnostic {
+                diagnostics.push(JsDiagnostic {
                     code: JsDiagnosticCode::EmptyOutput,
                     message: "JS array produced no suggestions".into(),
                 });
             }
         }
-        Json::Object(map) => match push_object(&mut output, map) {
+        Json::Object(map) => match push_object(&mut suggestions, map) {
             Ok(()) => {}
-            Err(d) => output.diagnostics.push(d),
+            Err(d) => diagnostics.push(d),
         },
     }
 
-    output
+    // Empty Suggestions(vec![]) and None payloads both signal "nothing to
+    // render" — collapse to None so downstream callers can rely on a
+    // populated Suggestions arm meaning at least one entry. Diagnostics
+    // remain attached to surface the reason.
+    let payload = if suggestions.is_empty() {
+        JsRuntimeOutputPayload::None
+    } else {
+        JsRuntimeOutputPayload::Suggestions(suggestions)
+    };
+    JsRuntimeOutput {
+        payload,
+        diagnostics,
+    }
 }
 
 fn primitive_kind(j: &Json) -> &'static str {
@@ -180,7 +194,7 @@ fn primitive_kind(j: &Json) -> &'static str {
     }
 }
 
-fn push_string(output: &mut JsRuntimeOutput, s: String) -> Result<(), JsDiagnostic> {
+fn push_string(suggestions: &mut Vec<JsSuggestion>, s: String) -> Result<(), JsDiagnostic> {
     if s.is_empty() {
         return Err(JsDiagnostic {
             code: JsDiagnosticCode::InvalidShape,
@@ -193,7 +207,7 @@ fn push_string(output: &mut JsRuntimeOutput, s: String) -> Result<(), JsDiagnost
             message: format!("suggestion name has {} bytes (max {MAX_NAME_LEN})", s.len()),
         });
     }
-    output.suggestions.push(JsSuggestion {
+    suggestions.push(JsSuggestion {
         name: s,
         description: None,
     });
@@ -201,19 +215,30 @@ fn push_string(output: &mut JsRuntimeOutput, s: String) -> Result<(), JsDiagnost
 }
 
 fn push_array_item(
-    output: &mut JsRuntimeOutput,
+    suggestions: &mut Vec<JsSuggestion>,
+    diagnostics: &mut Vec<JsDiagnostic>,
     idx: usize,
     item: Json,
 ) -> Result<(), JsDiagnostic> {
     match item {
-        Json::String(s) => push_string(output, s),
+        Json::String(s) => push_string(suggestions, s),
         Json::Object(map) => {
-            let mut tmp = JsRuntimeOutput::default();
-            push_object(&mut tmp, map)?;
-            // push_object emits at most one suggestion; keep diagnostics.
-            output.suggestions.extend(tmp.suggestions);
-            output.diagnostics.extend(tmp.diagnostics);
-            Ok(())
+            // push_object appends at most one suggestion; bubble the
+            // first hard error up but capture any soft warnings.
+            let before = suggestions.len();
+            match push_object(suggestions, map) {
+                Ok(()) => Ok(()),
+                Err(d) => {
+                    // Roll back any partial push so the suggestion vec
+                    // remains consistent with diagnostics. (Currently
+                    // push_object only pushes after every check, so
+                    // nothing to roll back, but the truncation is
+                    // future-proof against split-failure refactors.)
+                    suggestions.truncate(before);
+                    let _ = diagnostics;
+                    Err(d)
+                }
+            }
         }
         other => Err(JsDiagnostic {
             code: JsDiagnosticCode::InvalidShape,
@@ -226,7 +251,7 @@ fn push_array_item(
 }
 
 fn push_object(
-    output: &mut JsRuntimeOutput,
+    suggestions: &mut Vec<JsSuggestion>,
     mut map: serde_json::Map<String, Json>,
 ) -> Result<(), JsDiagnostic> {
     // Fig specs use `name` for the displayed text and `description`
@@ -296,7 +321,7 @@ fn push_object(
         }
     };
 
-    output.suggestions.push(JsSuggestion {
+    suggestions.push(JsSuggestion {
         name: raw_name,
         description,
     });
@@ -311,23 +336,23 @@ mod tests {
     #[test]
     fn string_value_becomes_one_suggestion() {
         let out = normalize_json(json!("hello"));
-        assert_eq!(out.suggestions.len(), 1);
-        assert_eq!(out.suggestions[0].name, "hello");
-        assert!(out.suggestions[0].description.is_none());
+        assert_eq!(out.suggestions().len(), 1);
+        assert_eq!(out.suggestions()[0].name, "hello");
+        assert!(out.suggestions()[0].description.is_none());
         assert!(out.diagnostics.is_empty());
     }
 
     #[test]
     fn empty_string_is_invalid_shape() {
         let out = normalize_json(json!(""));
-        assert!(out.suggestions.is_empty());
+        assert!(out.suggestions().is_empty());
         assert_eq!(out.diagnostics[0].code, JsDiagnosticCode::InvalidShape);
     }
 
     #[test]
     fn string_array_becomes_multiple_suggestions() {
         let out = normalize_json(json!(["a", "b", "c"]));
-        assert_eq!(out.suggestions.len(), 3);
+        assert_eq!(out.suggestions().len(), 3);
         assert!(out.diagnostics.is_empty());
     }
 
@@ -339,21 +364,21 @@ mod tests {
             {"displayName": "feat/x"},
             {"text": "release/1.0"}
         ]));
-        assert_eq!(out.suggestions.len(), 4);
-        assert_eq!(out.suggestions[0].name, "main");
+        assert_eq!(out.suggestions().len(), 4);
+        assert_eq!(out.suggestions()[0].name, "main");
         assert_eq!(
-            out.suggestions[0].description.as_deref(),
+            out.suggestions()[0].description.as_deref(),
             Some("primary branch")
         );
-        assert!(out.suggestions[1].description.is_none());
-        assert_eq!(out.suggestions[2].name, "feat/x");
-        assert_eq!(out.suggestions[3].name, "release/1.0");
+        assert!(out.suggestions()[1].description.is_none());
+        assert_eq!(out.suggestions()[2].name, "feat/x");
+        assert_eq!(out.suggestions()[3].name, "release/1.0");
     }
 
     #[test]
     fn object_without_name_is_invalid() {
         let out = normalize_json(json!({"description": "noname"}));
-        assert!(out.suggestions.is_empty());
+        assert!(out.suggestions().is_empty());
         assert_eq!(out.diagnostics[0].code, JsDiagnosticCode::InvalidShape);
     }
 
@@ -361,7 +386,7 @@ mod tests {
     fn boolean_or_number_root_is_invalid() {
         for v in [json!(true), json!(42)] {
             let out = normalize_json(v);
-            assert!(out.suggestions.is_empty());
+            assert!(out.suggestions().is_empty());
             assert_eq!(out.diagnostics[0].code, JsDiagnosticCode::InvalidShape);
         }
     }
@@ -369,14 +394,14 @@ mod tests {
     #[test]
     fn null_is_empty_output() {
         let out = normalize_json(Json::Null);
-        assert!(out.suggestions.is_empty());
+        assert!(out.suggestions().is_empty());
         assert_eq!(out.diagnostics[0].code, JsDiagnosticCode::EmptyOutput);
     }
 
     #[test]
     fn empty_array_is_empty_output() {
         let out = normalize_json(json!([]));
-        assert!(out.suggestions.is_empty());
+        assert!(out.suggestions().is_empty());
         assert_eq!(out.diagnostics[0].code, JsDiagnosticCode::EmptyOutput);
     }
 
@@ -386,7 +411,7 @@ mod tests {
             .map(|i| json!(format!("s{i}")))
             .collect();
         let out = normalize_json(Json::Array(arr));
-        assert_eq!(out.suggestions.len(), MAX_SUGGESTIONS);
+        assert_eq!(out.suggestions().len(), MAX_SUGGESTIONS);
         assert_eq!(out.diagnostics[0].code, JsDiagnosticCode::OversizedOutput);
     }
 
@@ -394,7 +419,7 @@ mod tests {
     fn oversized_name_is_diagnostic() {
         let big = "x".repeat(MAX_NAME_LEN + 1);
         let out = normalize_json(json!(big));
-        assert!(out.suggestions.is_empty());
+        assert!(out.suggestions().is_empty());
         assert_eq!(out.diagnostics[0].code, JsDiagnosticCode::OversizedOutput);
     }
 
@@ -403,7 +428,7 @@ mod tests {
         // serde_json never sees a function — JSON.stringify renders it
         // as `null`. We reject mixed arrays element-by-element.
         let out = normalize_json(json!(["ok", null]));
-        assert_eq!(out.suggestions.len(), 1);
+        assert_eq!(out.suggestions().len(), 1);
         assert_eq!(out.diagnostics[0].code, JsDiagnosticCode::InvalidShape);
     }
 }
