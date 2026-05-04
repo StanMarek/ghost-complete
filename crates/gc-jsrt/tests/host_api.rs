@@ -969,12 +969,14 @@ async fn custom_execute_shell_command_below_floor_skips_spawn_and_returns_timeou
     // Burn nearly the entire JS budget before issuing the shell call so
     // the call sees < 5ms remaining and short-circuits without spawning.
     // The JS busy-loop polls Date.now() so it's bounded by wall-clock
-    // rather than instruction count.
+    // rather than instruction count. Burn target = deadline - 1ms so
+    // even release-mode loop overhead (well under one Date.now() tick)
+    // leaves remaining well under SHELL_TIMEOUT_FLOOR.
     let out = worker
         .evaluate(
             "(async () => { \
                 const start = Date.now(); \
-                while (Date.now() - start < 95) { /* burn budget */ } \
+                while (Date.now() - start < 99) { /* burn budget */ } \
                 try { \
                     await executeShellCommand(['echo', 'x']); \
                     return [{ name: 'no-error' }]; \
