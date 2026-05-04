@@ -102,7 +102,10 @@ impl ConfiguredGhostProcess {
                         data.extend_from_slice(&buf[..n]);
                         cvar.notify_all();
                     }
-                    Err(_) => break,
+                    Err(e) => {
+                        eprintln!("ConfiguredGhostProcess reader IO error: {e}");
+                        break;
+                    }
                 }
             }
         });
@@ -478,79 +481,24 @@ fn test_multiple_commands() {
     proc.exit_with_code(0);
 }
 
-/// End-to-end popup smoke test.
-///
-/// Verifies the entire UX pipeline: OSC 7770 buffer-report (from simulated
-/// shell integration) -> defer until the terminal display advances -> popup
-/// renders with git-spec subcommand text -> ESC dismisses the popup.
-///
-/// Architecture notes:
-/// - The harness wraps `/bin/sh` (no shell integration). Without shell
-///   integration, the shell will NOT emit OSC 7770 buffer-report sequences,
-///   so the parser's `command_buffer` stays empty, and `handler.trigger()`
-///   would dismiss immediately (see gc-pty/src/handler.rs: `if
-///   buffer.is_empty() { return; }`).
-/// - To simulate shell integration without installing it, we have the
-///   inner shell print OSC 7770 itself: `printf '\033]7770;4;git \007'`.
-///   The shell executes printf, emits the raw ANSI bytes to its stdout,
-///   which flow through gc-parser's VT state machine and set
-///   `command_buffer = "git "` with cursor = 4. This also sets
-///   `buffer_dirty = true`, which Task B (stdout -> terminal loop) notices.
-///   OSC-only reports are intentionally deferred until later display output
-///   proves the terminal has advanced/redrawn after the report.
-/// - No manual Ctrl+/ is needed in this test. The typed shell command around
-///   the OSC report contains literal default trigger characters, so it can
-///   leave a pending trigger before the shell emits the OSC bytes. The trailing
-///   space in the reported `git ` buffer is shell output consumed by gc-parser;
-///   it is not typed through `InputHandler::process_key_hidden`. The
-///   no-pending debounce test below avoids typed trigger characters and covers
-///   the pure OSC-only dirty-buffer path.
-///
-/// Assumptions:
-///   - Embedded `git` spec declares well-known subcommands such as status,
-///     commit, branch, checkout, clone, and add, and is always embedded via
-///     include_str!.
-///   - The OSC payload's trailing space updates parser state only; it is not a
-///     typed auto-trigger character.
-///   - `clear_popup` emits DECSC (`\x1b7`) followed by blanking writes and
-///     DECRC (`\x1b8`). DECRC appearing after our ESC mark = dismissed.
-///   - Default dismiss keybind is ESC (see Keybindings::default()).
-///
-/// Determinism: positive readiness waits use byte-level polling with
-/// condvar-based wakeups and bounded timeouts. Startup settling and negative
-/// guards still use bounded sleeps/timeouts where the test needs to prove
-/// absence before redraw.
+/// OSC 7770 buffer-report defers popup until a later display epoch; ESC dismisses it.
 #[test]
 fn test_popup_renders_and_dismisses_on_git_trigger() {
     let mut proc = GhostProcess::spawn();
 
-    // Settle the shell so our printf doesn't race with any banner output.
     proc.send_line("printf '%s%s\\n' smoke_popup_ready_ marker");
     proc.expect_output("smoke_popup_ready_marker");
 
-    // Mark the pre-trigger offset — popup render bytes must appear after.
     let mark_before_trigger = proc.output_len();
 
-    // Inject OSC 7770 via shell printf. Format:
-    //     OSC ] 7770 ; <cursor-char-offset> ; <buffer> BEL
-    //     \x1b]7770;4;git \x07
-    // The shell executes printf, emits the raw bytes to stdout, gc-parser
-    // consumes them and sets command_buffer = "git " with cursor = 4.
-    // The buffer_dirty flag causes Task B to defer the trigger until a later
-    // display epoch.
-    //
-    // Keep the shell command blocked after the OSC write. If the command
-    // exits immediately, the shell prints a new prompt, and the proxy now
-    // correctly tears down the popup before forwarding that prompt output.
+    // `read _ghost_popup_hold` keeps the shell blocked after the OSC write so
+    // shell output does not race the visible-popup pipeline.
     proc.send_line(r"printf '\033]7770;4;git \007'; read _ghost_popup_hold");
 
     assert_osc_only_report_defers_popup(&proc, mark_before_trigger, "git popup trigger");
 
     let mark_before_redraw = advance_display_after_osc_only_report(&mut proc);
 
-    // A popup render includes DECSC (`\x1b7` = save cursor). Seeing it after
-    // mark_before_redraw proves that the OSC 7770 -> later display epoch ->
-    // render_popup pipeline ran.
     let popup_rendered = proc.wait_for_bytes_after(
         POPUP_RENDER_MARKER,
         mark_before_redraw,
@@ -569,11 +517,6 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
     }
     assert_redraw_marker_precedes_popup(&proc, mark_before_redraw, "git popup trigger");
 
-    // Assert the popup contains git subcommand text. We accept any of a
-    // handful of well-known git subcommands because the exact ordering on
-    // the first page depends on nucleo's empty-query ordering and the
-    // spec's declared order. Tolerating several known-good names keeps the
-    // test deterministic across future spec updates.
     let snapshot_after_popup = proc.output_snapshot();
     let popup_slice = &snapshot_after_popup[mark_before_trigger..];
     let popup_text = String::from_utf8_lossy(popup_slice);
@@ -593,15 +536,10 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
         popup_text,
     );
 
-    // Mark offset before dismiss — dismissal bytes must appear after.
     let mark_before_esc = proc.output_len();
 
-    // Send a lone ESC (0x1B). The input parser treats a lone ESC at end
-    // of buffer as KeyEvent::Escape, which dispatches dismiss().
     proc.write_raw(&[0x1B]);
 
-    // clear_popup emits DECSC + movement + blanks + DECRC. The DECRC
-    // (`\x1b8`) appearing after the ESC mark is the dismiss signal.
     let dismissed = proc.wait_for_bytes_after(
         POPUP_RESTORE_MARKER,
         mark_before_esc,
@@ -619,8 +557,6 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
         );
     }
 
-    // Release the blocking `read` used to keep shell output from racing the
-    // visible-popup dismissal path.
     proc.send_line("");
 
     proc.exit_with_code(0);
@@ -709,6 +645,43 @@ fn test_osc_only_report_without_pending_trigger_waits_for_debounce_after_redraw(
         );
     }
     assert_redraw_marker_precedes_popup(&proc, mark_before_redraw, "no-pending debounce");
+
+    proc.send_line("");
+    proc.exit_with_code(0);
+}
+
+#[test]
+fn test_osc_only_report_with_delay_zero_renders_after_redraw() {
+    let mut proc = ConfiguredGhostProcess::spawn_with_config("[trigger]\ndelay_ms = 0\n");
+
+    proc.send_line("echo${IFS}smoke_delay_zero_ready");
+    proc.expect_output("smoke_delay_zero_ready");
+    wait_for_output_quiet(&proc, Duration::from_millis(150), Duration::from_secs(5));
+
+    let mark_before_trigger = proc.output_len();
+
+    proc.send_line(r"printf${IFS}'\033]7770;4;git\040\007';read${IFS}_gc_smoke_gate");
+
+    assert_osc_only_report_defers_popup(&proc, mark_before_trigger, "delay_zero defer");
+
+    let mark_before_redraw = advance_display_after_osc_only_report(&mut proc);
+
+    let popup_rendered = proc.wait_for_bytes_after(
+        POPUP_RENDER_MARKER,
+        mark_before_redraw,
+        Duration::from_secs(5),
+    );
+    if !popup_rendered {
+        let snapshot = proc.output_snapshot();
+        let since_redraw = &snapshot[mark_before_redraw..];
+        panic!(
+            "Popup did not render after display advanced with delay_ms = 0.\n\
+             Bytes since redraw mark ({} bytes, lossy UTF-8):\n{:?}",
+            since_redraw.len(),
+            String::from_utf8_lossy(since_redraw),
+        );
+    }
+    assert_redraw_marker_precedes_popup(&proc, mark_before_redraw, "delay_zero defer");
 
     proc.send_line("");
     proc.exit_with_code(0);

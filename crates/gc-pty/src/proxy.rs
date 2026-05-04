@@ -543,13 +543,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             };
 
             // Feed bytes through the VT parser to track terminal state
-            let (
-                needs_cpr,
-                display_dirty,
-                viewport_scrolls,
-                latest_buffer_epoch,
-                latest_buffer_generation,
-            ) = {
+            let (needs_cpr, display_dirty, viewport_scrolls, latest_buffer_report) = {
                 let _snapshot_guard = match trigger_snapshot_gate_b.lock() {
                     Ok(guard) => guard,
                     Err(e) => {
@@ -578,8 +572,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     events.needs_cpr,
                     events.display_dirty,
                     events.viewport_scrolls,
-                    events.latest_buffer_epoch,
-                    events.latest_buffer_generation,
+                    events.latest_buffer_report,
                 )
             };
 
@@ -681,14 +674,8 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 }
             }
 
-            // Handle shell buffer updates in Task B instead of Task A so trigger/debounce
-            // decisions see the parser's updated buffer. OSC-only reports may be deferred
-            // until a later display epoch to avoid rendering before the terminal redraws.
-            if let Some(latest_buffer_epoch) = latest_buffer_epoch {
-                let Some(buffer_generation) = latest_buffer_generation else {
-                    tracing::warn!("buffer report missing generation in stdout task");
-                    break;
-                };
+            // Run in Task B so we observe the parser's post-OSC buffer state.
+            if let Some((latest_buffer_epoch, buffer_generation)) = latest_buffer_report {
                 let display_after_latest_buffer = display_epoch > latest_buffer_epoch;
                 let action = {
                     let mut h = match handler_for_stdout.lock() {
@@ -755,7 +742,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         }
                     }
                     ResolvedBufferDirtyAction::NotifyDebounce => debounce_notify_b.notify_one(),
-                    ResolvedBufferDirtyAction::None => {}
+                    ResolvedBufferDirtyAction::NoOp => {}
                 }
             }
 
@@ -813,7 +800,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         }
                     }
                     ResolvedBufferDirtyAction::NotifyDebounce => debounce_notify_b.notify_one(),
-                    ResolvedBufferDirtyAction::None => {}
+                    ResolvedBufferDirtyAction::NoOp => {}
                 }
             }
 
@@ -850,8 +837,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     defer_cwd_trigger_until_buffer_display(
                         &mut deferred_buffer_dirty,
                         &mut state,
-                        latest_buffer_epoch,
-                        latest_buffer_generation,
+                        latest_buffer_report,
                         display_epoch,
                     )
                 } else {
@@ -1120,8 +1106,10 @@ struct PtyReadEvents {
     needs_cpr: bool,
     display_dirty: bool,
     viewport_scrolls: u16,
-    latest_buffer_epoch: Option<u64>,
-    latest_buffer_generation: Option<u64>,
+    /// (display_epoch, buffer_generation) of the latest buffer report seen in
+    /// this read. Tied as a pair so the type system rules out the impossible
+    /// "epoch without generation" state.
+    latest_buffer_report: Option<(u64, u64)>,
 }
 
 fn process_pty_read(
@@ -1131,6 +1119,12 @@ fn process_pty_read(
     mut next_buffer_generation: impl FnMut() -> u64,
 ) -> PtyReadEvents {
     let mut events = PtyReadEvents::default();
+    // Feed one byte at a time so each take_*_dirty flag is attributed to a
+    // distinct display_epoch. `parser.process_bytes(bytes)` would coalesce a
+    // mid-slice OSC 7770 buffer report with the display bytes that follow it
+    // into the same epoch, which re-introduces the OSC-only render race the
+    // defer-until-redraw logic exists to prevent. This deliberately defeats
+    // vte::Parser::advance's advance_ground fast path; do not "simplify" it.
     for byte in bytes {
         parser.process_bytes(std::slice::from_ref(byte));
         let state = parser.state_mut();
@@ -1146,8 +1140,7 @@ fn process_pty_read(
         }
 
         if state.take_buffer_dirty() {
-            events.latest_buffer_epoch = Some(*display_epoch);
-            events.latest_buffer_generation = Some(next_buffer_generation());
+            events.latest_buffer_report = Some((*display_epoch, next_buffer_generation()));
         }
     }
     events
@@ -1173,6 +1166,10 @@ impl DebounceState {
     }
 
     fn invalidate_for_forwarded_input(&mut self) {
+        // Skip the bump while a deferred report is pending —
+        // resolve_deferred_buffer_dirty requires current_generation ==
+        // pending.generation, and bumping here would silently drop the
+        // deferred trigger when display_epoch advances.
         if self.deferred_generation.is_some() {
             return;
         }
@@ -1200,8 +1197,12 @@ impl DebounceState {
         self.notified_generation
     }
 
-    fn can_fire_generation(&self, generation: u64) -> bool {
+    fn is_current_generation(&self, generation: u64) -> bool {
         self.current_generation == generation
+    }
+
+    fn can_fire_generation(&self, generation: u64) -> bool {
+        self.is_current_generation(generation)
             && self.notified_generation == Some(generation)
             && self.deferred_generation.is_none()
     }
@@ -1230,44 +1231,13 @@ enum BufferDirtyAction {
 enum ResolvedBufferDirtyAction {
     Trigger,
     NotifyDebounce,
-    None,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum DebounceFireDecision {
-    Fire,
-    Skip,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum DebounceContinuationDecision {
-    Apply,
-    Drop,
+    NoOp,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum AsyncOverlayGateDecision {
     Render,
     Blocked,
-}
-
-fn debounce_fire_decision(state: &DebounceState, generation: u64) -> DebounceFireDecision {
-    if state.can_fire_generation(generation) {
-        DebounceFireDecision::Fire
-    } else {
-        DebounceFireDecision::Skip
-    }
-}
-
-fn debounce_continuation_decision(
-    state: &DebounceState,
-    generation: u64,
-) -> DebounceContinuationDecision {
-    if state.can_fire_generation(generation) {
-        DebounceContinuationDecision::Apply
-    } else {
-        DebounceContinuationDecision::Drop
-    }
 }
 
 fn async_overlay_gate_decision(state: &DebounceState) -> AsyncOverlayGateDecision {
@@ -1348,11 +1318,11 @@ fn apply_buffer_dirty_action(
                 generation: buffer_generation,
             });
             debounce_state.defer_generation(buffer_generation);
-            ResolvedBufferDirtyAction::None
+            ResolvedBufferDirtyAction::NoOp
         }
         BufferDirtyAction::Ignore => {
             clear_deferred_buffer_dirty(deferred, debounce_state);
-            ResolvedBufferDirtyAction::None
+            ResolvedBufferDirtyAction::NoOp
         }
     }
 }
@@ -1369,8 +1339,7 @@ fn clear_deferred_buffer_dirty(
 fn defer_cwd_trigger_until_buffer_display(
     deferred: &mut Option<DeferredBufferDirty>,
     debounce_state: &mut DebounceState,
-    latest_buffer_epoch: Option<u64>,
-    latest_buffer_generation: Option<u64>,
+    latest_buffer_report: Option<(u64, u64)>,
     display_epoch: u64,
 ) -> bool {
     if let Some(pending) = deferred.as_mut() {
@@ -1378,9 +1347,7 @@ fn defer_cwd_trigger_until_buffer_display(
         return true;
     }
 
-    let (Some(buffer_epoch), Some(buffer_generation)) =
-        (latest_buffer_epoch, latest_buffer_generation)
-    else {
+    let Some((buffer_epoch, buffer_generation)) = latest_buffer_report else {
         return false;
     };
     if display_epoch > buffer_epoch {
@@ -1404,24 +1371,28 @@ fn resolve_deferred_buffer_dirty(
     debounce_suppressed: bool,
 ) -> ResolvedBufferDirtyAction {
     let Some(pending) = *deferred else {
-        return ResolvedBufferDirtyAction::None;
+        return ResolvedBufferDirtyAction::NoOp;
     };
     if display_epoch <= pending.display_epoch {
-        return ResolvedBufferDirtyAction::None;
+        return ResolvedBufferDirtyAction::NoOp;
     }
 
     *deferred = None;
-    let generation_is_current = debounce_state.current_generation == pending.generation;
+    let generation_is_current = debounce_state.is_current_generation(pending.generation);
     debounce_state.clear_deferred_generation(pending.generation);
     if !generation_is_current {
-        return ResolvedBufferDirtyAction::None;
+        return ResolvedBufferDirtyAction::NoOp;
     }
     match pending.action {
         DeferredBufferDirtyAction::TriggerNow => {
             if auto_trigger_enabled {
                 ResolvedBufferDirtyAction::Trigger
             } else {
-                ResolvedBufferDirtyAction::None
+                tracing::debug!(
+                    generation = pending.generation,
+                    "deferred trigger discarded after redraw: auto_trigger_enabled=false"
+                );
+                ResolvedBufferDirtyAction::NoOp
             }
         }
         DeferredBufferDirtyAction::NotifyDebounce => {
@@ -1429,7 +1400,13 @@ fn resolve_deferred_buffer_dirty(
                 debounce_state.notify_generation(pending.generation);
                 ResolvedBufferDirtyAction::NotifyDebounce
             } else {
-                ResolvedBufferDirtyAction::None
+                tracing::debug!(
+                    generation = pending.generation,
+                    auto_trigger_enabled,
+                    debounce_suppressed,
+                    "deferred debounce notify discarded after redraw"
+                );
+                ResolvedBufferDirtyAction::NoOp
             }
         }
     }
@@ -1563,7 +1540,7 @@ async fn debounce_loop(
                     continue;
                 }
             };
-            let fire_decision = {
+            let can_fire = {
                 let state = match debounce_state.lock() {
                     Ok(state) => state,
                     Err(e) => {
@@ -1571,9 +1548,9 @@ async fn debounce_loop(
                         continue;
                     }
                 };
-                debounce_fire_decision(&state, generation)
+                state.can_fire_generation(generation)
             };
-            if fire_decision == DebounceFireDecision::Skip {
+            if !can_fire {
                 continue;
             }
             let mut h = match handler.lock() {
@@ -1656,7 +1633,7 @@ async fn debounce_loop(
                         continue;
                     }
                 };
-                let continuation_decision = {
+                let can_continue = {
                     let state = match debounce_state.lock() {
                         Ok(state) => state,
                         Err(e) => {
@@ -1666,9 +1643,9 @@ async fn debounce_loop(
                             continue;
                         }
                     };
-                    debounce_continuation_decision(&state, generation)
+                    state.can_fire_generation(generation)
                 };
-                if continuation_decision == DebounceContinuationDecision::Drop {
+                if !can_continue {
                     match handler.lock() {
                         Ok(mut h) => h.abort_dynamic_task_and_clear_ctx(),
                         Err(e) => tracing::warn!(
@@ -1971,12 +1948,12 @@ mod tests {
         let action = buffer_dirty_action(false, 150, true, true, false);
         assert_eq!(
             apply_buffer_dirty_action(&mut deferred, &mut debounce_state, 3, 1, action),
-            ResolvedBufferDirtyAction::None
+            ResolvedBufferDirtyAction::NoOp
         );
         assert_eq!(deferred, None);
         assert_eq!(
             resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 4, true, true),
-            ResolvedBufferDirtyAction::None
+            ResolvedBufferDirtyAction::NoOp
         );
     }
 
@@ -1989,7 +1966,7 @@ mod tests {
 
         assert_eq!(
             apply_buffer_dirty_action(&mut deferred, &mut debounce_state, 8, generation, action),
-            ResolvedBufferDirtyAction::None
+            ResolvedBufferDirtyAction::NoOp
         );
         assert_eq!(
             deferred,
@@ -2001,7 +1978,7 @@ mod tests {
         );
         assert_eq!(
             resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 8, true, false),
-            ResolvedBufferDirtyAction::None
+            ResolvedBufferDirtyAction::NoOp
         );
         assert_eq!(
             resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 9, true, false),
@@ -2038,14 +2015,14 @@ mod tests {
                 second_generation,
                 BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::NotifyDebounce),
             ),
-            ResolvedBufferDirtyAction::None
+            ResolvedBufferDirtyAction::NoOp
         );
         assert!(!debounce_state.can_fire_generation(first_generation));
         assert!(!debounce_state.can_fire_generation(second_generation));
 
         assert_eq!(
             resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 4, true, false),
-            ResolvedBufferDirtyAction::None
+            ResolvedBufferDirtyAction::NoOp
         );
         assert!(!debounce_state.can_fire_generation(first_generation));
 
@@ -2058,25 +2035,19 @@ mod tests {
     }
 
     #[test]
-    fn debounce_fire_decision_rejects_generation_invalidated_by_forwarded_input() {
+    fn can_fire_generation_rejects_generation_invalidated_by_forwarded_input() {
         let mut debounce_state = DebounceState::default();
         let generation = debounce_state.next_buffer_generation();
         debounce_state.notify_generation(generation);
-        assert_eq!(
-            debounce_fire_decision(&debounce_state, generation),
-            DebounceFireDecision::Fire
-        );
+        assert!(debounce_state.can_fire_generation(generation));
 
         debounce_state.invalidate_for_forwarded_input();
 
-        assert_eq!(
-            debounce_fire_decision(&debounce_state, generation),
-            DebounceFireDecision::Skip
-        );
+        assert!(!debounce_state.can_fire_generation(generation));
     }
 
     #[test]
-    fn debounce_fire_decision_rejects_prior_generation_when_newer_report_is_deferred() {
+    fn can_fire_generation_rejects_prior_generation_when_newer_report_is_deferred() {
         let mut deferred = None;
         let mut debounce_state = DebounceState::default();
         let first_generation = debounce_state.next_buffer_generation();
@@ -2091,17 +2062,10 @@ mod tests {
                 second_generation,
                 BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::NotifyDebounce),
             ),
-            ResolvedBufferDirtyAction::None
+            ResolvedBufferDirtyAction::NoOp
         );
 
-        assert_eq!(
-            debounce_fire_decision(&debounce_state, first_generation),
-            DebounceFireDecision::Skip
-        );
-        assert_eq!(
-            debounce_continuation_decision(&debounce_state, first_generation),
-            DebounceContinuationDecision::Drop
-        );
+        assert!(!debounce_state.can_fire_generation(first_generation));
     }
 
     #[test]
@@ -2136,7 +2100,7 @@ mod tests {
                 generation,
                 BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::TriggerNow),
             ),
-            ResolvedBufferDirtyAction::None
+            ResolvedBufferDirtyAction::NoOp
         );
 
         debounce_state.invalidate_for_forwarded_input();
@@ -2161,7 +2125,7 @@ mod tests {
                 generation,
                 BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::NotifyDebounce),
             ),
-            ResolvedBufferDirtyAction::None
+            ResolvedBufferDirtyAction::NoOp
         );
 
         debounce_state.invalidate_for_forwarded_input();
@@ -2172,6 +2136,74 @@ mod tests {
         );
         assert_eq!(deferred, None);
         assert!(debounce_state.can_fire_generation(generation));
+    }
+
+    #[test]
+    fn forwarded_input_invalidates_debounce_excludes_only_cpr() {
+        // CPR responses are emitted by the terminal in reply to our own
+        // queries — they must not bump current_generation, otherwise the
+        // matching deferred trigger would be silently dropped.
+        assert!(!forwarded_input_invalidates_debounce(
+            &KeyEvent::CursorPositionReport(1, 1)
+        ));
+        assert!(forwarded_input_invalidates_debounce(&KeyEvent::Printable(
+            'a'
+        )));
+        assert!(forwarded_input_invalidates_debounce(&KeyEvent::Tab));
+        assert!(forwarded_input_invalidates_debounce(&KeyEvent::Enter));
+        assert!(forwarded_input_invalidates_debounce(&KeyEvent::Backspace));
+        assert!(forwarded_input_invalidates_debounce(&KeyEvent::ArrowUp));
+        assert!(forwarded_input_invalidates_debounce(&KeyEvent::Raw(vec![
+            0x1b, b'A'
+        ])));
+    }
+
+    #[test]
+    fn apply_buffer_dirty_replaces_prior_deferred_with_newer_generation() {
+        // Two OSC 7770 reports arriving back-to-back without a redraw between
+        // them must not leak the older generation in deferred state. The
+        // newer entry wins, and resolving on a later display epoch must fire
+        // the newer action (NotifyDebounce here, not the older TriggerNow).
+        let mut deferred = None;
+        let mut debounce_state = DebounceState::default();
+
+        let first_generation = debounce_state.next_buffer_generation();
+        assert_eq!(
+            apply_buffer_dirty_action(
+                &mut deferred,
+                &mut debounce_state,
+                3,
+                first_generation,
+                BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::TriggerNow),
+            ),
+            ResolvedBufferDirtyAction::NoOp
+        );
+
+        let second_generation = debounce_state.next_buffer_generation();
+        assert_eq!(
+            apply_buffer_dirty_action(
+                &mut deferred,
+                &mut debounce_state,
+                3,
+                second_generation,
+                BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::NotifyDebounce),
+            ),
+            ResolvedBufferDirtyAction::NoOp
+        );
+        assert_eq!(
+            deferred,
+            Some(DeferredBufferDirty {
+                action: DeferredBufferDirtyAction::NotifyDebounce,
+                display_epoch: 3,
+                generation: second_generation,
+            })
+        );
+        assert_eq!(debounce_state.deferred_generation, Some(second_generation));
+
+        assert_eq!(
+            resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 4, true, false),
+            ResolvedBufferDirtyAction::NotifyDebounce
+        );
     }
 
     #[test]
@@ -2189,8 +2221,10 @@ mod tests {
             },
         );
 
-        assert_eq!(events.latest_buffer_epoch, Some(display_epoch));
-        assert_eq!(events.latest_buffer_generation, Some(1));
+        assert_eq!(display_epoch, 0, "pure OSC must not advance display epoch");
+        assert_eq!(events.latest_buffer_report, Some((0, 1)));
+        assert!(!events.display_dirty);
+        assert_eq!(events.viewport_scrolls, 0);
         assert_eq!(next_generation, 1);
         assert!(!parser.state_mut().take_buffer_dirty());
     }
@@ -2212,15 +2246,14 @@ mod tests {
                 current_generation,
                 BufferDirtyAction::Ignore,
             ),
-            ResolvedBufferDirtyAction::None
+            ResolvedBufferDirtyAction::NoOp
         );
         assert_eq!(deferred, None);
 
         assert!(defer_cwd_trigger_until_buffer_display(
             &mut deferred,
             &mut debounce_state,
-            Some(4),
-            Some(current_generation),
+            Some((4, current_generation)),
             4,
         ));
         assert_eq!(
@@ -2235,7 +2268,7 @@ mod tests {
 
         assert_eq!(
             resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 4, true, false),
-            ResolvedBufferDirtyAction::None
+            ResolvedBufferDirtyAction::NoOp
         );
         assert_eq!(
             resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 5, true, false),
@@ -2260,7 +2293,6 @@ mod tests {
         assert!(defer_cwd_trigger_until_buffer_display(
             &mut deferred,
             &mut debounce_state,
-            None,
             None,
             4,
         ));
@@ -2292,7 +2324,7 @@ mod tests {
 
         assert_eq!(
             resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 5, true, true),
-            ResolvedBufferDirtyAction::None
+            ResolvedBufferDirtyAction::NoOp
         );
         assert_eq!(deferred, None);
     }
@@ -2318,7 +2350,7 @@ mod tests {
         assert_eq!(deferred, None);
         assert_eq!(
             resolve_deferred_buffer_dirty(&mut deferred, &mut debounce_state, 2, true, false),
-            ResolvedBufferDirtyAction::None
+            ResolvedBufferDirtyAction::NoOp
         );
     }
 
@@ -2334,9 +2366,10 @@ mod tests {
         );
 
         assert!(events.display_dirty);
-        assert_eq!(events.latest_buffer_epoch, Some(display_epoch));
+        let (latest_epoch, _) = events.latest_buffer_report.expect("buffer report");
+        assert_eq!(latest_epoch, display_epoch);
         assert!(
-            display_epoch <= events.latest_buffer_epoch.unwrap(),
+            display_epoch <= latest_epoch,
             "display bytes before the latest OSC report must not satisfy that report"
         );
     }
@@ -2353,7 +2386,8 @@ mod tests {
         );
 
         assert!(events.display_dirty);
-        assert!(display_epoch > events.latest_buffer_epoch.unwrap());
+        let (latest_epoch, _) = events.latest_buffer_report.expect("buffer report");
+        assert!(display_epoch > latest_epoch);
     }
 
     #[test]
@@ -2373,10 +2407,10 @@ mod tests {
 
         assert!(events.display_dirty);
         assert_eq!(display_epoch, 1);
-        assert_eq!(events.latest_buffer_epoch, Some(1));
-        assert_eq!(events.latest_buffer_generation, Some(2));
+        assert_eq!(events.latest_buffer_report, Some((1, 2)));
         assert_eq!(next_generation, 2);
-        assert!(display_epoch <= events.latest_buffer_epoch.unwrap());
+        let (latest_epoch, _) = events.latest_buffer_report.unwrap();
+        assert!(display_epoch <= latest_epoch);
     }
 
     #[test]
@@ -2396,10 +2430,10 @@ mod tests {
 
         assert!(events.display_dirty);
         assert_eq!(display_epoch, 2);
-        assert_eq!(events.latest_buffer_epoch, Some(1));
-        assert_eq!(events.latest_buffer_generation, Some(2));
+        assert_eq!(events.latest_buffer_report, Some((1, 2)));
         assert_eq!(next_generation, 2);
-        assert!(display_epoch > events.latest_buffer_epoch.unwrap());
+        let (latest_epoch, _) = events.latest_buffer_report.unwrap();
+        assert!(display_epoch > latest_epoch);
     }
 
     use gc_parser::TerminalParser;
