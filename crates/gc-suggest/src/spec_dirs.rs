@@ -48,11 +48,11 @@ pub fn partition_spec_dirs(configured: &[String]) -> SpecDirPartition {
 /// Resolve spec directories from config, with tilde expansion.
 ///
 /// If `configured` is non-empty, validate each entry and use the valid
-/// subset; emit a `tracing::warn!` for each invalid entry. If every
-/// configured entry is invalid, fall through to auto-detection.
+/// subset exactly; emit a `tracing::warn!` for each invalid entry. If
+/// every configured entry is invalid, fall through to auto-detection.
 ///
-/// Auto-detection chain (first hit that's an existing directory wins;
-/// accumulates into a list in this order):
+/// Auto-detection chain (accumulates existing filesystem directories in
+/// this order):
 ///   1. `~/.config/ghost-complete/specs` (installed by `ghost-complete install`)
 ///   2. `<current_exe_dir>/specs` (development / `cargo run`)
 ///   3. `./specs` (cwd, development)
@@ -60,11 +60,30 @@ pub fn partition_spec_dirs(configured: &[String]) -> SpecDirPartition {
 ///      `gc_suggest::embedded::EMBEDDED_SPECS` via
 ///      [`embedded::materialize_embedded_specs`])
 ///
-/// The embedded fallback is what closes the
-/// `cargo install ghost-complete && ghost-complete` (no `install` step) case
-/// — without it the proxy would start with zero specs and silently degrade
-/// autocomplete.
+/// In the auto-detected path, the embedded directory is appended as the
+/// lowest-precedence source, not only when every filesystem source is
+/// missing. This closes both the `cargo install ghost-complete &&
+/// ghost-complete` case and the Homebrew / installer-upgrade case where
+/// `~/.config/ghost-complete/specs` exists but is stale and lacks specs
+/// added by the newer binary. Explicit `paths.spec_dirs` remains an exact
+/// override.
 pub fn resolve_spec_dirs(configured: &[String]) -> Vec<PathBuf> {
+    resolve_spec_dirs_with_embedded(
+        configured,
+        auto_detect_spec_dirs,
+        embedded::materialize_embedded_specs,
+    )
+}
+
+fn resolve_spec_dirs_with_embedded<A, E>(
+    configured: &[String],
+    auto_detect: A,
+    materialize_embedded: E,
+) -> Vec<PathBuf>
+where
+    A: FnOnce() -> Vec<PathBuf>,
+    E: FnOnce() -> Option<PathBuf>,
+{
     if !configured.is_empty() {
         let partition = partition_spec_dirs(configured);
         for bad in &partition.invalid {
@@ -80,7 +99,24 @@ pub fn resolve_spec_dirs(configured: &[String]) -> Vec<PathBuf> {
         tracing::warn!("all configured spec_dirs are invalid — falling back to auto-detection");
     }
 
-    // Auto-detect: check config dir, next to binary, then cwd
+    let mut dirs = auto_detect();
+
+    if let Some(embedded_dir) = materialize_embedded() {
+        if !dirs.iter().any(|dir| dir == &embedded_dir) {
+            dirs.push(embedded_dir);
+        }
+    } else if dirs.is_empty() {
+        tracing::warn!(
+            "no spec directory available — autocomplete will fall back \
+             to filesystem/history/$PATH only. Run `ghost-complete \
+             install` to deploy the bundled completion specs."
+        );
+    }
+
+    dirs
+}
+
+fn auto_detect_spec_dirs() -> Vec<PathBuf> {
     let mut dirs = Vec::new();
 
     // Config directory (installed by `ghost-complete install`)
@@ -104,23 +140,6 @@ pub fn resolve_spec_dirs(configured: &[String]) -> Vec<PathBuf> {
     let cwd_specs = PathBuf::from("specs");
     if cwd_specs.is_dir() {
         dirs.push(cwd_specs);
-    }
-
-    if dirs.is_empty() {
-        // Last-ditch: materialize the binary-embedded spec set into a cache
-        // dir and use that. This is what makes `cargo install
-        // ghost-complete` followed by `ghost-complete` (without the install
-        // subcommand) actually load the 700+ shipped specs instead of
-        // running with an empty `SpecStore`.
-        if let Some(embedded_dir) = embedded::materialize_embedded_specs() {
-            dirs.push(embedded_dir);
-        } else {
-            tracing::warn!(
-                "no spec directory available — autocomplete will fall back \
-                 to filesystem/history/$PATH only. Run `ghost-complete \
-                 install` to deploy the bundled completion specs."
-            );
-        }
     }
 
     dirs
@@ -221,6 +240,40 @@ mod tests {
             known.iter().any(|cmd| result.store.get(cmd).is_some()),
             "expected at least one of {known:?} to be loaded from the \
              embedded fallback; the fallback may be empty"
+        );
+    }
+
+    #[test]
+    fn embedded_fallback_supplements_stale_installed_specs() {
+        let installed = tempfile::TempDir::new().unwrap();
+        let embedded = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            installed.path().join("z.json"),
+            r#"{"name":"z","description":"stale installed copy"}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            embedded.path().join("aws.json"),
+            r#"{"name":"aws","subcommands":[{"name":"sso"}]}"#,
+        )
+        .unwrap();
+
+        let dirs: Vec<String> = Vec::new();
+        let installed_path = installed.path().to_path_buf();
+        let embedded_path = embedded.path().to_path_buf();
+        let resolved =
+            resolve_spec_dirs_with_embedded(&dirs, || vec![installed_path], || Some(embedded_path));
+        let result = crate::specs::SpecStore::load_from_dirs(&resolved).unwrap();
+
+        assert!(
+            result.store.get("z").is_some(),
+            "installed specs should still be loaded"
+        );
+        assert!(
+            result.store.get("aws").is_some(),
+            "embedded specs must supplement stale installed specs so upgraded \
+             binaries expose newly shipped specs without requiring \
+             `ghost-complete install`"
         );
     }
 }

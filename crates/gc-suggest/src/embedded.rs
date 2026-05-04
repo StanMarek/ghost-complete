@@ -16,12 +16,12 @@
 //! specs and got no error — autocomplete silently degraded to filesystem +
 //! history + `$PATH` only.
 //!
-//! This module makes the embedded specs the **runtime fallback** for the
-//! spec loader. When the on-disk auto-detection chain in
-//! [`crate::spec_dirs::resolve_spec_dirs`] finds no usable directory, the
-//! embedded specs are materialized (lazily, once per binary version) into
-//! `~/.cache/ghost-complete/embedded-specs/` and that path is appended to
-//! the resolved list. From the spec loader's perspective it's just another
+//! This module makes the embedded specs the **runtime safety net** for the
+//! spec loader. In the auto-detected spec-dir path,
+//! [`crate::spec_dirs::resolve_spec_dirs`] materializes the embedded specs
+//! (lazily, once per binary version) into
+//! `~/.cache/ghost-complete/embedded-specs/` and appends that path at the
+//! lowest precedence. From the spec loader's perspective it's just another
 //! directory full of JSON; no special-cased "embedded mode" logic is needed
 //! downstream.
 //!
