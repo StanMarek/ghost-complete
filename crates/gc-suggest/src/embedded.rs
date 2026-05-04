@@ -16,12 +16,12 @@
 //! specs and got no error — autocomplete silently degraded to filesystem +
 //! history + `$PATH` only.
 //!
-//! This module makes the embedded specs the **runtime fallback** for the
-//! spec loader. When the on-disk auto-detection chain in
-//! [`crate::spec_dirs::resolve_spec_dirs`] finds no usable directory, the
-//! embedded specs are materialized (lazily, once per binary version) into
-//! `~/.cache/ghost-complete/embedded-specs/` and that path is appended to
-//! the resolved list. From the spec loader's perspective it's just another
+//! This module makes the embedded specs the **runtime safety net** for the
+//! spec loader. In the auto-detected spec-dir path,
+//! [`crate::spec_dirs::resolve_spec_dirs`] materializes the embedded specs
+//! (lazily, once per binary version) into
+//! `~/.cache/ghost-complete/embedded-specs/` and appends that path at the
+//! lowest precedence. From the spec loader's perspective it's just another
 //! directory full of JSON; no special-cased "embedded mode" logic is needed
 //! downstream.
 //!
@@ -45,12 +45,12 @@ use std::sync::atomic::{AtomicU64, Ordering};
 // `build.rs` for details.
 include!(concat!(env!("OUT_DIR"), "/embedded_specs.rs"));
 
-/// Path under the user's home where embedded specs are materialized when no
-/// other spec directory is available. Kept separate from the `~/.config`
-/// install location so a fresh `cargo install` user gets specs without
-/// `ghost-complete install`, while still letting an installed user's
-/// `~/.config/ghost-complete/specs` take precedence (auto-detection in
-/// `spec_dirs::resolve_spec_dirs` checks that path first).
+/// Path under the user's home where embedded specs are materialized for the
+/// auto-detected spec-dir path. Kept separate from the `~/.config` install
+/// location so a fresh `cargo install` user gets specs without
+/// `ghost-complete install`, while still letting discovered filesystem dirs
+/// such as `~/.config/ghost-complete/specs` take precedence because the
+/// resolver appends this path after them.
 pub fn embedded_cache_dir() -> Option<PathBuf> {
     dirs::home_dir().map(|h| {
         h.join(".cache")

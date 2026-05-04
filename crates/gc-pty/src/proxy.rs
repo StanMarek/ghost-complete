@@ -630,16 +630,22 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                             break;
                         }
                     };
-                    if h.has_pending_trigger() {
+                    let had_pending_trigger = h.has_pending_trigger();
+                    let action = buffer_dirty_action(
+                        had_pending_trigger,
+                        delay_ms,
+                        h.auto_trigger_enabled(),
+                        h.is_debounce_suppressed(),
+                    );
+                    if had_pending_trigger {
                         h.clear_trigger_request();
-                        if h.auto_trigger_enabled() {
-                            h.trigger(&parser_for_stdout, &mut render_buf);
+                    }
+                    match action {
+                        BufferDirtyAction::Trigger => {
+                            h.trigger(&parser_for_stdout, &mut render_buf)
                         }
-                    } else if delay_ms > 0
-                        && h.auto_trigger_enabled()
-                        && !h.is_debounce_suppressed()
-                    {
-                        debounce_notify_b.notify_one();
+                        BufferDirtyAction::Debounce => debounce_notify_b.notify_one(),
+                        BufferDirtyAction::Ignore => {}
                     }
                     h.overlay_write_ticket()
                 };
@@ -904,6 +910,35 @@ fn poll_until(
                 return None;
             }
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BufferDirtyAction {
+    Trigger,
+    Debounce,
+    Ignore,
+}
+
+fn buffer_dirty_action(
+    has_pending_trigger: bool,
+    delay_ms: u64,
+    auto_trigger_enabled: bool,
+    debounce_suppressed: bool,
+) -> BufferDirtyAction {
+    if !auto_trigger_enabled {
+        return BufferDirtyAction::Ignore;
+    }
+    if has_pending_trigger {
+        return BufferDirtyAction::Trigger;
+    }
+    if debounce_suppressed {
+        return BufferDirtyAction::Ignore;
+    }
+    if delay_ms == 0 {
+        BufferDirtyAction::Trigger
+    } else {
+        BufferDirtyAction::Debounce
     }
 }
 
@@ -1262,6 +1297,46 @@ mod tests {
             &Terminal::Unknown("foot".into()),
             true
         ));
+    }
+
+    #[test]
+    fn buffer_dirty_action_triggers_immediately_when_delay_zero() {
+        assert_eq!(
+            buffer_dirty_action(false, 0, true, false),
+            BufferDirtyAction::Trigger
+        );
+    }
+
+    #[test]
+    fn buffer_dirty_action_ignores_when_auto_trigger_disabled() {
+        assert_eq!(
+            buffer_dirty_action(false, 0, false, false),
+            BufferDirtyAction::Ignore
+        );
+    }
+
+    #[test]
+    fn buffer_dirty_action_ignores_when_debounce_suppressed() {
+        assert_eq!(
+            buffer_dirty_action(false, 0, true, true),
+            BufferDirtyAction::Ignore
+        );
+    }
+
+    #[test]
+    fn buffer_dirty_action_debounces_when_delay_positive() {
+        assert_eq!(
+            buffer_dirty_action(false, 150, true, false),
+            BufferDirtyAction::Debounce
+        );
+    }
+
+    #[test]
+    fn buffer_dirty_action_prefers_pending_trigger() {
+        assert_eq!(
+            buffer_dirty_action(true, 150, true, true),
+            BufferDirtyAction::Trigger
+        );
     }
 
     use gc_parser::TerminalParser;

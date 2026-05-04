@@ -92,7 +92,7 @@ Override default file paths.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `spec_dirs` | string[] | `[]` | Directories to load completion specs from. Supports `~` expansion. When empty, the loader auto-detects in this order: `~/.config/ghost-complete/specs/`, then `<exe-dir>/specs`, then `./specs`, then the embedded specs in the binary. When set, the configured directories are used instead — but if all of them are missing or unreadable, the loader falls back to the same auto-detection chain. |
+| `spec_dirs` | string[] | `[]` | Directories to load completion specs from. Supports `~` expansion. When empty, the loader auto-detects in this order: `~/.config/ghost-complete/specs/`, then `<exe-dir>/specs`, then `./specs`, with the binary's embedded specs appended as a lowest-precedence safety net. When set, the configured directories are used instead — but if all of them are missing or not directories, the loader falls back to the same auto-detection chain. Read errors from existing configured directories are reported by the spec loader and do not trigger auto-detection fallback. |
 
 ```toml
 [paths]
