@@ -836,6 +836,16 @@ fn run_status_inner(
     )?;
 
     let unique_entries = outcome.file_scan.spec_files_total;
+    let actionable_conflicts = outcome
+        .command_alias_conflict_details
+        .iter()
+        .filter(|c| c.kind != "directory_precedence")
+        .count();
+    let directory_overrides = outcome
+        .command_alias_conflict_details
+        .iter()
+        .filter(|c| c.kind == "directory_precedence")
+        .count();
     writeln!(out, "\nCommand addressability:")?;
     writeln!(out, "  Unique entries:             {}", unique_entries)?;
     writeln!(
@@ -845,9 +855,16 @@ fn run_status_inner(
     )?;
     writeln!(
         out,
-        "  Conflicts:                  {}  (filename/name mismatches that lose)",
-        outcome.command_alias_conflicts
+        "  Conflicts:                  {}  (duplicate/name-stem aliases that lose)",
+        actionable_conflicts
     )?;
+    if directory_overrides > 0 {
+        writeln!(
+            out,
+            "  Directory overrides:        {}  (earlier spec_dir wins)",
+            directory_overrides
+        )?;
+    }
 
     writeln!(out, "\nJS runtime:")?;
     if outcome.js_runtime_enabled {
@@ -1354,6 +1371,31 @@ mod tests {
         assert_eq!(
             outcome.command_alias_conflicts, 1,
             "fallback copy is rejected as a DirectoryPrecedence conflict"
+        );
+    }
+
+    #[test]
+    fn status_human_counts_directory_precedence_as_override() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let primary_dir = tmp.path().join("primary-specs");
+        let fallback_dir = tmp.path().join("fallback-specs");
+        std::fs::create_dir_all(&primary_dir).unwrap();
+        std::fs::create_dir_all(&fallback_dir).unwrap();
+        std::fs::write(primary_dir.join("git.json"), r#"{"name":"git"}"#).unwrap();
+        std::fs::write(fallback_dir.join("git.json"), r#"{"name":"git"}"#).unwrap();
+
+        let cfg = write_config_for_dirs(&[&primary_dir, &fallback_dir], &tmp);
+        let mut out = Vec::new();
+        run_status_inner(Some(cfg.to_str().unwrap()), &mut out).unwrap();
+        let txt = String::from_utf8_lossy(&out);
+
+        assert!(
+            txt.contains("Conflicts:                  0"),
+            "directory precedence should not render as an actionable conflict:\n{txt}"
+        );
+        assert!(
+            txt.contains("Directory overrides:        1"),
+            "directory precedence should be visible as an override:\n{txt}"
         );
     }
 
