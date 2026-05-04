@@ -105,12 +105,22 @@ where
         if !dirs.iter().any(|dir| dir == &embedded_dir) {
             dirs.push(embedded_dir);
         }
-    } else if dirs.is_empty() {
-        tracing::warn!(
-            "no spec directory available — autocomplete will fall back \
-             to filesystem/history/$PATH only. Run `ghost-complete \
-             install` to deploy the bundled completion specs."
-        );
+    } else {
+        match dirs.is_empty() {
+            true => {
+                tracing::warn!(
+                    "no spec directory available — autocomplete will fall back \
+                     to filesystem/history/$PATH only. Run `ghost-complete \
+                     install` to deploy the bundled completion specs."
+                );
+            }
+            false => {
+                tracing::warn!(
+                    "embedded completion specs unavailable; using only \
+                     auto-detected filesystem spec dirs"
+                );
+            }
+        }
     }
 
     dirs
@@ -157,6 +167,46 @@ fn expand_tilde(path: &str) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::{Arc, Mutex};
+
+    use tracing_subscriber::fmt::MakeWriter;
+
+    #[derive(Clone)]
+    struct CaptureWriter(Arc<Mutex<Vec<u8>>>);
+
+    impl std::io::Write for CaptureWriter {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            self.0
+                .lock()
+                .expect("capture buffer poisoned")
+                .extend_from_slice(buf);
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    impl<'a> MakeWriter<'a> for CaptureWriter {
+        type Writer = CaptureWriter;
+
+        fn make_writer(&'a self) -> Self::Writer {
+            self.clone()
+        }
+    }
+
+    fn install_log_capture() -> (Arc<Mutex<Vec<u8>>>, tracing::subscriber::DefaultGuard) {
+        let captured = Arc::new(Mutex::new(Vec::<u8>::new()));
+        let writer = CaptureWriter(Arc::clone(&captured));
+        let subscriber = tracing_subscriber::fmt()
+            .with_writer(writer)
+            .with_max_level(tracing::Level::TRACE)
+            .with_ansi(false)
+            .finish();
+        let guard = tracing::subscriber::set_default(subscriber);
+        (captured, guard)
+    }
 
     #[test]
     fn partition_spec_dirs_separates_valid_and_invalid() {
@@ -248,32 +298,59 @@ mod tests {
         let installed = tempfile::TempDir::new().unwrap();
         let embedded = tempfile::TempDir::new().unwrap();
         std::fs::write(
-            installed.path().join("z.json"),
-            r#"{"name":"z","description":"stale installed copy"}"#,
+            installed.path().join("git.json"),
+            r#"{"name":"git","subcommands":[{"name":"installed-copy"}]}"#,
         )
         .unwrap();
         std::fs::write(
-            embedded.path().join("aws.json"),
-            r#"{"name":"aws","subcommands":[{"name":"sso"}]}"#,
+            embedded.path().join("git.json"),
+            r#"{"name":"git","subcommands":[{"name":"embedded-copy"}]}"#,
         )
         .unwrap();
 
         let dirs: Vec<String> = Vec::new();
         let installed_path = installed.path().to_path_buf();
         let embedded_path = embedded.path().to_path_buf();
-        let resolved =
-            resolve_spec_dirs_with_embedded(&dirs, || vec![installed_path], || Some(embedded_path));
-        let result = crate::specs::SpecStore::load_from_dirs(&resolved).unwrap();
-
-        assert!(
-            result.store.get("z").is_some(),
-            "installed specs should still be loaded"
+        let resolved = resolve_spec_dirs_with_embedded(
+            &dirs,
+            || vec![installed_path.clone()],
+            || Some(embedded_path.clone()),
         );
+        assert_eq!(
+            resolved,
+            vec![installed_path.clone(), embedded_path.clone()],
+            "embedded specs must be appended after installed specs as the \
+             lowest-precedence source"
+        );
+
+        let result = crate::specs::SpecStore::load_from_dirs(&resolved).unwrap();
+        let git = result.store.get("git").expect("git spec must load");
+
+        assert_eq!(
+            git.subcommands[0].name, "installed-copy",
+            "installed specs must keep precedence when embedded ships the \
+             same filename"
+        );
+    }
+
+    #[test]
+    fn embedded_materialization_failure_warns_even_with_auto_detected_dirs() {
+        let (captured, _guard) = install_log_capture();
+        let installed = tempfile::TempDir::new().unwrap();
+        let installed_path = installed.path().to_path_buf();
+
+        let dirs: Vec<String> = Vec::new();
+        let resolved =
+            resolve_spec_dirs_with_embedded(&dirs, || vec![installed_path.clone()], || None);
+
+        assert_eq!(resolved, vec![installed_path]);
+        let logs = String::from_utf8_lossy(&captured.lock().expect("capture buffer poisoned"))
+            .into_owned();
         assert!(
-            result.store.get("aws").is_some(),
-            "embedded specs must supplement stale installed specs so upgraded \
-             binaries expose newly shipped specs without requiring \
-             `ghost-complete install`"
+            logs.contains(
+                "embedded completion specs unavailable; using only auto-detected filesystem spec dirs"
+            ),
+            "expected supplemental embedded fallback failure to be logged, got:\n{logs}"
         );
     }
 }

@@ -45,12 +45,12 @@ use std::sync::atomic::{AtomicU64, Ordering};
 // `build.rs` for details.
 include!(concat!(env!("OUT_DIR"), "/embedded_specs.rs"));
 
-/// Path under the user's home where embedded specs are materialized when no
-/// other spec directory is available. Kept separate from the `~/.config`
-/// install location so a fresh `cargo install` user gets specs without
-/// `ghost-complete install`, while still letting an installed user's
-/// `~/.config/ghost-complete/specs` take precedence (auto-detection in
-/// `spec_dirs::resolve_spec_dirs` checks that path first).
+/// Path under the user's home where embedded specs are materialized for the
+/// auto-detected spec-dir path. Kept separate from the `~/.config` install
+/// location so a fresh `cargo install` user gets specs without
+/// `ghost-complete install`, while still letting discovered filesystem dirs
+/// such as `~/.config/ghost-complete/specs` take precedence because the
+/// resolver appends this path after them.
 pub fn embedded_cache_dir() -> Option<PathBuf> {
     dirs::home_dir().map(|h| {
         h.join(".cache")

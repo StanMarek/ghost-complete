@@ -1308,6 +1308,22 @@ mod tests {
     }
 
     #[test]
+    fn buffer_dirty_action_ignores_when_auto_trigger_disabled() {
+        assert_eq!(
+            buffer_dirty_action(false, 0, false, false),
+            BufferDirtyAction::Ignore
+        );
+    }
+
+    #[test]
+    fn buffer_dirty_action_ignores_when_debounce_suppressed() {
+        assert_eq!(
+            buffer_dirty_action(false, 0, true, true),
+            BufferDirtyAction::Ignore
+        );
+    }
+
+    #[test]
     fn buffer_dirty_action_debounces_when_delay_positive() {
         assert_eq!(
             buffer_dirty_action(false, 150, true, false),
