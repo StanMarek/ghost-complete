@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-05-04
+
+### Changed
+
+- Fixed automatic popup triggering (#105).
+
 ## [0.12.1] - 2026-05-04
 
 ### Fixed
@@ -821,6 +827,7 @@ silently changed behaviour.
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.12.2]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.12.2
 [0.12.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.12.1
 [0.12.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.12.0
 [0.11.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.11.0
