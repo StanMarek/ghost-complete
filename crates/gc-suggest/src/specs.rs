@@ -4057,10 +4057,9 @@ mod tests {
     //
     // These tests pin the contract that a spec is reachable by its
     // filename stem (the "canonical id") and, when free, by its
-    // declared `name` as a secondary alias. Without this guarantee the
-    // 6 corpus files whose `name` collides with another spec's stem
-    // (kubecolor → kubectl, j → autojump, etc.) silently disappear from
-    // the on-shell command set.
+    // declared `name` as a secondary alias. Synthetic collision fixtures
+    // below pin the behavior that used to protect wrapper specs whose
+    // names overlapped another command's stem.
     // ------------------------------------------------------------------
 
     #[test]
@@ -4392,12 +4391,8 @@ mod tests {
             store.entries().len()
         );
 
-        // The 6 historically-lost commands MUST address by stem.
-        // These are the spec files whose `name` collides with another
-        // spec's stem in the embedded corpus (kubecolor wants
-        // `kubectl`, j wants `autojump`, etc.). The legacy name-keyed
-        // HashMap silently dropped them; the stem is now the canonical
-        // command key.
+        // Wrapper commands that historically collided with underlying
+        // command names must remain addressable by their filename stem.
         for stem in ["kubecolor", "br", "j", "nativescript", "tns", "sta"] {
             assert!(
                 store.get(stem).is_some(),
@@ -4405,14 +4400,13 @@ mod tests {
             );
         }
 
-        // Conflicts: at minimum the 6 NameMatchesOtherStem entries
-        // above plus duplicate-name pairs (e.g. kubectl: 2 specs,
-        // ns: 3 specs). Concrete count is corpus-dependent — guard
-        // against zero.
+        // The committed corpus should not ship duplicate-name or
+        // name-vs-stem collisions. DirectoryPrecedence remains covered by
+        // override-specific tests.
         assert!(
-            !store.conflicts().is_empty(),
-            "embedded corpus has known stem/name collisions; conflict list \
-             must be non-empty"
+            store.conflicts().is_empty(),
+            "embedded corpus should have no alias conflicts: {:?}",
+            store.conflicts()
         );
     }
 }

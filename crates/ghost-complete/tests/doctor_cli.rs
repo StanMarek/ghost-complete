@@ -45,16 +45,10 @@ fn doctor_exits_nonzero_when_config_is_malformed() {
 #[test]
 fn doctor_with_clean_config_runs_to_completion() {
     // Empty (default) config: keybindings/theme parse, embedded specs load,
-    // JS runtime defaults to on. The exit code depends on the embedded
-    // corpus's runtime-metadata health — the converted v0.12.x corpus
-    // currently ships ~1697 `script_function` / `custom` generators that
-    // lack the `self_contained:true` proof, so the runtime-metadata
-    // check Fails and doctor exits 1. That's the truthful state the
-    // engine actually dispatches against (see `check_embedded_runtime_metadata`
-    // and `is_supported_script_generator` in gc-suggest::engine). The CRITICAL
-    // assertion this test guards against is that doctor doesn't panic
-    // or hang — both 0 (corpus clean) and 1 (corpus defect surfaced) are
-    // valid outcomes; only an absent / negative status code is a regression.
+    // JS runtime defaults to on. The converted v0.12.x corpus currently
+    // ships some `script_function` / `custom` generators that lack the
+    // `self_contained:true` proof; those are expected unsupported coverage
+    // and should remain OK rather than making a clean local install noisy.
     let tmp = tempfile::TempDir::new().unwrap();
     let cfg = tmp.path().join("config.toml");
     std::fs::write(&cfg, "").unwrap();
@@ -66,11 +60,10 @@ fn doctor_with_clean_config_runs_to_completion() {
         .output()
         .expect("failed to spawn ghost-complete");
 
-    let code = output.status.code();
-    assert!(
-        matches!(code, Some(0) | Some(1)),
-        "doctor with empty config must exit 0 (clean corpus) or 1 (corpus \
-         defect surfaced) — never crash or signal-exit.\nexit: {code:?}\n\
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "doctor with empty config must exit 0; unsupported JS coverage should not warn or fail.\n\
          stdout:\n{}\nstderr:\n{}",
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr),

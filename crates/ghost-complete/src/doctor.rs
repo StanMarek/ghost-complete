@@ -305,9 +305,10 @@ fn count_corrected_generators_in_spec(spec: &gc_suggest::CompletionSpec) -> usiz
 /// Check 7: Corrected generators. Walks the loaded SpecStore and counts
 /// generators whose prior conversion was mis-lowered and has since been
 /// corrected (see CHANGELOG.md's "Corrected" sections and the
-/// `_corrected_in` lifecycle in docs/SPECS.md). If any are found, emits a
-/// Warn result so users who upgrade see _why_ some completions changed
-/// behaviour.
+/// `_corrected_in` lifecycle in docs/SPECS.md). This is informational:
+/// the affected generators are already disabled by the spec loader, so a
+/// fresh local install should not report a health warning for known corpus
+/// accounting.
 ///
 /// Re-loads specs with the same resolver `check_specs` uses — cheaper than
 /// plumbing the store out of Check 6, and keeps the two checks independent
@@ -344,7 +345,7 @@ fn check_corrections_for_store(store: &gc_suggest::SpecStore) -> CheckResult {
         .collect();
 
     if affected_specs.is_empty() {
-        return CheckResult::ok("No corrected-generator warnings");
+        return CheckResult::ok("Corrected generators: none");
     }
 
     // Stable, alphabetical spec ordering so repeated runs produce identical
@@ -367,8 +368,8 @@ fn check_corrections_for_store(store: &gc_suggest::SpecStore) -> CheckResult {
         String::new()
     };
 
-    CheckResult::warn(format!(
-        "Warning: {total_generators} generator(s) across {spec_count} spec(s) were \
+    CheckResult::ok(format!(
+        "Corrected generators: {total_generators} generator(s) across {spec_count} spec(s) were \
          previously returning incorrect completions and are now disabled pending \
          proper handling. See CHANGELOG. Affected specs: {preview_str}{tail}"
     ))
@@ -424,10 +425,12 @@ fn check_alias_conflicts_for_store(store: &gc_suggest::SpecStore) -> CheckResult
         s
     }
 
-    let mut msg = format!(
-        "Spec addressability: {} conflict(s) detected.",
-        conflicts.len()
-    );
+    let actionable_count = dup.len() + cross.len();
+    let mut msg = if actionable_count == 0 {
+        "Spec addressability: no duplicate/name-stem conflicts.".to_string()
+    } else {
+        format!("Spec addressability: {actionable_count} duplicate/name-stem conflict(s) detected.")
+    };
     msg.push_str(&render_section(
         "DuplicateName",
         "two specs declare the same `name`; rename one in its `name` field, or accept the loser stays addressable only by stem",
@@ -486,92 +489,124 @@ fn check_js_runtime(config: &gc_config::GhostConfig) -> CheckResult {
     }
 }
 
-/// Walk a parsed spec and yield the count of `requires_js: true` generators
-/// the engine cannot dispatch:
+#[derive(Debug, Default)]
+struct RuntimeMetadataCounts {
+    malformed: usize,
+    unsupported_unproven: usize,
+}
+
+/// Walk a parsed spec and yield counts for `requires_js: true` generators
+/// that are either malformed or intentionally unsupported by the engine:
 ///   * missing `js_runtime` metadata entirely, OR
 ///   * `js_runtime.source` is empty/whitespace, OR
 ///   * `js_runtime.kind` is `post_process` AND neither `script` nor
 ///     `script_template` is attached (the engine has no shell stdout
-///     to feed into the post-processor), OR
+///     to feed into the post-processor),
 ///   * `js_runtime.kind` is `script_function` / `custom` AND
-///     `self_contained != true`. Mirrors the engine's
-///     `is_supported_script_generator` predicate (gc-suggest::engine) —
-///     the converter must prove a non-PostProcess source has no
-///     bundler/minifier helper closure (`__webpack_require__`,
-///     `__exports__`, etc.) before QuickJS can run it. Without that
-///     proof the engine silently skips the generator at dispatch time,
-///     so the doctor must surface it here as a corpus defect rather
-///     than passing the spec while the engine drops the generator on
-///     the floor.
+///     `self_contained != true`.
 ///
-/// A non-zero count therefore indicates a corpus defect: an incomplete
-/// converter regen (missing/empty `js_runtime`), a hand-edited spec, a
-/// `post_process` kind that lost its `script` / `script_template`, or
-/// — most commonly in the v0.12.x corpus — a `script_function` /
-/// `custom` generator the converter has not yet proven self-contained.
-/// All four surface as a doctor Fail so the operator sees the same
-/// number the runtime is silently dropping.
-fn count_missing_js_runtime_in_spec(spec: &CompletionSpec) -> usize {
-    fn missing(g: &GeneratorSpec) -> bool {
+/// The first three are malformed corpus entries and should fail doctor.
+/// The last class is tracked as unsupported coverage: the engine skips it
+/// because the converter has not proven the JS source self-contained, but
+/// those entries are expected in the current corpus baseline and should
+/// remain an OK health result.
+///
+/// Mirrors the engine's `is_supported_script_generator` predicate
+/// (gc-suggest::engine), but preserves the fatal-vs-unsupported distinction
+/// for operator-facing health checks.
+fn count_runtime_metadata_issues_in_spec(spec: &CompletionSpec) -> RuntimeMetadataCounts {
+    enum Issue {
+        Malformed,
+        UnsupportedUnproven,
+    }
+
+    fn issue(g: &GeneratorSpec) -> Option<Issue> {
         if !g.requires_js {
-            return false;
+            return None;
         }
         match g.js_runtime.as_ref() {
-            None => true,
+            None => Some(Issue::Malformed),
             Some(rt) => {
                 if rt.source.trim().is_empty() {
-                    return true;
+                    return Some(Issue::Malformed);
                 }
-                // Mirror gc-suggest::engine::is_supported_script_generator:
-                // post_process is dispatchable iff an accompanying
-                // `script` / `script_template` is present (the engine
-                // has shell stdout to feed into the post-processor).
-                // script_function/custom additionally require
-                // `self_contained:true`. Without those guarantees the
-                // engine refuses to dispatch — so the doctor must count
-                // these as silently-skipped.
                 match rt.kind {
-                    JsRuntimeKind::PostProcess => g.script.is_none() && g.script_template.is_none(),
-                    JsRuntimeKind::ScriptFunction | JsRuntimeKind::Custom => !rt.self_contained,
+                    JsRuntimeKind::PostProcess => {
+                        if g.script.is_none() && g.script_template.is_none() {
+                            Some(Issue::Malformed)
+                        } else {
+                            None
+                        }
+                    }
+                    JsRuntimeKind::ScriptFunction | JsRuntimeKind::Custom => {
+                        if rt.self_contained {
+                            None
+                        } else {
+                            Some(Issue::UnsupportedUnproven)
+                        }
+                    }
                 }
             }
         }
     }
-    fn count_in_args(args: &[ArgSpec]) -> usize {
-        args.iter()
-            .flat_map(|a| a.generators.iter())
-            .filter(|g| missing(g))
-            .count()
+
+    fn add_issue(counts: &mut RuntimeMetadataCounts, issue: Issue) {
+        match issue {
+            Issue::Malformed => counts.malformed += 1,
+            Issue::UnsupportedUnproven => counts.unsupported_unproven += 1,
+        }
     }
-    fn count_in_options(options: &[OptionSpec]) -> usize {
-        options
+
+    fn count_in_args(args: &[ArgSpec], counts: &mut RuntimeMetadataCounts) {
+        for issue in args
+            .iter()
+            .flat_map(|a| a.generators.iter())
+            .filter_map(issue)
+        {
+            add_issue(counts, issue);
+        }
+    }
+
+    fn count_in_options(options: &[OptionSpec], counts: &mut RuntimeMetadataCounts) {
+        for issue in options
             .iter()
             .flat_map(|o| o.args.as_ref().into_iter().chain(o.extra_args.iter()))
             .flat_map(|a| a.generators.iter())
-            .filter(|g| missing(g))
-            .count()
+            .filter_map(issue)
+        {
+            add_issue(counts, issue);
+        }
     }
-    let mut total = count_in_args(&spec.args) + count_in_options(&spec.options);
+
+    let mut counts = RuntimeMetadataCounts::default();
+    count_in_args(&spec.args, &mut counts);
+    count_in_options(&spec.options, &mut counts);
     let mut stack: Vec<&SubcommandSpec> = spec.subcommands.iter().collect();
     while let Some(sub) = stack.pop() {
-        total += count_in_args(&sub.args);
-        total += count_in_options(&sub.options);
+        count_in_args(&sub.args, &mut counts);
+        count_in_options(&sub.options, &mut counts);
         stack.extend(sub.subcommands.iter());
     }
-    total
+    counts
+}
+
+/// Backwards-compatible helper for tests that only care whether the spec has
+/// fatal malformed runtime metadata.
+fn count_missing_js_runtime_in_spec(spec: &CompletionSpec) -> usize {
+    count_runtime_metadata_issues_in_spec(spec).malformed
+}
+
+/// Count `requires_js: true` generators the engine will skip because their
+/// `script_function` / `custom` source has not been proven self-contained.
+fn count_unproven_js_runtime_in_spec(spec: &CompletionSpec) -> usize {
+    count_runtime_metadata_issues_in_spec(spec).unsupported_unproven
 }
 
 /// Embedded specs runtime-source check. Walks every entry in the
-/// SpecStore (including embedded fallback) and asserts every requires_js
-/// generator can actually be dispatched by the engine (mirrors
-/// `is_supported_script_generator` in gc-suggest::engine — see
-/// [`count_missing_js_runtime_in_spec`] for the full predicate, which
-/// is the source of truth for the four undispatchable classes:
-/// missing js_runtime metadata, empty `js_runtime.source`,
-/// `post_process` without an accompanying `script`/`script_template`,
-/// or `script_function`/`custom` without `self_contained:true`). A
-/// non-zero result indicates an incomplete converter regen or a
-/// hand-edited spec.
+/// SpecStore (including embedded fallback). Malformed JS runtime metadata
+/// fails the check; unproven `script_function` / `custom` generators are
+/// expected unsupported coverage and are also visible in `ghost-complete
+/// status`, so they remain an OK health result.
 fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> CheckResult {
     let mut affected: Vec<(&str, usize)> = store
         .iter()
@@ -584,17 +619,52 @@ fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> C
             }
         })
         .collect();
+    let mut unproven: Vec<(&str, usize)> = store
+        .iter()
+        .filter_map(|(name, spec)| {
+            let n = count_unproven_js_runtime_in_spec(spec);
+            if n == 0 {
+                None
+            } else {
+                Some((name, n))
+            }
+        })
+        .collect();
 
-    if affected.is_empty() {
+    if affected.is_empty() && unproven.is_empty() {
         return CheckResult::ok(
             "Embedded specs: every requires_js generator has dispatchable js_runtime metadata",
         );
     }
 
     affected.sort_by_key(|(name, _)| *name);
+    unproven.sort_by_key(|(name, _)| *name);
+    const PREVIEW_LIMIT: usize = 5;
+
+    if affected.is_empty() {
+        let total: usize = unproven.iter().map(|(_, n)| *n).sum();
+        let spec_count = unproven.len();
+        let preview: Vec<&str> = unproven
+            .iter()
+            .take(PREVIEW_LIMIT)
+            .map(|(name, _)| *name)
+            .collect();
+        let preview_str = preview.join(", ");
+        let tail = if spec_count > PREVIEW_LIMIT {
+            format!(", ...and {} more", spec_count - PREVIEW_LIMIT)
+        } else {
+            String::new()
+        };
+        return CheckResult::ok(format!(
+            "Embedded specs: {total} requires_js generator(s) across {spec_count} spec(s) are \
+             unsupported and will be skipped (`script_function`/`custom` without \
+             `self_contained:true`). This is tracked by `ghost-complete status`. \
+             Affected: {preview_str}{tail}"
+        ));
+    }
+
     let total: usize = affected.iter().map(|(_, n)| *n).sum();
     let spec_count = affected.len();
-    const PREVIEW_LIMIT: usize = 5;
     let preview: Vec<&str> = affected
         .iter()
         .take(PREVIEW_LIMIT)
@@ -610,9 +680,8 @@ fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> C
     CheckResult::fail(format!(
         "Embedded specs: {total} requires_js generator(s) across {spec_count} spec(s) cannot be \
          dispatched (missing js_runtime metadata, empty `js_runtime.source`, `post_process` kind \
-         without an accompanying `script`/`script_template`, or `script_function`/`custom` kind \
-         without `self_contained:true`). Indicates an incomplete converter regen or a hand-edited \
-         spec. Affected: {preview_str}{tail}"
+         without an accompanying `script`/`script_template`). Indicates an incomplete converter \
+         regen or a hand-edited spec. Affected: {preview_str}{tail}"
     ))
 }
 
@@ -884,14 +953,14 @@ mod tests {
         let result = check_corrections_for_store(&store);
         assert!(matches!(result.severity, Severity::Ok));
         assert!(
-            result.message.contains("No corrected-generator"),
+            result.message.contains("Corrected generators: none"),
             "unexpected message: {}",
             result.message
         );
     }
 
     #[test]
-    fn check_corrections_for_store_warns_when_present() {
+    fn check_corrections_for_store_reports_ok_when_present() {
         // One generator with _corrected_in, one without, in the same spec.
         // Accounting must count exactly one.
         let (store, _dir) = store_from_json_fixtures(&[(
@@ -909,8 +978,8 @@ mod tests {
         )]);
         let result = check_corrections_for_store(&store);
         assert!(
-            matches!(result.severity, Severity::Warn),
-            "expected Warn, got message: {}",
+            matches!(result.severity, Severity::Ok),
+            "expected OK, got message: {}",
             result.message
         );
         assert!(
@@ -963,7 +1032,7 @@ mod tests {
         let (store, _dir) = store_from_json_fixtures(&refs);
 
         let result = check_corrections_for_store(&store);
-        assert!(matches!(result.severity, Severity::Warn));
+        assert!(matches!(result.severity, Severity::Ok));
         // Alphabetical: a..e in preview, f and g summarized.
         assert!(result.message.contains("spec-a"));
         assert!(result.message.contains("spec-e"));
@@ -1099,6 +1168,31 @@ mod tests {
         let result = check_alias_conflicts_for_store(&store);
         assert!(matches!(result.severity, Severity::Ok));
         assert!(result.message.contains("no addressability conflicts"));
+    }
+
+    #[test]
+    fn doctor_directory_precedence_is_ok_without_conflict_wording() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let primary = tmp.path().join("primary");
+        let fallback = tmp.path().join("fallback");
+        std::fs::create_dir_all(&primary).unwrap();
+        std::fs::create_dir_all(&fallback).unwrap();
+        std::fs::write(primary.join("git.json"), r#"{"name":"git"}"#).unwrap();
+        std::fs::write(fallback.join("git.json"), r#"{"name":"git"}"#).unwrap();
+
+        let result =
+            gc_suggest::SpecStore::load_from_dirs(&[primary, fallback]).expect("load fixtures");
+        let check = check_alias_conflicts_for_store(&result.store);
+        assert!(
+            matches!(check.severity, Severity::Ok),
+            "directory precedence should be OK: {}",
+            check.message
+        );
+        assert!(
+            check.message.contains("no duplicate/name-stem conflicts"),
+            "directory precedence should not be framed as an actionable conflict: {}",
+            check.message
+        );
     }
 
     #[test]
@@ -1255,14 +1349,13 @@ mod tests {
         assert!(matches!(result.severity, Severity::Fail));
     }
 
-    /// Regression guard for code-1: a `script_function` / `custom`
-    /// generator whose `self_contained` is missing or `false` cannot be
-    /// dispatched by the engine (see
-    /// `gc_suggest::engine::is_supported_script_generator`). Doctor must
-    /// surface it as Fail — otherwise the regression gate stays blind
-    /// to the 1697-generator silent-skip surface that motivated this fix.
+    /// A `script_function` / `custom` generator whose `self_contained` is
+    /// missing or `false` cannot be dispatched by the engine, but this is
+    /// expected unsupported coverage rather than malformed metadata. Doctor
+    /// must stay OK so a fresh local install has no warning while still
+    /// exposing the skipped-generator count.
     #[test]
-    fn doctor_fails_when_script_function_lacks_self_contained() {
+    fn doctor_is_ok_when_script_function_lacks_self_contained() {
         let (store, _dir) = store_from_json_fixtures(&[(
             "unproven.json",
             r#"{
@@ -1281,8 +1374,8 @@ mod tests {
         )]);
         let result = check_embedded_runtime_metadata_for_store(&store);
         assert!(
-            matches!(result.severity, Severity::Fail),
-            "script_function without self_contained must Fail, got: {}",
+            matches!(result.severity, Severity::Ok),
+            "script_function without self_contained must be OK, got: {}",
             result.message
         );
         assert!(
@@ -1290,10 +1383,15 @@ mod tests {
             "must name affected spec: {}",
             result.message
         );
+        assert!(
+            result.message.contains("unsupported") && result.message.contains("self_contained"),
+            "must explain unsupported self_contained class: {}",
+            result.message
+        );
     }
 
     #[test]
-    fn doctor_fails_when_custom_lacks_self_contained() {
+    fn doctor_is_ok_when_custom_lacks_self_contained() {
         let (store, _dir) = store_from_json_fixtures(&[(
             "custom-unproven.json",
             r#"{
@@ -1313,8 +1411,8 @@ mod tests {
         )]);
         let result = check_embedded_runtime_metadata_for_store(&store);
         assert!(
-            matches!(result.severity, Severity::Fail),
-            "custom with self_contained:false must Fail, got: {}",
+            matches!(result.severity, Severity::Ok),
+            "custom with self_contained:false must be OK, got: {}",
             result.message
         );
     }
@@ -1449,14 +1547,12 @@ mod tests {
     }
 
     /// Regression guard for comment-1: the user-facing fail message must
-    /// enumerate ALL four undispatchable classes the predicate counts —
-    /// missing js_runtime metadata, empty source, post_process without
-    /// script/script_template, and script_function/custom without
-    /// self_contained:true. Iter-3's predicate broadening added the
-    /// post_process+missing-script branch but left the message stale,
-    /// so an operator hitting that case saw a count without a clue.
+    /// enumerate every malformed runtime-metadata class the fatal predicate
+    /// counts — missing js_runtime metadata, empty source, and post_process
+    /// without script/script_template. Unsupported script_function/custom
+    /// generators are covered by the warning tests above.
     #[test]
-    fn doctor_fail_message_enumerates_all_four_undispatchable_classes() {
+    fn doctor_fail_message_enumerates_all_malformed_classes() {
         let (store, _dir) = store_from_json_fixtures(&[(
             "pp_no_script.json",
             r#"{
@@ -1489,8 +1585,8 @@ mod tests {
             "must name the post_process+missing-script class: {msg}"
         );
         assert!(
-            msg.contains("`script_function`/`custom`") && msg.contains("`self_contained:true`"),
-            "must name the script_function/custom+missing-self_contained class: {msg}"
+            !msg.contains("`script_function`/`custom`"),
+            "fatal message must not conflate unsupported coverage with malformed metadata: {msg}"
         );
     }
 }
