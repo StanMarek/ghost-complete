@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-05-04
+
+### Fixed
+
+- Cleaned up `install-local` warnings: tightened `doctor` and `status` output
+  formatting, normalized spec validation messages, and re-ran the converter on
+  a handful of specs (`br`, `j`, `kubecolor`, `lsof`, `micro`, `nativescript`,
+  `remotion`, `sta`, `tns`) to drop spurious validator noise (#103).
+
 ## [0.12.0] - 2026-05-04
 
 ### Added
@@ -812,6 +821,7 @@ silently changed behaviour.
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.12.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.12.1
 [0.12.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.12.0
 [0.11.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.11.0
 [0.10.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.10.0
