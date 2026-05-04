@@ -375,7 +375,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async a=>a.slice(2,a.length-1).some(e=>e[0]!==\"-\")?[\"install\",\"install-on-request\",\"build-error\"].map(e=>({name:e})):[\"cask-install\",\"os-version\"].map(e=>({name:e}))"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async a=>a.slice(2,a.length-1).some(e=>e[0]!==\"-\")?[\"install\",\"install-on-request\",\"build-error\"].map(e=>({name:e})):[\"cask-install\",\"os-version\"].map(e=>({name:e}))"
+                }
               }
             ]
           }

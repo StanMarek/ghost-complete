@@ -137,7 +137,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "function(n){if(n.startsWith(\"fatal:\"))return[];try{return JSON.parse(n).Tables[0].Rows.forEach(a=>({name:a.name,description:\"Deployment\"}))}catch{return[]}}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(n){if(n.startsWith(\"fatal:\"))return[];try{return JSON.parse(n).Tables[0].Rows.forEach(a=>({name:a.name,description:\"Deployment\"}))}catch{return[]}}"
+            },
             "requires_js": true,
             "script": [
               "bosh",

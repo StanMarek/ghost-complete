@@ -40,7 +40,10 @@
                 "description": "Securing Flower with Basic Authentication. Accepts user:password pairs separated by a comma. Example: flower_basic_auth = user1:password1,user2:password2",
                 "generators": [
                   {
-                    "js_source": "(...l)=>I(this,void 0,void 0,function*(){let[a]=l,p=a[a.length-1],f=L(p,e,t),_=f===-1||p.slice(f,f+e.length)!==e,u=_?i:o,g=U(_,n),m=yield W(u,_?s?e:\"\":r?t:\"\",g,l);if(_){if(d)return m;let O=p.split(t).map(h=>h.slice(0,h.indexOf(e)));return H(O,m)}if(c)return m;let v=p.split(t).map(O=>O.slice(O.indexOf(e)+e.length));return H(v,m)})",
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "(...l)=>I(this,void 0,void 0,function*(){let[a]=l,p=a[a.length-1],f=L(p,e,t),_=f===-1||p.slice(f,f+e.length)!==e,u=_?i:o,g=U(_,n),m=yield W(u,_?s?e:\"\":r?t:\"\",g,l);if(_){if(d)return m;let O=p.split(t).map(h=>h.slice(0,h.indexOf(e)));return H(O,m)}if(c)return m;let v=p.split(t).map(O=>O.slice(O.indexOf(e)+e.length));return H(v,m)})"
+                    },
                     "requires_js": true
                   }
                 ],

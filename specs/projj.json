@@ -21,7 +21,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(c,o,r)=>{let{stdout:n}=await o({command:\"cat\",args:[`${r.environmentVariables.HOME}/.projj/cache.json`]}),t=JSON.parse(n);return Object.keys(t).map(e=>({name:e.split(\"/\").pop(),description:t[e].repo}))}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(c,o,r)=>{let{stdout:n}=await o({command:\"cat\",args:[`${r.environmentVariables.HOME}/.projj/cache.json`]}),t=JSON.parse(n);return Object.keys(t).map(e=>({name:e.split(\"/\").pop(),description:t[e].repo}))}"
+            }
           }
         ]
       }
@@ -46,7 +49,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(c,o,r)=>{let{stdout:n}=await o({command:\"cat\",args:[`${r.environmentVariables.HOME}/.projj/cache.json`]}),t=JSON.parse(n);return Object.keys(t).map(e=>({name:e.split(\"/\").pop(),description:t[e].repo}))}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(c,o,r)=>{let{stdout:n}=await o({command:\"cat\",args:[`${r.environmentVariables.HOME}/.projj/cache.json`]}),t=JSON.parse(n);return Object.keys(t).map(e=>({name:e.split(\"/\").pop(),description:t[e].repo}))}"
+            }
           }
         ]
       }
@@ -59,7 +65,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(c,o,r)=>{let{stdout:n}=await o({command:\"cat\",args:[`${r.environmentVariables.HOME}/.projj/config.json`]}),e=JSON.parse(n).hooks;return Object.keys(e).map(a=>({name:a,description:e[a]}))}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(c,o,r)=>{let{stdout:n}=await o({command:\"cat\",args:[`${r.environmentVariables.HOME}/.projj/config.json`]}),e=JSON.parse(n).hooks;return Object.keys(e).map(a=>({name:a,description:e[a]}))}"
+            }
           }
         ]
       }
@@ -72,7 +81,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(c,o,r)=>{let{stdout:n}=await o({command:\"cat\",args:[`${r.environmentVariables.HOME}/.projj/config.json`]}),e=JSON.parse(n).hooks;return Object.keys(e).map(a=>({name:a,description:e[a]}))}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(c,o,r)=>{let{stdout:n}=await o({command:\"cat\",args:[`${r.environmentVariables.HOME}/.projj/config.json`]}),e=JSON.parse(n).hooks;return Object.keys(e).map(a=>({name:a,description:e[a]}))}"
+            }
           }
         ]
       }

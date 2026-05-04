@@ -170,6 +170,17 @@ pub struct ProvidersConfig {
     pub filesystem: bool,
     pub specs: bool,
     pub git: bool,
+    /// Global kill switch for the QuickJS evaluator that backs
+    /// `requires_js` generators. Default `true` so JS-backed
+    /// completions work out of the box; users can disable locally
+    /// with `[suggest.providers] js_runtime = false` in their
+    /// `config.toml`.
+    ///
+    /// When `false`, the suggestion engine skips every JS-backed
+    /// `requires_js` generator whose `js_runtime.kind` is populated
+    /// (`post_process`, `script_function`, or `custom`). Static spec
+    /// completions remain available.
+    pub js_runtime: bool,
 }
 
 impl Default for ProvidersConfig {
@@ -179,6 +190,7 @@ impl Default for ProvidersConfig {
             filesystem: true,
             specs: true,
             git: true,
+            js_runtime: true,
         }
     }
 }

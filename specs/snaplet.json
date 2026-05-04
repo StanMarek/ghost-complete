@@ -183,7 +183,10 @@
                   "ls"
                 ],
                 "requires_js": true,
-                "js_source": "s=>{let n=[],a=g(s).filter(e=>e.src===\"CLOUD\"&&e.status===\"SUCCESS\");for(let e of a)n.push({name:e.name,description:`\\u2705 ${e.created} ${e.size} \\u2601\\uFE0F`});return n}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "s=>{let n=[],a=g(s).filter(e=>e.src===\"CLOUD\"&&e.status===\"SUCCESS\");for(let e of a)n.push({name:e.name,description:`\\u2705 ${e.created} ${e.size} \\u2601\\uFE0F`});return n}"
+                }
               }
             ]
           }
@@ -242,7 +245,10 @@
                     "ls"
                   ],
                   "requires_js": true,
-                  "js_source": "s=>{let n=[],a=g(s).filter(e=>e.src===\"CLOUD\"&&e.status===\"SUCCESS\");for(let e of a)n.push({name:e.name,description:`\\u2705 ${e.created} ${e.size} \\u2601\\uFE0F`});return n}"
+                  "js_runtime": {
+                    "kind": "post_process",
+                    "source": "s=>{let n=[],a=g(s).filter(e=>e.src===\"CLOUD\"&&e.status===\"SUCCESS\");for(let e of a)n.push({name:e.name,description:`\\u2705 ${e.created} ${e.size} \\u2601\\uFE0F`});return n}"
+                  }
                 }
               ]
             }
@@ -270,7 +276,10 @@
                   "ls"
                 ],
                 "requires_js": true,
-                "js_source": "s=>{let n=[],a=f(s);for(let e of a)n.push({name:e.name,description:`${e.size} (${e.snapshotName})`});return n}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "s=>{let n=[],a=f(s);for(let e of a)n.push({name:e.name,description:`${e.size} (${e.snapshotName})`});return n}"
+                }
               }
             ]
           }
@@ -297,7 +306,10 @@
                   "ls"
                 ],
                 "requires_js": true,
-                "js_source": "s=>{let n=[],a=f(s);for(let e of a)n.push({name:e.name,description:`${e.size} (${e.snapshotName})`});return n}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "s=>{let n=[],a=f(s);for(let e of a)n.push({name:e.name,description:`${e.size} (${e.snapshotName})`});return n}"
+                }
               }
             ]
           }
@@ -694,7 +706,10 @@
                   "ls"
                 ],
                 "requires_js": true,
-                "js_source": "s=>{let n=[],a=g(s);for(let e of a){let t=e.status===\"SUCCESS\"?\"\\u2705\":\"\\u274C\",i=e.src===\"CLOUD\"?\"\\u2601\\uFE0F\":\"\\u{1F4BB}\";n.push({name:e.name,description:`${t} ${e.created} ${e.size} ${i}`})}return n}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "s=>{let n=[],a=g(s);for(let e of a){let t=e.status===\"SUCCESS\"?\"\\u2705\":\"\\u274C\",i=e.src===\"CLOUD\"?\"\\u2601\\uFE0F\":\"\\u{1F4BB}\";n.push({name:e.name,description:`${t} ${e.created} ${e.size} ${i}`})}return n}"
+                }
               }
             ]
           }
@@ -737,7 +752,10 @@
                   "ls"
                 ],
                 "requires_js": true,
-                "js_source": "s=>{let n=[],a=g(s);for(let e of a){let t=e.status===\"SUCCESS\"?\"\\u2705\":\"\\u274C\",i=e.src===\"CLOUD\"?\"\\u2601\\uFE0F\":\"\\u{1F4BB}\";n.push({name:e.name,description:`${t} ${e.created} ${e.size} ${i}`})}return n}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "s=>{let n=[],a=g(s);for(let e of a){let t=e.status===\"SUCCESS\"?\"\\u2705\":\"\\u274C\",i=e.src===\"CLOUD\"?\"\\u2601\\uFE0F\":\"\\u{1F4BB}\";n.push({name:e.name,description:`${t} ${e.created} ${e.size} ${i}`})}return n}"
+                }
               }
             ]
           }

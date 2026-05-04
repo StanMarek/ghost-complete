@@ -114,7 +114,10 @@
             "cache": {
               "ttl_seconds": 87
             },
-            "js_source": "function(o){let i=o.split(`\n`).reverse().filter(Boolean).map(g),t=i.find(e=>e.major%2===0).major,s=new Map,l=i.map(e=>{let r=s.get(e.major);return(!r||r.minor<e.minor)&&s.set(e.major,e),e}).filter(e=>{if(e.major===t)return!0;let r=e.original===s.get(e.major).original;return(e.major%2===0||e.major===t-1||e.major===t+1)&&r});return h([...l,...i],(e,r)=>e.original===r.original).map(e=>e.ltsName&&s.get(e.major).original===e.original?{name:`lts/${e.ltsName}`,displayName:e.original,description:`Node.js ${e.original}`}:{name:e.original.split(\" \").shift(),description:`Node.js ${e.original}`})}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(o){let i=o.split(`\n`).reverse().filter(Boolean).map(g),t=i.find(e=>e.major%2===0).major,s=new Map,l=i.map(e=>{let r=s.get(e.major);return(!r||r.minor<e.minor)&&s.set(e.major,e),e}).filter(e=>{if(e.major===t)return!0;let r=e.original===s.get(e.major).original;return(e.major%2===0||e.major===t-1||e.major===t+1)&&r});return h([...l,...i],(e,r)=>e.original===r.original).map(e=>e.ltsName&&s.get(e.major).original===e.original?{name:`lts/${e.ltsName}`,displayName:e.original,description:`Node.js ${e.original}`}:{name:e.original.split(\" \").shift(),description:`Node.js ${e.original}`})}"
+            },
             "requires_js": true,
             "script": [
               "fnm",

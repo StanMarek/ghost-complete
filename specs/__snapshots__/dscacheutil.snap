@@ -42,7 +42,10 @@
             {
               "generators": [
                 {
-                  "js_source": "async(e,n)=>{let t=e[e.length-3];return c.includes(t)?o[t].map(a=>({name:a})):[]}",
+                  "js_runtime": {
+                    "kind": "custom",
+                    "source": "async(e,n)=>{let t=e[e.length-3];return c.includes(t)?o[t].map(a=>({name:a})):[]}"
+                  },
                   "requires_js": true
                 }
               ],
@@ -51,7 +54,10 @@
             {
               "generators": [
                 {
-                  "js_source": "async(e,n)=>{let t=e[e.length-4],a=e[e.length-2];return d({attributeKey:a})((await n({command:\"dscacheutil\",args:[\"-q\",t]})).stdout,e)}",
+                  "js_runtime": {
+                    "kind": "custom",
+                    "source": "async(e,n)=>{let t=e[e.length-4],a=e[e.length-2];return d({attributeKey:a})((await n({command:\"dscacheutil\",args:[\"-q\",t]})).stdout,e)}"
+                  },
                   "requires_js": true
                 }
               ],

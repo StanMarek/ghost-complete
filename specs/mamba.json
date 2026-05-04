@@ -701,7 +701,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "i=>[\"conda\",\"search\",i[i.length-1],\"--json\"]"
+            "js_runtime": {
+              "kind": "script_function",
+              "source": "i=>[\"conda\",\"search\",i[i.length-1],\"--json\"]"
+            }
           }
         ]
       }
@@ -1042,7 +1045,10 @@
               "--json"
             ],
             "requires_js": true,
-            "js_source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}"
+            },
             "cache": {}
           }
         ]
@@ -1201,7 +1207,10 @@
               "--json"
             ],
             "requires_js": true,
-            "js_source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}"
+            },
             "cache": {}
           }
         ]
@@ -1613,7 +1622,10 @@
               "--json"
             ],
             "requires_js": true,
-            "js_source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}"
+            },
             "cache": {}
           }
         ]
@@ -1850,7 +1862,10 @@
               "--json"
             ],
             "requires_js": true,
-            "js_source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}"
+            },
             "cache": {}
           }
         ]
@@ -1972,7 +1987,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}"
+                },
                 "cache": {}
               }
             ]
@@ -2090,7 +2108,10 @@
                   "--json"
                 ],
                 "requires_js": true,
-                "js_source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}"
+                },
                 "cache": {}
               }
             ]

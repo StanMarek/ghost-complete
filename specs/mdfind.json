@@ -64,7 +64,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(c,i,n)=>{let{stdout:a}=await i({command:\"ls\",args:[\"-1A\",`${n.environmentVariables.HOME}/Library/Saved Searches/`]});return a.split(`\n`).filter(e=>e.endsWith(\"savedSearch\")).map(e=>{let r=e.split(\"/\"),t=r[r.length-1];return{name:t.substring(0,t.indexOf(\".\")),displayName:t,icon:\"fig://\"+e,description:\"Smart folder\"}})}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(c,i,n)=>{let{stdout:a}=await i({command:\"ls\",args:[\"-1A\",`${n.environmentVariables.HOME}/Library/Saved Searches/`]});return a.split(`\n`).filter(e=>e.endsWith(\"savedSearch\")).map(e=>{let r=e.split(\"/\"),t=r[r.length-1];return{name:t.substring(0,t.indexOf(\".\")),displayName:t,icon:\"fig://\"+e,description:\"Smart folder\"}})}"
+            }
           }
         ]
       }

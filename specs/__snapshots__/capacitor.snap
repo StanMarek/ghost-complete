@@ -107,7 +107,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "async(i,o)=>{let[m,g,n]=i;if(!d(n))return[];let{stdout:t}=await o({command:\"npx\",args:[\"capacitor\",\"run\",n,\"--list\"]});return t.trim().split(`\n`).slice(2).map(a=>{let[s,r,p]=a.replace(/\\s\\s+/g,\"|\").split(\"|\");return{name:p,displayName:`${s} ${r}`,icon:\"\\u{1F4F1}\"}})}",
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(i,o)=>{let[m,g,n]=i;if(!d(n))return[];let{stdout:t}=await o({command:\"npx\",args:[\"capacitor\",\"run\",n,\"--list\"]});return t.trim().split(`\n`).slice(2).map(a=>{let[s,r,p]=a.replace(/\\s\\s+/g,\"|\").split(\"|\");return{name:p,displayName:`${s} ${r}`,icon:\"\\u{1F4F1}\"}})}"
+                },
                 "requires_js": true
               }
             ],

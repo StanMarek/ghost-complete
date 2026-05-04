@@ -106,7 +106,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                    },
                     "requires_js": true,
                     "script": [
                       "fly",
@@ -154,7 +157,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                    },
                     "requires_js": true,
                     "script": [
                       "fly",
@@ -190,7 +196,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -230,7 +239,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -271,7 +283,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -380,7 +395,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -419,7 +437,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -458,7 +479,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -497,7 +521,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -536,7 +563,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -576,7 +606,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -621,7 +654,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -663,7 +699,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -702,7 +741,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -742,7 +784,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -781,7 +826,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -821,7 +869,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -868,7 +919,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -957,7 +1011,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -1062,7 +1119,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -1102,7 +1162,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -1141,7 +1204,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -1180,7 +1246,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -1219,7 +1288,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -1284,7 +1356,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "fly",
@@ -1318,7 +1393,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -1357,7 +1435,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -1398,7 +1479,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -1575,7 +1659,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -1608,7 +1695,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "fly",
@@ -1674,7 +1764,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -1713,7 +1806,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -1786,7 +1882,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -1829,7 +1928,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -1869,7 +1971,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -1923,7 +2028,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -1975,7 +2083,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -2014,7 +2125,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -2063,7 +2177,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -2112,7 +2229,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -2152,7 +2272,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -2191,7 +2314,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -2283,7 +2409,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "fly",
@@ -2335,7 +2464,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -2400,7 +2532,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -2450,7 +2585,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                    },
                     "requires_js": true,
                     "script": [
                       "fly",
@@ -2490,7 +2628,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -2529,7 +2670,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -2576,7 +2720,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -2623,7 +2770,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -2787,7 +2937,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                    },
                     "requires_js": true,
                     "script": [
                       "fly",
@@ -2855,7 +3008,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -2894,7 +3050,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -2934,7 +3093,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -2994,7 +3156,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -3033,7 +3198,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "fly",
@@ -3069,7 +3237,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -3168,7 +3339,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -3221,7 +3395,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "fly",
@@ -3283,7 +3460,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -3358,7 +3538,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -3516,7 +3699,10 @@
                   "args": {
                     "generators": [
                       {
-                        "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                        "js_runtime": {
+                          "kind": "post_process",
+                          "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                        },
                         "requires_js": true,
                         "script": [
                           "flyctl",
@@ -3558,7 +3744,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -3615,7 +3804,10 @@
                   "args": {
                     "generators": [
                       {
-                        "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                        "js_runtime": {
+                          "kind": "post_process",
+                          "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                        },
                         "requires_js": true,
                         "script": [
                           "flyctl",
@@ -3659,7 +3851,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -3692,7 +3887,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "fly",
@@ -3728,7 +3926,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -3767,7 +3968,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -3815,7 +4019,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -3854,7 +4061,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -3894,7 +4104,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -3943,7 +4156,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -3993,7 +4209,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -4046,7 +4265,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -4085,7 +4307,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -4133,7 +4358,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -4181,7 +4409,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -4221,7 +4452,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -4280,7 +4514,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -4320,7 +4557,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -4365,7 +4605,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -4405,7 +4648,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -4450,7 +4696,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -4501,7 +4750,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -4637,7 +4889,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                },
                 "requires_js": true,
                 "script": [
                   "flyctl",
@@ -4698,7 +4953,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -4773,7 +5031,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>{let o=JSON.parse(t);return Object.entries(o).sort(([n,i],[s,r])=>n==\"personal\"?-1:s==\"personal\"?1:i.localeCompare(r)).map(([n,i])=>({name:n,description:i,icon:n==\"personal\"?\"\\u{1F464}\":\"\\u{1F3E2}\"}))}"
+                },
                 "requires_js": true,
                 "script": [
                   "fly",
@@ -4836,7 +5097,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -4875,7 +5139,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -4915,7 +5182,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -4960,7 +5230,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",
@@ -5047,7 +5320,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>{let i=n.Status;return{name:n.ID,description:`Organization: ${n.Organization.Slug}`,icon:i==\"running\"||i==\"deployed\"?\"\\u{1F7E2}\":i==\"pending\"?\"\\u{1F7E1}\":\"\\u{1F534}\"}})"
+                    },
                     "requires_js": true,
                     "script": [
                       "flyctl",

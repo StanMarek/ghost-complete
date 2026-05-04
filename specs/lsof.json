@@ -269,14 +269,20 @@
               "echo"
             ],
             "requires_js": true,
-            "js_source": "function(){return[\"4\",\"6\"].map(e=>({name:e}))}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(){return[\"4\",\"6\"].map(e=>({name:e}))}"
+            }
           },
           {
             "script": [
               "echo"
             ],
             "requires_js": true,
-            "js_source": "function(r,e){let s=[\"tcp\",\"udp\",\"TCP\",\"UDP\"],i=e[1].match(/^(-i[46])/)||e[2]&&e[2].match(/^[46]/),t=i&&i.length>0?i[1]:\"\";return s.map(n=>({name:t+n}))}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(r,e){let s=[\"tcp\",\"udp\",\"TCP\",\"UDP\"],i=e[1].match(/^(-i[46])/)||e[2]&&e[2].match(/^[46]/),t=i&&i.length>0?i[1]:\"\";return s.map(n=>({name:t+n}))}"
+            }
           },
           {
             "script": [
@@ -297,7 +303,10 @@
               "echo"
             ],
             "requires_js": true,
-            "js_source": "function(r,e){let s=[\"http\",\"https\",\"who\",\"time\"],i=\":\";e[1].match(\":[^:]*\")?i=e[1]:e[2]&&e[2].match(\":[^:]+\")&&(i=e[2]);let t=i.split(\":\")[0]+\":\";return s.map(o=>({name:t+o}))}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(r,e){let s=[\"http\",\"https\",\"who\",\"time\"],i=\":\";e[1].match(\":[^:]*\")?i=e[1]:e[2]&&e[2].match(\":[^:]+\")&&(i=e[2]);let t=i.split(\":\")[0]+\":\";return s.map(o=>({name:t+o}))}"
+            }
           }
         ]
       }

@@ -23,7 +23,10 @@
               "listext"
             ],
             "requires_js": true,
-            "js_source": "function(t){return t.split(\";\").map(i=>({name:i,description:\"Extension\"}))}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(t){return t.split(\";\").map(i=>({name:i,description:\"Extension\"}))}"
+            }
           }
         ]
       }

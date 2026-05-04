@@ -24,7 +24,10 @@
         "description": "Check whether a particular file extension is known by us",
         "generators": [
           {
-            "js_source": "function(t){return t.split(\";\").map(i=>({name:i,description:\"Extension\"}))}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(t){return t.split(\";\").map(i=>({name:i,description:\"Extension\"}))}"
+            },
             "requires_js": true,
             "script": [
               "assimp",

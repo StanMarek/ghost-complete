@@ -1,0 +1,23 @@
+{
+  "name": "custom-unsupported",
+  "description": "A requires_js generator with kind=custom: no script — js_runtime.source is an async function that returns the suggestion list directly.",
+  "subcommands": [
+    {
+      "name": "items",
+      "args": [
+        {
+          "name": "id",
+          "generators": [
+            {
+              "requires_js": true,
+              "js_runtime": {
+                "kind": "custom",
+                "source": "async () => [{ name: 'a' }, { name: 'b' }, { name: 'c' }]"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

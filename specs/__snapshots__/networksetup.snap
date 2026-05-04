@@ -22,7 +22,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -51,7 +54,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -69,7 +75,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -100,7 +109,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -123,7 +135,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -141,7 +156,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -163,7 +181,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -181,7 +202,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -205,7 +229,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -222,7 +249,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -239,7 +269,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -256,7 +289,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -291,7 +327,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -309,7 +348,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -333,7 +375,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -351,7 +396,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -374,7 +422,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -392,7 +443,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -445,7 +499,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -463,7 +520,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -513,7 +573,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -542,7 +605,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -560,7 +626,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -610,7 +679,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -639,7 +711,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -657,7 +732,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -707,7 +785,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -736,7 +817,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -754,7 +838,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -777,7 +864,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -795,7 +885,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -825,7 +918,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -847,7 +943,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -864,7 +963,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -882,7 +984,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -909,7 +1014,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -927,7 +1035,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -956,7 +1067,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -974,7 +1088,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1048,7 +1165,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1070,7 +1190,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1087,7 +1210,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1105,7 +1231,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1139,7 +1268,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1158,7 +1290,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1181,7 +1316,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1203,7 +1341,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1220,7 +1361,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1238,7 +1382,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1255,7 +1402,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1273,7 +1423,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1295,7 +1448,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1312,7 +1468,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1330,7 +1489,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1358,7 +1520,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1381,7 +1546,10 @@
           "description": "The parent device over which the VLAN will be created",
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1409,7 +1577,10 @@
           "description": "The parent device on which the VLAN is configured",
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1439,7 +1610,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1462,7 +1636,10 @@
           "description": "The devices to include in the bond. Any number of devices can be specified",
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1482,7 +1659,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1500,7 +1680,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1513,7 +1696,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1532,7 +1718,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1545,7 +1734,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1567,7 +1759,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1588,7 +1783,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1607,7 +1805,10 @@
           "description": "The network device to create the PPPoE service on",
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1642,7 +1843,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1660,7 +1864,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1683,7 +1890,10 @@
         {
           "generators": [
             {
-              "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+              },
               "requires_js": true,
               "script": [
                 "networksetup",
@@ -1705,7 +1915,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1722,7 +1935,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1762,7 +1978,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"Network Location\"});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"Network Location\"});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",
@@ -1779,7 +1998,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"Network Location\"});return r}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"Network Location\"});return r}"
+            },
             "requires_js": true,
             "script": [
               "networksetup",

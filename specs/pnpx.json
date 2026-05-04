@@ -146,7 +146,10 @@
                 "generators": [
                   {
                     "requires_js": true,
-                    "js_source": "(m,g,w)=>me(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:f}=w,x=(p=(0,v.getCurrentInsertedDirectory)(l??O,f,w))!==null&&p!==void 0?p:\"/\";try{let V=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:x}),te=H(V.stdout.split(`\n`),[\".DS_Store\"]),B=[];for(let T of te)if(T){let P=T.endsWith(\"/\")?\"folders\":\"filepaths\";(P===\"filepaths\"&&u!==\"only\"||P===\"folders\"&&u!==\"never\")&&B.push({type:P===\"filepaths\"?\"file\":\"folder\",name:T,insertValue:T,isDangerous:b,context:{templateType:P}})}return S(h(B))}catch{return[]}})"
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "(m,g,w)=>me(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:f}=w,x=(p=(0,v.getCurrentInsertedDirectory)(l??O,f,w))!==null&&p!==void 0?p:\"/\";try{let V=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:x}),te=H(V.stdout.split(`\n`),[\".DS_Store\"]),B=[];for(let T of te)if(T){let P=T.endsWith(\"/\")?\"folders\":\"filepaths\";(P===\"filepaths\"&&u!==\"only\"||P===\"folders\"&&u!==\"never\")&&B.push({type:P===\"filepaths\"?\"file\":\"folder\",name:T,insertValue:T,isDangerous:b,context:{templateType:P}})}return S(h(B))}catch{return[]}})"
+                    }
                   }
                 ]
               }
@@ -257,7 +260,10 @@
                       "hw.ncpu"
                     ],
                     "requires_js": true,
-                    "js_source": "e=>Array.from({length:Number(e)},(n,t)=>({name:`${t}`}))"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "e=>Array.from({length:Number(e)},(n,t)=>({name:`${t}`}))"
+                    }
                   }
                 ]
               }
@@ -519,7 +525,10 @@
                       "hw.ncpu"
                     ],
                     "requires_js": true,
-                    "js_source": "e=>Array.from({length:Number(e)},(n,t)=>({name:`${t}`}))"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "e=>Array.from({length:Number(e)},(n,t)=>({name:`${t}`}))"
+                    }
                   }
                 ]
               }
@@ -551,7 +560,10 @@
                 "generators": [
                   {
                     "requires_js": true,
-                    "js_source": "(m,g,w)=>me(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:f}=w,x=(p=(0,v.getCurrentInsertedDirectory)(l??O,f,w))!==null&&p!==void 0?p:\"/\";try{let V=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:x}),te=H(V.stdout.split(`\n`),[\".DS_Store\"]),B=[];for(let T of te)if(T){let P=T.endsWith(\"/\")?\"folders\":\"filepaths\";(P===\"filepaths\"&&u!==\"only\"||P===\"folders\"&&u!==\"never\")&&B.push({type:P===\"filepaths\"?\"file\":\"folder\",name:T,insertValue:T,isDangerous:b,context:{templateType:P}})}return S(h(B))}catch{return[]}})"
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "(m,g,w)=>me(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:f}=w,x=(p=(0,v.getCurrentInsertedDirectory)(l??O,f,w))!==null&&p!==void 0?p:\"/\";try{let V=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:x}),te=H(V.stdout.split(`\n`),[\".DS_Store\"]),B=[];for(let T of te)if(T){let P=T.endsWith(\"/\")?\"folders\":\"filepaths\";(P===\"filepaths\"&&u!==\"only\"||P===\"folders\"&&u!==\"never\")&&B.push({type:P===\"filepaths\"?\"file\":\"folder\",name:T,insertValue:T,isDangerous:b,context:{templateType:P}})}return S(h(B))}catch{return[]}})"
+                    }
                   }
                 ]
               }
@@ -626,7 +638,10 @@
                 "generators": [
                   {
                     "requires_js": true,
-                    "js_source": "(m,g,w)=>me(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:f}=w,x=(p=(0,v.getCurrentInsertedDirectory)(l??O,f,w))!==null&&p!==void 0?p:\"/\";try{let V=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:x}),te=H(V.stdout.split(`\n`),[\".DS_Store\"]),B=[];for(let T of te)if(T){let P=T.endsWith(\"/\")?\"folders\":\"filepaths\";(P===\"filepaths\"&&u!==\"only\"||P===\"folders\"&&u!==\"never\")&&B.push({type:P===\"filepaths\"?\"file\":\"folder\",name:T,insertValue:T,isDangerous:b,context:{templateType:P}})}return S(h(B))}catch{return[]}})"
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "(m,g,w)=>me(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:f}=w,x=(p=(0,v.getCurrentInsertedDirectory)(l??O,f,w))!==null&&p!==void 0?p:\"/\";try{let V=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:x}),te=H(V.stdout.split(`\n`),[\".DS_Store\"]),B=[];for(let T of te)if(T){let P=T.endsWith(\"/\")?\"folders\":\"filepaths\";(P===\"filepaths\"&&u!==\"only\"||P===\"folders\"&&u!==\"never\")&&B.push({type:P===\"filepaths\"?\"file\":\"folder\",name:T,insertValue:T,isDangerous:b,context:{templateType:P}})}return S(h(B))}catch{return[]}})"
+                    }
                   }
                 ]
               }
@@ -737,7 +752,10 @@
                       "hw.ncpu"
                     ],
                     "requires_js": true,
-                    "js_source": "e=>Array.from({length:Number(e)},(n,t)=>({name:`${t}`}))"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "e=>Array.from({length:Number(e)},(n,t)=>({name:`${t}`}))"
+                    }
                   }
                 ]
               }
@@ -1219,7 +1237,10 @@
                       "available"
                     ],
                     "requires_js": true,
-                    "js_source": "e=>{let n=JSON.parse(e).devices;return Object.entries(n).map(([t,i])=>i).reduce((t,i)=>[...t,...i],[]).map(({name:t})=>({name:t,icon:G}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "e=>{let n=JSON.parse(e).devices;return Object.entries(n).map(([t,i])=>i).reduce((t,i)=>[...t,...i],[]).map(({name:t})=>({name:t,icon:G}))}"
+                    }
                   }
                 ]
               }

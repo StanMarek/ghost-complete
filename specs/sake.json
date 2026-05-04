@@ -261,7 +261,10 @@
               "--json"
             ],
             "requires_js": true,
-            "js_source": "s=>{let t=JSON.parse(s);return Object.keys(t.groups).reduce((a,i)=>{let r=t.groups[i];return[...a,...r.map(n=>({name:n.name,description:n.description,priority:76,icon:\"\\u{1F376}\"}))]},[])}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "s=>{let t=JSON.parse(s);return Object.keys(t.groups).reduce((a,i)=>{let r=t.groups[i];return[...a,...r.map(n=>({name:n.name,description:n.description,priority:76,icon:\"\\u{1F376}\"}))]},[])}"
+            }
           }
         ]
       }

@@ -548,7 +548,10 @@
                   "--oneline"
                 ],
                 "requires_js": true,
-                "js_source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}"
+                },
                 "_corrected_in": "v0.10.0"
               }
             ]
@@ -572,7 +575,10 @@
                   "--oneline"
                 ],
                 "requires_js": true,
-                "js_source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}"
+                },
                 "_corrected_in": "v0.10.0"
               }
             ]
@@ -649,7 +655,10 @@
               ".pre-commit-config.yaml"
             ],
             "requires_js": true,
-            "js_source": "i=>{let e=[];try{let t=Ps.parse(i).repos;return t&&t.forEach(s=>{s.hooks.forEach(n=>{e.push({name:`${n.id}`})})}),e}catch(t){console.log(t)}}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "i=>{let e=[];try{let t=Ps.parse(i).repos;return t&&t.forEach(s=>{s.hooks.forEach(n=>{e.push({name:`${n.id}`})})}),e}catch(t){console.log(t)}}"
+            }
           }
         ]
       }
@@ -856,7 +865,10 @@
                   "--oneline"
                 ],
                 "requires_js": true,
-                "js_source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}"
+                },
                 "_corrected_in": "v0.10.0"
               }
             ]
@@ -880,7 +892,10 @@
                   "--oneline"
                 ],
                 "requires_js": true,
-                "js_source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(i){let e=Ae(i);return e.startsWith(\"fatal:\")?[]:e.split(`\n`).map(t=>({name:t.substring(0,7),icon:\"fig://icon?type=node\",description:t.substring(7)}))}"
+                },
                 "_corrected_in": "v0.10.0"
               }
             ]
@@ -972,7 +987,10 @@
                 ".pre-commit-config.yaml"
               ],
               "requires_js": true,
-              "js_source": "i=>{let e=[];try{let t=Ps.parse(i).repos;return t&&t.forEach(s=>{s.hooks.forEach(n=>{e.push({name:`${n.id}`})})}),e}catch(t){console.log(t)}}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "i=>{let e=[];try{let t=Ps.parse(i).repos;return t&&t.forEach(s=>{s.hooks.forEach(n=>{e.push({name:`${n.id}`})})}),e}catch(t){console.log(t)}}"
+              }
             }
           ]
         }

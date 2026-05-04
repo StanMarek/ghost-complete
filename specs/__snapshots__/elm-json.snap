@@ -48,7 +48,10 @@
               "cache": {
                 "ttl_seconds": 259200
               },
-              "js_source": "e=>JSON.parse(e).map(n=>({name:n.name,description:n.summary}))",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "e=>JSON.parse(e).map(n=>({name:n.name,description:n.summary}))"
+              },
               "requires_js": true,
               "script": [
                 "curl",
@@ -65,7 +68,10 @@
           "description": "The elm.json file to upgrade [default: elm.json]",
           "generators": [
             {
-              "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,j=(f=(0,v.getCurrentInsertedDirectory)(c??O,h,b))!==null&&f!==void 0?f:\"/\";try{let K=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:j}),Z=R(K.stdout.split(`\n`),[\".DS_Store\"]),k=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&k.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return w(g(k))}catch{return[]}})",
+              "js_runtime": {
+                "kind": "custom",
+                "source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,j=(f=(0,v.getCurrentInsertedDirectory)(c??O,h,b))!==null&&f!==void 0?f:\"/\";try{let K=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:j}),Z=R(K.stdout.split(`\n`),[\".DS_Store\"]),k=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&k.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return w(g(k))}catch{return[]}})"
+              },
               "requires_js": true
             }
           ],
@@ -133,7 +139,10 @@
               "cache": {
                 "ttl_seconds": 259200
               },
-              "js_source": "e=>JSON.parse(e).map(n=>({name:n.name,description:n.summary}))",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "e=>JSON.parse(e).map(n=>({name:n.name,description:n.summary}))"
+              },
               "requires_js": true,
               "script": [
                 "curl",
@@ -150,7 +159,10 @@
           "description": "The elm.json file to solve [default: elm.json]",
           "generators": [
             {
-              "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,j=(f=(0,v.getCurrentInsertedDirectory)(c??O,h,b))!==null&&f!==void 0?f:\"/\";try{let K=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:j}),Z=R(K.stdout.split(`\n`),[\".DS_Store\"]),k=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&k.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return w(g(k))}catch{return[]}})",
+              "js_runtime": {
+                "kind": "custom",
+                "source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,j=(f=(0,v.getCurrentInsertedDirectory)(c??O,h,b))!==null&&f!==void 0?f:\"/\";try{let K=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:j}),Z=R(K.stdout.split(`\n`),[\".DS_Store\"]),k=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&k.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return w(g(k))}catch{return[]}})"
+              },
               "requires_js": true
             }
           ],
@@ -192,7 +204,10 @@
               "cache": {
                 "ttl_seconds": 259200
               },
-              "js_source": "e=>JSON.parse(e).map(n=>({name:n.name,description:n.summary}))",
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "e=>JSON.parse(e).map(n=>({name:n.name,description:n.summary}))"
+              },
               "requires_js": true,
               "script": [
                 "curl",
@@ -209,7 +224,10 @@
           "description": "The elm.json file to upgrade [default: elm.json]",
           "generators": [
             {
-              "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,j=(f=(0,v.getCurrentInsertedDirectory)(c??O,h,b))!==null&&f!==void 0?f:\"/\";try{let K=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:j}),Z=R(K.stdout.split(`\n`),[\".DS_Store\"]),k=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&k.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return w(g(k))}catch{return[]}})",
+              "js_runtime": {
+                "kind": "custom",
+                "source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,j=(f=(0,v.getCurrentInsertedDirectory)(c??O,h,b))!==null&&f!==void 0?f:\"/\";try{let K=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:j}),Z=R(K.stdout.split(`\n`),[\".DS_Store\"]),k=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&k.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return w(g(k))}catch{return[]}})"
+              },
               "requires_js": true
             }
           ],
@@ -247,7 +265,10 @@
         "description": "The elm.json file to upgrade [default: elm.json]",
         "generators": [
           {
-            "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,j=(f=(0,v.getCurrentInsertedDirectory)(c??O,h,b))!==null&&f!==void 0?f:\"/\";try{let K=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:j}),Z=R(K.stdout.split(`\n`),[\".DS_Store\"]),k=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&k.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return w(g(k))}catch{return[]}})",
+            "js_runtime": {
+              "kind": "custom",
+              "source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,j=(f=(0,v.getCurrentInsertedDirectory)(c??O,h,b))!==null&&f!==void 0?f:\"/\";try{let K=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:j}),Z=R(K.stdout.split(`\n`),[\".DS_Store\"]),k=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&k.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return w(g(k))}catch{return[]}})"
+            },
             "requires_js": true
           }
         ],

@@ -2330,11 +2330,17 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,e,o)=>{let{stdout:a}=await e({command:\"cat\",args:[`${o.environmentVariables.HOME}/.ssh/known_hosts`]});return a.split(`\n`).map(t=>{let s=p.exec(t);if(s)return String(s)}).filter((t,s,r)=>t&&r.indexOf(t)===s).map(t=>({name:(n[1].endsWith(\"@\")?n[1]:\"\")+t,description:\"SSH host\"}))}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,e,o)=>{let{stdout:a}=await e({command:\"cat\",args:[`${o.environmentVariables.HOME}/.ssh/known_hosts`]});return a.split(`\n`).map(t=>{let s=p.exec(t);if(s)return String(s)}).filter((t,s,r)=>t&&r.indexOf(t)===s).map(t=>({name:(n[1].endsWith(\"@\")?n[1]:\"\")+t,description:\"SSH host\"}))}"
+                }
               },
               {
                 "requires_js": true,
-                "js_source": "async(n,e,o)=>(await c(\"config\",e,o.environmentVariables.HOME,\"~/.ssh\")).filter(t=>t.trim().toLowerCase().startsWith(\"host \")&&!t.includes(\"*\")).map(t=>({name:t.split(\" \")[1],description:\"SSH host\",priority:90}))"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,e,o)=>(await c(\"config\",e,o.environmentVariables.HOME,\"~/.ssh\")).filter(t=>t.trim().toLowerCase().startsWith(\"host \")&&!t.includes(\"*\")).map(t=>({name:t.split(\" \")[1],description:\"SSH host\",priority:90}))"
+                }
               },
               {
                 "template": "history"

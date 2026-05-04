@@ -23,7 +23,10 @@
         "description": "Profile you want to apply in this repository",
         "generators": [
           {
-            "js_source": "i=>Array.from(i.matchAll(/^\\[(.+?)\\]$/gm)).map(e=>({name:e[1],description:`Use profile \"${e[1]}\"`}))",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "i=>Array.from(i.matchAll(/^\\[(.+?)\\]$/gm)).map(e=>({name:e[1],description:`Use profile \"${e[1]}\"`}))"
+            },
             "requires_js": true,
             "script": [
               "git-profile",

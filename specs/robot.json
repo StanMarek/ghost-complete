@@ -88,7 +88,10 @@
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
             ],
             "requires_js": true,
-            "js_source": "e=>{let t=e.matchAll(/(?:\\*{3} ?Test Cases ?\\*{3})([\\S\\s]*)(?:\\*{3}(\\w+\\s?)+\\*{3})*/gim),n=new Set,i=[];for(let[s,o]of t){let r=o.matchAll(/^(\\w+( |-)*)+(?!.\\#.*)(?!.\\#.*)/gm);for(let[l]of r)l=l.trim(),l.search(/\\s\\s+/)==-1&&(n.has(l)||(n.add(l),i.push({name:l,description:\"Test case\"})))}return i}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:\\*{3} ?Test Cases ?\\*{3})([\\S\\s]*)(?:\\*{3}(\\w+\\s?)+\\*{3})*/gim),n=new Set,i=[];for(let[s,o]of t){let r=o.matchAll(/^(\\w+( |-)*)+(?!.\\#.*)(?!.\\#.*)/gm);for(let[l]of r)l=l.trim(),l.search(/\\s\\s+/)==-1&&(n.has(l)||(n.add(l),i.push({name:l,description:\"Test case\"})))}return i}"
+            }
           }
         ]
       }
@@ -108,7 +111,10 @@
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
             ],
             "requires_js": true,
-            "js_source": "e=>{let t=e.matchAll(/(?:\\*{3} ?Test Cases ?\\*{3})([\\S\\s]*)(?:\\*{3}(\\w+\\s?)+\\*{3})*/gim),n=new Set,i=[];for(let[s,o]of t){let r=o.matchAll(/^(\\w+( |-)*)+(?!.\\#.*)(?!.\\#.*)/gm);for(let[l]of r)l=l.trim(),l.search(/\\s\\s+/)==-1&&(n.has(l)||(n.add(l),i.push({name:l,description:\"Test case\"})))}return i}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:\\*{3} ?Test Cases ?\\*{3})([\\S\\s]*)(?:\\*{3}(\\w+\\s?)+\\*{3})*/gim),n=new Set,i=[];for(let[s,o]of t){let r=o.matchAll(/^(\\w+( |-)*)+(?!.\\#.*)(?!.\\#.*)/gm);for(let[l]of r)l=l.trim(),l.search(/\\s\\s+/)==-1&&(n.has(l)||(n.add(l),i.push({name:l,description:\"Test case\"})))}return i}"
+            }
           }
         ]
       }
@@ -139,7 +145,10 @@
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
             ],
             "requires_js": true,
-            "js_source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            }
           }
         ]
       }
@@ -160,7 +169,10 @@
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
             ],
             "requires_js": true,
-            "js_source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            }
           }
         ]
       }
@@ -176,7 +188,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "(m,g,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,y.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Z=G(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let E of Z)if(E){let V=E.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:b,context:{templateType:V}})}return S(h(W))}catch{return[]}})"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "(m,g,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,y.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Z=G(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let E of Z)if(E){let V=E.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:b,context:{templateType:V}})}return S(h(W))}catch{return[]}})"
+            }
           }
         ]
       }
@@ -192,7 +207,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "(m,g,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,y.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Z=G(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let E of Z)if(E){let V=E.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:b,context:{templateType:V}})}return S(h(W))}catch{return[]}})"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "(m,g,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,y.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Z=G(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let E of Z)if(E){let V=E.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:b,context:{templateType:V}})}return S(h(W))}catch{return[]}})"
+            }
           }
         ]
       }
@@ -218,7 +236,10 @@
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
             ],
             "requires_js": true,
-            "js_source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            }
           }
         ]
       }
@@ -238,7 +259,10 @@
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
             ],
             "requires_js": true,
-            "js_source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            }
           }
         ]
       }
@@ -254,7 +278,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(e,t)=>{if(!!e[e.length-1].includes(\":\"))return[];let{stdout:s}=await t({command:\"bash\",args:[\"-c\",'for i in $(find -E . -regex \".*.(robot|resource)\" -type f); do cat -s $i ; done']});return[...s.matchAll(/^\\$\\{(.*?)\\}/gm)].map(r=>r[1]).map(r=>({name:r,description:\"Variable\"}))}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(e,t)=>{if(!!e[e.length-1].includes(\":\"))return[];let{stdout:s}=await t({command:\"bash\",args:[\"-c\",'for i in $(find -E . -regex \".*.(robot|resource)\" -type f); do cat -s $i ; done']});return[...s.matchAll(/^\\$\\{(.*?)\\}/gm)].map(r=>r[1]).map(r=>({name:r,description:\"Variable\"}))}"
+            }
           }
         ]
       }
@@ -270,7 +297,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "(m,g,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,y.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Z=G(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let E of Z)if(E){let V=E.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:b,context:{templateType:V}})}return S(h(W))}catch{return[]}})"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "(m,g,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,y.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Z=G(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let E of Z)if(E){let V=E.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:b,context:{templateType:V}})}return S(h(W))}catch{return[]}})"
+            }
           }
         ]
       }
@@ -495,7 +525,10 @@
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
             ],
             "requires_js": true,
-            "js_source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            }
           }
         ]
       }
@@ -515,7 +548,10 @@
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
             ],
             "requires_js": true,
-            "js_source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            }
           }
         ]
       }
@@ -535,7 +571,10 @@
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
             ],
             "requires_js": true,
-            "js_source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            }
           }
         ]
       }
@@ -555,7 +594,10 @@
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
             ],
             "requires_js": true,
-            "js_source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            }
           }
         ]
       }
@@ -575,7 +617,10 @@
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
             ],
             "requires_js": true,
-            "js_source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            }
           }
         ]
       }
@@ -863,7 +908,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "(m,g,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,y.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Z=G(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let E of Z)if(E){let V=E.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:b,context:{templateType:V}})}return S(h(W))}catch{return[]}})"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "(m,g,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,y.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Z=G(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let E of Z)if(E){let V=E.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:b,context:{templateType:V}})}return S(h(W))}catch{return[]}})"
+            }
           }
         ]
       }
@@ -892,7 +940,10 @@
     "generators": [
       {
         "requires_js": true,
-        "js_source": "(m,g,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,y.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Z=G(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let E of Z)if(E){let V=E.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:b,context:{templateType:V}})}return S(h(W))}catch{return[]}})"
+        "js_runtime": {
+          "kind": "custom",
+          "source": "(m,g,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,y.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Z=G(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let E of Z)if(E){let V=E.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:b,context:{templateType:V}})}return S(h(W))}catch{return[]}})"
+        }
       }
     ]
   }

@@ -13,7 +13,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+            },
             "requires_js": true,
             "script": [
               "tsh",
@@ -33,7 +36,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "t=>[JSON.parse(t).active.username]",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "t=>[JSON.parse(t).active.username]"
+            },
             "requires_js": true,
             "script": [
               "tsh",
@@ -140,7 +146,10 @@
         "description": "Address of remote machine to log into",
         "generators": [
           {
-            "js_source": "t=>JSON.parse(t).map(n=>({name:n.spec.hostname,description:`Access expires: ${n.metadata.expires}`}))",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "t=>JSON.parse(t).map(n=>({name:n.spec.hostname,description:`Access expires: ${n.metadata.expires}`}))"
+            },
             "requires_js": true,
             "script": [
               "tsh",
@@ -695,7 +704,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -715,7 +727,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -856,7 +871,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -876,7 +894,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -1017,7 +1038,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -1037,7 +1061,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -1178,7 +1205,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -1198,7 +1228,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -1339,7 +1372,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -1359,7 +1395,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -1500,7 +1539,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -1520,7 +1562,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -1663,7 +1708,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -1683,7 +1731,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -1824,7 +1875,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -1844,7 +1898,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -1985,7 +2042,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -2005,7 +2065,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -2148,7 +2211,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -2168,7 +2234,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -2309,7 +2378,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -2329,7 +2401,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -2470,7 +2545,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -2490,7 +2568,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -2631,7 +2712,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -2651,7 +2735,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -2792,7 +2879,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -2812,7 +2902,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -2953,7 +3046,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -2973,7 +3069,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -3114,7 +3213,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -3134,7 +3236,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -3277,7 +3382,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -3297,7 +3405,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -3438,7 +3549,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -3458,7 +3572,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -3599,7 +3716,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -3619,7 +3739,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -3760,7 +3883,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -3780,7 +3906,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -3921,7 +4050,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -3941,7 +4073,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -4082,7 +4217,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -4102,7 +4240,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -4243,7 +4384,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -4263,7 +4407,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -4404,7 +4551,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -4424,7 +4574,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -4565,7 +4718,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -4585,7 +4741,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -4726,7 +4885,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -4746,7 +4908,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -4887,7 +5052,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -4907,7 +5075,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -5048,7 +5219,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -5068,7 +5242,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -5209,7 +5386,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -5229,7 +5409,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -5370,7 +5553,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -5390,7 +5576,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -5533,7 +5722,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -5553,7 +5745,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -5694,7 +5889,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -5714,7 +5912,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -5855,7 +6056,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -5875,7 +6079,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -6016,7 +6223,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -6036,7 +6246,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -6177,7 +6390,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -6197,7 +6413,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -6338,7 +6557,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -6358,7 +6580,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -6501,7 +6726,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -6521,7 +6749,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -6662,7 +6893,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -6682,7 +6916,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -6823,7 +7060,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -6843,7 +7083,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -6984,7 +7227,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -7004,7 +7250,10 @@
               "args": {
                 "generators": [
                   {
-                    "js_source": "t=>[JSON.parse(t).active.username]",
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "t=>[JSON.parse(t).active.username]"
+                    },
                     "requires_js": true,
                     "script": [
                       "tsh",
@@ -7147,7 +7396,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>JSON.parse(t).map(n=>n.cluster_name)",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>JSON.parse(t).map(n=>n.cluster_name)"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",
@@ -7167,7 +7419,10 @@
           "args": {
             "generators": [
               {
-                "js_source": "t=>[JSON.parse(t).active.username]",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "t=>[JSON.parse(t).active.username]"
+                },
                 "requires_js": true,
                 "script": [
                   "tsh",

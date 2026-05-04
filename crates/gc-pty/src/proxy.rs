@@ -198,6 +198,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 config.suggest.providers.filesystem,
                 config.suggest.providers.specs,
                 config.suggest.providers.git,
+                config.suggest.providers.js_runtime,
                 config.suggest.generator_timeout_ms,
             )
     }));

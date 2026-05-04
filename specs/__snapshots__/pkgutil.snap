@@ -239,7 +239,10 @@
         "description": "The path to update ACLs on",
         "generators": [
           {
-            "js_source": "async(t,a)=>{let p=t.indexOf(\"--edit-pkg\"),s=p+1;if(p===-1||s>=t.length)return[];let n=t[s],i=t[t.length-1];return r({pathPrefix:i})((await a({command:\"pkgutil\",args:[\"--files\",n]})).stdout,t)}",
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(t,a)=>{let p=t.indexOf(\"--edit-pkg\"),s=p+1;if(p===-1||s>=t.length)return[];let n=t[s],i=t[t.length-1];return r({pathPrefix:i})((await a({command:\"pkgutil\",args:[\"--files\",n]})).stdout,t)}"
+            },
             "requires_js": true
           }
         ],

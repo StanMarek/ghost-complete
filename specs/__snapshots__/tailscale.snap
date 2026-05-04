@@ -224,7 +224,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "n=>Object.values(JSON.parse(n).Peer).map(e=>({name:`${e.DNSName.split(\".\")[0]}${s??\"\"}`,displayName:e.HostName,description:e.OS}))",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "n=>Object.values(JSON.parse(n).Peer).map(e=>({name:`${e.DNSName.split(\".\")[0]}${s??\"\"}`,displayName:e.HostName,description:e.OS}))"
+            },
             "requires_js": true,
             "script": [
               "tailscale",
@@ -470,7 +473,10 @@
             {
               "generators": [
                 {
-                  "js_source": "n=>Object.values(JSON.parse(n).Peer).map(e=>({name:`${e.DNSName.split(\".\")[0]}${s??\"\"}`,displayName:e.HostName,description:e.OS}))",
+                  "js_runtime": {
+                    "kind": "post_process",
+                    "source": "n=>Object.values(JSON.parse(n).Peer).map(e=>({name:`${e.DNSName.split(\".\")[0]}${s??\"\"}`,displayName:e.HostName,description:e.OS}))"
+                  },
                   "requires_js": true,
                   "script": [
                     "tailscale",

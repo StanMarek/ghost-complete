@@ -152,7 +152,7 @@ fn sanitize_option_spec(opt: &mut OptionSpec) {
     for n in &mut opt.name {
         sanitize_string(n);
     }
-    if let Some(ref mut arg) = opt.args {
+    for arg in opt.args.iter_mut().chain(opt.extra_args.iter_mut()) {
         sanitize_arg_spec(arg);
     }
 }
@@ -205,10 +205,8 @@ where
     }
 }
 
-/// Deserialize option `args` as either a single object or an array (taking the first).
-fn deserialize_option_args<'de, D>(
-    deserializer: D,
-) -> std::result::Result<Option<ArgSpec>, D::Error>
+/// Deserialize option `args` as either a single object or an ordered array.
+fn deserialize_option_args<'de, D>(deserializer: D) -> std::result::Result<Vec<ArgSpec>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -220,10 +218,25 @@ where
     }
 
     match Option::<OneOrMany>::deserialize(deserializer)? {
-        Some(OneOrMany::One(single)) => Ok(Some(single)),
-        Some(OneOrMany::Many(vec)) => Ok(vec.into_iter().next()),
-        None => Ok(None),
+        Some(OneOrMany::One(single)) => Ok(vec![single]),
+        Some(OneOrMany::Many(vec)) => Ok(vec),
+        None => Ok(Vec::new()),
     }
+}
+
+/// Deserialize an `Option<JsRuntimeSpec>` and wrap it in `Arc` so the
+/// dispatch hot path can share the underlying spec with worker tasks
+/// without deep-cloning the embedded JS source. Equivalent to
+/// `Option::<JsRuntimeSpec>::deserialize(...)?.map(Arc::new)` — the
+/// helper exists because serde's `rc` feature (which would let us derive
+/// `Deserialize` directly on `Arc<T>`) is not enabled in this workspace.
+fn deserialize_arc_js_runtime<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<Arc<JsRuntimeSpec>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(Option::<JsRuntimeSpec>::deserialize(deserializer)?.map(Arc::new))
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -252,14 +265,49 @@ pub struct SubcommandSpec {
     pub priority: Option<Priority>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct OptionSpec {
     pub name: Vec<String>,
     pub description: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_option_args")]
+    /// Backwards-compatible first option argument. For `args: [...]`, this
+    /// holds only element 0; additional positional option args live in
+    /// `extra_args` so resolution can preserve array boundaries without
+    /// changing the public field shape during this PR.
+    ///
+    /// Callers that need every option arg should iterate
+    /// `args.iter().chain(extra_args.iter())`.
     pub args: Option<ArgSpec>,
-    #[serde(default)]
+    /// Additional positional option args beyond the first. See [`Self::args`]
+    /// for the iteration pattern that walks every arg the option declares.
+    pub extra_args: Vec<ArgSpec>,
     pub priority: Option<Priority>,
+}
+
+impl<'de> Deserialize<'de> for OptionSpec {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct RawOptionSpec {
+            name: Vec<String>,
+            description: Option<String>,
+            #[serde(default, deserialize_with = "deserialize_option_args")]
+            args: Vec<ArgSpec>,
+            #[serde(default)]
+            priority: Option<Priority>,
+        }
+
+        let raw = RawOptionSpec::deserialize(deserializer)?;
+        let mut args = raw.args.into_iter();
+        Ok(Self {
+            name: raw.name,
+            description: raw.description,
+            args: args.next(),
+            extra_args: args.collect(),
+            priority: raw.priority,
+        })
+    }
 }
 
 /// Deserialize template as either a single string or an array of strings.
@@ -305,6 +353,10 @@ pub struct ArgSpec {
     /// `args` and `generators`, never `suggestions`.
     #[serde(default, deserialize_with = "deserialize_suggestions_one_or_many")]
     pub(crate) suggestions: Vec<SuggestionEntry>,
+    #[serde(default, rename = "isOptional")]
+    pub is_optional: bool,
+    #[serde(default, rename = "isVariadic")]
+    pub is_variadic: bool,
 }
 
 /// Static suggestion entry — either a plain string shorthand or a full object.
@@ -403,6 +455,50 @@ pub struct CacheConfig {
     pub cache_by_directory: bool,
 }
 
+/// Categorises a [`JsRuntimeSpec`] so the runtime dispatch path can pick the
+/// correct evaluator. Mirrors the three Fig generator shapes that survive into
+/// runtime JS:
+///
+/// - `PostProcess` — the converter saw a `script` + `postProcess` pair whose
+///   post-process body could not be lowered to a declarative transform. The
+///   script runs as a normal script generator and stdout is fed through the JS
+///   function in `source` to produce suggestions.
+/// - `ScriptFunction` — Fig's `script: (...) => [...]` shape: the JS body
+///   evaluates to an `argv` array which is then spawned.
+/// - `Custom` — Fig's `custom: async (...) => [...]` shape: the JS body
+///   returns suggestions directly without any subprocess invocation.
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum JsRuntimeKind {
+    PostProcess,
+    ScriptFunction,
+    Custom,
+}
+
+/// Runtime JS metadata for generators that need QuickJS evaluation. The
+/// engine routes on [`Self::kind`] to drive QuickJS dispatch via
+/// [`gc_jsrt::JsWorker`].
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct JsRuntimeSpec {
+    pub kind: JsRuntimeKind,
+    pub source: String,
+    /// Optional per-generator timeout override.
+    #[serde(default)]
+    pub timeout_ms: Option<u64>,
+    /// When `true`, allows shell-string command execution from `script_function`
+    /// or `custom` generators. Defaults to `false`. In the current engine this
+    /// is effective only for `custom` host calls to `executeShellCommand`;
+    /// `script_function` returns argv for the engine to spawn.
+    #[serde(default)]
+    pub allow_shell_command: bool,
+    /// True only when the converter proved this source does not close over
+    /// bundler/minifier helper bindings that the QuickJS host will not install.
+    /// Custom/script_function sources without this proof remain unsupported.
+    #[serde(default)]
+    pub self_contained: bool,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct GeneratorSpec {
@@ -416,6 +512,17 @@ pub struct GeneratorSpec {
     #[serde(default)]
     pub requires_js: bool,
     pub js_source: Option<String>,
+    /// Runtime JS metadata for generators that need QuickJS evaluation. The
+    /// engine honours it in preference to the legacy `requires_js`
+    /// short-circuit.
+    ///
+    /// Wrapped in `Arc` so the dispatch hot path can share it with the
+    /// spawned worker task without deep-cloning the embedded JS source on
+    /// every keystroke. The corpus contains generators whose source is
+    /// several KB (e.g. AWS), and an `Arc` pointer-bump is essentially
+    /// free vs. a `String::clone`.
+    #[serde(default, deserialize_with = "deserialize_arc_js_runtime")]
+    pub js_runtime: Option<Arc<JsRuntimeSpec>>,
     /// Release tag recording when a silently-mis-converted generator was corrected.
     /// Persists in the spec across regenerations so downstream consumers can
     /// enumerate and surface the affected specs on upgrade.
@@ -427,8 +534,79 @@ pub struct GeneratorSpec {
     pub template: Option<String>,
 }
 
+/// One unique spec, addressable by one or more aliases. Owned by
+/// [`SpecStore`] and shared into the alias index via `Arc` so a single
+/// parsed spec doesn't have to be cloned per-alias on the load path.
+#[derive(Debug)]
+pub struct SpecEntry {
+    /// Stable identifier used for status reporting and `iter()`. Always
+    /// the filename stem — never `CompletionSpec.name`, because two files
+    /// can declare the same `name` and we surface that as a conflict
+    /// rather than letting one silently shadow the other.
+    pub id: String,
+    /// Filename stem, equal to `id`.
+    pub filename_stem: String,
+    /// Source directory (an entry from `resolve_spec_dirs`'s output).
+    pub source_dir: PathBuf,
+    /// Every alias this spec resolves under, in the order they were
+    /// considered: filename stem first, then `CompletionSpec.name` when
+    /// it differs from the stem and does not collide with another entry.
+    pub aliases: Vec<String>,
+    /// The parsed spec.
+    pub spec: Arc<CompletionSpec>,
+}
+
+/// One alias collision detected during loading. Conflicts are diagnostic
+/// signal — the loser is NOT silently dropped from the entry list, only
+/// from the alias under contention. Surfaced via [`SpecStore::conflicts`].
+#[derive(Debug, Clone)]
+pub struct AliasConflict {
+    /// The alias that two specs both wanted to register.
+    pub alias: String,
+    /// What kind of collision this is — drives diagnostics phrasing.
+    pub kind: AliasConflictKind,
+    /// The spec that won the alias (the existing holder at insert time).
+    pub winner: AliasOwner,
+    /// The spec that lost the alias.
+    pub loser: AliasOwner,
+}
+
+/// Categorises an [`AliasConflict`] so doctor / status can render
+/// appropriate phrasing without re-deriving the relationship.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AliasConflictKind {
+    /// Two different spec files declared the same `CompletionSpec.name`.
+    /// Example: `tns.json` and `nativescript.json` both have `name: "ns"`.
+    DuplicateName,
+    /// One spec's `CompletionSpec.name` collides with another spec's
+    /// filename stem. Example: `kubecolor.json` declares `name: "kubectl"`
+    /// while `kubectl.json` already exists in the same dir.
+    NameMatchesOtherStem,
+    /// Same filename in two different configured dirs. The earlier dir
+    /// wins per `resolve_spec_dirs` order — typically how user overrides
+    /// shadow the embedded fallback.
+    DirectoryPrecedence,
+}
+
+/// Identifies the source of a spec involved in an [`AliasConflict`].
+#[derive(Debug, Clone)]
+pub struct AliasOwner {
+    pub filename_stem: String,
+    pub source_dir: PathBuf,
+    pub spec_name: String,
+}
+
+/// Read-only view of every spec the loader was able to parse, plus the
+/// alias index that resolves command keys to those specs.
+///
+/// `SpecStore` is immutable after construction — every mutation is
+/// confined to [`SpecStore::load_from_dirs`] / [`SpecStore::load_from_dir`].
+/// Lookups go through the alias index; iteration yields entries (not
+/// aliases) so status counts don't double-count one spec under two keys.
 pub struct SpecStore {
-    specs: HashMap<String, CompletionSpec>,
+    entries: Vec<Arc<SpecEntry>>,
+    by_alias: HashMap<String, Arc<SpecEntry>>,
+    conflicts: Vec<AliasConflict>,
 }
 
 pub struct SpecLoadResult {
@@ -442,16 +620,23 @@ impl SpecStore {
     /// This matches the user intuition that earlier entries in config's
     /// `paths.spec_dirs` take precedence (e.g., user overrides before
     /// system defaults).
+    ///
+    /// Each spec is keyed in the alias index by its filename stem
+    /// (canonical id) and, when free, by its `CompletionSpec.name`. Files
+    /// whose declared `name` collides with another spec's name or stem
+    /// keep their stem alias and surface a [`AliasConflict`] entry —
+    /// they are not silently dropped from the store.
     pub fn load_from_dirs(dirs: &[PathBuf]) -> Result<SpecLoadResult> {
-        let mut specs: HashMap<String, CompletionSpec> = HashMap::new();
+        let mut entries: Vec<Arc<SpecEntry>> = Vec::new();
+        let mut by_alias: HashMap<String, Arc<SpecEntry>> = HashMap::new();
+        let mut conflicts: Vec<AliasConflict> = Vec::new();
         let mut errors: Vec<String> = Vec::new();
+
         for dir in dirs {
-            match Self::load_from_dir(dir) {
-                Ok(result) => {
-                    for (name, spec) in result.store.specs {
-                        specs.entry(name).or_insert(spec);
-                    }
-                    errors.extend(result.errors);
+            match load_dir_into_entries(dir) {
+                Ok((dir_entries, dir_errors)) => {
+                    register_entries(dir_entries, &mut entries, &mut by_alias, &mut conflicts);
+                    errors.extend(dir_errors);
                 }
                 Err(e) => {
                     // Directory-level IO failure (e.g., EACCES on read_dir).
@@ -463,51 +648,31 @@ impl SpecStore {
                 }
             }
         }
+
         Ok(SpecLoadResult {
-            store: Self { specs },
+            store: Self {
+                entries,
+                by_alias,
+                conflicts,
+            },
             errors,
         })
     }
 
     pub fn load_from_dir(dir: &Path) -> Result<SpecLoadResult> {
-        let mut specs = HashMap::new();
-        let mut errors = Vec::new();
+        let mut entries: Vec<Arc<SpecEntry>> = Vec::new();
+        let mut by_alias: HashMap<String, Arc<SpecEntry>> = HashMap::new();
+        let mut conflicts: Vec<AliasConflict> = Vec::new();
 
-        if !dir.exists() {
-            tracing::warn!("spec directory does not exist: {}", dir.display());
-            return Ok(SpecLoadResult {
-                store: Self { specs },
-                errors,
-            });
-        }
-
-        let entries = std::fs::read_dir(dir)
-            .with_context(|| format!("failed to read spec directory: {}", dir.display()))?;
-
-        for entry in entries {
-            let entry = entry?;
-            let path = entry.path();
-            if path.extension().and_then(|e| e.to_str()) != Some("json") {
-                continue;
-            }
-            let file_name = path
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .to_string();
-            match Self::load_spec(&path) {
-                Ok(spec) => {
-                    tracing::debug!("loaded spec: {}", spec.name);
-                    specs.insert(spec.name.clone(), spec);
-                }
-                Err(e) => {
-                    errors.push(format!("{file_name}: {e}"));
-                }
-            }
-        }
+        let (dir_entries, errors) = load_dir_into_entries(dir)?;
+        register_entries(dir_entries, &mut entries, &mut by_alias, &mut conflicts);
 
         Ok(SpecLoadResult {
-            store: Self { specs },
+            store: Self {
+                entries,
+                by_alias,
+                conflicts,
+            },
             errors,
         })
     }
@@ -524,20 +689,321 @@ impl SpecStore {
         Ok(spec)
     }
 
+    /// Resolve a command alias (filename stem or non-conflicting
+    /// `CompletionSpec.name`) to the parsed spec. Returns `None` when no
+    /// loaded spec advertises this alias.
     pub fn get(&self, command: &str) -> Option<&CompletionSpec> {
-        self.specs.get(command)
+        self.by_alias.get(command).map(|e| e.spec.as_ref())
     }
 
+    /// Yield one tuple per unique spec. The first element is the
+    /// canonical id (filename stem), NOT every alias — callers that want
+    /// to enumerate aliases use [`SpecStore::entries`] directly.
     pub fn iter(&self) -> impl Iterator<Item = (&str, &CompletionSpec)> {
-        self.specs.iter().map(|(k, v)| (k.as_str(), v))
+        self.entries
+            .iter()
+            .map(|e| (e.id.as_str(), e.spec.as_ref()))
     }
 
+    /// Number of unique spec entries (one per loaded file). Differs from
+    /// [`SpecStore::aliases_count`] when one or more entries advertise a
+    /// `name` alias on top of their filename stem.
     pub fn len(&self) -> usize {
-        self.specs.len()
+        self.entries.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.specs.is_empty()
+        self.entries.is_empty()
+    }
+
+    /// All `Arc<SpecEntry>` values in load order. Read-only access for
+    /// status / doctor diagnostics that need source dir + alias lists.
+    pub fn entries(&self) -> &[Arc<SpecEntry>] {
+        &self.entries
+    }
+
+    /// Total number of resolvable command aliases. Equal to
+    /// `entries.iter().map(|e| e.aliases.len()).sum()` and to
+    /// `by_alias.len()`. Surfaced as `commands_addressable` in status
+    /// JSON.
+    pub fn aliases_count(&self) -> usize {
+        self.by_alias.len()
+    }
+
+    /// Alias collisions detected at load time. Surfaced via doctor / status
+    /// so users can spot specs whose declared `name` was rejected.
+    pub fn conflicts(&self) -> &[AliasConflict] {
+        &self.conflicts
+    }
+
+    /// Resolved on-disk path for every entry the loader actually kept, in
+    /// load order. The path is reconstructed as `source_dir.join(format!(
+    /// "{stem}.json"))` — the loader uses that exact form when reading the
+    /// file, so any consumer that re-parses through this list sees the
+    /// same JSON the runtime saw.
+    ///
+    /// Used by `ghost-complete status` to count requires_js generators
+    /// without double-counting when overlapping spec_dirs each ship a
+    /// copy of the same filename. A naïve file scan that walked every
+    /// configured directory and summed their generator counts would
+    /// inflate the reported number on configs where the embedded specs
+    /// dir and a user override dir both contained `git.json`; this
+    /// method de-duplicates by stem so the count reflects the live
+    /// resolved set.
+    pub fn canonical_paths(&self) -> Vec<(String, PathBuf)> {
+        self.entries
+            .iter()
+            .map(|e| {
+                let path = e.source_dir.join(format!("{}.json", e.filename_stem));
+                (e.filename_stem.clone(), path)
+            })
+            .collect()
+    }
+}
+
+/// Carrier for a parsed spec on its way into `register_entries`. We can't
+/// build the final `SpecEntry` at this stage because the `aliases` vec
+/// depends on which alias slots are still free across the merged dir set.
+struct PendingSpec {
+    filename_stem: String,
+    source_dir: PathBuf,
+    spec: CompletionSpec,
+}
+
+/// Walk `dir` for `*.json` specs and parse each one. Failures (parse
+/// errors, IO errors) become per-file error strings; successes accumulate
+/// into the returned vec in filename-stem-sorted order so registration is
+/// deterministic across directories with the same files.
+fn load_dir_into_entries(dir: &Path) -> Result<(Vec<PendingSpec>, Vec<String>)> {
+    let mut pending: Vec<PendingSpec> = Vec::new();
+    let mut errors: Vec<String> = Vec::new();
+
+    if !dir.exists() {
+        tracing::warn!("spec directory does not exist: {}", dir.display());
+        return Ok((pending, errors));
+    }
+
+    let read_dir = std::fs::read_dir(dir)
+        .with_context(|| format!("failed to read spec directory: {}", dir.display()))?;
+
+    let mut paths: Vec<PathBuf> = Vec::new();
+    for entry in read_dir {
+        let entry = entry?;
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("json") {
+            continue;
+        }
+        paths.push(path);
+    }
+    // Sort by filename stem so the "first-wins" alias arbitration is
+    // deterministic — without sorting, `read_dir` order on macOS / Linux
+    // is filesystem-defined and can flip between runs (and between CI
+    // boxes), which would make tests that assert which spec won an alias
+    // race flaky.
+    paths.sort_by(|a, b| {
+        let stem_a = a.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+        let stem_b = b.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+        stem_a.cmp(stem_b)
+    });
+
+    for path in paths {
+        let file_name = path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        let stem = match path.file_stem().and_then(|s| s.to_str()) {
+            Some(s) => s.to_string(),
+            None => continue,
+        };
+        match SpecStore::load_spec(&path) {
+            Ok(spec) => {
+                tracing::debug!("loaded spec: {} (stem={})", spec.name, stem);
+                pending.push(PendingSpec {
+                    filename_stem: stem,
+                    source_dir: dir.to_path_buf(),
+                    spec,
+                });
+            }
+            Err(e) => {
+                errors.push(format!("{file_name}: {e}"));
+            }
+        }
+    }
+
+    Ok((pending, errors))
+}
+
+/// Take a directory's parsed specs and merge them into the running store
+/// state. Two passes:
+///   1. Register every filename stem. Stems are the canonical id and
+///      always take precedence over `name` aliases. A stem already
+///      owned by an earlier directory's same filename is rejected with
+///      a `DirectoryPrecedence` conflict; a stem that collides with a
+///      different file's previously-registered `name` alias is rejected
+///      with `NameMatchesOtherStem` (from the inverted perspective —
+///      the new file's stem matches what an existing file's name claim
+///      already owns).
+///   2. Register `CompletionSpec.name` aliases for entries whose name
+///      differs from the stem. Aliases yield to stems unconditionally;
+///      a name that collides with another spec's stem is rejected with
+///      NameMatchesOtherStem, and a name that collides with another
+///      already-registered name is rejected with DuplicateName.
+///
+/// The two-pass shape exists so the canonical spec wins its own name —
+/// e.g. `kubectl.json` keeps the `kubectl` alias even though
+/// `kubecolor.json` (declared `name: "kubectl"`) is processed first
+/// alphabetically. Without it, an earlier file's name claim could
+/// shadow a later file's stem and silently demote the canonical spec.
+fn register_entries(
+    pending: Vec<PendingSpec>,
+    entries: &mut Vec<Arc<SpecEntry>>,
+    by_alias: &mut HashMap<String, Arc<SpecEntry>>,
+    conflicts: &mut Vec<AliasConflict>,
+) {
+    // Pass 1: register every stem. We move the parsed spec into the
+    // newly-built `SpecEntry` here. `accepted` records each accepted
+    // entry's index in `entries` plus the data we need for pass 2
+    // (filename_stem, source_dir, spec_name) — keeping the ordering of
+    // `pending` so name-alias arbitration is stable.
+    struct Accepted {
+        idx: usize,
+        filename_stem: String,
+        source_dir: PathBuf,
+        spec_name: String,
+    }
+    let mut accepted: Vec<Accepted> = Vec::with_capacity(pending.len());
+
+    for ps in pending {
+        let PendingSpec {
+            filename_stem,
+            source_dir,
+            spec,
+        } = ps;
+
+        if let Some(existing) = by_alias.get(&filename_stem) {
+            // Distinguish two cases:
+            //   - Same filename in two configured dirs (the user-override
+            //     scenario) — earlier dir wins, classify as
+            //     DirectoryPrecedence.
+            //   - The new file's stem collides with a different file's
+            //     already-registered alias (the existing entry came from
+            //     a different filename — typically its `name` claim or
+            //     even its stem under an unrelated path). The losing
+            //     spec is still addressable by ITS stem only if no other
+            //     entry owns that stem; in this branch it doesn't, so
+            //     the file is dropped. Classify as NameMatchesOtherStem.
+            let kind = if existing.filename_stem == filename_stem {
+                AliasConflictKind::DirectoryPrecedence
+            } else {
+                AliasConflictKind::NameMatchesOtherStem
+            };
+            tracing::debug!(
+                stem = %filename_stem,
+                existing_stem = %existing.filename_stem,
+                existing_dir = %existing.source_dir.display(),
+                losing_dir = %source_dir.display(),
+                kind = ?kind,
+                "spec stem already registered — skipping"
+            );
+            conflicts.push(AliasConflict {
+                alias: filename_stem.clone(),
+                kind,
+                winner: AliasOwner {
+                    filename_stem: existing.filename_stem.clone(),
+                    source_dir: existing.source_dir.clone(),
+                    spec_name: existing.spec.name.clone(),
+                },
+                loser: AliasOwner {
+                    filename_stem: filename_stem.clone(),
+                    source_dir: source_dir.clone(),
+                    spec_name: spec.name.clone(),
+                },
+            });
+            continue;
+        }
+
+        let spec_name = spec.name.clone();
+        let entry = Arc::new(SpecEntry {
+            id: filename_stem.clone(),
+            filename_stem: filename_stem.clone(),
+            source_dir: source_dir.clone(),
+            aliases: vec![filename_stem.clone()],
+            spec: Arc::new(spec),
+        });
+        let idx = entries.len();
+        entries.push(Arc::clone(&entry));
+        by_alias.insert(filename_stem.clone(), entry);
+        accepted.push(Accepted {
+            idx,
+            filename_stem,
+            source_dir,
+            spec_name,
+        });
+    }
+
+    // Pass 2: register `CompletionSpec.name` aliases in the same order.
+    // Stems already populate `by_alias`, so a name that collides with
+    // another spec's stem is naturally rejected here without a separate
+    // lookup table.
+    for a in accepted {
+        let Accepted {
+            idx,
+            filename_stem,
+            source_dir,
+            spec_name,
+        } = a;
+
+        if spec_name.is_empty() || spec_name == filename_stem {
+            continue;
+        }
+        if let Some(existing) = by_alias.get(&spec_name) {
+            let kind = if existing.filename_stem == spec_name {
+                AliasConflictKind::NameMatchesOtherStem
+            } else {
+                AliasConflictKind::DuplicateName
+            };
+            tracing::debug!(
+                alias = %spec_name,
+                winner_stem = %existing.filename_stem,
+                loser_stem = %filename_stem,
+                kind = ?kind,
+                "name alias already registered — keeping spec addressable by stem only"
+            );
+            conflicts.push(AliasConflict {
+                alias: spec_name.clone(),
+                kind,
+                winner: AliasOwner {
+                    filename_stem: existing.filename_stem.clone(),
+                    source_dir: existing.source_dir.clone(),
+                    spec_name: existing.spec.name.clone(),
+                },
+                loser: AliasOwner {
+                    filename_stem: filename_stem.clone(),
+                    source_dir,
+                    spec_name: spec_name.clone(),
+                },
+            });
+            continue;
+        }
+
+        // Append the alias to the existing entry. Rebuild the Arc<SpecEntry>
+        // because SpecEntry's fields are not interior-mutable — we want
+        // to keep `aliases` as `Vec<String>` (cheaper iteration) than a
+        // Mutex / Cell that would only get touched during loading.
+        let prev = &entries[idx];
+        let mut new_entry = SpecEntry {
+            id: prev.id.clone(),
+            filename_stem: prev.filename_stem.clone(),
+            source_dir: prev.source_dir.clone(),
+            aliases: prev.aliases.clone(),
+            spec: Arc::clone(&prev.spec),
+        };
+        new_entry.aliases.push(spec_name.clone());
+        let new_arc = Arc::new(new_entry);
+        entries[idx] = Arc::clone(&new_arc);
+        by_alias.insert(filename_stem, Arc::clone(&new_arc));
+        by_alias.insert(spec_name, new_arc);
     }
 }
 
@@ -590,6 +1056,103 @@ pub struct SpecResolution {
     pub past_double_dash: bool,
 }
 
+fn option_arg_count(opt: &OptionSpec) -> usize {
+    usize::from(opt.args.is_some()) + opt.extra_args.len()
+}
+
+fn option_arg_at(opt: &OptionSpec, index: usize) -> Option<&ArgSpec> {
+    if index == 0 {
+        opt.args.as_ref()
+    } else {
+        opt.extra_args.get(index - 1)
+    }
+}
+
+fn option_last_arg_is_variadic(opt: &OptionSpec) -> bool {
+    option_arg_count(opt)
+        .checked_sub(1)
+        .and_then(|idx| option_arg_at(opt, idx))
+        .is_some_and(|arg| arg.is_variadic)
+}
+
+fn has_inline_option_value(flag: &str) -> bool {
+    flag.split_once('=')
+        .is_some_and(|(_, value)| !value.is_empty())
+}
+
+fn completed_option_value_count(args: &[String], flag_idx: usize, opt: &OptionSpec) -> usize {
+    let arg_count = option_arg_count(opt);
+    if arg_count == 0 {
+        return 0;
+    }
+
+    let mut completed = usize::from(has_inline_option_value(&args[flag_idx]));
+    if completed >= arg_count && !option_last_arg_is_variadic(opt) {
+        return completed;
+    }
+
+    let mut idx = flag_idx + 1;
+    while idx < args.len() {
+        if args[idx].starts_with('-') {
+            break;
+        }
+        if completed >= arg_count && !option_last_arg_is_variadic(opt) {
+            break;
+        }
+        completed += 1;
+        idx += 1;
+    }
+    completed
+}
+
+fn active_option_arg_spec<'a>(
+    options: &'a [OptionSpec],
+    args: &[String],
+    ctx: &CommandContext,
+) -> Option<&'a ArgSpec> {
+    if let Some(flag) = &ctx.preceding_flag {
+        if flag.contains('=') {
+            // Inline value already occupies arg slot 0; fall through to the
+            // scanner so `--flag=value <TAB>` can address a second option arg.
+        } else if let Some(opt) = find_option(options, flag) {
+            return option_arg_at(opt, 0);
+        }
+    }
+
+    for (idx, arg) in args.iter().enumerate() {
+        if !arg.starts_with('-') {
+            continue;
+        }
+        let Some(opt) = find_option(options, arg) else {
+            continue;
+        };
+        let arg_count = option_arg_count(opt);
+        if arg_count == 0 {
+            continue;
+        }
+        let completed = completed_option_value_count(args, idx, opt);
+        let span_end =
+            idx + 1 + completed.saturating_sub(usize::from(has_inline_option_value(arg)));
+        if span_end != args.len() {
+            continue;
+        }
+        if completed < arg_count {
+            return option_arg_at(opt, completed);
+        }
+        if option_last_arg_is_variadic(opt) {
+            return option_arg_at(opt, arg_count - 1);
+        }
+    }
+
+    None
+}
+
+fn arg_spec_has_completion_content(arg_spec: &ArgSpec) -> bool {
+    !arg_spec.generators.is_empty()
+        || !arg_spec.suggestions.is_empty()
+        || matches!(arg_spec.template.as_deref(), Some("filepaths" | "folders"))
+}
+
 /// Walk the spec tree using args from the CommandContext to find the deepest
 /// matching subcommand, then return available completions at that position.
 pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResolution {
@@ -620,12 +1183,13 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
 
         // Skip flags
         if arg.starts_with('-') {
-            // If this flag takes a value in the spec, skip the next arg too
-            // (unless the value is inline via `--flag=value`, where there's
-            // no separate next arg to skip).
+            // If this flag takes values in the spec, skip the completed value
+            // tokens too. Option `args` arrays are positional; flattening them
+            // here would make later option values look like subcommands.
             if let Some(opt) = find_option(current_options, arg) {
-                if opt.args.is_some() && !arg.contains('=') && arg_idx + 1 < args.len() {
-                    arg_idx += 2;
+                let consumed = completed_option_value_count(args, arg_idx, opt);
+                if consumed > 0 {
+                    arg_idx += 1 + consumed;
                     continue;
                 }
             }
@@ -689,38 +1253,37 @@ pub fn resolve_spec(spec: &CompletionSpec, ctx: &CommandContext) -> SpecResoluti
     // the option's arg spec for templates/generators instead of the
     // positional args.
     let mut preceding_flag_has_args = false;
-    if let Some(flag) = &ctx.preceding_flag {
-        if let Some(opt) = find_option(current_options, flag) {
-            if let Some(arg_spec) = &opt.args {
-                // The flag takes an argument — suppress subcommands/options
-                // regardless of whether the arg spec has explicit generators.
-                // A bare `"args": { "name": "file" }` still means the user
-                // is filling a value, not typing a subcommand.
-                preceding_flag_has_args = true;
+    let mut option_arg_has_completion_content = false;
+    if let Some(arg_spec) = active_option_arg_spec(current_options, args, ctx) {
+        // The flag takes an argument — suppress subcommands/options
+        // regardless of whether the arg spec has explicit generators.
+        // A bare `"args": { "name": "file" }` still means the user
+        // is filling a value, not typing a subcommand.
+        preceding_flag_has_args = true;
+        option_arg_has_completion_content = arg_spec_has_completion_content(arg_spec);
 
-                collect_generators(
-                    &arg_spec.generators,
-                    &mut native_generators,
-                    &mut provider_generators,
-                    &mut script_generators,
-                    &mut wants_filepaths,
-                    &mut wants_folders_only,
-                );
-                collect_static_suggestions(&arg_spec.suggestions, &mut static_suggestions);
-                match arg_spec.template.as_deref() {
-                    Some("filepaths") => wants_filepaths = true,
-                    Some("folders") => wants_folders_only = true,
-                    _ => {}
-                }
-            }
+        collect_generators(
+            &arg_spec.generators,
+            &mut native_generators,
+            &mut provider_generators,
+            &mut script_generators,
+            &mut wants_filepaths,
+            &mut wants_folders_only,
+        );
+        collect_static_suggestions(&arg_spec.suggestions, &mut static_suggestions);
+        match arg_spec.template.as_deref() {
+            Some("filepaths") => wants_filepaths = true,
+            Some("folders") => wants_folders_only = true,
+            _ => {}
         }
     }
 
     // Check positional arg specs at the resolved position, but only when
-    // not filling a flag argument. When `preceding_flag_has_args` is true,
-    // the user is supplying the flag's value — positional arg specs are
-    // irrelevant and their suggestions would pollute the candidate set.
-    if !preceding_flag_has_args {
+    // the active flag arg has its own completions. Inert option args still
+    // suppress subcommands/options, but can fall through to positional
+    // generators so alias-injected flags like `gcb -> git checkout -b` do
+    // not produce an empty async dispatch set.
+    if !option_arg_has_completion_content {
         for arg_spec in current_args {
             collect_generators(
                 &arg_spec.generators,
@@ -845,8 +1408,39 @@ fn collect_generators(
 ) {
     for gen in generators {
         if gen.requires_js {
-            tracing::info!("skipping generator requiring JS runtime");
-            continue;
+            // Generators with `requires_js: true` but no populated
+            // `js_runtime`, no source, or custom/script_function source that
+            // was not proven self-contained stay skipped — there is nothing
+            // safe to dispatch.
+            let supported = match gen.js_runtime.as_ref().map(|rt| &rt.kind) {
+                Some(JsRuntimeKind::PostProcess) => {
+                    // Post-process still requires an accompanying script;
+                    // a JS body that can't see stdout has no input.
+                    gen.script.is_some() || gen.script_template.is_some()
+                }
+                Some(JsRuntimeKind::ScriptFunction) | Some(JsRuntimeKind::Custom) => gen
+                    .js_runtime
+                    .as_ref()
+                    .is_some_and(|rt| rt.self_contained && !rt.source.trim().is_empty()),
+                None => false,
+            };
+            if !supported {
+                tracing::info!(
+                    kind = ?gen.js_runtime.as_ref().map(|rt| &rt.kind),
+                    has_script = gen.script.is_some(),
+                    has_template = gen.script_template.is_some(),
+                    has_source = gen
+                        .js_runtime
+                        .as_ref()
+                        .map(|rt| !rt.source.trim().is_empty())
+                        .unwrap_or(false),
+                    "skipping requires_js generator — unsupported shape"
+                );
+                continue;
+            }
+            // Fall through: dispatch the generator down the script path
+            // so `engine::run_generators` can pick the right shape based
+            // on `js_runtime.kind`.
         }
         // Three-way dispatch on `generator_type`, with script fall-through
         // ONLY on the unknown-type path. A generator that names a registered
@@ -898,7 +1492,15 @@ fn collect_generators(
         } else {
             false
         };
-        if !handled_by_type && (gen.script.is_some() || gen.script_template.is_some()) {
+        // JS-only generators (script_function / custom) have neither `script`
+        // nor `script_template` populated, but the engine still needs a slot
+        // in the script-generator vec to dispatch them. Funnel anything with
+        // a populated `js_runtime` through the same queue and let
+        // `engine::run_generators` switch on `kind`.
+        let is_js_dispatchable = gen.requires_js && gen.js_runtime.is_some();
+        if !handled_by_type
+            && (gen.script.is_some() || gen.script_template.is_some() || is_js_dispatchable)
+        {
             script.push(Arc::new(gen.clone()));
         }
         // Fig specs put template on generators too (e.g., git checkout's
@@ -936,7 +1538,7 @@ pub fn validate_spec_generators(spec: &mut CompletionSpec) -> Vec<String> {
     let mut warnings = Vec::new();
     validate_args_generators(&mut spec.args, &spec.name, &mut warnings);
     for opt in &mut spec.options {
-        if let Some(ref mut arg_spec) = opt.args {
+        for arg_spec in opt.args.iter_mut().chain(opt.extra_args.iter_mut()) {
             validate_arg_generators(arg_spec, &spec.name, &mut warnings);
         }
     }
@@ -945,7 +1547,7 @@ pub fn validate_spec_generators(spec: &mut CompletionSpec) -> Vec<String> {
     while let Some(sub) = stack.pop() {
         validate_args_generators(&mut sub.args, &spec.name, &mut warnings);
         for opt in &mut sub.options {
-            if let Some(ref mut arg_spec) = opt.args {
+            for arg_spec in opt.args.iter_mut().chain(opt.extra_args.iter_mut()) {
                 validate_arg_generators(arg_spec, &spec.name, &mut warnings);
             }
         }
@@ -1102,10 +1704,14 @@ pub fn estimated_heap_bytes(spec: &CompletionSpec) -> usize {
             .unwrap_or(0);
         // 180 specs carry inline JS source; this is the largest single field.
         let js = opt_string_heap(&g.js_source);
+        // Account for both legacy `js_source` and `js_runtime.source` — the
+        // converter emits the latter, but stale user-installed specs may still
+        // carry the former.
+        let js_runtime = g.js_runtime.as_ref().map(|jr| jr.source.len()).unwrap_or(0);
         let tmpl = opt_string_heap(&g.template);
         let transforms_vec = g.transforms.capacity() * std::mem::size_of::<Transform>();
         let transforms_inner: usize = g.transforms.iter().map(transform_heap).sum();
-        gt + script + script_tmpl + js + tmpl + transforms_vec + transforms_inner
+        gt + script + script_tmpl + js + js_runtime + tmpl + transforms_vec + transforms_inner
     }
     fn arg_spec_heap(arg: &ArgSpec) -> usize {
         let name = opt_string_heap(&arg.name);
@@ -1121,8 +1727,10 @@ pub fn estimated_heap_bytes(spec: &CompletionSpec) -> usize {
         let names: usize = opt.name.iter().map(|n| n.len()).sum();
         let names_vec = opt.name.capacity() * std::mem::size_of::<String>();
         let desc = opt_string_heap(&opt.description);
-        let args = opt.args.as_ref().map(arg_spec_heap).unwrap_or(0);
-        names + names_vec + desc + args
+        let first_arg = opt.args.as_ref().map(arg_spec_heap).unwrap_or(0);
+        let extra_args_vec = opt.extra_args.capacity() * std::mem::size_of::<ArgSpec>();
+        let extra_args = opt.extra_args.iter().map(arg_spec_heap).sum::<usize>();
+        names + names_vec + desc + first_arg + extra_args_vec + extra_args
     }
 
     let mut total = spec.name.len()
@@ -1682,6 +2290,210 @@ mod tests {
     }
 
     #[test]
+    fn test_deserialize_js_runtime_post_process() {
+        // The post_process kind covers requires_js generators whose
+        // post-process body could not be lowered to declarative transforms.
+        // The script still runs natively; stdout is fed through the JS
+        // source.
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{
+                "requires_js": true,
+                "script": ["echo", "hi"],
+                "js_runtime": {
+                    "kind": "post_process",
+                    "source": "out => [{ name: out }]"
+                }
+            }"#,
+        )
+        .unwrap();
+        assert!(gen.requires_js);
+        let jr = gen.js_runtime.expect("js_runtime should parse");
+        assert_eq!(jr.kind, JsRuntimeKind::PostProcess);
+        assert_eq!(jr.source, "out => [{ name: out }]");
+        assert!(jr.timeout_ms.is_none(), "timeout_ms defaults to None");
+        assert!(
+            !jr.allow_shell_command,
+            "allow_shell_command defaults to false"
+        );
+    }
+
+    #[test]
+    fn test_deserialize_js_runtime_script_function() {
+        // The script_function kind covers Fig's `script: (...) => [...]`
+        // shape — the JS body evaluates to an argv array that the runtime
+        // then spawns.
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{
+                "requires_js": true,
+                "js_runtime": {
+                    "kind": "script_function",
+                    "source": "(ctx) => [\"echo\", ctx.tokens[0]]"
+                }
+            }"#,
+        )
+        .unwrap();
+        assert!(gen.requires_js);
+        let jr = gen.js_runtime.expect("js_runtime should parse");
+        assert_eq!(jr.kind, JsRuntimeKind::ScriptFunction);
+        assert!(jr.source.contains("ctx.tokens"));
+    }
+
+    #[test]
+    fn test_deserialize_js_runtime_custom() {
+        // The custom kind covers Fig's `custom: async (...) => [...]`
+        // shape — no script, the JS body returns suggestions directly.
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{
+                "requires_js": true,
+                "js_runtime": {
+                    "kind": "custom",
+                    "source": "async () => [{ name: 'a' }, { name: 'b' }]"
+                }
+            }"#,
+        )
+        .unwrap();
+        assert!(gen.requires_js);
+        let jr = gen.js_runtime.expect("js_runtime should parse");
+        assert_eq!(jr.kind, JsRuntimeKind::Custom);
+        assert!(jr.source.contains("async"));
+    }
+
+    #[test]
+    fn test_deserialize_js_runtime_with_optional_fields() {
+        // The optional fields populate together.
+        let gen: GeneratorSpec = serde_json::from_str(
+            r#"{
+                "requires_js": true,
+                "js_runtime": {
+                    "kind": "post_process",
+                    "source": "x => x",
+                    "timeout_ms": 5000,
+                    "allow_shell_command": true
+                }
+            }"#,
+        )
+        .unwrap();
+        let jr = gen.js_runtime.expect("js_runtime should parse");
+        assert_eq!(jr.kind, JsRuntimeKind::PostProcess);
+        assert_eq!(jr.timeout_ms, Some(5000));
+        assert!(jr.allow_shell_command);
+    }
+
+    #[test]
+    fn test_deserialize_js_runtime_unknown_kind_rejected() {
+        // JsRuntimeKind is a closed enum (no serde(other)). An unknown kind
+        // must hard-fail deserialization so a typo'd converter emission
+        // can't sneak past load-time validation.
+        let bad = r#"{
+            "requires_js": true,
+            "js_runtime": {
+                "kind": "bogus",
+                "source": "..."
+            }
+        }"#;
+        let err = serde_json::from_str::<GeneratorSpec>(bad).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("bogus")
+                || msg.contains("variant")
+                || msg.contains("expected")
+                || msg.contains("unknown"),
+            "deserialization should fail with a variant-rejection error: {msg}"
+        );
+    }
+
+    #[test]
+    fn test_deserialize_js_runtime_unknown_field_rejected() {
+        // js_runtime carries deny_unknown_fields too, so a future converter
+        // emitting a stray key here trips the schema rather than silently
+        // dropping the metadata.
+        let bad = r#"{
+            "requires_js": true,
+            "js_runtime": {
+                "kind": "post_process",
+                "source": "x => x",
+                "extra_field": true
+            }
+        }"#;
+        let err = serde_json::from_str::<GeneratorSpec>(bad).unwrap_err();
+        assert!(
+            err.to_string().contains("extra_field") || err.to_string().contains("unknown field"),
+            "expected unknown-field error: {err}"
+        );
+    }
+
+    #[test]
+    fn test_corpus_has_js_runtime_for_requires_js() {
+        // Corpus invariant: every requires_js generator in the embedded
+        // corpus must carry a populated `js_runtime` object. The lower
+        // bound of 1000 is a comfortable floor — today's regen produces
+        // ~3641 — that still catches a regression where the converter
+        // silently stops emitting the metadata.
+        const MIN_REQUIRES_JS_WITH_RUNTIME: usize = 1000;
+
+        fn count(v: &serde_json::Value) -> (usize, usize) {
+            // (requires_js_total, with_js_runtime)
+            match v {
+                serde_json::Value::Object(map) => {
+                    let mut total = 0;
+                    let mut with_rt = 0;
+                    let is_gen =
+                        matches!(map.get("requires_js"), Some(serde_json::Value::Bool(true)));
+                    if is_gen {
+                        total += 1;
+                        if matches!(map.get("js_runtime"), Some(serde_json::Value::Object(_))) {
+                            with_rt += 1;
+                        }
+                    }
+                    for child in map.values() {
+                        let (t, r) = count(child);
+                        total += t;
+                        with_rt += r;
+                    }
+                    (total, with_rt)
+                }
+                serde_json::Value::Array(arr) => {
+                    let mut total = 0;
+                    let mut with_rt = 0;
+                    for child in arr {
+                        let (t, r) = count(child);
+                        total += t;
+                        with_rt += r;
+                    }
+                    (total, with_rt)
+                }
+                _ => (0, 0),
+            }
+        }
+
+        let mut total_requires_js = 0;
+        let mut total_with_runtime = 0;
+        for (name, body) in crate::embedded::EMBEDDED_SPECS {
+            let v: serde_json::Value = serde_json::from_str(body)
+                .unwrap_or_else(|e| panic!("embedded spec {name} is not valid JSON: {e}"));
+            let (t, r) = count(&v);
+            total_requires_js += t;
+            total_with_runtime += r;
+        }
+        assert!(
+            total_with_runtime >= MIN_REQUIRES_JS_WITH_RUNTIME,
+            "embedded corpus invariant violated: only {total_with_runtime} requires_js \
+             generators have js_runtime populated (out of {total_requires_js} total). \
+             Every requires_js generator emitted by the converter should carry \
+             js_runtime. Lower bound is {MIN_REQUIRES_JS_WITH_RUNTIME}."
+        );
+        // Strict correctness: every requires_js in the embedded corpus
+        // should now carry js_runtime (the converter emits it for all three
+        // shapes — post_process, script_function, custom). Drift here means
+        // a hand-edited spec or a converter regression.
+        assert_eq!(
+            total_with_runtime, total_requires_js,
+            "every requires_js generator in the embedded corpus must carry js_runtime; \
+             saw {total_with_runtime}/{total_requires_js}"
+        );
+    }
+
+    #[test]
     fn test_resolve_spec_splits_generators() {
         let spec: CompletionSpec = serde_json::from_str(
             r#"{
@@ -1846,7 +2658,10 @@ mod tests {
                 generators: vec![],
                 template: None,
                 suggestions: vec![],
+                is_optional: false,
+                is_variadic: false,
             }),
+            extra_args: Vec::new(),
             priority: None,
         }];
         // Exact match
@@ -1875,10 +2690,13 @@ mod tests {
                         generators: vec![],
                         template: None,
                         suggestions: vec![],
+                        is_optional: false,
+                        is_variadic: false,
                     })
                 } else {
                     None
                 },
+                extra_args: Vec::new(),
                 priority: None,
             });
         }
@@ -2032,10 +2850,20 @@ mod tests {
         .unwrap();
 
         let result = SpecStore::load_from_dir(dir.path()).unwrap();
-        let spec = result
+        // Stem-keyed addressability — the file is `evil.json`, so `evil`
+        // is the canonical id. The sanitized `name` ("evil[2J") becomes a
+        // secondary alias and resolves too; both lookups must hit the
+        // same parsed spec.
+        let by_stem = result
+            .store
+            .get("evil")
+            .expect("spec should be addressable by filename stem");
+        let by_alias = result
             .store
             .get("evil[2J")
-            .expect("spec should load with sanitized name");
+            .expect("sanitized name should also resolve as alias");
+        assert!(std::ptr::eq(by_stem, by_alias));
+        let spec = by_stem;
         assert!(
             !spec.name.contains('\x1b'),
             "name kept ESC: {:?}",
@@ -2544,6 +3372,12 @@ mod tests {
             "cache": {"ttl_seconds": 60, "cache_by_directory": true},
             "requires_js": false,
             "js_source": "module.exports = {}",
+            "js_runtime": {
+                "kind": "post_process",
+                "source": "out => out.split('\\n').map(name => ({ name }))",
+                "timeout_ms": 5000,
+                "allow_shell_command": false
+            },
             "_corrected_in": "v0.10.0",
             "template": "filepaths"
         }"#;
@@ -2552,6 +3386,10 @@ mod tests {
         assert_eq!(gen.transforms.len(), 1);
         assert_eq!(gen.corrected_in.as_deref(), Some("v0.10.0"));
         assert_eq!(gen.template.as_deref(), Some("filepaths"));
+        let jr = gen.js_runtime.as_ref().expect("js_runtime should parse");
+        assert_eq!(jr.kind, JsRuntimeKind::PostProcess);
+        assert_eq!(jr.timeout_ms, Some(5000));
+        assert!(!jr.allow_shell_command);
     }
 
     #[test]
@@ -2906,6 +3744,47 @@ mod tests {
     }
 
     #[test]
+    fn inert_option_arg_does_not_block_positional_generators() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "git",
+                "subcommands": [{
+                    "name": "checkout",
+                    "options": [{
+                        "name": ["-b"],
+                        "args": { "name": "new-branch" }
+                    }],
+                    "args": [{
+                        "name": "ref",
+                        "generators": [{"type": "git_branches"}]
+                    }]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("git".into()),
+            args: vec!["checkout".into(), "-b".into()],
+            current_word: "main".into(),
+            word_index: 3,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+
+        let res = resolve_spec(&spec, &ctx);
+        assert!(
+            res.native_generators.contains(&"git_branches".to_string()),
+            "inert option args should fall through to positional generators: {:?}",
+            res.native_generators
+        );
+    }
+
+    #[test]
     fn static_suggestion_priority_field_round_trips() {
         // `collect_static_suggestions` copies `obj.priority` into the
         // resulting Suggestion. Pin the round-trip so a regression that
@@ -3034,6 +3913,103 @@ mod tests {
     }
 
     #[test]
+    fn option_arg_after_trailing_equals_uses_first_arg_spec() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "fmt",
+                "options": [{
+                    "name": ["--format"],
+                    "args": {
+                        "name": "kind",
+                        "suggestions": ["tar", "zip"]
+                    }
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("fmt".into()),
+            args: vec!["--format=".into()],
+            current_word: String::new(),
+            word_index: 2,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: Some("--format=".into()),
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+
+        let res = resolve_spec(&spec, &ctx);
+        let texts: Vec<&str> = res
+            .static_suggestions
+            .iter()
+            .map(|s| s.text.as_str())
+            .collect();
+        assert_eq!(texts, vec!["tar", "zip"]);
+    }
+
+    #[test]
+    fn option_args_array_preserves_positional_arg_specs() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "chezmoi",
+                "options": [{
+                    "name": ["-t", "--track"],
+                    "args": [
+                        {"name": "branch", "suggestions": ["main", "dev"]},
+                        {"name": "start-point", "suggestions": ["origin/main"]}
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+
+        let first_ctx = CommandContext {
+            command: Some("chezmoi".into()),
+            args: vec!["-t".into()],
+            current_word: String::new(),
+            word_index: 2,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: Some("-t".into()),
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let first = resolve_spec(&spec, &first_ctx);
+        let first_texts: Vec<&str> = first
+            .static_suggestions
+            .iter()
+            .map(|s| s.text.as_str())
+            .collect();
+        assert_eq!(first_texts, vec!["main", "dev"]);
+
+        let second_ctx = CommandContext {
+            command: Some("chezmoi".into()),
+            args: vec!["-t".into(), "main".into()],
+            current_word: String::new(),
+            word_index: 3,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let second = resolve_spec(&spec, &second_ctx);
+        let second_texts: Vec<&str> = second
+            .static_suggestions
+            .iter()
+            .map(|s| s.text.as_str())
+            .collect();
+        assert_eq!(second_texts, vec!["origin/main"]);
+    }
+
+    #[test]
     fn pure_control_char_suggestion_name_pruned_after_sanitize() {
         // The combined sanitize → validate pipeline must drop entries whose
         // names sanitize down to empty strings. A regression that runs
@@ -3074,5 +4050,369 @@ mod tests {
         let res = resolve_spec(&spec, &ctx);
         assert_eq!(res.static_suggestions.len(), 2);
         assert!(res.static_suggestions.iter().all(|s| s.text == "foo"));
+    }
+
+    // ------------------------------------------------------------------
+    // Addressability tests
+    //
+    // These tests pin the contract that a spec is reachable by its
+    // filename stem (the "canonical id") and, when free, by its
+    // declared `name` as a secondary alias. Without this guarantee the
+    // 6 corpus files whose `name` collides with another spec's stem
+    // (kubecolor → kubectl, j → autojump, etc.) silently disappear from
+    // the on-shell command set.
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn kubecolor_resolves_by_filename_stem_and_kubectl_wins_alias() {
+        // Real-corpus shape: kubecolor.json declares `name: "kubectl"`,
+        // kubectl.json also declares `name: "kubectl"`. Under a
+        // name-keyed loader one of the two silently won the `kubectl`
+        // HashMap slot and the other was dropped. Now both load: each
+        // is addressable by its filename stem, and the alphabetically-
+        // first file wins the `kubectl` alias.
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("kubecolor.json"),
+            r#"{
+                "name": "kubectl",
+                "subcommands": [{"name": "from-kubecolor"}]
+            }"#,
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("kubectl.json"),
+            r#"{
+                "name": "kubectl",
+                "subcommands": [{"name": "from-kubectl-spec"}]
+            }"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let store = &result.store;
+
+        // Both stems must address their respective parsed specs.
+        let by_kubecolor = store.get("kubecolor").expect("kubecolor stem must resolve");
+        assert_eq!(by_kubecolor.subcommands[0].name, "from-kubecolor");
+        let by_kubectl = store.get("kubectl").expect("kubectl stem must resolve");
+        assert_eq!(by_kubectl.subcommands[0].name, "from-kubectl-spec");
+
+        // Exactly one conflict: kubecolor.json's `kubectl` name alias
+        // loses to kubectl.json's stem (NameMatchesOtherStem because
+        // the winner's `id` is exactly the contested alias).
+        let conflicts = store.conflicts();
+        assert_eq!(conflicts.len(), 1, "expected one alias conflict");
+        let c = &conflicts[0];
+        assert_eq!(c.alias, "kubectl");
+        assert_eq!(c.kind, AliasConflictKind::NameMatchesOtherStem);
+        assert_eq!(c.winner.filename_stem, "kubectl");
+        assert_eq!(c.loser.filename_stem, "kubecolor");
+
+        // No silent loss: every committed file is one entry.
+        assert_eq!(store.entries().len(), 2);
+        assert_eq!(store.aliases_count(), 2, "two stems, no extra alias");
+    }
+
+    #[test]
+    fn duplicate_name_collision_surfaces_conflict() {
+        // Two files declare the same `name`. The alphabetically-first
+        // file wins the alias; the second keeps its stem alias and the
+        // collision is recorded as DuplicateName.
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("alpha.json"),
+            r#"{"name": "shared", "subcommands": [{"name": "from-alpha"}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("beta.json"),
+            r#"{"name": "shared", "subcommands": [{"name": "from-beta"}]}"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let store = &result.store;
+
+        // Both stems resolve to their respective specs.
+        assert_eq!(
+            store.get("alpha").unwrap().subcommands[0].name,
+            "from-alpha"
+        );
+        assert_eq!(store.get("beta").unwrap().subcommands[0].name, "from-beta");
+
+        // The shared `name` resolves to the first-loaded file.
+        let by_name = store
+            .get("shared")
+            .expect("name alias must resolve to the winner");
+        assert_eq!(by_name.subcommands[0].name, "from-alpha");
+
+        // Exactly one conflict surfaces: beta loses the `shared` alias.
+        let conflicts = store.conflicts();
+        assert_eq!(conflicts.len(), 1);
+        let c = &conflicts[0];
+        assert_eq!(c.alias, "shared");
+        assert_eq!(c.kind, AliasConflictKind::DuplicateName);
+        assert_eq!(c.winner.filename_stem, "alpha");
+        assert_eq!(c.loser.filename_stem, "beta");
+
+        // Both files become entries; aliases = 2 stems + 1 name = 3.
+        assert_eq!(store.entries().len(), 2);
+        assert_eq!(store.aliases_count(), 3);
+    }
+
+    #[test]
+    fn uppercase_lowercase_stems_are_case_sensitive() {
+        // The corpus has both R.json and Rscript.json, plus r.json and
+        // rscript.json. Filename stems are case-sensitive: `R` and `r`
+        // are distinct addressable commands (matches the on-shell
+        // case-sensitive PATH lookup behavior).
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("R.json"),
+            r#"{"name": "R", "subcommands": [{"name": "from-uppercase"}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("Rscript.json"),
+            r#"{"name": "Rscript", "subcommands": [{"name": "from-rscript"}]}"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let store = &result.store;
+
+        let by_r = store.get("R").expect("uppercase R must resolve");
+        assert_eq!(by_r.subcommands[0].name, "from-uppercase");
+        let by_rscript = store.get("Rscript").expect("Rscript must resolve");
+        assert_eq!(by_rscript.subcommands[0].name, "from-rscript");
+
+        // Stems match their `name` declarations, so no extra aliases.
+        assert!(
+            store.conflicts().is_empty(),
+            "no conflicts expected, got {:?}",
+            store.conflicts()
+        );
+        assert_eq!(store.entries().len(), 2);
+        assert_eq!(store.aliases_count(), 2);
+    }
+
+    #[test]
+    fn user_override_replaces_embedded_with_directory_precedence() {
+        // The classic user-override scenario: the same filename in two
+        // configured dirs. The earlier dir wins — the embedded copy is
+        // demoted to a DirectoryPrecedence conflict at debug level
+        // (NOT an error — this is how user overrides work).
+        let user_dir = tempfile::TempDir::new().unwrap();
+        let embedded_dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            user_dir.path().join("git.json"),
+            r#"{"name": "git", "subcommands": [{"name": "user-override"}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            embedded_dir.path().join("git.json"),
+            r#"{"name": "git", "subcommands": [{"name": "embedded-default"}]}"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dirs(&[
+            user_dir.path().to_path_buf(),
+            embedded_dir.path().to_path_buf(),
+        ])
+        .unwrap();
+        let store = &result.store;
+
+        let by_git = store.get("git").expect("git must resolve");
+        assert_eq!(
+            by_git.subcommands[0].name, "user-override",
+            "user copy must win (earlier dir = higher precedence)"
+        );
+
+        let conflicts = store.conflicts();
+        assert_eq!(conflicts.len(), 1);
+        let c = &conflicts[0];
+        assert_eq!(c.alias, "git");
+        assert_eq!(c.kind, AliasConflictKind::DirectoryPrecedence);
+        assert_eq!(c.winner.source_dir, user_dir.path());
+        assert_eq!(c.loser.source_dir, embedded_dir.path());
+
+        // Only the user copy becomes an entry — the embedded loser is
+        // skipped entirely (it has nothing addressable left after
+        // losing its only stem).
+        assert_eq!(store.entries().len(), 1);
+        assert_eq!(store.aliases_count(), 1);
+    }
+
+    #[test]
+    fn cross_dir_stem_matches_earlier_name_alias_is_not_directory_precedence() {
+        // Cross-dir name-vs-stem collision: dir1 owns the `kubectl`
+        // alias via foo.json's `name: "kubectl"` claim, then dir2's
+        // kubectl.json arrives whose stem is the same string.
+        //
+        // The two files have DIFFERENT filename stems (`foo` vs
+        // `kubectl`), so this is NOT the user-override scenario —
+        // classifying it as DirectoryPrecedence would mislead doctor
+        // into telling the user one dir is shadowing another when in
+        // reality it's a name-claim collision. Correct kind is
+        // NameMatchesOtherStem (from the inverted perspective: the new
+        // file's stem matches what the earlier file's name already
+        // owns).
+        let dir1 = tempfile::TempDir::new().unwrap();
+        let dir2 = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir1.path().join("foo.json"),
+            r#"{"name": "kubectl", "subcommands": [{"name": "from-foo"}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            dir2.path().join("kubectl.json"),
+            r#"{"name": "kubectl", "subcommands": [{"name": "from-kubectl"}]}"#,
+        )
+        .unwrap();
+
+        let result =
+            SpecStore::load_from_dirs(&[dir1.path().to_path_buf(), dir2.path().to_path_buf()])
+                .unwrap();
+        let store = &result.store;
+
+        // dir1's foo.json wins both stems it touches: `foo` (its own)
+        // and `kubectl` (its declared name). dir2's kubectl.json is
+        // rejected: its stem `kubectl` is already owned by foo.json's
+        // name alias, so it has nothing addressable left.
+        assert_eq!(
+            store.get("foo").unwrap().subcommands[0].name,
+            "from-foo",
+            "dir1 foo.json must address by its own stem"
+        );
+        assert_eq!(
+            store.get("kubectl").unwrap().subcommands[0].name,
+            "from-foo",
+            "dir1's name claim wins because it loaded first"
+        );
+
+        let conflicts = store.conflicts();
+        assert_eq!(
+            conflicts.len(),
+            1,
+            "expected one conflict, got {conflicts:?}"
+        );
+        let c = &conflicts[0];
+        assert_eq!(c.alias, "kubectl");
+        assert_eq!(
+            c.kind,
+            AliasConflictKind::NameMatchesOtherStem,
+            "different filename stems must classify as NameMatchesOtherStem, \
+             not DirectoryPrecedence — distinct files in distinct dirs are \
+             not the user-override scenario"
+        );
+        assert_eq!(c.winner.filename_stem, "foo");
+        assert_eq!(c.winner.source_dir, dir1.path());
+        assert_eq!(c.loser.filename_stem, "kubectl");
+        assert_eq!(c.loser.source_dir, dir2.path());
+
+        // dir2's kubectl.json is dropped entirely — the only entry is
+        // dir1's foo.json.
+        assert_eq!(store.entries().len(), 1);
+        // Aliases: `foo` stem + `kubectl` name = 2.
+        assert_eq!(store.aliases_count(), 2);
+    }
+
+    #[test]
+    fn iter_yields_one_tuple_per_unique_spec_not_per_alias() {
+        // SpecStore::iter() must enumerate entries (one per file), not
+        // alias keys (which would double-count specs that register both
+        // a stem and a name alias). Without this, status counts would
+        // overcount the corpus by ~8 against the 709-spec baseline.
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("alias-target.json"),
+            r#"{"name": "different-name", "subcommands": [{"name": "x"}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("plain.json"),
+            r#"{"name": "plain", "subcommands": [{"name": "y"}]}"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let store = &result.store;
+
+        // 2 entries; 3 aliases (alias-target, different-name, plain).
+        assert_eq!(store.entries().len(), 2);
+        assert_eq!(store.aliases_count(), 3);
+
+        let iter_count = store.iter().count();
+        assert_eq!(
+            iter_count, 2,
+            "iter() must yield one tuple per unique spec, not per alias"
+        );
+
+        // Every stem reachable via iter must round-trip through get().
+        for (id, spec) in store.iter() {
+            let got = store.get(id).expect("stem must resolve");
+            assert_eq!(got.name, spec.name);
+        }
+    }
+
+    #[test]
+    fn addressability_holds_against_full_corpus() {
+        // The on-disk corpus must load without silent loss: every
+        // committed `*.json` becomes a SpecEntry (709 entries against
+        // the embedded corpus), and aliases_count() equals 709 + the
+        // number of non-conflicting `name` aliases.
+        let spec_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
+        if !spec_dir.is_dir() {
+            // Repo-test guard: this test runs from the workspace where
+            // `specs/` lives. Skip silently in environments without it.
+            return;
+        }
+        let result = SpecStore::load_from_dir(&spec_dir).unwrap();
+        let store = &result.store;
+
+        // Every file becomes one entry.
+        let file_count = std::fs::read_dir(&spec_dir)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().extension().and_then(|x| x.to_str()) == Some("json"))
+            .count();
+        assert_eq!(
+            store.entries().len(),
+            file_count,
+            "every committed spec file must produce a unique SpecEntry"
+        );
+
+        // commands_addressable ≥ entries: each entry registers at
+        // least its stem, possibly plus a name alias.
+        assert!(
+            store.aliases_count() >= store.entries().len(),
+            "alias count {} must be ≥ entry count {}",
+            store.aliases_count(),
+            store.entries().len()
+        );
+
+        // The 6 historically-lost commands MUST address by stem.
+        // These are the spec files whose `name` collides with another
+        // spec's stem in the embedded corpus (kubecolor wants
+        // `kubectl`, j wants `autojump`, etc.). The legacy name-keyed
+        // HashMap silently dropped them; the stem is now the canonical
+        // command key.
+        for stem in ["kubecolor", "br", "j", "nativescript", "tns", "sta"] {
+            assert!(
+                store.get(stem).is_some(),
+                "stem `{stem}` must be addressable by filename"
+            );
+        }
+
+        // Conflicts: at minimum the 6 NameMatchesOtherStem entries
+        // above plus duplicate-name pairs (e.g. kubectl: 2 specs,
+        // ns: 3 specs). Concrete count is corpus-dependent — guard
+        // against zero.
+        assert!(
+            !store.conflicts().is_empty(),
+            "embedded corpus has known stem/name collisions; conflict list \
+             must be non-empty"
+        );
     }
 }

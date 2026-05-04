@@ -97,7 +97,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -232,7 +235,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -345,7 +351,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -514,7 +523,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -572,7 +584,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -594,7 +609,10 @@
                 "generators": [
                   {
                     "requires_js": true,
-                    "js_source": "(f,g,k)=>Fe(this,void 0,void 0,function*(){var h;let{isDangerous:w,currentWorkingDirectory:T,searchTerm:m}=k,x=(h=(0,v.getCurrentInsertedDirectory)(d??T,m,k))!==null&&h!==void 0?h:\"/\";try{let U=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:x}),fe=$(U.stdout.split(`\n`),[\".DS_Store\"]),J=[];for(let I of fe)if(I){let z=I.endsWith(\"/\")?\"folders\":\"filepaths\";(z===\"filepaths\"&&c!==\"only\"||z===\"folders\"&&c!==\"never\")&&J.push({type:z===\"filepaths\"?\"file\":\"folder\",name:I,insertValue:I,isDangerous:w,context:{templateType:z}})}return S(b(J))}catch{return[]}})"
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "(f,g,k)=>Fe(this,void 0,void 0,function*(){var h;let{isDangerous:w,currentWorkingDirectory:T,searchTerm:m}=k,x=(h=(0,v.getCurrentInsertedDirectory)(d??T,m,k))!==null&&h!==void 0?h:\"/\";try{let U=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:x}),fe=$(U.stdout.split(`\n`),[\".DS_Store\"]),J=[];for(let I of fe)if(I){let z=I.endsWith(\"/\")?\"folders\":\"filepaths\";(z===\"filepaths\"&&c!==\"only\"||z===\"folders\"&&c!==\"never\")&&J.push({type:z===\"filepaths\"?\"file\":\"folder\",name:I,insertValue:I,isDangerous:w,context:{templateType:z}})}return S(b(J))}catch{return[]}})"
+                    }
                   }
                 ]
               }
@@ -698,7 +716,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -745,7 +766,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -946,7 +970,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -1162,7 +1189,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -1231,7 +1261,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -1284,7 +1317,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -1331,7 +1367,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -1694,7 +1733,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -1719,7 +1761,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -1772,7 +1817,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -1846,7 +1894,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -2004,7 +2055,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -2069,7 +2123,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -2132,7 +2189,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -2281,7 +2341,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -2605,7 +2668,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -2701,7 +2767,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -2781,7 +2850,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -3002,7 +3074,10 @@
                       "emulators"
                     ],
                     "requires_js": true,
-                    "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                    }
                   }
                 ]
               }
@@ -3060,7 +3135,10 @@
                   "emulators"
                 ],
                 "requires_js": true,
-                "js_source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(e){return e.match(/.*•.*/gi).map(t=>t.split(\"\\u2022\")).map(t=>t.map(n=>n.trim())).map(t=>({name:`${t[1]} \\u2022 ${t[2]} \\u2022 ${t[3]}`,icon:\"\\u{1F4F1}\",description:\"Available emulators\",insertValue:t[0]}))}"
+                }
               }
             ]
           }
@@ -3123,7 +3201,10 @@
               "releases"
             ],
             "requires_js": true,
-            "js_source": "function(t){let s=t.match(i);return[...new Set(s)].map(o=>({name:o})).reverse()}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(t){let s=t.match(i);return[...new Set(s)].map(o=>({name:o})).reverse()}"
+            }
           }
         ]
       }

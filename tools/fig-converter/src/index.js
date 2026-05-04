@@ -39,6 +39,7 @@ import { spawn } from 'node:child_process';
 import { convertSpec } from './static-converter.js';
 import { matchPostProcess } from './post-process-matcher.js';
 import { matchNativeFromJsSource, matchNativeGenerator } from './native-map.js';
+import { analyzeGenerator } from './ast-analyzer.js';
 
 const BUILD_DIR = join(
   import.meta.dirname,
@@ -211,6 +212,14 @@ function walkGenerators(obj, callback) {
   }
 }
 
+function buildSelfContainedJsRuntime(kind, source) {
+  if (!source || typeof source !== 'string') return null;
+  const analysis = analyzeGenerator(source);
+  if (analysis.parse_error) return null;
+  if (analysis.fig_api_refs.some((ref) => ref.kind === 'free')) return null;
+  return { kind, source, self_contained: true };
+}
+
 /**
  * Process a single generator through the conversion pipeline.
  *
@@ -218,15 +227,19 @@ function walkGenerators(obj, callback) {
  * 1. Native generator map (git branch → git_branches)
  * 2. script + postProcess → pattern match → transforms
  * 3. script + splitOn → transforms
- * 4. script (function) → requires_js
- * 5. custom → requires_js
+ * 4. script (function) → js_runtime.kind = "script_function"
+ * 5. custom → js_runtime.kind = "custom"
  * 6. Template-only → pass through
+ *
+ * Exported so the converter test suite can pin the native-first /
+ * requires_js / js_runtime emission seams without spinning up the upstream
+ * loader for a full spec.
  *
  * @param {object} gen - Intermediate generator from static-converter
  * @param {string} specName - The spec name
  * @returns {object} Final Ghost Complete generator
  */
-function processGenerator(gen, specName) {
+export function processGenerator(gen, specName) {
   if (!gen || typeof gen !== 'object') return gen;
 
   // Case: custom async generator — try a native rewrite first, then
@@ -236,8 +249,8 @@ function processGenerator(gen, specName) {
   // there is no `script` array to key on at all. The strip-on-rewrite
   // contract holds: a successful native match returns the bare native
   // gen (plus optional cache), dropping `_custom`, `_customSource`,
-  // `requires_js`, `js_source`, `script`, and `script_template` along
-  // with every other internal marker.
+  // `requires_js`, `js_source`, `js_runtime`, `script`, and
+  // `script_template` along with every other internal marker.
   if (gen._custom) {
     const native = matchNativeFromJsSource(specName, gen._customSource);
     if (native) {
@@ -245,8 +258,14 @@ function processGenerator(gen, specName) {
       if (gen.cache) result.cache = gen.cache;
       return result;
     }
+    // Function sources produced by Function.prototype.toString() can close
+    // over bundled/minified helpers; QuickJS evaluates in a fresh host
+    // context, so unresolved free identifiers must remain unsupported.
     const result = { requires_js: true };
-    if (gen._customSource) result.js_source = gen._customSource;
+    const runtime = buildSelfContainedJsRuntime('custom', gen._customSource);
+    if (runtime) {
+      result.js_runtime = runtime;
+    }
     return result;
   }
 
@@ -261,8 +280,14 @@ function processGenerator(gen, specName) {
       if (gen.cache) result.cache = gen.cache;
       return result;
     }
+    // Only attach the source when it has no converter/bundler helper
+    // dependencies — closures over external helpers cannot resolve in the
+    // fresh QuickJS context.
     const result = { requires_js: true };
-    if (gen._scriptSource) result.js_source = gen._scriptSource;
+    const runtime = buildSelfContainedJsRuntime('script_function', gen._scriptSource);
+    if (runtime) {
+      result.js_runtime = runtime;
+    }
     return result;
   }
 
@@ -283,7 +308,14 @@ function processGenerator(gen, specName) {
 
       if (match.requires_js) {
         result.requires_js = true;
-        if (match.js_source) result.js_source = match.js_source;
+        // The matcher couldn't lower postProcess to declarative transforms
+        // but may have extracted a usable JS body. When present, attach it
+        // so the runtime can feed the script's stdout through the function.
+        // When absent, leaving `js_runtime` off signals the runtime that
+        // there is no JS to evaluate.
+        if (match.js_source) {
+          result.js_runtime = { kind: 'post_process', source: match.js_source };
+        }
         // Propagate the _corrected_in marker set by the matcher for the
         // specific bug-class paths (substring/slice, JSON.parse
         // unresolvable-field). Passed through cleanGenerator via its

@@ -242,7 +242,10 @@
                   "https://api.github.com/repos/NativeScript/nativescript-app-templates/contents/packages"
                 ],
                 "requires_js": true,
-                "js_source": "r=>JSON.parse(r).map(y=>{let h=y?.name;return{name:`@nativescript/${h}`,description:`Template ${h}`}})",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "r=>JSON.parse(r).map(y=>{let h=y?.name;return{name:`@nativescript/${h}`,description:`Template ${h}`}})"
+                },
                 "cache": {
                   "ttl_seconds": 8640000
                 }

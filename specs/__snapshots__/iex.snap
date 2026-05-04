@@ -4,7 +4,10 @@
       "description": ".exs file",
       "generators": [
         {
-          "js_source": "(p,g,O)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:_,searchTerm:h}=O,x=(f=(0,v.getCurrentInsertedDirectory)(c??_,h,O))!==null&&f!==void 0?f:\"/\";try{let N=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:x}),Z=H(N.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let L of Z)if(L){let F=L.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&q.push({type:F===\"filepaths\"?\"file\":\"folder\",name:L,insertValue:L,isDangerous:b,context:{templateType:F}})}return S(m(q))}catch{return[]}})",
+          "js_runtime": {
+            "kind": "custom",
+            "source": "(p,g,O)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:_,searchTerm:h}=O,x=(f=(0,v.getCurrentInsertedDirectory)(c??_,h,O))!==null&&f!==void 0?f:\"/\";try{let N=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:x}),Z=H(N.stdout.split(`\n`),[\".DS_Store\"]),q=[];for(let L of Z)if(L){let F=L.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&q.push({type:F===\"filepaths\"?\"file\":\"folder\",name:L,insertValue:L,isDangerous:b,context:{templateType:F}})}return S(m(q))}catch{return[]}})"
+          },
           "requires_js": true
         }
       ],

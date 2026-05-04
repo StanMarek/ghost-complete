@@ -6,7 +6,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "t=>JSON.parse(t).map(n=>({name:n.email,description:n.url,insertValue:n.account_uuid,icon:e}))",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "t=>JSON.parse(t).map(n=>({name:n.email,description:n.url,insertValue:n.account_uuid,icon:e}))"
+            },
             "requires_js": true,
             "script": [
               "op",

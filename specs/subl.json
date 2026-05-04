@@ -12,7 +12,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "(h,v,O)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:p}=O,S=(d=(0,y.getCurrentInsertedDirectory)(u??b,p,O))!==null&&d!==void 0?d:\"/\";try{let P=yield v({command:\"ls\",args:[\"-1ApL\"],cwd:S}),Z=K(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&c!==\"only\"||F===\"folders\"&&c!==\"never\")&&W.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return w(g(W))}catch{return[]}})"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "(h,v,O)=>ue(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:b,searchTerm:p}=O,S=(d=(0,y.getCurrentInsertedDirectory)(u??b,p,O))!==null&&d!==void 0?d:\"/\";try{let P=yield v({command:\"ls\",args:[\"-1ApL\"],cwd:S}),Z=K(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let V of Z)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&c!==\"only\"||F===\"folders\"&&c!==\"never\")&&W.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return w(g(W))}catch{return[]}})"
+            }
           }
         ]
       }

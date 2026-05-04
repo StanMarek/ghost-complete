@@ -255,7 +255,10 @@
         "description": "Optional image to launch. If omitted, then the default Ubuntu LTS will be used",
         "generators": [
           {
-            "js_source": "a=>{let e=JSON.parse(a).images;return Object.keys(e).map(i=>({name:i,description:e[i].os+\" \"+e[i].release}))}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "a=>{let e=JSON.parse(a).images;return Object.keys(e).map(i=>({name:i,description:e[i].os+\" \"+e[i].release}))}"
+            },
             "requires_js": true,
             "script": [
               "multipass",

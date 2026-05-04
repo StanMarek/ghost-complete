@@ -479,7 +479,10 @@
         "description": "Packages to install or update in the conda environment",
         "generators": [
           {
-            "js_source": "i=>[\"conda\",\"search\",i[i.length-1],\"--json\"]",
+            "js_runtime": {
+              "kind": "script_function",
+              "source": "i=>[\"conda\",\"search\",i[i.length-1],\"--json\"]"
+            },
             "requires_js": true
           }
         ],
@@ -910,7 +913,10 @@
         "generators": [
           {
             "cache": {},
-            "js_source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}"
+            },
             "requires_js": true,
             "script": [
               "conda",
@@ -1069,7 +1075,10 @@
         "generators": [
           {
             "cache": {},
-            "js_source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}"
+            },
             "requires_js": true,
             "script": [
               "conda",
@@ -1403,7 +1412,10 @@
         "generators": [
           {
             "cache": {},
-            "js_source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}"
+            },
             "requires_js": true,
             "script": [
               "conda",
@@ -1640,7 +1652,10 @@
         "generators": [
           {
             "cache": {},
-            "js_source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}",
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}"
+            },
             "requires_js": true,
             "script": [
               "conda",
@@ -1881,7 +1896,10 @@
             "generators": [
               {
                 "cache": {},
-                "js_source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}"
+                },
                 "requires_js": true,
                 "script": [
                   "conda",
@@ -1999,7 +2017,10 @@
             "generators": [
               {
                 "cache": {},
-                "js_source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}",
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(i){let e=[];try{return e=JSON.parse(i).map(n=>({name:n.name,description:`${n.version} - ${n.platform}`,icon:\"fig://icon?type=package\"})),e}catch{return e}}"
+                },
                 "requires_js": true,
                 "script": [
                   "conda",

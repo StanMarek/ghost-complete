@@ -102,7 +102,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(e,n)=>{let s=e[e.length-1].split(\"+\"),o=new Map([[\"OTP\",[\"o\"]],[\"o\",[\"OTP\"]],[\"FIDO\",[\"f\"]],[\"f\",[\"FIDO\"]],[\"CCID\",[\"c\"]],[\"c\",[\"CCID\"]]]),t=new Set([...o.values()].flat());for(let i of s){t.delete(i);let a=o.get(i);a&&a.forEach(r=>{t.delete(r)})}return[...t].map(i=>({name:i}))}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(e,n)=>{let s=e[e.length-1].split(\"+\"),o=new Map([[\"OTP\",[\"o\"]],[\"o\",[\"OTP\"]],[\"FIDO\",[\"f\"]],[\"f\",[\"FIDO\"]],[\"CCID\",[\"c\"]],[\"c\",[\"CCID\"]]]),t=new Set([...o.values()].flat());for(let i of s){t.delete(i);let a=o.get(i);a&&a.forEach(r=>{t.delete(r)})}return[...t].map(i=>({name:i}))}"
+                }
               }
             ]
           }

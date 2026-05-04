@@ -2,26 +2,6 @@
   "schema_version": "1.0",
   "candidates": [
     {
-      "command": "arduino-cli",
-      "total_requires_js_generators": 19,
-      "fig_api_ref_generators": 0,
-      "script_commands_observed": [
-        "arduino-cli board list --format json"
-      ],
-      "qualification": {
-        "single_subprocess_no_pipeline": true,
-        "no_auth": true,
-        "no_pagination": true,
-        "stable_line_output": true,
-        "no_file_system_parsing": true,
-        "output_bounded": true,
-        "no_rate_limits": true,
-        "no_new_transitive_deps": true
-      },
-      "qualifies": true,
-      "rationale": "Command 'arduino-cli' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
-    },
-    {
       "command": "asdf",
       "total_requires_js_generators": 18,
       "fig_api_ref_generators": 7,
@@ -58,48 +38,6 @@
       "rationale": "Command 'trivy' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
     },
     {
-      "command": "mamba",
-      "total_requires_js_generators": 10,
-      "fig_api_ref_generators": 0,
-      "script_commands_observed": [
-        "conda env list",
-        "conda list --json"
-      ],
-      "qualification": {
-        "single_subprocess_no_pipeline": true,
-        "no_auth": true,
-        "no_pagination": true,
-        "stable_line_output": true,
-        "no_file_system_parsing": true,
-        "output_bounded": true,
-        "no_rate_limits": true,
-        "no_new_transitive_deps": true
-      },
-      "qualifies": true,
-      "rationale": "Command 'mamba' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
-    },
-    {
-      "command": "multipass",
-      "total_requires_js_generators": 10,
-      "fig_api_ref_generators": 0,
-      "script_commands_observed": [
-        "multipass list --format=json",
-        "multipass find --format=json"
-      ],
-      "qualification": {
-        "single_subprocess_no_pipeline": true,
-        "no_auth": true,
-        "no_pagination": true,
-        "stable_line_output": true,
-        "no_file_system_parsing": true,
-        "output_bounded": true,
-        "no_rate_limits": true,
-        "no_new_transitive_deps": true
-      },
-      "qualifies": true,
-      "rationale": "Command 'multipass' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
-    },
-    {
       "command": "cordova",
       "total_requires_js_generators": 7,
       "fig_api_ref_generators": 0,
@@ -120,12 +58,11 @@
       "rationale": "Command 'cordova' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
     },
     {
-      "command": "expo-cli",
-      "total_requires_js_generators": 6,
+      "command": "mamba",
+      "total_requires_js_generators": 7,
       "fig_api_ref_generators": 0,
       "script_commands_observed": [
-        "sysctl -n hw.ncpu",
-        "bash -c xcodebuild -project ios/*.xcodeproj -list -json"
+        "conda list --json"
       ],
       "qualification": {
         "single_subprocess_no_pipeline": true,
@@ -138,48 +75,7 @@
         "no_new_transitive_deps": true
       },
       "qualifies": true,
-      "rationale": "Command 'expo-cli' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
-    },
-    {
-      "command": "expo",
-      "total_requires_js_generators": 6,
-      "fig_api_ref_generators": 0,
-      "script_commands_observed": [
-        "sysctl -n hw.ncpu",
-        "xcodebuild -project ios/*.xcodeproj -list -json"
-      ],
-      "qualification": {
-        "single_subprocess_no_pipeline": true,
-        "no_auth": true,
-        "no_pagination": true,
-        "stable_line_output": true,
-        "no_file_system_parsing": true,
-        "output_bounded": true,
-        "no_rate_limits": true,
-        "no_new_transitive_deps": true
-      },
-      "qualifies": true,
-      "rationale": "Command 'expo' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
-    },
-    {
-      "command": "defaults",
-      "total_requires_js_generators": 5,
-      "fig_api_ref_generators": 0,
-      "script_commands_observed": [
-        "defaults domains"
-      ],
-      "qualification": {
-        "single_subprocess_no_pipeline": true,
-        "no_auth": true,
-        "no_pagination": true,
-        "stable_line_output": true,
-        "no_file_system_parsing": true,
-        "output_bounded": true,
-        "no_rate_limits": true,
-        "no_new_transitive_deps": true
-      },
-      "qualifies": true,
-      "rationale": "Command 'defaults' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
+      "rationale": "Command 'mamba' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
     },
     {
       "command": "youtube-dl",
@@ -202,12 +98,11 @@
       "rationale": "Command 'youtube-dl' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
     },
     {
-      "command": "pandoc",
+      "command": "expo-cli",
       "total_requires_js_generators": 4,
-      "fig_api_ref_generators": 2,
+      "fig_api_ref_generators": 0,
       "script_commands_observed": [
-        "pandoc --list-input-formats",
-        "pandoc --list-output-formats"
+        "sysctl -n hw.ncpu"
       ],
       "qualification": {
         "single_subprocess_no_pipeline": true,
@@ -220,7 +115,27 @@
         "no_new_transitive_deps": true
       },
       "qualifies": true,
-      "rationale": "Command 'pandoc' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
+      "rationale": "Command 'expo-cli' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
+    },
+    {
+      "command": "expo",
+      "total_requires_js_generators": 4,
+      "fig_api_ref_generators": 0,
+      "script_commands_observed": [
+        "sysctl -n hw.ncpu"
+      ],
+      "qualification": {
+        "single_subprocess_no_pipeline": true,
+        "no_auth": true,
+        "no_pagination": true,
+        "stable_line_output": true,
+        "no_file_system_parsing": true,
+        "output_bounded": true,
+        "no_rate_limits": true,
+        "no_new_transitive_deps": true
+      },
+      "qualifies": true,
+      "rationale": "Command 'expo' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
     },
     {
       "command": "trex",
@@ -323,26 +238,6 @@
       },
       "qualifies": true,
       "rationale": "Command 'ng' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
-    },
-    {
-      "command": "ansible-doc",
-      "total_requires_js_generators": 1,
-      "fig_api_ref_generators": 0,
-      "script_commands_observed": [
-        "ansible-doc --list --json"
-      ],
-      "qualification": {
-        "single_subprocess_no_pipeline": true,
-        "no_auth": true,
-        "no_pagination": true,
-        "stable_line_output": true,
-        "no_file_system_parsing": true,
-        "output_bounded": true,
-        "no_rate_limits": true,
-        "no_new_transitive_deps": true
-      },
-      "qualifies": true,
-      "rationale": "Command 'ansible-doc' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
     },
     {
       "command": "assimp",
@@ -461,6 +356,26 @@
       "rationale": "Command 'gource' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
     },
     {
+      "command": "multipass",
+      "total_requires_js_generators": 1,
+      "fig_api_ref_generators": 0,
+      "script_commands_observed": [
+        "multipass find --format=json"
+      ],
+      "qualification": {
+        "single_subprocess_no_pipeline": true,
+        "no_auth": true,
+        "no_pagination": true,
+        "stable_line_output": true,
+        "no_file_system_parsing": true,
+        "output_bounded": true,
+        "no_rate_limits": true,
+        "no_new_transitive_deps": true
+      },
+      "qualifies": true,
+      "rationale": "Command 'multipass' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
+    },
+    {
       "command": "nativescript",
       "total_requires_js_generators": 1,
       "fig_api_ref_generators": 0,
@@ -561,11 +476,109 @@
       "rationale": "Command 'tns' meets all 8 criteria — subprocess-based, no auth, no pagination, stable line output."
     },
     {
+      "command": "aws",
+      "total_requires_js_generators": 1843,
+      "fig_api_ref_generators": 1408,
+      "script_commands_observed": [
+        "aws acm list-certificates",
+        "aws acm-pca list-certificate-authorities",
+        "aws iam list-roles",
+        "aws amplify list-apps",
+        "aws cloudformation list-stacks",
+        "aws amplify list-webhooks",
+        "aws iam list-roles --page-size 100",
+        "aws sns list-topics",
+        "aws cloudformation list-stack-sets",
+        "aws sts get-caller-identity",
+        "aws cloudformation list-change-sets",
+        "aws cloudformation list-types",
+        "aws cloudformation list-exports",
+        "aws s3 ls --page-size 1000",
+        "aws kms list-keys --page-size 100",
+        "aws cloudwatch describe-alarms",
+        "aws cloudwatch describe-anomaly-detectors",
+        "aws cloudwatch list-dashboards",
+        "aws cloudwatch describe-insight-rules",
+        "aws cloudwatch list-metric-streams",
+        "aws cloudwatch list-metrics",
+        "aws ec2 describe-reserved-instances --query ReservedInstances[*].ReservedInstancesId",
+        "aws ec2 describe-transit-gateway-multicast-domains --query TransitGatewayMulticastDomains[*].TransitGatewayMulticastDomainId",
+        "aws ec2 describe-transit-gateway-attachments --query TransitGatewayAttachments[*].TransitGatewayAttachmentId",
+        "aws ec2 describe-vpc-endpoints --query VpcEndpoints[*].SubnetIds",
+        "aws ec2 describe-vpc-endpoint-services --query ServiceDetails[*].ServiceId",
+        "aws ec2 describe-vpc-endpoints --query VpcEndpoints[*].VpcEndpointId",
+        "aws ec2 describe-vpc-peering-connections --query VpcPeeringConnections[*].VpcPeeringConnectionId",
+        "aws ec2 describe-subnets --query Subnets[*].CidrBlock",
+        "aws ec2 describe-availability-zones --query AvailabilityZones[*].NetworkBorderGroup",
+        "aws ec2 describe-instance-types --query InstanceTypes[*].InstanceType",
+        "aws ec2 describe-vpc-endpoints --query VpcEndpoints[*].NetworkInterfaceIds",
+        "aws ec2 describe-instances --query Reservations[*].Instances[].InstanceId",
+        "aws ec2 describe-internet-gateways --query InternetGateways[*].InternetGatewayId",
+        "aws ec2 describe-volumes --query Volumes[*].VolumeId",
+        "aws ec2 describe-snapshots --query Snapshots[*].SnapshotId",
+        "aws ec2 describe-images --query Images[*].ImageId",
+        "aws ec2 describe-vpc-endpoints --query VpcEndpoints[*].RouteTableIds",
+        "aws ec2 describe-key-pairs --query KeyPairs[*].KeyName",
+        "aws ec2 describe-availability-zones --query AvailabilityZones[*].ZoneName",
+        "aws ec2 describe-availability-zones --query AvailabilityZones[*].ZoneId",
+        "aws ec2 describe-availability-zones --query AvailabilityZones[*].RegionName",
+        "aws ec2 describe-instances --filters Name=instance-state-name,Values=running --query Reservations[*].Instances[].InstanceId",
+        "aws ec2 describe-instances --filters Name=instance-state-name,Values=stopped --query Reservations[*].Instances[].InstanceId",
+        "aws ecs describe-capacity-providers",
+        "aws ecs list-clusters",
+        "aws ecs list-task-definitions",
+        "aws ecs list-services",
+        "aws iam list-users",
+        "aws ecs list-container-instances",
+        "aws ecs list-tasks",
+        "aws ecs list-attributes --target-type container-instance",
+        "aws ecs list-task-definition-families",
+        "aws deploy list-applications",
+        "aws eks list-clusters",
+        "aws kms list-keys",
+        "aws eks describe-addon-versions",
+        "aws elasticbeanstalk describe-environments",
+        "aws elasticbeanstalk describe-applications",
+        "aws elasticbeanstalk list-available-solution-stacks",
+        "aws elasticbeanstalk list-platform-versions",
+        "aws iam list-open-id-connect-providers",
+        "aws iam list-instance-profiles --page-size 100",
+        "aws iam list-groups --page-size 100",
+        "aws iam list-users --page-size 100",
+        "aws iam list-policies --page-size 100 --scope Local",
+        "aws iam list-mfa-devices --page-size 100",
+        "aws iam list-access-keys --page-size 100",
+        "aws iam list-account-aliases --page-size 100",
+        "aws iam list-saml-providers",
+        "aws iam list-server-certificates --page-size 1000",
+        "aws iam list-virtual-mfa-devices --page-size 100",
+        "aws lambda list-layers",
+        "aws lambda list-functions",
+        "aws efs describe-file-systems",
+        "aws lambda list-code-signing-configs --page-size 100",
+        "aws lambda list-event-source-mappings --page-size 100",
+        "aws secretsmanager list-secrets --sort-order asc --page-size 100",
+        "aws lambda list-functions --page-size 100",
+        "aws s3api list-buckets"
+      ],
+      "qualification": {
+        "single_subprocess_no_pipeline": true,
+        "no_auth": false,
+        "no_pagination": false,
+        "stable_line_output": false,
+        "no_file_system_parsing": true,
+        "output_bounded": false,
+        "no_rate_limits": true,
+        "no_new_transitive_deps": true
+      },
+      "qualifies": false,
+      "rationale": "Disqualified: no auth, no pagination, stable line output, output bounded."
+    },
+    {
       "command": "cargo",
-      "total_requires_js_generators": 144,
+      "total_requires_js_generators": 118,
       "fig_api_ref_generators": 101,
       "script_commands_observed": [
-        "cargo metadata --format-version 1 --no-deps",
         "cargo read-manifest",
         "cargo metadata --format-version 1"
       ],
@@ -580,9 +593,7 @@
         "no_new_transitive_deps": true
       },
       "qualifies": false,
-      "rationale": "Disqualified: stable line output, no file system parsing.",
-      "shipped": true,
-      "shipped_as": "cargo_workspace_members (local-project provider, parses Cargo.toml directly without invoking cargo)"
+      "rationale": "Disqualified: stable line output, no file system parsing."
     },
     {
       "command": "fly",
@@ -649,30 +660,6 @@
       "rationale": "Disqualified: no auth, no rate limits."
     },
     {
-      "command": "chezmoi",
-      "total_requires_js_generators": 80,
-      "fig_api_ref_generators": 66,
-      "script_commands_observed": [
-        "git rev-list --all --oneline",
-        "git --no-optional-locks log --oneline",
-        "git --no-optional-locks status --short",
-        "git --no-optional-locks remote -v",
-        "git --no-optional-locks config --get-regexp ^alias."
-      ],
-      "qualification": {
-        "single_subprocess_no_pipeline": true,
-        "no_auth": true,
-        "no_pagination": true,
-        "stable_line_output": false,
-        "no_file_system_parsing": true,
-        "output_bounded": true,
-        "no_rate_limits": true,
-        "no_new_transitive_deps": true
-      },
-      "qualifies": false,
-      "rationale": "Disqualified: stable line output."
-    },
-    {
       "command": "docker",
       "total_requires_js_generators": 79,
       "fig_api_ref_generators": 23,
@@ -728,11 +715,14 @@
       "rationale": "Disqualified: stable line output."
     },
     {
-      "command": "copilot",
-      "total_requires_js_generators": 61,
-      "fig_api_ref_generators": 61,
+      "command": "chezmoi",
+      "total_requires_js_generators": 68,
+      "fig_api_ref_generators": 66,
       "script_commands_observed": [
-        "cat copilot/.workspace"
+        "git rev-list --all --oneline",
+        "git --no-optional-locks log --oneline",
+        "git --no-optional-locks status --short",
+        "git --no-optional-locks config --get-regexp ^alias."
       ],
       "qualification": {
         "single_subprocess_no_pipeline": true,
@@ -748,15 +738,11 @@
       "rationale": "Disqualified: stable line output."
     },
     {
-      "command": "pass",
+      "command": "copilot",
       "total_requires_js_generators": 61,
-      "fig_api_ref_generators": 40,
+      "fig_api_ref_generators": 61,
       "script_commands_observed": [
-        "git rev-list --all --oneline",
-        "git --no-optional-locks log --oneline",
-        "git --no-optional-locks status --short",
-        "git --no-optional-locks remote -v",
-        "git --no-optional-locks config --get-regexp ^alias."
+        "cat copilot/.workspace"
       ],
       "qualification": {
         "single_subprocess_no_pipeline": true,
@@ -794,6 +780,29 @@
       "total_requires_js_generators": 52,
       "fig_api_ref_generators": 43,
       "script_commands_observed": [],
+      "qualification": {
+        "single_subprocess_no_pipeline": true,
+        "no_auth": true,
+        "no_pagination": true,
+        "stable_line_output": false,
+        "no_file_system_parsing": true,
+        "output_bounded": true,
+        "no_rate_limits": true,
+        "no_new_transitive_deps": true
+      },
+      "qualifies": false,
+      "rationale": "Disqualified: stable line output."
+    },
+    {
+      "command": "pass",
+      "total_requires_js_generators": 49,
+      "fig_api_ref_generators": 40,
+      "script_commands_observed": [
+        "git rev-list --all --oneline",
+        "git --no-optional-locks log --oneline",
+        "git --no-optional-locks status --short",
+        "git --no-optional-locks config --get-regexp ^alias."
+      ],
       "qualification": {
         "single_subprocess_no_pipeline": true,
         "no_auth": true,
@@ -877,6 +886,29 @@
       "rationale": "Disqualified: stable line output."
     },
     {
+      "command": "git",
+      "total_requires_js_generators": 42,
+      "fig_api_ref_generators": 40,
+      "script_commands_observed": [
+        "git rev-list --all --oneline",
+        "git --no-optional-locks log --oneline",
+        "git --no-optional-locks status --short",
+        "git --no-optional-locks config --get-regexp ^alias."
+      ],
+      "qualification": {
+        "single_subprocess_no_pipeline": true,
+        "no_auth": true,
+        "no_pagination": true,
+        "stable_line_output": false,
+        "no_file_system_parsing": true,
+        "output_bounded": true,
+        "no_rate_limits": true,
+        "no_new_transitive_deps": true
+      },
+      "qualifies": false,
+      "rationale": "Disqualified: stable line output."
+    },
+    {
       "command": "meteor",
       "total_requires_js_generators": 41,
       "fig_api_ref_generators": 9,
@@ -898,13 +930,11 @@
     },
     {
       "command": "npm",
-      "total_requires_js_generators": 36,
+      "total_requires_js_generators": 35,
       "fig_api_ref_generators": 4,
-      "script_commands_observed": [
-        "bash -c until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json"
-      ],
+      "script_commands_observed": [],
       "qualification": {
-        "single_subprocess_no_pipeline": false,
+        "single_subprocess_no_pipeline": true,
         "no_auth": true,
         "no_pagination": true,
         "stable_line_output": false,
@@ -914,9 +944,7 @@
         "no_new_transitive_deps": true
       },
       "qualifies": false,
-      "rationale": "Disqualified: single subprocess no pipeline, stable line output, no file system parsing.",
-      "shipped": true,
-      "shipped_as": "npm_scripts (local-project provider, parses package.json directly)"
+      "rationale": "Disqualified: stable line output, no file system parsing."
     },
     {
       "command": "systemctl",
@@ -1021,28 +1049,6 @@
       "total_requires_js_generators": 23,
       "fig_api_ref_generators": 23,
       "script_commands_observed": [],
-      "qualification": {
-        "single_subprocess_no_pipeline": true,
-        "no_auth": true,
-        "no_pagination": true,
-        "stable_line_output": false,
-        "no_file_system_parsing": true,
-        "output_bounded": true,
-        "no_rate_limits": true,
-        "no_new_transitive_deps": true
-      },
-      "qualifies": false,
-      "rationale": "Disqualified: stable line output."
-    },
-    {
-      "command": "git",
-      "total_requires_js_generators": 22,
-      "fig_api_ref_generators": 8,
-      "script_commands_observed": [
-        "git --no-optional-locks status --short",
-        "git --no-optional-locks remote -v",
-        "git --no-optional-locks config --get-regexp ^alias."
-      ],
       "qualification": {
         "single_subprocess_no_pipeline": true,
         "no_auth": true,
@@ -1193,28 +1199,6 @@
       "rationale": "Disqualified: single subprocess no pipeline, stable line output."
     },
     {
-      "command": "yarn",
-      "total_requires_js_generators": 11,
-      "fig_api_ref_generators": 2,
-      "script_commands_observed": [
-        "yarn config list",
-        "bash -c until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json",
-        "yarn list --depth=0 --json"
-      ],
-      "qualification": {
-        "single_subprocess_no_pipeline": false,
-        "no_auth": true,
-        "no_pagination": true,
-        "stable_line_output": true,
-        "no_file_system_parsing": false,
-        "output_bounded": true,
-        "no_rate_limits": true,
-        "no_new_transitive_deps": true
-      },
-      "qualifies": false,
-      "rationale": "Disqualified: single subprocess no pipeline, no file system parsing."
-    },
-    {
       "command": "dapr",
       "total_requires_js_generators": 10,
       "fig_api_ref_generators": 5,
@@ -1274,54 +1258,31 @@
       "rationale": "Disqualified: stable line output."
     },
     {
+      "command": "yarn",
+      "total_requires_js_generators": 10,
+      "fig_api_ref_generators": 2,
+      "script_commands_observed": [
+        "yarn config list",
+        "bash -c until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json"
+      ],
+      "qualification": {
+        "single_subprocess_no_pipeline": false,
+        "no_auth": true,
+        "no_pagination": true,
+        "stable_line_output": true,
+        "no_file_system_parsing": false,
+        "output_bounded": true,
+        "no_rate_limits": true,
+        "no_new_transitive_deps": true
+      },
+      "qualifies": false,
+      "rationale": "Disqualified: single subprocess no pipeline, no file system parsing."
+    },
+    {
       "command": "coda",
       "total_requires_js_generators": 9,
       "fig_api_ref_generators": 9,
       "script_commands_observed": [],
-      "qualification": {
-        "single_subprocess_no_pipeline": true,
-        "no_auth": true,
-        "no_pagination": true,
-        "stable_line_output": false,
-        "no_file_system_parsing": true,
-        "output_bounded": true,
-        "no_rate_limits": true,
-        "no_new_transitive_deps": true
-      },
-      "qualifies": false,
-      "rationale": "Disqualified: stable line output."
-    },
-    {
-      "command": "pnpx",
-      "total_requires_js_generators": 9,
-      "fig_api_ref_generators": 4,
-      "script_commands_observed": [
-        "sysctl -n hw.ncpu",
-        "xcrun simctl list --json devices available",
-        "bash -c xcodebuild -project ios/*.xcodeproj  -list -json"
-      ],
-      "qualification": {
-        "single_subprocess_no_pipeline": true,
-        "no_auth": true,
-        "no_pagination": true,
-        "stable_line_output": false,
-        "no_file_system_parsing": true,
-        "output_bounded": true,
-        "no_rate_limits": true,
-        "no_new_transitive_deps": true
-      },
-      "qualifies": false,
-      "rationale": "Disqualified: stable line output."
-    },
-    {
-      "command": "react-native",
-      "total_requires_js_generators": 9,
-      "fig_api_ref_generators": 4,
-      "script_commands_observed": [
-        "sysctl -n hw.ncpu",
-        "xcrun simctl list --json devices available",
-        "bash -c xcodebuild -project ios/*.xcodeproj  -list -json"
-      ],
       "qualification": {
         "single_subprocess_no_pipeline": true,
         "no_auth": true,
@@ -1432,28 +1393,6 @@
       "rationale": "Disqualified: stable line output."
     },
     {
-      "command": "pre-commit",
-      "total_requires_js_generators": 8,
-      "fig_api_ref_generators": 6,
-      "script_commands_observed": [
-        "git rev-list --all --oneline",
-        "git --no-optional-locks remote -v",
-        "cat .pre-commit-config.yaml"
-      ],
-      "qualification": {
-        "single_subprocess_no_pipeline": true,
-        "no_auth": true,
-        "no_pagination": true,
-        "stable_line_output": false,
-        "no_file_system_parsing": true,
-        "output_bounded": true,
-        "no_rate_limits": true,
-        "no_new_transitive_deps": true
-      },
-      "qualifies": false,
-      "rationale": "Disqualified: stable line output."
-    },
-    {
       "command": "elm-json",
       "total_requires_js_generators": 7,
       "fig_api_ref_generators": 4,
@@ -1474,10 +1413,52 @@
       "rationale": "Disqualified: stable line output."
     },
     {
+      "command": "pnpx",
+      "total_requires_js_generators": 7,
+      "fig_api_ref_generators": 4,
+      "script_commands_observed": [
+        "sysctl -n hw.ncpu",
+        "xcrun simctl list --json devices available"
+      ],
+      "qualification": {
+        "single_subprocess_no_pipeline": true,
+        "no_auth": true,
+        "no_pagination": true,
+        "stable_line_output": false,
+        "no_file_system_parsing": true,
+        "output_bounded": true,
+        "no_rate_limits": true,
+        "no_new_transitive_deps": true
+      },
+      "qualifies": false,
+      "rationale": "Disqualified: stable line output."
+    },
+    {
       "command": "r",
       "total_requires_js_generators": 7,
       "fig_api_ref_generators": 7,
       "script_commands_observed": [],
+      "qualification": {
+        "single_subprocess_no_pipeline": true,
+        "no_auth": true,
+        "no_pagination": true,
+        "stable_line_output": false,
+        "no_file_system_parsing": true,
+        "output_bounded": true,
+        "no_rate_limits": true,
+        "no_new_transitive_deps": true
+      },
+      "qualifies": false,
+      "rationale": "Disqualified: stable line output."
+    },
+    {
+      "command": "react-native",
+      "total_requires_js_generators": 7,
+      "fig_api_ref_generators": 4,
+      "script_commands_observed": [
+        "sysctl -n hw.ncpu",
+        "xcrun simctl list --json devices available"
+      ],
       "qualification": {
         "single_subprocess_no_pipeline": true,
         "no_auth": true,
@@ -1548,11 +1529,12 @@
       "rationale": "Disqualified: stable line output."
     },
     {
-      "command": "scarb",
+      "command": "pre-commit",
       "total_requires_js_generators": 6,
-      "fig_api_ref_generators": 0,
+      "fig_api_ref_generators": 6,
       "script_commands_observed": [
-        "scarb metadata --format-version 1 --no-deps"
+        "git rev-list --all --oneline",
+        "cat .pre-commit-config.yaml"
       ],
       "qualification": {
         "single_subprocess_no_pipeline": true,
@@ -1703,26 +1685,6 @@
       },
       "qualifies": false,
       "rationale": "Disqualified: no auth, no rate limits."
-    },
-    {
-      "command": "make",
-      "total_requires_js_generators": 4,
-      "fig_api_ref_generators": 0,
-      "script_commands_observed": [],
-      "qualification": {
-        "single_subprocess_no_pipeline": true,
-        "no_auth": true,
-        "no_pagination": true,
-        "stable_line_output": false,
-        "no_file_system_parsing": true,
-        "output_bounded": true,
-        "no_rate_limits": true,
-        "no_new_transitive_deps": true
-      },
-      "qualifies": false,
-      "rationale": "Disqualified: stable line output.",
-      "shipped": true,
-      "shipped_as": "makefile_targets (local-project provider, hand-rolled Makefile parser without invoking make)"
     },
     {
       "command": "projj",
@@ -2313,6 +2275,24 @@
     },
     {
       "command": "osqueryi",
+      "total_requires_js_generators": 2,
+      "fig_api_ref_generators": 2,
+      "script_commands_observed": [],
+      "qualification": {
+        "single_subprocess_no_pipeline": true,
+        "no_auth": true,
+        "no_pagination": true,
+        "stable_line_output": false,
+        "no_file_system_parsing": true,
+        "output_bounded": true,
+        "no_rate_limits": true,
+        "no_new_transitive_deps": true
+      },
+      "qualifies": false,
+      "rationale": "Disqualified: stable line output."
+    },
+    {
+      "command": "pandoc",
       "total_requires_js_generators": 2,
       "fig_api_ref_generators": 2,
       "script_commands_observed": [],

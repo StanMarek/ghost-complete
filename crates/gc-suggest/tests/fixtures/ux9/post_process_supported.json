@@ -1,0 +1,24 @@
+{
+  "name": "post-process-supported",
+  "description": "A supported requires_js post_process generator: the script is executed normally, then stdout is fed through the JS function in js_runtime.source.",
+  "subcommands": [
+    {
+      "name": "names",
+      "args": [
+        {
+          "name": "name",
+          "generators": [
+            {
+              "script": ["printf", "%s\\n", "hello world"],
+              "requires_js": true,
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "out => out.split('\\n').filter(Boolean).map(name => ({ name }))"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -285,7 +285,10 @@
               "--reverse"
             ],
             "requires_js": true,
-            "js_source": "o=>JSON.parse(o).map(e=>({name:e.id.substring(0,7),icon:\"\\u23F2\",displayName:`${e.id.substring(0,7)} - ${e.project} - ${e.start}`}))"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>JSON.parse(o).map(e=>({name:e.id.substring(0,7),icon:\"\\u23F2\",displayName:`${e.id.substring(0,7)} - ${e.project} - ${e.start}`}))"
+            }
           }
         ]
       }
@@ -558,7 +561,10 @@
               "--reverse"
             ],
             "requires_js": true,
-            "js_source": "o=>JSON.parse(o).map(e=>({name:e.id.substring(0,7),icon:\"\\u23F2\",displayName:`${e.id.substring(0,7)} - ${e.project} - ${e.start}`}))"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>JSON.parse(o).map(e=>({name:e.id.substring(0,7),icon:\"\\u23F2\",displayName:`${e.id.substring(0,7)} - ${e.project} - ${e.start}`}))"
+            }
           }
         ]
       }
@@ -838,7 +844,10 @@
               "--reverse"
             ],
             "requires_js": true,
-            "js_source": "o=>JSON.parse(o).map(e=>({name:e.id.substring(0,7),icon:\"\\u23F2\",displayName:`${e.id.substring(0,7)} - ${e.project} - ${e.start}`}))"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>JSON.parse(o).map(e=>({name:e.id.substring(0,7),icon:\"\\u23F2\",displayName:`${e.id.substring(0,7)} - ${e.project} - ${e.start}`}))"
+            }
           }
         ]
       }

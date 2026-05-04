@@ -2,7 +2,10 @@
   "args": {
     "generators": [
       {
-        "js_source": "function(n){try{return n.split(`\n`).filter(e=>e.trim()&&e!==\"Available Generators:\").map(e=>({name:e.trim(),icon:\"https://avatars.githubusercontent.com/u/1714870?v=4\",displayName:o(e),description:`${o(e)} Generator`,priority:100,options:[{name:\"--help\",description:`Help of \"${o(e)}\" generator`}]}))}catch(e){return console.error(e),[]}}",
+        "js_runtime": {
+          "kind": "post_process",
+          "source": "function(n){try{return n.split(`\n`).filter(e=>e.trim()&&e!==\"Available Generators:\").map(e=>({name:e.trim(),icon:\"https://avatars.githubusercontent.com/u/1714870?v=4\",displayName:o(e),description:`${o(e)} Generator`,priority:100,options:[{name:\"--help\",description:`Help of \"${o(e)}\" generator`}]}))}catch(e){return console.error(e),[]}}"
+        },
         "requires_js": true,
         "script": [
           "yo",

@@ -1,6 +1,7 @@
 use std::path::Path;
 
-use anyhow::{bail, Result};
+use anyhow::Result;
+use gc_jsrt::{ShellRunError, ShellRunOutput};
 use tokio::io::AsyncReadExt;
 use tokio::process::Command;
 
@@ -12,45 +13,79 @@ const MAX_SUBSTITUTION_LEN: usize = 1024;
 /// window.
 pub(crate) const MAX_GENERATOR_STDOUT_BYTES: usize = 1024 * 1024;
 
-/// Execute a shell command as an array (no shell interpolation), return stdout.
+/// Execute a shell command as an array (no shell interpolation) and return
+/// the captured stdout. See [`run_script_full`] for the structured variant
+/// that surfaces stdout, stderr, and exit code together — `run_script` is a
+/// thin wrapper around it that keeps the existing "stdout-or-error" shape
+/// for declarative-script callers that never read stderr.
+pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<String> {
+    match run_script_full(argv, cwd, timeout_ms).await {
+        Ok(out) => Ok(out.stdout),
+        Err(e) => Err(shell_run_error_to_anyhow(&e, argv)),
+    }
+}
+
+fn shell_run_error_to_anyhow(e: &ShellRunError, argv: &[&str]) -> anyhow::Error {
+    match e {
+        ShellRunError::ArgvParse(msg) => anyhow::anyhow!("script argv parse error: {msg}"),
+        ShellRunError::Spawn(msg) => {
+            anyhow::anyhow!("script execution failed for {:?}: {msg}", argv)
+        }
+        ShellRunError::Timeout => anyhow::anyhow!("script timed out: {:?}", argv),
+        ShellRunError::NonZeroExit { exit_code, .. } => {
+            let code = exit_code.unwrap_or(-1);
+            anyhow::anyhow!("script {:?} exited with status {code}", argv)
+        }
+        ShellRunError::Internal(msg) => anyhow::anyhow!("script I/O error for {:?}: {msg}", argv),
+        ShellRunError::StringDenied => {
+            anyhow::anyhow!("script shell-string command denied: {:?}", argv)
+        }
+    }
+}
+
+/// Execute a shell command as an array (no shell interpolation) and return a
+/// structured result that distinguishes timeout, non-zero exit (with the
+/// captured stdout/stderr and real exit code), spawn failure, and argv
+/// validation failure.
 ///
 /// Stdout is read into a 1 MiB-bounded buffer (`MAX_GENERATOR_STDOUT_BYTES`).
 /// If the cap is hit the child is killed, a warning is logged, and the
-/// truncated bytes are still returned so the downstream transform pipeline
-/// can process what was collected.
+/// truncated bytes are still returned (`exit_code: None`) so the downstream
+/// transform pipeline can process what was collected.
 ///
 /// Stderr is drained concurrently (also capped at 1 MiB) to avoid pipe-fill
 /// deadlock. On non-zero exit with non-empty stderr, the stderr contents
 /// are logged at `warn!` — this is the primary diagnostic path for
 /// generator failures like `gh auth status` without credentials. On
 /// non-zero exit with empty stderr, the exit code is logged at `debug!`
-/// (the common "script legitimately exits non-zero" case).
+/// (the common "script legitimately exits non-zero" case). Both branches
+/// surface the captured stderr through `ShellRunError::NonZeroExit` so JS
+/// callers via `EngineShellRunner` can branch on the real diagnostic.
 ///
 /// The child inherits the full process environment (minus
 /// `GHOST_COMPLETE_ACTIVE`) because generators like `gh`, `aws`, and
 /// `kubectl` require auth tokens to produce useful completions. On
-/// timeout the child is killed and an error is returned (stderr
-/// captured before the timeout fires is dropped — the timeout's async
-/// cancellation discards the inner state; a future improvement could
-/// hoist the buffers via interior mutability).
-/// Non-zero exit codes return an `Err` so callers can distinguish "no output"
-/// from "generator failed" and avoid caching the empty result.
-pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<String> {
+/// timeout the child is killed and `Err(ShellRunError::Timeout)` is
+/// returned.
+pub async fn run_script_full(
+    argv: &[&str],
+    cwd: &Path,
+    timeout_ms: u64,
+) -> std::result::Result<ShellRunOutput, ShellRunError> {
     if argv.is_empty() {
-        bail!("empty script command");
+        return Err(ShellRunError::ArgvParse("empty script command".to_string()));
     }
 
-    // Reject any argv element containing a NUL byte. NUL is the ONE character
-    // that argv-array execution cannot safely carry: the kernel terminates
-    // each argv string at the first NUL, so an argument like "harmless\0..."
-    // silently truncates and any trailing payload is discarded — but Rust's
-    // `&str` happily contains NULs, so without this check downstream code
-    // would never notice. Shell metacharacters (|, ;, &, `, $) are NOT a
-    // concern here: we exec via an argv array, never via `sh -c`, so they
-    // pass through as inert literal bytes.
+    // NUL truncates argv on Unix — kernel terminates each argv string at the
+    // first NUL byte. Rust's `&str` happily carries NULs, so without this
+    // check downstream code would never notice. Shell metacharacters
+    // (|, ;, &, `, $) are NOT a concern: we exec via an argv array, never
+    // via `sh -c`, so they pass through as inert literal bytes.
     for (i, a) in argv.iter().enumerate() {
         if a.as_bytes().contains(&0) {
-            bail!("argv[{i}] contains a NUL byte; refusing to exec");
+            return Err(ShellRunError::ArgvParse(format!(
+                "argv[{i}] contains a NUL byte; refusing to exec"
+            )));
         }
     }
 
@@ -78,7 +113,7 @@ pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<St
 
     let mut child = cmd
         .spawn()
-        .map_err(|e| anyhow::anyhow!("script execution failed for {:?}: {e}", argv))?;
+        .map_err(|e| ShellRunError::Spawn(format!("{e}")))?;
 
     let mut stdout = child.stdout.take().expect("stdout was configured as piped");
     let mut stderr = child.stderr.take().expect("stderr was configured as piped");
@@ -143,15 +178,19 @@ pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<St
                     argv
                 );
                 let _ = child.kill().await;
-                // Reap the zombie so the process table doesn't fill up.
-                // Drop status — we're returning truncated bytes regardless.
                 let _ = child.wait().await;
-                return Ok(String::from_utf8_lossy(&stdout_buf).to_string());
+                return Ok(ShellRunOutput {
+                    stdout: String::from_utf8_lossy(&stdout_buf).to_string(),
+                    stderr: String::from_utf8_lossy(&stderr_buf).to_string(),
+                    exit_code: None,
+                });
             }
 
             // Wait for child exit with a deadline. A process that drained
             // its pipes but hangs (stuck in cleanup, waiting on a lock)
-            // must not block the completion engine forever.
+            // must not block the completion engine forever. Classify this
+            // as a timeout, not a spawn error: from the caller's
+            // perspective it's the same wall-clock budget exhaustion.
             let status = match tokio::time::timeout(
                 std::time::Duration::from_millis(timeout_ms),
                 child.wait(),
@@ -160,7 +199,9 @@ pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<St
             {
                 Ok(Ok(s)) => s,
                 Ok(Err(e)) => {
-                    return Err(anyhow::anyhow!("script wait error for {:?}: {e}", argv));
+                    return Err(ShellRunError::Internal(format!(
+                        "wait error for {argv:?}: {e}"
+                    )));
                 }
                 Err(_) => {
                     tracing::warn!(
@@ -169,58 +210,54 @@ pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<St
                     );
                     let _ = child.kill().await;
                     let _ = child.wait().await;
-                    // Return Err so the caller does NOT cache the empty result.
-                    // Returning Ok("") here would poison the generator cache
-                    // with an empty entry for the full TTL, suppressing retries.
-                    bail!("script process hung after closing pipes: {:?}", argv);
+                    return Err(ShellRunError::Timeout);
                 }
             };
 
+            let stdout_str = String::from_utf8_lossy(&stdout_buf).to_string();
+            let stderr_str = String::from_utf8_lossy(&stderr_buf).to_string();
+
             if !status.success() {
-                let code = status.code().unwrap_or(-1);
+                let code = status.code();
                 if stderr_buf.is_empty() {
-                    // Common case: script legitimately exits non-zero (e.g.,
-                    // `git rev-parse --show-toplevel` in a non-repo). Debug level
-                    // to avoid noise for the expected failure modes.
-                    tracing::debug!("script {:?} exited with code {code} (no stderr)", argv);
-                } else {
-                    // Actionable failure: the script wrote to stderr. Surface it at
-                    // warn level so users debugging "why are my completions empty"
-                    // can see the real error. This is the whole reason the
-                    // concurrent stderr drain exists — see the comment above
-                    // the read loop for the rationale.
-                    let stderr_str = String::from_utf8_lossy(&stderr_buf);
-                    tracing::warn!(
-                        "script {:?} exited with code {code}: {}",
+                    tracing::debug!(
+                        "script {:?} exited with code {} (no stderr)",
                         argv,
+                        code.unwrap_or(-1)
+                    );
+                } else {
+                    tracing::warn!(
+                        "script {:?} exited with code {}: {}",
+                        argv,
+                        code.unwrap_or(-1),
                         stderr_str.trim_end()
                     );
                 }
-                return Err(anyhow::anyhow!(
-                    "script {:?} exited with status {}",
-                    argv,
-                    code
-                ));
+                return Err(ShellRunError::NonZeroExit {
+                    exit_code: code,
+                    stdout: stdout_str,
+                    stderr: stderr_str,
+                });
             }
 
             if !stderr_buf.is_empty() {
-                tracing::debug!(
-                    "script stderr for {:?}: {}",
-                    argv,
-                    String::from_utf8_lossy(&stderr_buf)
-                );
+                tracing::debug!("script stderr for {:?}: {}", argv, stderr_str);
             }
 
-            Ok(String::from_utf8_lossy(&stdout_buf).to_string())
+            Ok(ShellRunOutput {
+                stdout: stdout_str,
+                stderr: stderr_str,
+                exit_code: Some(0),
+            })
         }
-        Ok(Err(e)) => Err(anyhow::anyhow!("script I/O error for {:?}: {e}", argv)),
+        Ok(Err(e)) => Err(ShellRunError::Internal(format!("I/O error: {e}"))),
         Err(_) => {
             // Explicit kill + reap for belt-and-suspenders safety alongside
             // kill_on_drop(true). Dropping the future on timeout cancellation
             // doesn't guarantee immediate SIGKILL delivery on all platforms.
             let _ = child.kill().await;
             let _ = child.wait().await;
-            bail!("script timed out after {timeout_ms}ms: {:?}", argv);
+            Err(ShellRunError::Timeout)
         }
     }
 }

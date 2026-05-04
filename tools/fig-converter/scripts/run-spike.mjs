@@ -52,14 +52,31 @@ function* walkGenerators(obj, path) {
         // Single-pass: yield qualifying generators AND recurse into each
         // entry, without re-visiting. No real spec has a `generators` array
         // nested inside a `generators` entry today, but the old two-pass
-        // structure would have double-yielded such a case. This pattern is
-        // semantically identical on today's corpus (1889 still) and safe
-        // against future nesting.
+        // structure would have double-yielded such a case.
         for (let i = 0; i < v.length; i++) {
           const g = v[i];
           if (g && typeof g === 'object') {
-            if (g.requires_js === true && typeof g.js_source === 'string') {
-              yield { path: `${path}/generators[${i}]`, gen: g };
+            // The converter now emits `js_runtime.source`; accept
+            // both shapes so the spike works against legacy and
+            // current corpora.
+            const legacy =
+              g.requires_js === true && typeof g.js_source === 'string';
+            const runtimeSource =
+              g.requires_js === true &&
+              g.js_runtime &&
+              typeof g.js_runtime.source === 'string' &&
+              g.js_runtime.source.length > 0;
+            if (legacy || runtimeSource) {
+              // Synthesise a `js_source`-shaped record for the
+              // analyser. Prefer the runtime form when both exist —
+              // they should always agree.
+              const source = runtimeSource
+                ? g.js_runtime.source
+                : g.js_source;
+              yield {
+                path: `${path}/generators[${i}]`,
+                gen: { ...g, js_source: source },
+              };
             }
             yield* walkGenerators(g, `${path}/generators[${i}]`);
           }

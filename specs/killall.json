@@ -295,7 +295,10 @@
           "ps -A -o comm | sort -u"
         ],
         "requires_js": true,
-        "js_source": "s=>s.trim().split(`\n`).map(e=>{let i=e.indexOf(\".app/\"),t=i!==-1,n=e.slice(e.lastIndexOf(\"/\")+1),r=new Set(n);return{name:n,description:e,priority:![\"(\",\"_\",\".\"].some(o=>r.has(o))&&t?51:40,icon:t?\"fig://\"+e.slice(0,i+4):\"fig://icon?type=gear\"}})"
+        "js_runtime": {
+          "kind": "post_process",
+          "source": "s=>s.trim().split(`\n`).map(e=>{let i=e.indexOf(\".app/\"),t=i!==-1,n=e.slice(e.lastIndexOf(\"/\")+1),r=new Set(n);return{name:n,description:e,priority:![\"(\",\"_\",\".\"].some(o=>r.has(o))&&t?51:40,icon:t?\"fig://\"+e.slice(0,i+4):\"fig://icon?type=gear\"}})"
+        }
       }
     ]
   }

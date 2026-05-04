@@ -2,7 +2,10 @@
   "args": {
     "generators": [
       {
-        "js_source": "async(e,i,n)=>e.length<3||e[e.length-1].startsWith(\"$\")?Object.keys(n.environmentVariables).map(t=>({name:`$${t}`,type:\"arg\",description:\"Environment Variable\"})):[]",
+        "js_runtime": {
+          "kind": "custom",
+          "source": "async(e,i,n)=>e.length<3||e[e.length-1].startsWith(\"$\")?Object.keys(n.environmentVariables).map(t=>({name:`$${t}`,type:\"arg\",description:\"Environment Variable\"})):[]"
+        },
         "requires_js": true
       }
     ],

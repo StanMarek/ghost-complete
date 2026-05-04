@@ -18,8 +18,7 @@
           ],
           "description": "Assume no to all prompts"
         }
-      ],
-      "priority": 78
+      ]
     },
     {
       "name": "upgrade",
@@ -77,8 +76,7 @@
             ]
           }
         ]
-      },
-      "priority": 78
+      }
     },
     {
       "name": "full-upgrade",
@@ -175,15 +173,20 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
+            }
           },
           {
             "requires_js": true,
-            "js_source": "(g,m,O)=>ge(this,void 0,void 0,function*(){var p;let{isDangerous:k,currentWorkingDirectory:_,searchTerm:h}=O,x=(p=(0,v.getCurrentInsertedDirectory)(l??_,h,O))!==null&&p!==void 0?p:\"/\";try{let $=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:x}),ne=J($.stdout.split(`\n`),[\".DS_Store\"]),G=[];for(let L of ne)if(L){let D=L.endsWith(\"/\")?\"folders\":\"filepaths\";(D===\"filepaths\"&&u!==\"only\"||D===\"folders\"&&u!==\"never\")&&G.push({type:D===\"filepaths\"?\"file\":\"folder\",name:L,insertValue:L,isDangerous:k,context:{templateType:D}})}return S(y(G))}catch{return[]}})"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "(g,m,O)=>ge(this,void 0,void 0,function*(){var p;let{isDangerous:k,currentWorkingDirectory:_,searchTerm:h}=O,x=(p=(0,v.getCurrentInsertedDirectory)(l??_,h,O))!==null&&p!==void 0?p:\"/\";try{let $=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:x}),ne=J($.stdout.split(`\n`),[\".DS_Store\"]),G=[];for(let L of ne)if(L){let D=L.endsWith(\"/\")?\"folders\":\"filepaths\";(D===\"filepaths\"&&u!==\"only\"||D===\"folders\"&&u!==\"never\")&&G.push({type:D===\"filepaths\"?\"file\":\"folder\",name:L,insertValue:L,isDangerous:k,context:{templateType:D}})}return S(y(G))}catch{return[]}})"
+            }
           }
         ]
-      },
-      "priority": 92
+      }
     },
     {
       "name": "reinstall",
@@ -278,8 +281,7 @@
             ]
           }
         ]
-      },
-      "priority": 80
+      }
     },
     {
       "name": "purge",
@@ -366,8 +368,7 @@
           ],
           "description": "List upgradable packages"
         }
-      ],
-      "priority": 72
+      ]
     },
     {
       "name": "search",
@@ -400,11 +401,13 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
+            }
           }
         ]
-      },
-      "priority": 65
+      }
     },
     {
       "name": "satisfy",
@@ -450,7 +453,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
+            }
           }
         ]
       }
@@ -478,8 +484,7 @@
           ],
           "description": "Simulate running this command and show it's output, without actually changing anything"
         }
-      ],
-      "priority": 55
+      ]
     },
     {
       "name": "edit-sources",
@@ -564,7 +569,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
+            }
           }
         ]
       }
@@ -627,7 +635,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
+            }
           }
         ]
       }
@@ -668,7 +679,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
+            }
           }
         ]
       }
@@ -748,7 +762,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
+            }
           }
         ]
       }

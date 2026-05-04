@@ -201,7 +201,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "i=>[\"youtube-dl\",\"--flat-playlist\",\"-J\",...i.filter(e=>e.includes(\"youtube.\"))]"
+            "js_runtime": {
+              "kind": "script_function",
+              "source": "i=>[\"youtube-dl\",\"--flat-playlist\",\"-J\",...i.filter(e=>e.includes(\"youtube.\"))]"
+            }
           }
         ]
       }
@@ -216,7 +219,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "i=>[\"youtube-dl\",\"--flat-playlist\",\"-J\",...i.filter(e=>e.includes(\"youtube.\"))]"
+            "js_runtime": {
+              "kind": "script_function",
+              "source": "i=>[\"youtube-dl\",\"--flat-playlist\",\"-J\",...i.filter(e=>e.includes(\"youtube.\"))]"
+            }
           }
         ]
       }
@@ -231,7 +237,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "i=>[\"youtube-dl\",\"--flat-playlist\",\"-J\",...i.filter(e=>e.includes(\"youtube.\"))]"
+            "js_runtime": {
+              "kind": "script_function",
+              "source": "i=>[\"youtube-dl\",\"--flat-playlist\",\"-J\",...i.filter(e=>e.includes(\"youtube.\"))]"
+            }
           }
         ]
       }
@@ -1396,7 +1405,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(i,e,t)=>{let{stdout:n}=await e({command:\"youtube-dl\",args:[...i.filter(o=>o.includes(\"youtube.\")),\"--simulate\",\"--ap-list-mso\"]});return n.split(`\n`).slice(3).map(o=>{let[r,...s]=o.split(\" \");return{name:r,description:s.join(\" \")}})}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(i,e,t)=>{let{stdout:n}=await e({command:\"youtube-dl\",args:[...i.filter(o=>o.includes(\"youtube.\")),\"--simulate\",\"--ap-list-mso\"]});return n.split(`\n`).slice(3).map(o=>{let[r,...s]=o.split(\" \");return{name:r,description:s.join(\" \")}})}"
+            }
           }
         ]
       }
@@ -1650,7 +1662,10 @@
           "pbpaste"
         ],
         "requires_js": true,
-        "js_source": "function(i){let e=new RegExp(\"^(https?://)?(www.)?(youtube.com|youtu.?be)/.+$\");try{if(e.test(i))return[{name:i,description:\"Clipboard\",icon:\"https://www.youtube.com/s/desktop/810941b4/img/favicon_32.png\"}]}catch(t){return console.error(t),[]}}"
+        "js_runtime": {
+          "kind": "post_process",
+          "source": "function(i){let e=new RegExp(\"^(https?://)?(www.)?(youtube.com|youtu.?be)/.+$\");try{if(e.test(i))return[{name:i,description:\"Clipboard\",icon:\"https://www.youtube.com/s/desktop/810941b4/img/favicon_32.png\"}]}catch(t){return console.error(t),[]}}"
+        }
       }
     ]
   }

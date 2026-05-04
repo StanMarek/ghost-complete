@@ -168,7 +168,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -188,7 +191,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(s,c,p)=>{let t=s[s.length-1];if(t===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",g=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${t}${r}`:`https://api.npms.io/v2/search/suggestions?q=${t}&size=20`],d=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${t.slice(0,-1)}`],P=m=>c({command:\"curl\",args:m[m.length-1]===\"@\"?d:g}),x=t.startsWith(\"@\")?j(t)>1:t.includes(\"@\");try{let m=JSON.parse((await P(t)).stdout);if(x){let w=Object.entries(m[\"dist-tags\"]||{}).map(([D,T])=>({name:D,description:T}));return w.push(...Object.keys(m.versions).map(D=>({name:D})).reverse()),w}return(r?m.results:m).map(w=>({name:w.package.name,description:w.package.description}))}catch(m){return console.error({error:m}),[]}}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(s,c,p)=>{let t=s[s.length-1];if(t===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",g=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${t}${r}`:`https://api.npms.io/v2/search/suggestions?q=${t}&size=20`],d=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${t.slice(0,-1)}`],P=m=>c({command:\"curl\",args:m[m.length-1]===\"@\"?d:g}),x=t.startsWith(\"@\")?j(t)>1:t.includes(\"@\");try{let m=JSON.parse((await P(t)).stdout);if(x){let w=Object.entries(m[\"dist-tags\"]||{}).map(([D,T])=>({name:D,description:T}));return w.push(...Object.keys(m.versions).map(D=>({name:D})).reverse()),w}return(r?m.results:m).map(w=>({name:w.package.name,description:w.package.description}))}catch(m){return console.error({error:m}),[]}}"
+            }
           }
         ]
       },
@@ -210,7 +216,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -359,7 +368,10 @@
                 "generators": [
                   {
                     "requires_js": true,
-                    "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                    }
                   }
                 ]
               }
@@ -387,7 +399,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -513,7 +528,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(s,c,p)=>{let t=s[s.length-1];if(t===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",g=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${t}${r}`:`https://api.npms.io/v2/search/suggestions?q=${t}&size=20`],d=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${t.slice(0,-1)}`],P=m=>c({command:\"curl\",args:m[m.length-1]===\"@\"?d:g}),x=t.startsWith(\"@\")?j(t)>1:t.includes(\"@\");try{let m=JSON.parse((await P(t)).stdout);if(x){let w=Object.entries(m[\"dist-tags\"]||{}).map(([D,T])=>({name:D,description:T}));return w.push(...Object.keys(m.versions).map(D=>({name:D})).reverse()),w}return(r?m.results:m).map(w=>({name:w.package.name,description:w.package.description}))}catch(m){return console.error({error:m}),[]}}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(s,c,p)=>{let t=s[s.length-1];if(t===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",g=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${t}${r}`:`https://api.npms.io/v2/search/suggestions?q=${t}&size=20`],d=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${t.slice(0,-1)}`],P=m=>c({command:\"curl\",args:m[m.length-1]===\"@\"?d:g}),x=t.startsWith(\"@\")?j(t)>1:t.includes(\"@\");try{let m=JSON.parse((await P(t)).stdout);if(x){let w=Object.entries(m[\"dist-tags\"]||{}).map(([D,T])=>({name:D,description:T}));return w.push(...Object.keys(m.versions).map(D=>({name:D})).reverse()),w}return(r?m.results:m).map(w=>({name:w.package.name,description:w.package.description}))}catch(m){return console.error({error:m}),[]}}"
+            }
           }
         ]
       }
@@ -749,7 +767,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -793,7 +814,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(s,c,p)=>{let t=s[s.length-1];if(t===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",g=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${t}${r}`:`https://api.npms.io/v2/search/suggestions?q=${t}&size=20`],d=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${t.slice(0,-1)}`],P=m=>c({command:\"curl\",args:m[m.length-1]===\"@\"?d:g}),x=t.startsWith(\"@\")?j(t)>1:t.includes(\"@\");try{let m=JSON.parse((await P(t)).stdout);if(x){let w=Object.entries(m[\"dist-tags\"]||{}).map(([D,T])=>({name:D,description:T}));return w.push(...Object.keys(m.versions).map(D=>({name:D})).reverse()),w}return(r?m.results:m).map(w=>({name:w.package.name,description:w.package.description}))}catch(m){return console.error({error:m}),[]}}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(s,c,p)=>{let t=s[s.length-1];if(t===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",g=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${t}${r}`:`https://api.npms.io/v2/search/suggestions?q=${t}&size=20`],d=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${t.slice(0,-1)}`],P=m=>c({command:\"curl\",args:m[m.length-1]===\"@\"?d:g}),x=t.startsWith(\"@\")?j(t)>1:t.includes(\"@\");try{let m=JSON.parse((await P(t)).stdout);if(x){let w=Object.entries(m[\"dist-tags\"]||{}).map(([D,T])=>({name:D,description:T}));return w.push(...Object.keys(m.versions).map(D=>({name:D})).reverse()),w}return(r?m.results:m).map(w=>({name:w.package.name,description:w.package.description}))}catch(m){return console.error({error:m}),[]}}"
+            }
           }
         ]
       }
@@ -833,7 +857,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+            }
           }
         ]
       }
@@ -1035,7 +1062,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -1243,7 +1273,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -1383,7 +1416,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -1453,7 +1489,10 @@
                 "generators": [
                   {
                     "requires_js": true,
-                    "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                    }
                   }
                 ]
               }
@@ -1494,7 +1533,10 @@
                 "generators": [
                   {
                     "requires_js": true,
-                    "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                    }
                   }
                 ]
               }
@@ -1537,7 +1579,10 @@
                 "generators": [
                   {
                     "requires_js": true,
-                    "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                    "js_runtime": {
+                      "kind": "custom",
+                      "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                    }
                   }
                 ]
               }
@@ -1820,7 +1865,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -1863,7 +1911,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -1942,7 +1993,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -1987,7 +2041,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -2022,7 +2079,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async(s,c,p)=>{let t=s[s.length-1];if(t===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",g=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${t}${r}`:`https://api.npms.io/v2/search/suggestions?q=${t}&size=20`],d=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${t.slice(0,-1)}`],P=m=>c({command:\"curl\",args:m[m.length-1]===\"@\"?d:g}),x=t.startsWith(\"@\")?j(t)>1:t.includes(\"@\");try{let m=JSON.parse((await P(t)).stdout);if(x){let w=Object.entries(m[\"dist-tags\"]||{}).map(([D,T])=>({name:D,description:T}));return w.push(...Object.keys(m.versions).map(D=>({name:D})).reverse()),w}return(r?m.results:m).map(w=>({name:w.package.name,description:w.package.description}))}catch(m){return console.error({error:m}),[]}}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async(s,c,p)=>{let t=s[s.length-1];if(t===\"\")return[];let r=n&&n.length>0?`+keywords:${n.join(\",\")}`:\"\",g=[\"-s\",\"-H\",\"Accept: application/json\",r?`https://api.npms.io/v2/search?size=20&q=${t}${r}`:`https://api.npms.io/v2/search/suggestions?q=${t}&size=20`],d=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${t.slice(0,-1)}`],P=m=>c({command:\"curl\",args:m[m.length-1]===\"@\"?d:g}),x=t.startsWith(\"@\")?j(t)>1:t.includes(\"@\");try{let m=JSON.parse((await P(t)).stdout);if(x){let w=Object.entries(m[\"dist-tags\"]||{}).map(([D,T])=>({name:D,description:T}));return w.push(...Object.keys(m.versions).map(D=>({name:D})).reverse()),w}return(r?m.results:m).map(w=>({name:w.package.name,description:w.package.description}))}catch(m){return console.error({error:m}),[]}}"
+            }
           }
         ]
       }
@@ -2193,7 +2253,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -2629,7 +2692,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -2648,7 +2714,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+            }
           }
         ]
       },
@@ -2705,7 +2774,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -2724,7 +2796,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+            }
           }
         ]
       }
@@ -2780,7 +2855,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -2799,7 +2877,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+            }
           }
         ]
       }
@@ -2855,7 +2936,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -2874,7 +2958,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+            }
           }
         ]
       },
@@ -2931,7 +3018,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -2950,7 +3040,10 @@
         "generators": [
           {
             "requires_js": true,
-            "js_source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+            "js_runtime": {
+              "kind": "custom",
+              "source": "async function(n,s){if(!n.includes(\"-g\")&&!n.includes(\"--global\")){let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).filter(d=>!n.some(x=>x===d)).map(d=>({name:d,icon:\"\\u{1F4E6}\",description:r[d]?\"dependency\":g[d]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:c}=await s({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return c.split(`\n`).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
+            }
           }
         ]
       }
@@ -2986,7 +3079,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -3141,7 +3237,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -3172,7 +3271,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }
@@ -3241,7 +3343,10 @@
             "generators": [
               {
                 "requires_js": true,
-                "js_source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                "js_runtime": {
+                  "kind": "custom",
+                  "source": "async(n,s)=>{let{stdout:c}=await s({command:\"npm\",args:[\"prefix\"]}),{stdout:p}=await s({command:\"cat\",args:[`${c}/package.json`]}),t=[];try{if(p.trim()==\"\")return t;let h=JSON.parse(p).workspaces;if(h)for(let g of h)t.push({name:g,description:\"Workspaces\"})}catch(r){console.log(r)}return t}"
+                }
               }
             ]
           }

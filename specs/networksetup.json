@@ -30,7 +30,10 @@
               "-listallhardwareports"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            }
           }
         ]
       }
@@ -59,7 +62,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -77,7 +83,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -108,7 +117,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -131,7 +143,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -149,7 +164,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -171,7 +189,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -189,7 +210,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -213,7 +237,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -230,7 +257,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -247,7 +277,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -264,7 +297,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -299,7 +335,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -317,7 +356,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -341,7 +383,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -359,7 +404,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -382,7 +430,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -400,7 +451,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -453,7 +507,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -471,7 +528,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -521,7 +581,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -550,7 +613,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -568,7 +634,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -618,7 +687,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -647,7 +719,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -665,7 +740,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -715,7 +793,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -744,7 +825,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -762,7 +846,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -785,7 +872,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -803,7 +893,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -833,7 +926,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -855,7 +951,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -872,7 +971,10 @@
               "-listallhardwareports"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+            }
           }
         ]
       }
@@ -890,7 +992,10 @@
                 "-listallhardwareports"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              }
             }
           ]
         },
@@ -917,7 +1022,10 @@
               "-listallhardwareports"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+            }
           }
         ]
       }
@@ -935,7 +1043,10 @@
                 "-listallhardwareports"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              }
             }
           ]
         },
@@ -964,7 +1075,10 @@
               "-listallhardwareports"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+            }
           }
         ]
       }
@@ -982,7 +1096,10 @@
                 "-listallhardwareports"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              }
             }
           ]
         },
@@ -1056,7 +1173,10 @@
                 "-listallhardwareports"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              }
             }
           ]
         },
@@ -1078,7 +1198,10 @@
               "-listallhardwareports"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))t[1]===\"Wi-Fi\"&&r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+            }
           }
         ]
       }
@@ -1095,7 +1218,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -1113,7 +1239,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -1147,7 +1276,10 @@
                 "-listallhardwareports"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+              }
             }
           ]
         }
@@ -1166,7 +1298,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -1189,7 +1324,10 @@
                 "-listallnetworkservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+              }
             }
           ]
         },
@@ -1211,7 +1349,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -1229,7 +1370,10 @@
               "-listallnetworkservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.split(`\n`);for(let t of n){let d=t.trim();if(d!==\"An asterisk (*) denotes that a network service is disabled.\"&&d.length>0){let h=d.replace(/^\\* /,\"\").trim(),l=d.startsWith(\"*\")?\"Disabled network service\":\"Network service\";r.push({name:h,description:l})}}return r}"
+            }
           }
         ]
       }
@@ -1246,7 +1390,10 @@
               "-listallhardwareports"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            }
           }
         ]
       }
@@ -1263,7 +1410,10 @@
               "-listallhardwareports"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            }
           }
         ]
       }
@@ -1281,7 +1431,10 @@
                 "-listallhardwareports"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+              }
             }
           ]
         },
@@ -1303,7 +1456,10 @@
               "-listallhardwareports"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            }
           }
         ]
       }
@@ -1320,7 +1476,10 @@
               "-listallhardwareports"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            }
           }
         ]
       }
@@ -1338,7 +1497,10 @@
                 "-listallhardwareports"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+              }
             }
           ]
         },
@@ -1366,7 +1528,10 @@
               "-listallhardwareports"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+            }
           }
         ]
       }
@@ -1389,7 +1554,10 @@
                 "-listallhardwareports"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+              }
             }
           ]
         },
@@ -1417,7 +1585,10 @@
                 "-listallhardwareports"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[1],description:`Interface: ${t[2]}`});return r}"
+              }
             }
           ]
         },
@@ -1447,7 +1618,10 @@
               "-listallhardwareports"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+            }
           }
         ]
       }
@@ -1472,7 +1646,10 @@
                 "-listallhardwareports"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              }
             }
           ]
         }
@@ -1490,7 +1667,10 @@
               "-listBonds"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}"
+            }
           }
         ]
       }
@@ -1508,7 +1688,10 @@
                 "-listallhardwareports"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              }
             }
           ]
         },
@@ -1521,7 +1704,10 @@
                 "-listBonds"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}"
+              }
             }
           ]
         }
@@ -1540,7 +1726,10 @@
                 "-listallhardwareports"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              }
             }
           ]
         },
@@ -1553,7 +1742,10 @@
                 "-listBonds"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}"
+              }
             }
           ]
         }
@@ -1575,7 +1767,10 @@
               "-listBonds"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=/^interface name: (.*?)\\n.*?user-defined-name: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:\"Bonds\"});return r}"
+            }
           }
         ]
       }
@@ -1596,7 +1791,10 @@
               "-listpppoeservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+            }
           }
         ]
       }
@@ -1615,7 +1813,10 @@
                 "-listallhardwareports"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of o.matchAll(n))r.push({name:t[2],description:`Hardwareport: ${t[1]}`});return r}"
+              }
             }
           ]
         },
@@ -1650,7 +1851,10 @@
               "-listpppoeservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+            }
           }
         ]
       }
@@ -1668,7 +1872,10 @@
                 "-listpppoeservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+              }
             }
           ]
         },
@@ -1691,7 +1898,10 @@
                 "-listpppoeservices"
               ],
               "requires_js": true,
-              "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+              "js_runtime": {
+                "kind": "post_process",
+                "source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+              }
             }
           ]
         },
@@ -1713,7 +1923,10 @@
               "-listpppoeservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+            }
           }
         ]
       }
@@ -1730,7 +1943,10 @@
               "-listpppoeservices"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"PPPoE Service\"});return r}"
+            }
           }
         ]
       }
@@ -1770,7 +1986,10 @@
               "-listlocations"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"Network Location\"});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"Network Location\"});return r}"
+            }
           }
         ]
       }
@@ -1787,7 +2006,10 @@
               "-listlocations"
             ],
             "requires_js": true,
-            "js_source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"Network Location\"});return r}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "o=>{let r=[],n=o.trim().split(`\n`);for(let t of n)t.trim()&&r.push({name:t.trim(),description:\"Network Location\"});return r}"
+            }
           }
         ]
       }

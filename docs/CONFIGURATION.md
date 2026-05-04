@@ -75,6 +75,7 @@ Enable or disable individual suggestion providers.
 | `filesystem` | bool | `true` | File and directory completions |
 | `specs` | bool | `true` | Fig-compatible JSON spec completions |
 | `git` | bool | `true` | Git context completions (branches, tags, remotes) |
+| `js_runtime` | bool | `true` | QuickJS evaluator for `requires_js` spec generators. Set `false` to disable JS-backed `post_process`, `script_function`, and `custom` generators while keeping static spec completions. |
 
 ```toml
 [suggest.providers]
@@ -82,6 +83,7 @@ commands = true
 filesystem = true
 specs = true
 git = true
+js_runtime = true
 ```
 
 ### `[paths]`
@@ -301,6 +303,7 @@ commands = true
 filesystem = true
 specs = true
 git = false
+js_runtime = true
 
 [paths]
 spec_dirs = ["~/.config/ghost-complete/specs"]

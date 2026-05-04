@@ -318,7 +318,10 @@
               "--format=json"
             ],
             "requires_js": true,
-            "js_source": "a=>{let e=JSON.parse(a).images;return Object.keys(e).map(i=>({name:i,description:e[i].os+\" \"+e[i].release}))}"
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "a=>{let e=JSON.parse(a).images;return Object.keys(e).map(i=>({name:i,description:e[i].os+\" \"+e[i].release}))}"
+            }
           }
         ]
       }

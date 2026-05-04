@@ -2,7 +2,10 @@
   "args": {
     "generators": [
       {
-        "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:S,currentWorkingDirectory:_,searchTerm:h}=b,w=(f=(0,g.getCurrentInsertedDirectory)(c??_,h,b))!==null&&f!==void 0?f:\"/\";try{let C=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:w}),G=z(C.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let M of G)if(M){let F=M.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&P.push({type:F===\"filepaths\"?\"file\":\"folder\",name:M,insertValue:M,isDangerous:S,context:{templateType:F}})}return O(v(P))}catch{return[]}})",
+        "js_runtime": {
+          "kind": "custom",
+          "source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:S,currentWorkingDirectory:_,searchTerm:h}=b,w=(f=(0,g.getCurrentInsertedDirectory)(c??_,h,b))!==null&&f!==void 0?f:\"/\";try{let C=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:w}),G=z(C.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let M of G)if(M){let F=M.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&P.push({type:F===\"filepaths\"?\"file\":\"folder\",name:M,insertValue:M,isDangerous:S,context:{templateType:F}})}return O(v(P))}catch{return[]}})"
+        },
         "requires_js": true
       }
     ],
@@ -66,7 +69,10 @@
       "args": {
         "generators": [
           {
-            "js_source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:S,currentWorkingDirectory:_,searchTerm:h}=b,w=(f=(0,g.getCurrentInsertedDirectory)(c??_,h,b))!==null&&f!==void 0?f:\"/\";try{let C=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:w}),G=z(C.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let M of G)if(M){let F=M.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&P.push({type:F===\"filepaths\"?\"file\":\"folder\",name:M,insertValue:M,isDangerous:S,context:{templateType:F}})}return O(v(P))}catch{return[]}})",
+            "js_runtime": {
+              "kind": "custom",
+              "source": "(p,m,b)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:S,currentWorkingDirectory:_,searchTerm:h}=b,w=(f=(0,g.getCurrentInsertedDirectory)(c??_,h,b))!==null&&f!==void 0?f:\"/\";try{let C=yield m({command:\"ls\",args:[\"-1ApL\"],cwd:w}),G=z(C.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let M of G)if(M){let F=M.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&P.push({type:F===\"filepaths\"?\"file\":\"folder\",name:M,insertValue:M,isDangerous:S,context:{templateType:F}})}return O(v(P))}catch{return[]}})"
+            },
             "requires_js": true
           }
         ],
