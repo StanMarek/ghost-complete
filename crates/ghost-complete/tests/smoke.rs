@@ -4,6 +4,11 @@ use harness::GhostProcess;
 use std::thread;
 use std::time::Duration;
 
+const OSC_GIT_REPORT: &[u8] = b"\x1b]7770;4;git \x07";
+const POPUP_RENDER_MARKER: &[u8] = b"\x1b7";
+const POPUP_RESTORE_MARKER: &[u8] = b"\x1b8";
+const NO_POPUP_BEFORE_REDRAW_TIMEOUT: Duration = Duration::from_millis(500);
+
 fn find_subslice(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     if needle.is_empty() {
         return Some(0);
@@ -11,6 +16,44 @@ fn find_subslice(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     haystack
         .windows(needle.len())
         .position(|window| window == needle)
+}
+
+fn assert_osc_only_report_defers_popup(proc: &GhostProcess, start_offset: usize, context: &str) {
+    let osc_seen = proc.wait_for_bytes_after(OSC_GIT_REPORT, start_offset, Duration::from_secs(5));
+    if !osc_seen {
+        let snapshot = proc.output_snapshot();
+        let since_start = &snapshot[start_offset..];
+        panic!(
+            "OSC 7770 report did not arrive before {context}.\n\
+             Bytes since mark ({} bytes, lossy UTF-8):\n{:?}",
+            since_start.len(),
+            String::from_utf8_lossy(since_start),
+        );
+    }
+
+    let rendered_before_redraw = proc.wait_for_bytes_after(
+        POPUP_RENDER_MARKER,
+        start_offset,
+        NO_POPUP_BEFORE_REDRAW_TIMEOUT,
+    );
+    if rendered_before_redraw {
+        let snapshot = proc.output_snapshot();
+        let since_start = &snapshot[start_offset..];
+        panic!(
+            "OSC-only buffer report rendered popup before later display change during {context}.\n\
+             Bytes since mark ({} bytes, lossy UTF-8):\n{:?}",
+            since_start.len(),
+            String::from_utf8_lossy(since_start),
+        );
+    }
+}
+
+fn advance_display_after_osc_only_report(proc: &mut GhostProcess) -> usize {
+    let mark_before_redraw = proc.output_len();
+    // The shell is blocked in `read`; one printable byte is echoed by the PTY
+    // without completing the read, giving the proxy a real later display epoch.
+    proc.write_raw(b"x");
+    mark_before_redraw
 }
 
 #[test]
@@ -148,8 +191,8 @@ fn test_multiple_commands() {
 /// End-to-end popup smoke test.
 ///
 /// Verifies the entire UX pipeline: OSC 7770 buffer-report (from simulated
-/// shell integration) -> auto-trigger -> popup renders with git-spec
-/// subcommand text -> ESC dismisses the popup.
+/// shell integration) -> defer until the terminal display advances -> popup
+/// renders with git-spec subcommand text -> ESC dismisses the popup.
 ///
 /// Architecture notes:
 /// - The harness wraps `/bin/sh` (no shell integration). Without shell
@@ -162,8 +205,9 @@ fn test_multiple_commands() {
 ///   The shell executes printf, emits the raw ANSI bytes to its stdout,
 ///   which flow through gc-parser's VT state machine and set
 ///   `command_buffer = "git "` with cursor = 4. This also sets
-///   `buffer_dirty = true`, which Task B (stdout -> terminal loop) notices
-///   and uses to fire `trigger()` automatically.
+///   `buffer_dirty = true`, which Task B (stdout -> terminal loop) notices.
+///   OSC-only reports are intentionally deferred until later display output
+///   proves the terminal has advanced/redrawn after the report.
 /// - No manual Ctrl+/ is needed — the auto-trigger path from OSC 7770 is
 ///   exactly what real shell integration does on every keystroke.
 ///
@@ -184,7 +228,7 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
     let mut proc = GhostProcess::spawn();
 
     // Settle the shell so our printf doesn't race with any banner output.
-    proc.send_line("echo smoke_popup_ready_marker");
+    proc.send_line("printf '%s%s\\n' smoke_popup_ready_ marker");
     proc.expect_output("smoke_popup_ready_marker");
 
     // Mark the pre-trigger offset — popup render bytes must appear after.
@@ -195,27 +239,35 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
     //     \x1b]7770;4;git \x07
     // The shell executes printf, emits the raw bytes to stdout, gc-parser
     // consumes them and sets command_buffer = "git " with cursor = 4.
-    // The buffer_dirty flag causes Task B to auto-fire trigger().
+    // The buffer_dirty flag causes Task B to defer the trigger until a later
+    // display epoch.
     //
     // Keep the shell command blocked after the OSC write. If the command
     // exits immediately, the shell prints a new prompt, and the proxy now
     // correctly tears down the popup before forwarding that prompt output.
     proc.send_line(r"printf '\033]7770;4;git \007'; read _ghost_popup_hold");
 
+    assert_osc_only_report_defers_popup(&proc, mark_before_trigger, "git popup trigger");
+
+    let mark_before_redraw = advance_display_after_osc_only_report(&mut proc);
+
     // Wait for the popup render. The overlay's first emitted byte sequence
-    // is DECSC (`\x1b7` = save cursor). Seeing it after mark_before_trigger
-    // proves that the OSC 7770 -> auto-trigger -> render_popup pipeline ran.
-    let popup_rendered =
-        proc.wait_for_bytes_after(b"\x1b7", mark_before_trigger, Duration::from_secs(5));
+    // is DECSC (`\x1b7` = save cursor). Seeing it after mark_before_redraw
+    // proves that the OSC 7770 -> later display epoch -> render_popup pipeline ran.
+    let popup_rendered = proc.wait_for_bytes_after(
+        POPUP_RENDER_MARKER,
+        mark_before_redraw,
+        Duration::from_secs(5),
+    );
 
     if !popup_rendered {
         let snapshot = proc.output_snapshot();
-        let since_trigger = &snapshot[mark_before_trigger..];
+        let since_redraw = &snapshot[mark_before_redraw..];
         panic!(
-            "Popup did not render within 5s after OSC 7770 injection.\n\
-             Bytes since trigger mark ({} bytes, lossy UTF-8):\n{:?}",
-            since_trigger.len(),
-            String::from_utf8_lossy(since_trigger),
+            "Popup did not render within 5s after display advanced following OSC 7770 injection.\n\
+             Bytes since redraw mark ({} bytes, lossy UTF-8):\n{:?}",
+            since_redraw.len(),
+            String::from_utf8_lossy(since_redraw),
         );
     }
 
@@ -252,7 +304,11 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
 
     // clear_popup emits DECSC + movement + blanks + DECRC. The DECRC
     // (`\x1b8`) appearing after the ESC mark is the dismiss signal.
-    let dismissed = proc.wait_for_bytes_after(b"\x1b8", mark_before_esc, Duration::from_secs(5));
+    let dismissed = proc.wait_for_bytes_after(
+        POPUP_RESTORE_MARKER,
+        mark_before_esc,
+        Duration::from_secs(5),
+    );
 
     if !dismissed {
         let snapshot = proc.output_snapshot();
@@ -276,27 +332,34 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
 fn test_popup_is_cleared_before_later_shell_output() {
     let mut proc = GhostProcess::spawn();
 
-    proc.send_line("PS1='smoke_prompt_repaint_marker '");
-    proc.expect_output("smoke_prompt_repaint_marker");
+    proc.send_line("PS1=\"smoke_prompt_repaint_$((1+1))_marker \"");
+    proc.expect_output("smoke_prompt_repaint_2_marker");
 
     let mark_before_trigger = proc.output_len();
     proc.send_line(r"printf '\033]7770;4;git \007'; read _gc_smoke_gate");
 
-    let popup_rendered =
-        proc.wait_for_bytes_after(b"\x1b7", mark_before_trigger, Duration::from_secs(5));
+    assert_osc_only_report_defers_popup(&proc, mark_before_trigger, "prompt repaint cleanup");
+
+    let mark_before_redraw = advance_display_after_osc_only_report(&mut proc);
+
+    let popup_rendered = proc.wait_for_bytes_after(
+        POPUP_RENDER_MARKER,
+        mark_before_redraw,
+        Duration::from_secs(5),
+    );
     if !popup_rendered {
         let snapshot = proc.output_snapshot();
-        let since_trigger = &snapshot[mark_before_trigger..];
+        let since_redraw = &snapshot[mark_before_redraw..];
         panic!(
-            "Popup did not render before prompt repaint.\n\
-             Bytes since trigger mark ({} bytes, lossy UTF-8):\n{:?}",
-            since_trigger.len(),
-            String::from_utf8_lossy(since_trigger),
+            "Popup did not render after display advanced before prompt repaint.\n\
+             Bytes since redraw mark ({} bytes, lossy UTF-8):\n{:?}",
+            since_redraw.len(),
+            String::from_utf8_lossy(since_redraw),
         );
     }
 
     let mark_after_popup = proc.output_len();
-    let marker = b"smoke_prompt_repaint_marker";
+    let marker = b"smoke_prompt_repaint_2_marker";
     proc.send_line("");
     let marker_seen = proc.wait_for_bytes_after(marker, mark_after_popup, Duration::from_secs(5));
     if !marker_seen {
@@ -315,7 +378,7 @@ fn test_popup_is_cleared_before_later_shell_output() {
     let marker_pos = find_subslice(since_popup, marker).expect("marker position");
     let before_marker = &since_popup[..marker_pos];
     assert!(
-        find_subslice(before_marker, b"\x1b8").is_some(),
+        find_subslice(before_marker, POPUP_RESTORE_MARKER).is_some(),
         "popup cleanup must finish before later shell output is forwarded. \
          Bytes before marker ({} bytes, lossy UTF-8):\n{:?}",
         before_marker.len(),
@@ -324,7 +387,7 @@ fn test_popup_is_cleared_before_later_shell_output() {
 
     let after_marker = &since_popup[marker_pos + marker.len()..];
     assert!(
-        find_subslice(after_marker, b"\x1b7").is_none(),
+        find_subslice(after_marker, POPUP_RENDER_MARKER).is_none(),
         "no stale popup render should follow shell repaint output. \
          Bytes after marker ({} bytes, lossy UTF-8):\n{:?}",
         after_marker.len(),

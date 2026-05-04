@@ -483,7 +483,8 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     let debounce_notify_b = Arc::clone(&debounce_notify);
     let stdout_handle = tokio::task::spawn_blocking(move || {
         let mut buf = [0u8; 8192];
-        let mut deferred_trigger_after_redraw = false;
+        let mut display_epoch = 0_u64;
+        let mut deferred_buffer_dirty: Option<DeferredBufferDirty> = None;
         loop {
             let n = match reader.read(&mut buf) {
                 Ok(0) => break, // PTY closed
@@ -493,7 +494,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             };
 
             // Feed bytes through the VT parser to track terminal state
-            let (needs_cpr, display_dirty, viewport_scrolls) = {
+            let (needs_cpr, display_dirty, viewport_scrolls, latest_buffer_epoch) = {
                 let mut p = match parser_for_stdout.lock() {
                     Ok(p) => p,
                     Err(e) => {
@@ -501,12 +502,12 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         break;
                     }
                 };
-                p.process_bytes(&buf[..n]);
-                let state = p.state_mut();
+                let events = process_pty_read(&mut p, &buf[..n], &mut display_epoch);
                 (
-                    state.take_cursor_sync_requested(),
-                    state.take_display_dirty(),
-                    state.take_viewport_scroll_count(),
+                    events.needs_cpr,
+                    events.display_dirty,
+                    events.viewport_scrolls,
+                    events.latest_buffer_epoch,
                 )
             };
 
@@ -608,22 +609,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 }
             }
 
-            let display_changed = display_dirty || viewport_scrolls > 0;
-
             // Check if shell reported a buffer update via OSC 7770.
             // Trigger suggestions here (Task B) instead of Task A to ensure
             // we have the shell's updated buffer, fixing the stale-buffer bug.
-            let buffer_dirty = {
-                match parser_for_stdout.lock() {
-                    Ok(mut p) => p.state_mut().take_buffer_dirty(),
-                    Err(e) => {
-                        tracing::warn!("parser mutex poisoned in stdout task: {e}");
-                        break;
-                    }
-                }
-            };
-
-            if buffer_dirty {
+            if let Some(latest_buffer_epoch) = latest_buffer_epoch {
+                let display_after_latest_buffer = display_epoch > latest_buffer_epoch;
                 let mut render_buf = Vec::new();
                 let render_ticket = {
                     let mut h = match handler_for_stdout.lock() {
@@ -634,30 +624,26 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         }
                     };
                     let had_pending_trigger = h.has_pending_trigger();
-                    let action = if deferred_trigger_after_redraw && display_changed {
-                        BufferDirtyAction::Ignore
-                    } else {
-                        buffer_dirty_action(
-                            had_pending_trigger,
-                            delay_ms,
-                            h.auto_trigger_enabled(),
-                            h.is_debounce_suppressed(),
-                            display_changed,
-                        )
-                    };
+                    let action = buffer_dirty_action(
+                        had_pending_trigger,
+                        delay_ms,
+                        h.auto_trigger_enabled(),
+                        h.is_debounce_suppressed(),
+                        display_after_latest_buffer,
+                    );
                     if had_pending_trigger {
                         h.clear_trigger_request();
                     }
-                    match action {
-                        BufferDirtyAction::Trigger => {
-                            deferred_trigger_after_redraw = false;
+                    match apply_buffer_dirty_action(
+                        &mut deferred_buffer_dirty,
+                        latest_buffer_epoch,
+                        action,
+                    ) {
+                        ResolvedBufferDirtyAction::Trigger => {
                             h.trigger(&parser_for_stdout, &mut render_buf)
                         }
-                        BufferDirtyAction::Debounce => debounce_notify_b.notify_one(),
-                        BufferDirtyAction::DeferUntilDisplay => {
-                            deferred_trigger_after_redraw = true;
-                        }
-                        BufferDirtyAction::Ignore => {}
+                        ResolvedBufferDirtyAction::NotifyDebounce => debounce_notify_b.notify_one(),
+                        ResolvedBufferDirtyAction::None => {}
                     }
                     h.overlay_write_ticket()
                 };
@@ -671,7 +657,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 }
             }
 
-            if deferred_trigger_after_redraw && display_changed {
+            if deferred_buffer_dirty.is_some_and(|pending| display_epoch > pending.display_epoch) {
                 let mut render_buf = Vec::new();
                 let render_ticket = {
                     let mut h = match handler_for_stdout.lock() {
@@ -681,9 +667,17 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                             break;
                         }
                     };
-                    deferred_trigger_after_redraw = false;
-                    if h.auto_trigger_enabled() {
-                        h.trigger(&parser_for_stdout, &mut render_buf);
+                    match resolve_deferred_buffer_dirty(
+                        &mut deferred_buffer_dirty,
+                        display_epoch,
+                        h.auto_trigger_enabled(),
+                        h.is_debounce_suppressed(),
+                    ) {
+                        ResolvedBufferDirtyAction::Trigger => {
+                            h.trigger(&parser_for_stdout, &mut render_buf);
+                        }
+                        ResolvedBufferDirtyAction::NotifyDebounce => debounce_notify_b.notify_one(),
+                        ResolvedBufferDirtyAction::None => {}
                     }
                     h.overlay_write_ticket()
                 };
@@ -951,12 +945,66 @@ fn poll_until(
     }
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+struct PtyReadEvents {
+    needs_cpr: bool,
+    display_dirty: bool,
+    viewport_scrolls: u16,
+    latest_buffer_epoch: Option<u64>,
+}
+
+fn process_pty_read(
+    parser: &mut TerminalParser,
+    bytes: &[u8],
+    display_epoch: &mut u64,
+) -> PtyReadEvents {
+    let mut events = PtyReadEvents::default();
+    for byte in bytes {
+        parser.process_bytes(std::slice::from_ref(byte));
+        let state = parser.state_mut();
+
+        events.needs_cpr |= state.take_cursor_sync_requested();
+
+        let display_dirty = state.take_display_dirty();
+        let viewport_scrolls = state.take_viewport_scroll_count();
+        events.display_dirty |= display_dirty;
+        events.viewport_scrolls = events.viewport_scrolls.saturating_add(viewport_scrolls);
+        if display_dirty || viewport_scrolls > 0 {
+            *display_epoch = display_epoch.saturating_add(1);
+        }
+
+        if state.take_buffer_dirty() {
+            events.latest_buffer_epoch = Some(*display_epoch);
+        }
+    }
+    events
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DeferredBufferDirtyAction {
+    TriggerNow,
+    NotifyDebounce,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct DeferredBufferDirty {
+    action: DeferredBufferDirtyAction,
+    display_epoch: u64,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum BufferDirtyAction {
     Trigger,
     Debounce,
-    DeferUntilDisplay,
+    DeferUntilDisplay(DeferredBufferDirtyAction),
     Ignore,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ResolvedBufferDirtyAction {
+    Trigger,
+    NotifyDebounce,
+    None,
 }
 
 fn buffer_dirty_action(
@@ -970,7 +1018,7 @@ fn buffer_dirty_action(
         return BufferDirtyAction::Ignore;
     }
     if has_pending_trigger && !display_changed {
-        return BufferDirtyAction::DeferUntilDisplay;
+        return BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::TriggerNow);
     }
     if has_pending_trigger {
         return BufferDirtyAction::Trigger;
@@ -979,11 +1027,73 @@ fn buffer_dirty_action(
         return BufferDirtyAction::Ignore;
     }
     if delay_ms == 0 && !display_changed {
-        BufferDirtyAction::DeferUntilDisplay
+        BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::TriggerNow)
     } else if delay_ms == 0 {
         BufferDirtyAction::Trigger
+    } else if !display_changed {
+        BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::NotifyDebounce)
     } else {
         BufferDirtyAction::Debounce
+    }
+}
+
+fn apply_buffer_dirty_action(
+    deferred: &mut Option<DeferredBufferDirty>,
+    buffer_epoch: u64,
+    action: BufferDirtyAction,
+) -> ResolvedBufferDirtyAction {
+    match action {
+        BufferDirtyAction::Trigger => {
+            *deferred = None;
+            ResolvedBufferDirtyAction::Trigger
+        }
+        BufferDirtyAction::Debounce => {
+            *deferred = None;
+            ResolvedBufferDirtyAction::NotifyDebounce
+        }
+        BufferDirtyAction::DeferUntilDisplay(action) => {
+            *deferred = Some(DeferredBufferDirty {
+                action,
+                display_epoch: buffer_epoch,
+            });
+            ResolvedBufferDirtyAction::None
+        }
+        BufferDirtyAction::Ignore => {
+            *deferred = None;
+            ResolvedBufferDirtyAction::None
+        }
+    }
+}
+
+fn resolve_deferred_buffer_dirty(
+    deferred: &mut Option<DeferredBufferDirty>,
+    display_epoch: u64,
+    auto_trigger_enabled: bool,
+    debounce_suppressed: bool,
+) -> ResolvedBufferDirtyAction {
+    let Some(pending) = *deferred else {
+        return ResolvedBufferDirtyAction::None;
+    };
+    if display_epoch <= pending.display_epoch {
+        return ResolvedBufferDirtyAction::None;
+    }
+
+    *deferred = None;
+    match pending.action {
+        DeferredBufferDirtyAction::TriggerNow => {
+            if auto_trigger_enabled {
+                ResolvedBufferDirtyAction::Trigger
+            } else {
+                ResolvedBufferDirtyAction::None
+            }
+        }
+        DeferredBufferDirtyAction::NotifyDebounce => {
+            if auto_trigger_enabled && !debounce_suppressed {
+                ResolvedBufferDirtyAction::NotifyDebounce
+            } else {
+                ResolvedBufferDirtyAction::None
+            }
+        }
     }
 }
 
@@ -1356,7 +1466,7 @@ mod tests {
     fn buffer_dirty_action_defers_delay_zero_until_redraw() {
         assert_eq!(
             buffer_dirty_action(false, 0, true, false, false),
-            BufferDirtyAction::DeferUntilDisplay
+            BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::TriggerNow)
         );
     }
 
@@ -1377,9 +1487,17 @@ mod tests {
     }
 
     #[test]
-    fn buffer_dirty_action_debounces_when_delay_positive() {
+    fn buffer_dirty_action_defers_debounce_until_redraw_when_delay_positive() {
         assert_eq!(
             buffer_dirty_action(false, 150, true, false, false),
+            BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::NotifyDebounce)
+        );
+    }
+
+    #[test]
+    fn buffer_dirty_action_debounces_after_redraw_when_delay_positive() {
+        assert_eq!(
+            buffer_dirty_action(false, 150, true, false, true),
             BufferDirtyAction::Debounce
         );
     }
@@ -1388,7 +1506,7 @@ mod tests {
     fn buffer_dirty_action_defers_pending_trigger_until_redraw() {
         assert_eq!(
             buffer_dirty_action(true, 150, true, true, false),
-            BufferDirtyAction::DeferUntilDisplay,
+            BufferDirtyAction::DeferUntilDisplay(DeferredBufferDirtyAction::TriggerNow),
             "OSC-only buffer reports must not render before the matching ZLE redraw moves the cursor"
         );
     }
@@ -1399,6 +1517,109 @@ mod tests {
             buffer_dirty_action(true, 150, true, true, true),
             BufferDirtyAction::Trigger
         );
+    }
+
+    #[test]
+    fn deferred_trigger_clears_when_suppressed_buffer_dirty_arrives() {
+        let mut deferred = Some(DeferredBufferDirty {
+            action: DeferredBufferDirtyAction::TriggerNow,
+            display_epoch: 3,
+        });
+
+        let action = buffer_dirty_action(false, 150, true, true, false);
+        assert_eq!(
+            apply_buffer_dirty_action(&mut deferred, 3, action),
+            ResolvedBufferDirtyAction::None
+        );
+        assert_eq!(deferred, None);
+        assert_eq!(
+            resolve_deferred_buffer_dirty(&mut deferred, 4, true, true),
+            ResolvedBufferDirtyAction::None
+        );
+    }
+
+    #[test]
+    fn deferred_debounce_notifies_only_after_later_display() {
+        let mut deferred = None;
+        let action = buffer_dirty_action(false, 150, true, false, false);
+
+        assert_eq!(
+            apply_buffer_dirty_action(&mut deferred, 8, action),
+            ResolvedBufferDirtyAction::None
+        );
+        assert_eq!(
+            deferred,
+            Some(DeferredBufferDirty {
+                action: DeferredBufferDirtyAction::NotifyDebounce,
+                display_epoch: 8,
+            })
+        );
+        assert_eq!(
+            resolve_deferred_buffer_dirty(&mut deferred, 8, true, false),
+            ResolvedBufferDirtyAction::None
+        );
+        assert_eq!(
+            resolve_deferred_buffer_dirty(&mut deferred, 9, true, false),
+            ResolvedBufferDirtyAction::NotifyDebounce
+        );
+        assert_eq!(deferred, None);
+    }
+
+    #[test]
+    fn deferred_debounce_is_dropped_if_suppression_changes_before_redraw() {
+        let mut deferred = Some(DeferredBufferDirty {
+            action: DeferredBufferDirtyAction::NotifyDebounce,
+            display_epoch: 4,
+        });
+
+        assert_eq!(
+            resolve_deferred_buffer_dirty(&mut deferred, 5, true, true),
+            ResolvedBufferDirtyAction::None
+        );
+        assert_eq!(deferred, None);
+    }
+
+    #[test]
+    fn current_buffer_dirty_trigger_replaces_deferred_without_double_fire() {
+        let mut deferred = Some(DeferredBufferDirty {
+            action: DeferredBufferDirtyAction::TriggerNow,
+            display_epoch: 1,
+        });
+        let action = buffer_dirty_action(true, 150, true, false, true);
+
+        assert_eq!(
+            apply_buffer_dirty_action(&mut deferred, 2, action),
+            ResolvedBufferDirtyAction::Trigger
+        );
+        assert_eq!(deferred, None);
+        assert_eq!(
+            resolve_deferred_buffer_dirty(&mut deferred, 2, true, false),
+            ResolvedBufferDirtyAction::None
+        );
+    }
+
+    #[test]
+    fn pty_read_tracks_display_epoch_before_latest_buffer_report() {
+        let mut parser = TerminalParser::new(24, 80);
+        let mut display_epoch = 0;
+        let events = process_pty_read(&mut parser, b"x\x1b]7770;4;git \x07", &mut display_epoch);
+
+        assert!(events.display_dirty);
+        assert_eq!(events.latest_buffer_epoch, Some(display_epoch));
+        assert!(
+            display_epoch <= events.latest_buffer_epoch.unwrap(),
+            "display bytes before the latest OSC report must not satisfy that report"
+        );
+    }
+
+    #[test]
+    fn pty_read_tracks_display_epoch_after_latest_buffer_report() {
+        let mut parser = TerminalParser::new(24, 80);
+        let mut display_epoch = 0;
+        let events = process_pty_read(&mut parser, b"\x1b]7770;4;git \x07x", &mut display_epoch);
+
+        assert!(events.display_dirty);
+        assert!(display_epoch > events.latest_buffer_epoch.unwrap());
     }
 
     use gc_parser::TerminalParser;
