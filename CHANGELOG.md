@@ -7,6 +7,180 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-05-04
+
+### Added
+
+- **JS runtime for `requires_js` generators** — all 3,641 dynamic generators
+  across 180 specs (aws being the dominant member) now contribute live
+  suggestions instead of stalling at static-only completion. Three generator
+  classes dispatch through a bounded QuickJS sandbox: `post_process`
+  (script stdout fed to a JS `postProcess` body), `script_function`
+  (JS produces argv, runner executes the shell, transforms apply), and
+  `custom` (JS produces suggestions directly). Class B/C require an
+  explicit `self_contained: true` opt-in on the spec. See
+  [ADR 0006](docs/adr/0006-quickjs-runtime-foundation.md) and
+  [`docs/JS_RUNTIME.md`](docs/JS_RUNTIME.md).
+- **New `gc-jsrt` crate** — owns the `rquickjs` dependency and exposes a
+  bounded JS evaluator. Sync `rquickjs::Runtime` on a dedicated worker
+  thread; mpsc job queue + per-job oneshot reply. Sandbox: removes
+  Node/Deno/Bun/Worker/`fetch`/`setTimeout`/`Buffer`/`require`/`process`
+  globals, shadows `eval` and `Function` intrinsics with throwing
+  closures, builds rquickjs with no module/native loader and no async
+  surface. 8 MiB memory cap, 512 KiB max stack, 2 MiB GC threshold,
+  wall-clock interrupt via `Runtime::set_interrupt_handler`. Output
+  normalised through `JSON.stringify` then `serde_json::Value` with
+  hard caps (1024 suggestions, 256-byte names, 1024-byte descriptions,
+  256 KiB total). Workspace grows from 8 to 9 crates.
+- **Fig-compatible host API** — `cwd`, `env`, `tokens`, `searchTerm`,
+  `currentToken`, `previousToken` and `executeShellCommand` are
+  installed on every JS evaluation, plus the legacy `fig` namespace
+  surface. Unsupported subnamespaces (`fs`, `path`, `keychain`, `ipc`,
+  `ui`) throw structured `UnsupportedHostApi` errors.
+  `executeShellCommand` accepts argv arrays and `{command, args}`
+  descriptors by default; shell-string form is denied unless the spec
+  flips `allow_shell_command`. Recursion cap of 5 shell calls per
+  evaluation prevents accidental fork-bombs.
+- **`[suggest.providers] js_runtime` kill switch** — default `true`.
+  When `false`, all three JS-backed generator classes are skipped at
+  dispatch time, equivalent to pre-v0.12 behaviour. Surfaces in
+  `status --json` under a top-level `js_runtime` block and in the
+  status text view; `doctor` warns when the switch is off.
+- **Stem-keyed spec store with alias index** — `SpecStore` now keys on
+  filename stem (canonical id) plus a `HashMap<String, Arc<SpecEntry>>`
+  alias map. The 709 spec files now address as 709 unique entries
+  (pre-v0.12 the loader keyed on `CompletionSpec.name` and silently
+  dropped one spec per ~6 stem/name collisions). 14 filename/name
+  mismatches now surface as 8 non-conflicting aliases plus 6
+  `AliasConflict` records (`DuplicateName`, `NameMatchesOtherStem`,
+  `DirectoryPrecedence`). Stems take precedence over `name` aliases via
+  two-pass registration; `kubectl.json` keeps the `kubectl` alias even
+  when `kubecolor.json` (declared `name="kubectl"`) is processed first
+  alphabetically.
+- **`status` schema v1.2** — new top-level fields
+  `commands_addressable`, `commands_(fully|partially|non)functional`,
+  `requires_js_generators_(total|supported|unsupported)`,
+  `requires_js_generators_supported_by_kind`,
+  `command_alias_conflicts`, `command_alias_conflict_details`, and
+  `js_runtime`. Status text mode gains Coverage / Dynamic generators /
+  Command addressability / JS runtime sections — every metric mirrors a
+  `status --json` field name so the two views stay aligned. Coverage
+  baseline (`docs/coverage-baseline.json`) refreshed to 3,641 supported
+  / 0 unsupported, 0 nonfunctional, 6 alias conflicts, 717 commands
+  addressable.
+- **`doctor` spec addressability + JS runtime checks** — new
+  "Spec addressability" check lists each `AliasConflict` grouped by
+  kind with kind-specific hints; "JS runtime" check warns when the kill
+  switch is off; "Embedded specs" check verifies every `requires_js`
+  generator in the loaded corpus has populated `js_runtime` metadata
+  (non-empty `source`, plus the per-kind shape gates: `script` or
+  `script_template` for `post_process`; `self_contained: true` for
+  `script_function`/`custom`).
+- **`validate-specs --strict`** — fails on shipped specs with
+  `requires_js: true` but missing or empty `js_runtime.source`. The
+  predicate matches the engine and doctor: `post_process` requires a
+  script, `script_function`/`custom` require `self_contained: true`. A
+  cross-surface property test
+  (`validate_doctor_and_engine_predicates_agree`) iterates a 10-fixture
+  matrix to lock parity between validate / doctor / engine.
+- **Coverage-regression CI gate** — `scripts/check-coverage-regression.sh`
+  fails when the unsupported `requires_js` generator count exceeds the
+  baseline by more than the tolerance (default 0), or whenever any
+  command is reported nonfunctional. Wired into `ci.yml` as
+  `continue-on-error: true` for the initial rollout. 23 self-tests
+  cover flag parsing, missing baseline / status-json, regression /
+  improvement / nonfunctional / within-tolerance branches, and the
+  env-var pathway. Documented in `docs/ci-gates.md`.
+- **`scripts/count-spec-coverage.sh`** — repo-local jq-based counter
+  whose results cross-check against `ghost-complete status --json`.
+  Outputs `file_scan_*` keys (raw JSON walk independent of the
+  structured `CompletionSpec` deserializer) to disambiguate from
+  runtime-level counters.
+- **ADR 0006** — records the `rquickjs` choice, sync-runtime decision,
+  and sandbox model. `docs/JS_RUNTIME.md` is the ongoing reference doc
+  (Class A/B/C distinctions, sandbox layers, timeout caveats,
+  normalization, cache-key composition, kill switch, concurrency
+  model). Linked from `docs/ARCHITECTURE.md`.
+
+### Changed
+
+- **Generator cache key partitioning** — single `HashMap` now stores
+  both stdout strings and JS-processed suggestion vectors via a
+  `CachedPayload` enum. New keyspaces: `CacheKey::Stdout` (stdout
+  layer, shared across post-process bodies) and
+  `CacheKey::JsProcessed{source_hash}` (per-JS-body suggestion layer).
+  Two different post-process bodies on the same script never share
+  cache entries; spawn cost is shared via the stdout layer. Custom
+  dispatch cache key always includes cwd.
+- **`GeneratorSpec.js_runtime`** is `Option<Arc<JsRuntimeSpec>>` — the
+  dispatch path Arc-clones (pointer bump) instead of deep-cloning the
+  embedded JS source on every keystroke. AWS specs ship multi-KB source
+  bodies, so the saving is real on the hot path.
+- **README + docs** — 9 crates instead of 8 (`gc-jsrt` added);
+  Completion Specs paragraph mentions JS-backed generators; Known
+  Limitations entry reframes `requires_js` from "partially functional"
+  to a bounded sandbox. `docs/SPECS.md` replaces the "no JS runtime"
+  non-goal with a pointer to `gc-jsrt`. `docs/COMPLETION_SPEC.md`
+  rewrites the `requires_js` section for runtime-active state across
+  all three `js_runtime.kind` variants.
+- **Converter `js_runtime` emission** — `_custom` →
+  `js_runtime.kind = "custom"`, `_scriptFunction` →
+  `js_runtime.kind = "script_function"`, `_postProcess` →
+  `js_runtime.kind = "post_process"` (when matcher cannot lower to
+  declarative transforms). Native generator + transform mappings still
+  win first. Re-converted all 709 specs; the legacy `js_source` field
+  is no longer emitted (replaced by `js_runtime.source`). The static
+  converter also now drops `null`/`undefined` entries in option `name`
+  arrays (the Fig sparse-hole pattern that broke `next.json` /
+  `pnpx.json` parses post-regen).
+- **`run_script_full` returns structured `{stdout, stderr, exit_code}`**
+  so `EngineShellRunner` can stop string-sniffing `anyhow` messages.
+  Timeout-vs-hung classification corrected to surface
+  `ShellRunError::Timeout`.
+- **Binary size baseline** — bumped from 102 MB to ~104.78 MB to admit
+  the `rquickjs` link cost. Absolute ceiling unchanged at 110 MB; per-PR
+  delta budget unchanged at 2 MB. Embedded-spec heap budget unchanged.
+
+### Fixed
+
+- **`z.json` zoxide generator restored** — UX-9's converter regen
+  overwrote the hand-curated `z.json` stub because upstream
+  `@withfig/autocomplete` has no `z` spec. Restored the
+  `zoxide query --list` generator with `split_lines` /
+  `filter_empty` / `trim` transforms, 60-second TTL cache, folders
+  template fallback, and `-` / `~` static suggestions. (Verified by
+  walking the v0.11.0 → HEAD diff for every spec's
+  script/script_template/generators count; `z` was the only casualty.)
+- **`status` no longer double-counts `requires_js` generators** when
+  `spec_dirs` overlap. `SpecStore::canonical_paths()` now drives the
+  file-walk so the count is taken over resolved entries only. Default
+  config reports 3,641 (was 7,282 with overlapping dirs).
+- **`validate.rs` / `doctor.rs` walk both `args` and `extra_args`** —
+  previously missed every `requires_js` generator on a non-first option
+  arg (e.g., `OptionSpec.args[1..]`), so they slipped past
+  `validate-specs --strict` even when missing `js_runtime`. Both PR-added
+  regression tests now pass.
+- **`apply_block_result` re-rank fix carries over** — the v0.11
+  `current_word`-aware merge mirrors `try_merge_dynamic`'s
+  empty-vs-non-empty branch on the JS dispatch path too, so
+  high-priority JS suggestions don't drop after typing.
+
+### Security
+
+- **JS runtime sandboxing** — host JS executes inside `rquickjs` with
+  no FS, network, child-process, or timer surface unless explicitly
+  granted. `eval` and `Function` are shadowed with throwing closures so
+  spec authors cannot escape into a fresh evaluation context.
+  `executeShellCommand` rejects shell-string form unless the spec opts
+  in via `allow_shell_command`; argv-form rejects NUL bytes for
+  consistency with the existing script-generator rule. Wall-clock
+  interrupt + memory cap bound runaway corpus JS even when a native
+  call (regex backtracking, JSON parsing) is in flight.
+- **`validate-specs --strict` rejects shipped specs with empty
+  `js_runtime.source`** — closes a class where a malformed converter
+  output (or a hand-edit mistake) would silently classify as
+  "supported" but produce no suggestions at runtime.
+
 ## [0.11.0] - 2026-05-03
 
 ### Added
@@ -638,6 +812,7 @@ silently changed behaviour.
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.12.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.12.0
 [0.11.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.11.0
 [0.10.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.10.0
 [0.9.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.9.1
