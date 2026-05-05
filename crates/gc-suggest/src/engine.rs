@@ -279,9 +279,7 @@ pub struct SuggestionEngine {
 
 impl SuggestionEngine {
     pub fn new(spec_dirs: &[PathBuf]) -> Result<Self> {
-        let include_embedded =
-            crate::spec_dirs::active_include_embedded_for(spec_dirs).unwrap_or(true);
-        Self::new_with_embedded(spec_dirs, include_embedded)
+        Self::new_with_embedded(spec_dirs, spec_dirs.is_empty())
     }
 
     /// Construct an engine with explicit control over embedded spec fallback.
@@ -1789,27 +1787,39 @@ mod tests {
     }
 
     #[test]
-    fn explicit_spec_dir_resolution_does_not_register_embedded_specs() {
+    fn direct_non_empty_spec_dirs_do_not_register_embedded_specs() {
         let dir = tempfile::TempDir::new().unwrap();
         std::fs::write(
             dir.path().join("only-custom.json"),
             r#"{"name":"only-custom","subcommands":[{"name":"local-only"}]}"#,
         )
         .unwrap();
-        let resolution = crate::spec_dirs::SpecDirResolution {
-            dirs: vec![dir.path().to_path_buf()],
-            include_embedded: false,
-        };
 
-        let engine = crate::spec_dirs::with_spec_dir_resolution(&resolution, || {
-            SuggestionEngine::new(&resolution.dirs)
-        })
-        .unwrap();
+        let engine = SuggestionEngine::new(&[dir.path().to_path_buf()]).unwrap();
 
         assert!(engine.spec_store.get("only-custom").is_some());
         assert!(
             engine.spec_store.get("git").is_none(),
-            "explicit spec dirs must not be supplemented by embedded-only commands"
+            "direct non-empty spec dirs must not be supplemented by embedded-only commands"
+        );
+    }
+
+    #[test]
+    fn explicit_embedded_constructor_can_supplement_non_empty_dirs() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("only-custom.json"),
+            r#"{"name":"only-custom","subcommands":[{"name":"local-only"}]}"#,
+        )
+        .unwrap();
+
+        let engine =
+            SuggestionEngine::new_with_embedded(&[dir.path().to_path_buf()], true).unwrap();
+
+        assert!(engine.spec_store.get("only-custom").is_some());
+        assert!(
+            engine.spec_store.get("git").is_some(),
+            "explicit embedded policy should supplement runtime dirs with embedded specs"
         );
     }
 

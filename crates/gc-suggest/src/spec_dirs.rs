@@ -14,7 +14,6 @@
 //! loaders use [`resolve_spec_dirs_with_provenance`] to preserve embedded
 //! fallback policy.
 
-use std::cell::RefCell;
 use std::path::PathBuf;
 
 /// Partition result from [`partition_spec_dirs`]: tilde-expanded valid
@@ -34,46 +33,6 @@ pub struct SpecDirPartition {
 pub struct SpecDirResolution {
     pub dirs: Vec<PathBuf>,
     pub include_embedded: bool,
-}
-
-thread_local! {
-    static ACTIVE_SPEC_DIR_RESOLUTIONS: RefCell<Vec<SpecDirResolution>> =
-        const { RefCell::new(Vec::new()) };
-}
-
-struct ActiveSpecDirResolutionGuard;
-
-impl Drop for ActiveSpecDirResolutionGuard {
-    fn drop(&mut self) {
-        ACTIVE_SPEC_DIR_RESOLUTIONS.with(|stack| {
-            stack.borrow_mut().pop();
-        });
-    }
-}
-
-/// Run `f` with a scoped spec-dir resolution visible to constructors that
-/// still accept only `&[PathBuf]`.
-///
-/// This keeps [`resolve_spec_dirs`] source-compatible while letting the PTY
-/// startup path preserve whether the dirs came from an explicit override or
-/// auto-detection until `SuggestionEngine` is constructed.
-pub fn with_spec_dir_resolution<T>(resolution: &SpecDirResolution, f: impl FnOnce() -> T) -> T {
-    ACTIVE_SPEC_DIR_RESOLUTIONS.with(|stack| {
-        stack.borrow_mut().push(resolution.clone());
-    });
-    let _guard = ActiveSpecDirResolutionGuard;
-    f()
-}
-
-pub(crate) fn active_include_embedded_for(dirs: &[PathBuf]) -> Option<bool> {
-    ACTIVE_SPEC_DIR_RESOLUTIONS.with(|stack| {
-        stack
-            .borrow()
-            .iter()
-            .rev()
-            .find(|resolution| resolution.dirs.as_slice() == dirs)
-            .map(|resolution| resolution.include_embedded)
-    })
 }
 
 /// Partition configured spec_dirs into valid/invalid entries after tilde

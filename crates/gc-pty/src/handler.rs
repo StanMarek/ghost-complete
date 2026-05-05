@@ -316,8 +316,19 @@ pub struct InputHandler {
 
 impl InputHandler {
     pub fn new(spec_dirs: &[PathBuf], terminal_profile: TerminalProfile) -> anyhow::Result<Self> {
+        Self::new_with_embedded(spec_dirs, terminal_profile, spec_dirs.is_empty())
+    }
+
+    pub fn new_with_embedded(
+        spec_dirs: &[PathBuf],
+        terminal_profile: TerminalProfile,
+        include_embedded: bool,
+    ) -> anyhow::Result<Self> {
         Ok(Self {
-            engine: Arc::new(SuggestionEngine::new(spec_dirs)?),
+            engine: Arc::new(SuggestionEngine::new_with_embedded(
+                spec_dirs,
+                include_embedded,
+            )?),
             overlay: OverlayState::new(),
             suggestions: Vec::new(),
             last_layout: None,

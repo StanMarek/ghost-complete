@@ -2,8 +2,8 @@ use anyhow::Result;
 use std::path::PathBuf;
 
 use gc_suggest::specs::{
-    AliasConflict, AliasConflictKind, ArgSpec, CompletionSpec, GeneratorSpec, JsRuntimeKind,
-    OptionSpec, SubcommandSpec,
+    AliasConflict, AliasConflictDisposition, AliasConflictKind, ArgSpec, CompletionSpec,
+    GeneratorSpec, JsRuntimeKind, OptionSpec, SubcommandSpec,
 };
 
 use crate::sanitize::sanitize_for_terminal;
@@ -412,10 +412,10 @@ fn check_corrections_for_store(store: &gc_suggest::SpecStore) -> CheckResult {
 }
 
 /// Spec addressability check. Iterates `SpecStore::conflicts()` and
-/// reports each rejected alias with a kind-specific hint so users can spot
-/// commands whose declared `name` was rejected (or whose stem was shadowed
-/// by a user override). Pure helper — operates against an in-memory store
-/// so it can be unit-tested without touching the resolver.
+/// reports each alias collision with a kind-specific hint so users can spot
+/// rejected aliases and lazy fallback candidates. Pure helper — operates
+/// against an in-memory store so it can be unit-tested without touching the
+/// resolver.
 fn check_alias_conflicts_for_store(store: &gc_suggest::SpecStore) -> CheckResult {
     let conflicts = store.conflicts();
     if conflicts.is_empty() {
@@ -445,11 +445,24 @@ fn check_alias_conflicts_for_store(store: &gc_suggest::SpecStore) -> CheckResult
         if items.is_empty() {
             return String::new();
         }
+        fn disposition_label(disposition: AliasConflictDisposition) -> &'static str {
+            match disposition {
+                AliasConflictDisposition::Rejected => "rejected",
+                AliasConflictDisposition::FallbackCandidate => "fallback",
+            }
+        }
         let mut s = format!(" {} ({}): {}", label, items.len(), hint);
         let preview = items
             .iter()
             .take(PREVIEW_LIMIT)
-            .map(|c| format!("'{}' (loser={})", c.alias, c.loser.filename_stem))
+            .map(|c| {
+                format!(
+                    "'{}' ({}={})",
+                    c.alias,
+                    disposition_label(c.disposition),
+                    c.loser.filename_stem
+                )
+            })
             .collect::<Vec<_>>()
             .join(", ");
         if !preview.is_empty() {
@@ -469,7 +482,7 @@ fn check_alias_conflicts_for_store(store: &gc_suggest::SpecStore) -> CheckResult
     };
     msg.push_str(&render_section(
         "DuplicateName",
-        "two specs declare the same `name`; rename one in its `name` field, or accept the loser stays addressable only by stem",
+        "two specs declare the same `name`; rename one in its `name` field, or inspect disposition to see whether the lower-precedence alias is rejected or a lazy fallback",
         &dup,
     ));
     msg.push_str(&render_section(
@@ -479,7 +492,7 @@ fn check_alias_conflicts_for_store(store: &gc_suggest::SpecStore) -> CheckResult
     ));
     msg.push_str(&render_section(
         "DirectoryPrecedence",
-        "same filename in multiple configured spec_dirs (earlier dir wins; normal for user overrides)",
+        "same filename in multiple configured spec_dirs (earlier dir is preferred; later copy can serve as a lazy-parse fallback)",
         &dir_prec,
     ));
 
@@ -959,13 +972,42 @@ mod tests {
         let result = check_specs_for_resolution(&[dir.path().to_path_buf()], false);
 
         assert!(
-            matches!(result.severity, Severity::Fail | Severity::Warn),
-            "lazy parse failure must not report OK: {}",
+            matches!(result.severity, Severity::Fail),
+            "all-broken spec directory must fail: {}",
             result.message
         );
         assert!(
             result.message.contains("failed to parse") || result.message.contains("failed"),
             "message should surface lazy parse failure: {}",
+            result.message
+        );
+    }
+
+    #[test]
+    fn check_specs_warns_for_broken_override_with_embedded_fallback() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(dir.path().join("git.json"), "{not valid json").unwrap();
+
+        let result = check_specs_for_resolution(&[dir.path().to_path_buf()], true);
+
+        assert!(
+            matches!(result.severity, Severity::Warn),
+            "broken filesystem override with embedded fallback must warn: {}",
+            result.message
+        );
+        assert!(
+            result.message.starts_with("Completion specs:"),
+            "unexpected message shape: {}",
+            result.message
+        );
+        assert!(
+            !result.message.starts_with("Completion specs: 0 loaded"),
+            "embedded fallback should keep usable specs loaded: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("1 spec file(s) failed to parse"),
+            "message should report the parse-failure count: {}",
             result.message
         );
     }

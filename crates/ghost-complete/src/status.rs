@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use gc_suggest::spec_dirs::{partition_spec_dirs, resolve_spec_dirs};
 use gc_suggest::specs::{
-    AliasConflict, AliasConflictKind, ArgSpec, CompletionSpec, GeneratorSpec, OptionSpec,
-    SpecSource, SubcommandSpec,
+    AliasConflict, AliasConflictDisposition, AliasConflictKind, ArgSpec, CompletionSpec,
+    GeneratorSpec, OptionSpec, SpecSource, SubcommandSpec,
 };
 use gc_suggest::SpecStore;
 use serde::{Deserialize, Serialize};
@@ -333,7 +333,7 @@ pub struct StatusOutcome {
     pub command_alias_conflicts: usize,
     /// Per-conflict details surfaced from `SpecStore::conflicts()`. Drives
     /// the structured alias-conflict list in both text and JSON output so
-    /// users can spot specs whose declared `name` was rejected.
+    /// users can distinguish rejected aliases from lazy fallback candidates.
     pub command_alias_conflict_details: Vec<AliasConflictRecord>,
     /// JS runtime kill switch state (`suggest.providers.js_runtime`).
     /// Surfaced so users can see at a glance whether their requires_js
@@ -347,29 +347,31 @@ pub struct StatusOutcome {
 
 /// Serialised view of a single [`AliasConflict`]. Distinct from the
 /// `gc_suggest::specs::AliasConflict` type because that one is not
-/// `Serialize` (it owns winner/loser tuples that aren't part of a stable
+/// `Serialize` (it owns owner/disposition details that aren't part of a stable
 /// JSON contract). This struct carries only the fields the JSON consumer
-/// needs.
+/// needs to classify and explain the alias chain.
 #[derive(Debug, Clone, Serialize)]
 pub struct AliasConflictRecord {
     /// The contended alias.
     pub alias: String,
     /// Conflict kind as a snake_case string for stable JSON output.
     pub kind: String,
-    /// Filename stem of the spec that won the alias.
+    /// Loader disposition for the lower-precedence candidate.
+    pub disposition: String,
+    /// Filename stem of the primary spec for the alias.
     pub winner_stem: String,
-    /// Source dir of the winner.
+    /// Source dir of the primary owner.
     pub winner_dir: String,
-    /// `CompletionSpec.name` declared by the winner. Useful for surfacing
-    /// the actual conflict target (e.g. winner stem `kubectl` declared
-    /// `name: kubectl` while loser `kubecolor.json` also declared
-    /// `name: kubectl`).
+    /// `CompletionSpec.name` declared by the primary owner. Useful for
+    /// surfacing the actual conflict target (e.g. primary stem `kubectl`
+    /// declared `name: kubectl` while lower-precedence `kubecolor.json`
+    /// also declared `name: kubectl`).
     pub winner_name: String,
-    /// Filename stem of the spec that lost the alias.
+    /// Filename stem of the lower-precedence spec.
     pub loser_stem: String,
-    /// Source dir of the loser.
+    /// Source dir of the lower-precedence spec.
     pub loser_dir: String,
-    /// `CompletionSpec.name` declared by the loser.
+    /// `CompletionSpec.name` declared by the lower-precedence spec.
     pub loser_name: String,
 }
 
@@ -378,6 +380,7 @@ impl AliasConflictRecord {
         Self {
             alias: c.alias.clone(),
             kind: alias_conflict_kind_str(&c.kind).to_string(),
+            disposition: alias_conflict_disposition_str(&c.disposition).to_string(),
             winner_stem: c.winner.filename_stem.clone(),
             winner_dir: c.winner.source_dir.display().to_string(),
             winner_name: c.winner.spec_name.clone(),
@@ -385,6 +388,14 @@ impl AliasConflictRecord {
             loser_dir: c.loser.source_dir.display().to_string(),
             loser_name: c.loser.spec_name.clone(),
         }
+    }
+}
+
+/// Stable snake_case rendering for `AliasConflictDisposition`.
+fn alias_conflict_disposition_str(disposition: &AliasConflictDisposition) -> &'static str {
+    match disposition {
+        AliasConflictDisposition::Rejected => "rejected",
+        AliasConflictDisposition::FallbackCandidate => "fallback_candidate",
     }
 }
 
@@ -540,13 +551,11 @@ fn scan_resolved_specs(
     // candidates share aliases with higher-precedence candidates, so this is
     // a command-key count rather than a raw registered-entry count.
     let commands_addressable = store.aliases_count();
-    let commands_nonfunctional = total_parse_errors;
+    let commands_nonfunctional = store.nonfunctional_aliases_count();
 
-    // command_alias_conflicts: real, runtime-visible alias collisions
-    // surfaced by the loader. Each entry is one rejected alias — either
-    // a duplicate `name` across files, a `name` that crashed into
-    // another file's stem, or a stem that lost to a higher-precedence
-    // dir.
+    // command_alias_conflicts: real, runtime-visible alias collisions surfaced
+    // by the loader. Each entry is either a rejected alias or a
+    // lower-precedence fallback candidate behind a primary alias owner.
     let conflicts = store.conflicts();
     let command_alias_conflicts = conflicts.len();
     let command_alias_conflict_details = conflicts
@@ -914,7 +923,7 @@ fn run_status_inner(
     if directory_overrides > 0 {
         writeln!(
             out,
-            "  Directory overrides:        {}  (earlier spec_dir wins)",
+            "  Directory overrides:        {}  (earlier spec_dir preferred; fallback may parse)",
             directory_overrides
         )?;
     }
@@ -974,7 +983,7 @@ fn run_status_inner_with_trend(
 ///       parse the output unchanged.
 /// 1.2 — serialises individual alias conflict records as a structured
 ///       `command_alias_conflict_details` array (each entry is an object
-///       with `alias`, `kind`, `winner`, `loser`), splits
+///       with `alias`, `kind`, `disposition`, `winner`, `loser`), splits
 ///       `requires_js_generators_supported` into a per-kind class
 ///       breakdown under `requires_js_generators_supported_by_kind`
 ///       (`post_process`, `script_function`, `custom`), and surfaces
@@ -994,9 +1003,9 @@ const STATUS_SCHEMA_VERSION: &str = "1.2";
 struct StatusReport {
     schema_version: &'static str,
     spec_counts: SpecCounts,
-    /// File-level scan independent of the runtime loader index. Surfaced
-    /// alongside `spec_counts` so consumers can distinguish a
-    /// loader-deduped count from a raw file count.
+    /// Raw-JSON scan over resolved runtime sources. Counts generator
+    /// occurrences while following lazy fallback and avoiding hidden
+    /// candidate double-counts.
     file_scan: FileScan,
     /// JS runtime kill switch state (schema 1.2). Reflects
     /// `suggest.providers.js_runtime`. `enabled = false` means the
@@ -1040,9 +1049,10 @@ struct SpecCounts {
     /// bucket).
     commands_fully_functional: usize,
     commands_partially_functional: usize,
-    /// Specs that failed to load and are therefore absent from the runtime
-    /// store. Alias conflicts are reported separately; duplicate-name losers
-    /// remain addressable through their filename stems.
+    /// Command aliases for which every registered candidate failed lazy
+    /// parsing. Directory scan failures and parse failures masked by a valid
+    /// fallback stay in `parse_errors`; alias conflicts are reported
+    /// separately.
     commands_nonfunctional: usize,
     /// Total `requires_js: true` generator instances across the corpus
     /// (counted per occurrence, not per spec). Sourced from a raw
@@ -1059,19 +1069,18 @@ struct SpecCounts {
     /// `requires_js_generators_total - requires_js_generators_supported`.
     /// Surfaced as its own field so consumers don't need to subtract.
     requires_js_generators_unsupported: usize,
-    /// Runtime alias collisions surfaced by the loader. SpecStore keys
-    /// on filename stem (canonical id) plus the spec's `name` field as a
-    /// secondary alias when free; an entry here means either a `name`
-    /// alias was rejected because another file already owned that key
-    /// (DuplicateName / NameMatchesOtherStem) or a stem lost to a
-    /// higher-precedence source dir (DirectoryPrecedence). Each conflict
-    /// carries source-dir + alias diagnostics in
-    /// `SpecStore::conflicts()`. The structured per-conflict breakdown
-    /// is exposed under `command_alias_conflict_details` (schema 1.2);
-    /// this count remains in 1.1 for backwards compat.
+    /// Runtime alias collisions surfaced by the loader. SpecStore keys on
+    /// filename stem (canonical id) plus the spec's `name` field as a
+    /// secondary alias when free; an entry here can be either a rejected alias
+    /// (DuplicateName / NameMatchesOtherStem) or a registered fallback
+    /// candidate behind a higher-precedence owner. Each conflict carries
+    /// source-dir + alias diagnostics in `SpecStore::conflicts()`. The
+    /// structured per-conflict breakdown is exposed under
+    /// `command_alias_conflict_details` (schema 1.2); this count remains in
+    /// 1.1 for backwards compat.
     command_alias_conflicts: usize,
-    /// Per-conflict structured details (schema 1.2). Each entry is an
-    /// object with `alias`, `kind`, `winner_*`, `loser_*` fields.
+    /// Per-conflict structured details (schema 1.2). Each entry is an object
+    /// with `alias`, `kind`, `disposition`, `winner_*`, `loser_*` fields.
     /// `kind` is one of `duplicate_name`, `name_matches_other_stem`,
     /// `directory_precedence`. Always present (empty when no
     /// conflicts).
@@ -1157,9 +1166,8 @@ fn run_status_json(
     };
 
     // `total` reports the canonical shipped-spec count (embedded count).
-    // `filesystem_overrides` is the count of filesystem specs after
-    // first-match-wins deduplication across configured spec_dirs — earlier
-    // directories win over later ones (see SpecStore::load_from_dirs).
+    // `filesystem_overrides` is the count of resolved filesystem specs after
+    // configured spec_dirs are reduced through lazy fallback resolution.
     //
     // `parse_errors` stays as a scalar count for backwards compat;
     // `parse_error_details` mirrors the per-line sanitized messages the
@@ -1228,10 +1236,32 @@ pub fn run_status_with_opts(
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
 
+    let exit =
+        run_status_with_opts_to_writer(config_path, strict, json, baseline_path, &mut handle)?;
+    if exit == StatusExit::Failure {
+        std::process::exit(1);
+    }
+
+    Ok(())
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum StatusExit {
+    Success,
+    Failure,
+}
+
+fn run_status_with_opts_to_writer(
+    config_path: Option<&str>,
+    strict: bool,
+    json: bool,
+    baseline_path: Option<&Path>,
+    out: &mut dyn Write,
+) -> Result<StatusExit> {
     let outcome = if json {
-        run_status_json(config_path, baseline_path, &mut handle)?
+        run_status_json(config_path, baseline_path, out)?
     } else {
-        run_status_inner_with_trend(config_path, baseline_path, &mut handle)?
+        run_status_inner_with_trend(config_path, baseline_path, out)?
     };
 
     if strict {
@@ -1239,26 +1269,26 @@ pub fn run_status_with_opts(
         let no_specs_available = parsed_runtime_specs == 0 && outcome.total_parse_errors == 0;
         if no_specs_available || outcome.total_parse_errors > 0 {
             if !json {
-                writeln!(&mut handle)?;
+                writeln!(out)?;
                 if no_specs_available {
                     writeln!(
-                        &mut handle,
+                        out,
                         "\x1b[31mstrict mode: no runtime specs available.\x1b[0m"
                     )?;
                 }
                 if outcome.total_parse_errors > 0 {
                     writeln!(
-                        &mut handle,
+                        out,
                         "\x1b[31mstrict mode: {} spec file(s) failed to parse.\x1b[0m",
                         outcome.total_parse_errors
                     )?;
                 }
             }
-            std::process::exit(1);
+            return Ok(StatusExit::Failure);
         }
     }
 
-    Ok(())
+    Ok(StatusExit::Success)
 }
 
 #[cfg(test)]
@@ -1430,6 +1460,42 @@ mod tests {
     }
 
     #[test]
+    fn status_nonfunctional_commands_ignore_masked_fallback_parse_errors() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let primary_dir = tmp.path().join("primary-specs");
+        let fallback_dir = tmp.path().join("fallback-specs");
+        std::fs::create_dir_all(&primary_dir).unwrap();
+        std::fs::create_dir_all(&fallback_dir).unwrap();
+
+        std::fs::write(primary_dir.join("git.json"), "{not valid json").unwrap();
+        std::fs::write(
+            fallback_dir.join("git.json"),
+            r#"{"name":"git","subcommands":[{"name":"from-fallback"}]}"#,
+        )
+        .unwrap();
+
+        let cfg = write_config_for_dirs(&[&primary_dir, &fallback_dir], &tmp);
+        let outcome = scan_specs(Some(cfg.to_str().unwrap())).unwrap();
+
+        assert_eq!(
+            outcome.total_parse_errors, 1,
+            "malformed higher-precedence duplicate should still be reported as a parse error"
+        );
+        assert_eq!(
+            outcome.commands_addressable, 1,
+            "only the git alias is addressable"
+        );
+        assert_eq!(
+            outcome.commands_nonfunctional, 0,
+            "git remains functional through the lower-precedence parsed candidate"
+        );
+        assert_eq!(
+            outcome.fully_functional, 1,
+            "fallback candidate should be the resolved runtime spec"
+        );
+    }
+
+    #[test]
     fn status_file_scan_counts_embedded_runtime_entries() {
         let result = gc_suggest::SpecStore::load_with_embedded(&[]).unwrap();
         assert!(
@@ -1502,6 +1568,57 @@ mod tests {
             outcome.file_scan.spec_files_total, outcome.embedded_count,
             "file_scan should count resolved sources, not hidden fallback candidates"
         );
+    }
+
+    #[test]
+    fn status_strict_returns_failure_for_lazy_parse_errors() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        std::fs::write(spec_dir.join("broken.json"), "{not valid json").unwrap();
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        let exit = run_status_with_opts_to_writer(
+            Some(cfg.to_str().unwrap()),
+            true,
+            false,
+            None,
+            &mut out,
+        )
+        .unwrap();
+        let txt = String::from_utf8_lossy(&out);
+
+        assert_eq!(exit, StatusExit::Failure);
+        assert!(
+            txt.contains("broken.json: parse:"),
+            "strict status should print the lazy parse failure line:\n{txt}"
+        );
+        assert!(
+            txt.contains("strict mode: 1 spec file(s) failed to parse."),
+            "strict status should explain the non-zero exit:\n{txt}"
+        );
+    }
+
+    #[test]
+    fn status_strict_returns_success_for_clean_runtime_specs() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        std::fs::write(spec_dir.join("ok.json"), r#"{"name":"ok"}"#).unwrap();
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        let exit = run_status_with_opts_to_writer(
+            Some(cfg.to_str().unwrap()),
+            true,
+            false,
+            None,
+            &mut out,
+        )
+        .unwrap();
+
+        assert_eq!(exit, StatusExit::Success);
     }
 
     #[test]
@@ -2660,6 +2777,7 @@ mod tests {
         let entry = &details[0];
         assert_eq!(entry["alias"], "duplicate");
         assert_eq!(entry["kind"], "duplicate_name");
+        assert_eq!(entry["disposition"], "rejected");
         // Either spec stem may win depending on dir-walk order; both are
         // valid as long as winner != loser.
         assert_ne!(entry["winner_stem"], entry["loser_stem"]);

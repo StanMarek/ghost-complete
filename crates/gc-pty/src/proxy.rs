@@ -10,7 +10,7 @@ use tokio::sync::{mpsc, Notify};
 use gc_config::GhostConfig;
 
 use gc_overlay::{parse_style, PopupTheme};
-use gc_suggest::spec_dirs::{resolve_spec_dirs_with_provenance, with_spec_dir_resolution};
+use gc_suggest::spec_dirs::resolve_spec_dirs_with_provenance;
 
 use crate::config_watch::spawn_config_watcher;
 use crate::handler::{InputHandler, Keybindings, OverlayWriteTicket, TriggerPrepared};
@@ -177,14 +177,20 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
     // Initialize suggestion handler with config
     let handler = Arc::new(Mutex::new({
-        let h = match with_spec_dir_resolution(&spec_dir_resolution, || {
-            InputHandler::new(&spec_dir_resolution.dirs, terminal_profile.clone())
-        }) {
+        let h = match InputHandler::new_with_embedded(
+            &spec_dir_resolution.dirs,
+            terminal_profile.clone(),
+            spec_dir_resolution.include_embedded,
+        ) {
             Ok(h) => h,
             Err(e) => {
                 tracing::warn!("failed to init suggestion engine: {}, trying fallback", e);
-                InputHandler::new(&[std::path::PathBuf::from(".")], terminal_profile)
-                    .context("fallback handler also failed — cannot start proxy")?
+                InputHandler::new_with_embedded(
+                    &[std::path::PathBuf::from(".")],
+                    terminal_profile,
+                    true,
+                )
+                .context("fallback handler also failed — cannot start proxy")?
             }
         };
         h.with_keybindings(keybindings)

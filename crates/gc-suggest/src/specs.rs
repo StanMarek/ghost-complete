@@ -735,18 +735,22 @@ fn parse_entry_source(source: &SpecSource) -> Result<Arc<CompletionSpec>, String
     Ok(Arc::new(spec))
 }
 
-/// One alias collision detected during loading. Conflicts are diagnostic
-/// signal — the loser is NOT silently dropped from the entry list, only
-/// from the alias under contention. Surfaced via [`SpecStore::conflicts`].
+/// One alias collision detected during loading. `winner` and `loser`
+/// describe registration precedence for the contended alias; inspect
+/// [`AliasConflict::disposition`] to tell whether the lower-precedence
+/// entry was rejected from that alias or kept as a lazy-parse fallback
+/// candidate. Surfaced via [`SpecStore::conflicts`].
 #[derive(Debug, Clone)]
 pub struct AliasConflict {
     /// The alias that two specs both wanted to register.
     pub alias: String,
     /// What kind of collision this is — drives diagnostics phrasing.
     pub kind: AliasConflictKind,
-    /// The spec that won the alias (the existing holder at insert time).
+    /// Runtime role for the lower-precedence candidate.
+    pub disposition: AliasConflictDisposition,
+    /// The primary spec for the alias at registration time.
     pub winner: AliasOwner,
-    /// The spec that lost the alias.
+    /// The lower-precedence spec involved in the collision.
     pub loser: AliasOwner,
 }
 
@@ -761,10 +765,20 @@ pub enum AliasConflictKind {
     /// filename stem. Example: `kubecolor.json` declares `name: "kubectl"`
     /// while `kubectl.json` already exists in the same dir.
     NameMatchesOtherStem,
-    /// Same filename in two different configured dirs. The earlier dir
-    /// wins per `resolve_spec_dirs` order — typically how user overrides
-    /// shadow the embedded fallback.
+    /// Same filename in two different configured dirs. The earlier dir is
+    /// preferred per `resolve_spec_dirs` order, while later copies can remain
+    /// lazy-parse fallbacks.
     DirectoryPrecedence,
+}
+
+/// How the loader treated the lower-precedence side of an alias collision.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AliasConflictDisposition {
+    /// The lower-precedence entry is not reachable through the contended alias.
+    Rejected,
+    /// The lower-precedence entry remains registered behind the primary owner
+    /// and can resolve if earlier candidates fail lazy parsing.
+    FallbackCandidate,
 }
 
 /// Identifies the source of a spec involved in an [`AliasConflict`].
@@ -806,17 +820,18 @@ pub struct SpecLoadResult {
 }
 
 impl SpecStore {
-    /// Load specs from multiple directories with first-match-wins merging:
-    /// a spec from an earlier directory is not overridden by a later one.
-    /// This matches the user intuition that earlier entries in config's
-    /// `paths.spec_dirs` take precedence (e.g., user overrides before
-    /// system defaults).
+    /// Load specs from multiple directories into a precedence-ordered alias
+    /// index. A spec from an earlier directory is the primary candidate when
+    /// it parses successfully, matching the user intuition that earlier
+    /// entries in config's `paths.spec_dirs` take precedence (e.g., user
+    /// overrides before system defaults). Later copies with the same filename
+    /// remain registered as lazy-parse fallbacks.
     ///
     /// Each spec is keyed in the alias index by its filename stem
     /// (canonical id) and, when free, by its `CompletionSpec.name`. Files
-    /// whose declared `name` collides with another spec's name or stem
-    /// keep their stem alias and surface a [`AliasConflict`] entry —
-    /// they are not silently dropped from the store.
+    /// whose declared `name` collides with another spec's name or stem surface
+    /// a [`AliasConflict`] entry. The conflict disposition says whether that
+    /// alias was rejected or retained as a fallback candidate.
     pub fn load_from_dirs(dirs: &[PathBuf]) -> Result<SpecLoadResult> {
         let mut entries: Vec<Arc<SpecEntry>> = Vec::new();
         let mut by_alias: AliasIndex = HashMap::new();
@@ -1067,8 +1082,20 @@ impl SpecStore {
         self.by_alias.len()
     }
 
-    /// Alias collisions detected at load time. Surfaced via doctor / status
-    /// so users can spot specs whose declared `name` was rejected.
+    /// Number of registered command aliases for which every candidate fails
+    /// to parse. Force-loads all candidates so lower-precedence fallbacks can
+    /// mask a malformed higher-precedence entry before the command is counted
+    /// as nonfunctional.
+    pub fn nonfunctional_aliases_count(&self) -> usize {
+        self.force_load_all();
+        self.by_alias
+            .values()
+            .filter(|candidates| candidates.iter().all(|entry| entry.spec().is_none()))
+            .count()
+    }
+
+    /// Alias collisions detected at load time. Surfaced via doctor / status so
+    /// users can distinguish rejected aliases from lazy-parse fallback chains.
     pub fn conflicts(&self) -> &[AliasConflict] {
         &self.conflicts
     }
@@ -1252,17 +1279,20 @@ fn load_dir_into_pending(
 /// state. Two passes:
 ///   1. Register every filename stem. Stems are the canonical id and
 ///      always take precedence over `name` aliases. A stem already
-///      owned by an earlier directory's same filename is rejected with
-///      a `DirectoryPrecedence` conflict; a stem that collides with a
-///      different file's previously-registered `name` alias is rejected
-///      with `NameMatchesOtherStem` (from the inverted perspective —
-///      the new file's stem matches what an existing file's name claim
-///      already owns).
+///      owned by an earlier directory's same filename is appended as a
+///      lower-precedence fallback with a `DirectoryPrecedence` conflict;
+///      a stem that collides with a different file's previously-registered
+///      `name` alias is either rejected or appended as a fallback depending on
+///      the loader policy, with `NameMatchesOtherStem` recorded from the
+///      inverted perspective — the new file's stem matches what an existing
+///      file's name claim already owns.
 ///   2. Register `CompletionSpec.name` aliases for entries whose name
 ///      differs from the stem. Aliases yield to stems unconditionally;
-///      a name that collides with another spec's stem is rejected with
+///      a name that collides with another spec's stem records
 ///      NameMatchesOtherStem, and a name that collides with another
-///      already-registered name is rejected with DuplicateName.
+///      already-registered name records DuplicateName. The fallback policy
+///      determines whether the colliding name alias is rejected or retained
+///      behind the primary candidate.
 ///
 /// The two-pass shape exists so the canonical spec wins its own name —
 /// e.g. `kubectl.json` keeps the `kubectl` alias even though
@@ -1303,15 +1333,15 @@ fn register_entries(
         if let Some(existing) = primary_alias_owner(by_alias, &filename_stem).cloned() {
             // Distinguish two cases:
             //   - Same filename in two configured dirs (the user-override
-            //     scenario) — earlier dir wins, classify as
+            //     scenario) — earlier dir is preferred, classify as
             //     DirectoryPrecedence.
             //   - The new file's stem collides with a different file's
             //     already-registered alias (the existing entry came from
             //     a different filename — typically its `name` claim or
             //     even its stem under an unrelated path). Under normal
-            //     first-match loading the loser is dropped; when loading
-            //     embedded specs, it is retained only as a fallback
-            //     candidate behind the existing alias owner.
+            //     first-match loading the lower-precedence candidate is
+            //     dropped; when loading embedded specs, it is retained only as
+            //     a fallback candidate behind the existing alias owner.
             let kind = if existing.filename_stem == filename_stem {
                 AliasConflictKind::DirectoryPrecedence
             } else {
@@ -1331,6 +1361,11 @@ fn register_entries(
             conflicts.push(AliasConflict {
                 alias: filename_stem.clone(),
                 kind,
+                disposition: if keep_as_fallback {
+                    AliasConflictDisposition::FallbackCandidate
+                } else {
+                    AliasConflictDisposition::Rejected
+                },
                 winner: AliasOwner {
                     filename_stem: existing.filename_stem.clone(),
                     source_dir: existing.source_dir.clone(),
@@ -1376,8 +1411,7 @@ fn register_entries(
 
     // Pass 2: register name aliases (only when distinct from stem).
     // Stems already populate `by_alias`, so a name that collides with
-    // another spec's stem is naturally rejected here without a separate
-    // lookup table.
+    // another spec's stem is handled here without a separate lookup table.
     for a in accepted {
         let Accepted {
             idx,
@@ -1407,6 +1441,11 @@ fn register_entries(
             conflicts.push(AliasConflict {
                 alias: name.clone(),
                 kind,
+                disposition: if fallback_policy == AliasFallbackPolicy::KeepLowerPrecedence {
+                    AliasConflictDisposition::FallbackCandidate
+                } else {
+                    AliasConflictDisposition::Rejected
+                },
                 winner: AliasOwner {
                     filename_stem: existing.filename_stem.clone(),
                     source_dir: existing.source_dir.clone(),
@@ -4725,9 +4764,9 @@ mod tests {
     #[test]
     fn user_override_replaces_embedded_with_directory_precedence() {
         // The classic user-override scenario: the same filename in two
-        // configured dirs. The earlier dir wins — the embedded copy is
-        // demoted to a DirectoryPrecedence conflict at debug level
-        // (NOT an error — this is how user overrides work).
+        // configured dirs. The earlier dir is preferred — the embedded copy
+        // is recorded as a DirectoryPrecedence fallback candidate at debug
+        // level (NOT an error — this is how user overrides work).
         let user_dir = tempfile::TempDir::new().unwrap();
         let embedded_dir = tempfile::TempDir::new().unwrap();
         std::fs::write(
@@ -4759,6 +4798,7 @@ mod tests {
         let c = &conflicts[0];
         assert_eq!(c.alias, "git");
         assert_eq!(c.kind, AliasConflictKind::DirectoryPrecedence);
+        assert_eq!(c.disposition, AliasConflictDisposition::FallbackCandidate);
         assert_eq!(c.winner.source_dir, user_dir.path());
         assert_eq!(c.loser.source_dir, embedded_dir.path());
 
@@ -4792,6 +4832,11 @@ mod tests {
             .get("git")
             .expect("valid lower-precedence spec should win");
         assert_eq!(by_git.subcommands[0].name, "from-good-dir");
+        assert_eq!(
+            store.nonfunctional_aliases_count(),
+            0,
+            "git remains functional through the lower-precedence parsed candidate"
+        );
         let bad_entry = store
             .entries()
             .iter()
@@ -4799,6 +4844,18 @@ mod tests {
             .expect("bad primary remains visible for diagnostics");
         assert!(bad_entry.load_error().is_some());
         assert_eq!(store.iter().count(), 1);
+    }
+
+    #[test]
+    fn nonfunctional_alias_count_increments_when_all_candidates_fail() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(dir.path().join("broken.json"), "{not valid json").unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let store = &result.store;
+
+        assert!(store.get("broken").is_none());
+        assert_eq!(store.nonfunctional_aliases_count(), 1);
     }
 
     #[test]
@@ -4822,6 +4879,49 @@ mod tests {
             .get("git")
             .expect("valid filesystem fallback should win before embedded");
         assert_eq!(by_git.subcommands[0].name, "from-good-dir");
+    }
+
+    #[test]
+    fn embedded_stem_falls_back_when_filesystem_name_alias_parse_fails() {
+        let bad_dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            bad_dir.path().join("foo.json"),
+            r#"{"name":"git","subcommands":"not an array"}"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_with_embedded(&[bad_dir.path().to_path_buf()]).unwrap();
+        let store = &result.store;
+
+        let by_git = store
+            .get("git")
+            .expect("embedded git should fall back behind bad filesystem alias");
+        assert_eq!(by_git.name, "git");
+
+        let bad_entry = store
+            .entries()
+            .iter()
+            .find(|entry| matches!(&entry.source, SpecSource::Filesystem(path) if path.starts_with(bad_dir.path())))
+            .expect("bad filesystem entry remains visible for diagnostics");
+        assert!(
+            bad_entry.load_error().is_some(),
+            "failed filesystem alias owner should record its lazy parse error"
+        );
+
+        let conflict = store
+            .conflicts()
+            .iter()
+            .find(|conflict| {
+                conflict.alias == "git"
+                    && conflict.kind == AliasConflictKind::NameMatchesOtherStem
+                    && conflict.winner.filename_stem == "foo"
+                    && conflict.loser.filename_stem == "git"
+            })
+            .expect("embedded git fallback should be recorded as an alias conflict");
+        assert_eq!(
+            conflict.disposition,
+            AliasConflictDisposition::FallbackCandidate
+        );
     }
 
     #[test]
