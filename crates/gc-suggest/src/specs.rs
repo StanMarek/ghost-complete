@@ -854,23 +854,36 @@ impl SpecStore {
 /// Carrier for a parsed spec on its way into `register_entries`. We can't
 /// build the final `SpecEntry` at this stage because the `aliases` vec
 /// depends on which alias slots are still free across the merged dir set.
+///
+/// Holds metadata only — `serde_json::from_str` is deferred until the
+/// owning `SpecEntry::spec()` is called for the first time. The
+/// `name_alias` field is pre-resolved by the caller from the build-time
+/// `EMBEDDED_SPEC_ALIASES` table or set to `None` for truly custom
+/// user specs.
 struct PendingSpec {
     filename_stem: String,
+    /// Pre-resolved `CompletionSpec.name` alias when it differs from
+    /// the filename stem. `None` means "stem-only aliasing".
+    name_alias: Option<String>,
     source_dir: PathBuf,
-    spec: CompletionSpec,
+    source: SpecSource,
 }
 
-/// Walk `dir` for `*.json` specs and parse each one. Failures (parse
-/// errors, IO errors) become per-file error strings; successes accumulate
-/// into the returned vec in filename-stem-sorted order so registration is
-/// deterministic across directories with the same files.
-fn load_dir_into_entries(dir: &Path) -> Result<(Vec<PendingSpec>, Vec<String>)> {
+/// Walk `dir` for `*.json` specs and emit a [`PendingSpec`] per file.
+/// Does NOT parse JSON contents — `name_alias` is resolved by the
+/// caller via `name_alias_for(filename)` (typically the build-time
+/// table) or set to `None` for unknown custom user specs. Filesystem
+/// errors at directory-read time are returned as a hard `Err`; per-file
+/// IO errors are deferred to the lazy parse path on first use.
+fn load_dir_into_pending(
+    dir: &Path,
+    name_alias_for: impl Fn(&str) -> Option<String>,
+) -> Result<Vec<PendingSpec>> {
     let mut pending: Vec<PendingSpec> = Vec::new();
-    let mut errors: Vec<String> = Vec::new();
 
     if !dir.exists() {
         tracing::warn!("spec directory does not exist: {}", dir.display());
-        return Ok((pending, errors));
+        return Ok(pending);
     }
 
     let read_dir = std::fs::read_dir(dir)
@@ -897,31 +910,23 @@ fn load_dir_into_entries(dir: &Path) -> Result<(Vec<PendingSpec>, Vec<String>)> 
     });
 
     for path in paths {
-        let file_name = path
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string();
-        let stem = match path.file_stem().and_then(|s| s.to_str()) {
-            Some(s) => s.to_string(),
+        let filename = match path.file_name().and_then(|n| n.to_str()) {
+            Some(s) => s.to_owned(),
             None => continue,
         };
-        match SpecStore::load_spec(&path) {
-            Ok(spec) => {
-                tracing::debug!("loaded spec: {} (stem={})", spec.name, stem);
-                pending.push(PendingSpec {
-                    filename_stem: stem,
-                    source_dir: dir.to_path_buf(),
-                    spec,
-                });
-            }
-            Err(e) => {
-                errors.push(format!("{file_name}: {e}"));
-            }
-        }
+        let stem = match path.file_stem().and_then(|s| s.to_str()) {
+            Some(s) => s.to_owned(),
+            None => continue,
+        };
+        pending.push(PendingSpec {
+            filename_stem: stem,
+            name_alias: name_alias_for(&filename),
+            source_dir: dir.to_path_buf(),
+            source: SpecSource::Filesystem(path),
+        });
     }
 
-    Ok((pending, errors))
+    Ok(pending)
 }
 
 /// Take a directory's parsed specs and merge them into the running store
@@ -951,24 +956,26 @@ fn register_entries(
     by_alias: &mut HashMap<String, Arc<SpecEntry>>,
     conflicts: &mut Vec<AliasConflict>,
 ) {
-    // Pass 1: register every stem. We move the parsed spec into the
-    // newly-built `SpecEntry` here. `accepted` records each accepted
-    // entry's index in `entries` plus the data we need for pass 2
-    // (filename_stem, source_dir, spec_name) — keeping the ordering of
-    // `pending` so name-alias arbitration is stable.
+    // Pass 1: register every stem. The PendingSpec carries a SpecSource
+    // that the new SpecEntry takes ownership of — no parsing happens
+    // until SpecEntry::spec() is first called. `accepted` records each
+    // accepted entry's index in `entries` plus the data we need for
+    // pass 2 (filename_stem, source_dir, name_alias) — keeping the
+    // ordering of `pending` so name-alias arbitration is stable.
     struct Accepted {
         idx: usize,
         filename_stem: String,
         source_dir: PathBuf,
-        spec_name: String,
+        name_alias: Option<String>,
     }
     let mut accepted: Vec<Accepted> = Vec::with_capacity(pending.len());
 
     for ps in pending {
         let PendingSpec {
             filename_stem,
+            name_alias,
             source_dir,
-            spec,
+            source,
         } = ps;
 
         if let Some(existing) = by_alias.get(&filename_stem) {
@@ -1002,24 +1009,31 @@ fn register_entries(
                 winner: AliasOwner {
                     filename_stem: existing.filename_stem.clone(),
                     source_dir: existing.source_dir.clone(),
-                    spec_name: existing.spec.name.clone(),
+                    spec_name: existing
+                        .aliases
+                        .iter()
+                        .find(|a| **a != existing.filename_stem)
+                        .cloned()
+                        .unwrap_or_else(|| existing.filename_stem.clone()),
                 },
                 loser: AliasOwner {
                     filename_stem: filename_stem.clone(),
                     source_dir: source_dir.clone(),
-                    spec_name: spec.name.clone(),
+                    spec_name: name_alias
+                        .clone()
+                        .unwrap_or_else(|| filename_stem.clone()),
                 },
             });
             continue;
         }
 
-        let spec_name = spec.name.clone();
         let entry = Arc::new(SpecEntry {
             id: filename_stem.clone(),
             filename_stem: filename_stem.clone(),
             source_dir: source_dir.clone(),
             aliases: vec![filename_stem.clone()],
-            spec: Arc::new(spec),
+            source,
+            parsed: OnceLock::new(),
         });
         let idx = entries.len();
         entries.push(Arc::clone(&entry));
@@ -1028,11 +1042,11 @@ fn register_entries(
             idx,
             filename_stem,
             source_dir,
-            spec_name,
+            name_alias,
         });
     }
 
-    // Pass 2: register `CompletionSpec.name` aliases in the same order.
+    // Pass 2: register name aliases (only when distinct from stem).
     // Stems already populate `by_alias`, so a name that collides with
     // another spec's stem is naturally rejected here without a separate
     // lookup table.
@@ -1041,59 +1055,68 @@ fn register_entries(
             idx,
             filename_stem,
             source_dir,
-            spec_name,
+            name_alias,
         } = a;
 
-        if spec_name.is_empty() || spec_name == filename_stem {
+        let Some(name) = name_alias else { continue };
+        if name.is_empty() || name == filename_stem {
             continue;
         }
-        if let Some(existing) = by_alias.get(&spec_name) {
-            let kind = if existing.filename_stem == spec_name {
+        if let Some(existing) = by_alias.get(&name) {
+            let kind = if existing.filename_stem == name {
                 AliasConflictKind::NameMatchesOtherStem
             } else {
                 AliasConflictKind::DuplicateName
             };
             tracing::debug!(
-                alias = %spec_name,
+                alias = %name,
                 winner_stem = %existing.filename_stem,
                 loser_stem = %filename_stem,
                 kind = ?kind,
                 "name alias already registered — keeping spec addressable by stem only"
             );
             conflicts.push(AliasConflict {
-                alias: spec_name.clone(),
+                alias: name.clone(),
                 kind,
                 winner: AliasOwner {
                     filename_stem: existing.filename_stem.clone(),
                     source_dir: existing.source_dir.clone(),
-                    spec_name: existing.spec.name.clone(),
+                    spec_name: existing
+                        .aliases
+                        .iter()
+                        .find(|a| **a != existing.filename_stem)
+                        .cloned()
+                        .unwrap_or_else(|| existing.filename_stem.clone()),
                 },
                 loser: AliasOwner {
                     filename_stem: filename_stem.clone(),
                     source_dir,
-                    spec_name: spec_name.clone(),
+                    spec_name: name.clone(),
                 },
             });
             continue;
         }
 
-        // Append the alias to the existing entry. Rebuild the Arc<SpecEntry>
-        // because SpecEntry's fields are not interior-mutable — we want
-        // to keep `aliases` as `Vec<String>` (cheaper iteration) than a
-        // Mutex / Cell that would only get touched during loading.
+        // Append the alias by rebuilding the Arc<SpecEntry>.
+        // SpecEntry's fields are not interior-mutable; the rebuild is
+        // confined to load time so the steady-state hot path never
+        // pays this cost. Critically, the OnceLock stays empty in the
+        // new entry — parsing is still deferred to first SpecEntry::spec().
         let prev = &entries[idx];
-        let mut new_entry = SpecEntry {
+        let mut new_aliases = prev.aliases.clone();
+        new_aliases.push(name.clone());
+        let new_entry = SpecEntry {
             id: prev.id.clone(),
             filename_stem: prev.filename_stem.clone(),
             source_dir: prev.source_dir.clone(),
-            aliases: prev.aliases.clone(),
-            spec: Arc::clone(&prev.spec),
+            aliases: new_aliases,
+            source: prev.source.clone(),
+            parsed: OnceLock::new(),
         };
-        new_entry.aliases.push(spec_name.clone());
         let new_arc = Arc::new(new_entry);
         entries[idx] = Arc::clone(&new_arc);
         by_alias.insert(filename_stem, Arc::clone(&new_arc));
-        by_alias.insert(spec_name, new_arc);
+        by_alias.insert(name, new_arc);
     }
 }
 
