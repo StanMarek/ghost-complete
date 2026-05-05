@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
@@ -534,9 +534,36 @@ pub struct GeneratorSpec {
     pub template: Option<String>,
 }
 
+/// Sentinel `source_dir` value used to label embedded specs in
+/// diagnostics (`status` / `doctor`). Not a real filesystem path —
+/// [`SpecEntry::source`] distinguishes embedded from filesystem at load
+/// time; callers that render a human label format this string verbatim.
+pub const EMBEDDED_VIRTUAL_DIR: &str = "<embedded>";
+
+/// How a [`SpecEntry`] sources its JSON contents on first parse.
+///
+/// Filesystem entries hold a `PathBuf` and read the file lazily.
+/// Embedded entries hold a `&'static str` slice into the binary's
+/// `EMBEDDED_SPECS` table — no disk I/O ever.
+#[derive(Debug, Clone)]
+pub enum SpecSource {
+    /// Owned filesystem path. Read on first access via `std::fs::read_to_string`.
+    Filesystem(PathBuf),
+    /// `&'static str` slice into the binary's embedded payload. Never
+    /// freed; the runtime fallback path uses this to avoid the
+    /// `~/.cache/ghost-complete/embedded-specs/` materialisation step.
+    Embedded(&'static str),
+}
+
 /// One unique spec, addressable by one or more aliases. Owned by
 /// [`SpecStore`] and shared into the alias index via `Arc` so a single
 /// parsed spec doesn't have to be cloned per-alias on the load path.
+///
+/// `parsed` is filled lazily on first call to [`SpecEntry::spec`] or
+/// [`SpecEntry::load_error`]. Until then the entry holds only the
+/// metadata needed to register aliases. This keeps idle memory under
+/// 20 MB even with the full 709-spec corpus — see
+/// `docs/superpowers/specs/2026-05-05-lazy-spec-loading-design.md`.
 #[derive(Debug)]
 pub struct SpecEntry {
     /// Stable identifier used for status reporting and `iter()`. Always
@@ -546,14 +573,77 @@ pub struct SpecEntry {
     pub id: String,
     /// Filename stem, equal to `id`.
     pub filename_stem: String,
-    /// Source directory (an entry from `resolve_spec_dirs`'s output).
+    /// Source directory (an entry from `resolve_spec_dirs`'s output, or
+    /// the [`EMBEDDED_VIRTUAL_DIR`] sentinel for embedded specs).
     pub source_dir: PathBuf,
     /// Every alias this spec resolves under, in the order they were
     /// considered: filename stem first, then `CompletionSpec.name` when
     /// it differs from the stem and does not collide with another entry.
     pub aliases: Vec<String>,
-    /// The parsed spec.
-    pub spec: Arc<CompletionSpec>,
+    /// Where to load the spec contents from on first access.
+    pub source: SpecSource,
+    /// Lazy parse target. `Ok(Arc<CompletionSpec>)` on success;
+    /// `Err(error_message)` on parse failure (sticky — never retried).
+    parsed: OnceLock<Result<Arc<CompletionSpec>, String>>,
+}
+
+impl SpecEntry {
+    /// Lazily parse and return the spec. Returns `None` if parsing
+    /// failed (the failure is recorded once and never retried — call
+    /// [`Self::load_error`] for diagnostics).
+    pub fn spec(&self) -> Option<&CompletionSpec> {
+        self.parsed
+            .get_or_init(|| parse_entry_source(&self.source))
+            .as_ref()
+            .ok()
+            .map(|arc| arc.as_ref())
+    }
+
+    /// Like [`Self::spec`] but returns an owned clone of the cached
+    /// `Arc`. Use when the caller needs to hold the spec across a
+    /// boundary that requires `'static` lifetime; prefer [`Self::spec`]
+    /// otherwise.
+    pub fn spec_arc(&self) -> Option<Arc<CompletionSpec>> {
+        self.parsed
+            .get_or_init(|| parse_entry_source(&self.source))
+            .as_ref()
+            .ok()
+            .cloned()
+    }
+
+    /// Returns the parse error message if the lazy load failed.
+    /// Returns `None` if the spec has not yet been touched OR loaded
+    /// successfully — disambiguate via [`Self::is_parsed`].
+    pub fn load_error(&self) -> Option<&str> {
+        self.parsed
+            .get()
+            .and_then(|r| r.as_ref().err())
+            .map(String::as_str)
+    }
+
+    /// True iff this entry has been touched (lazy parse attempted).
+    pub fn is_parsed(&self) -> bool {
+        self.parsed.get().is_some()
+    }
+}
+
+/// Parse the JSON behind a [`SpecSource`] into an `Arc<CompletionSpec>`.
+/// Wraps existing parse + sanitize machinery; returns the error as a
+/// `String` so the failure is `Send + Sync` and storable in `OnceLock`.
+fn parse_entry_source(source: &SpecSource) -> Result<Arc<CompletionSpec>, String> {
+    let contents: std::borrow::Cow<'_, str> = match source {
+        SpecSource::Filesystem(path) => std::borrow::Cow::Owned(
+            std::fs::read_to_string(path)
+                .map_err(|e| format!("read {}: {e}", path.display()))?,
+        ),
+        SpecSource::Embedded(contents) => std::borrow::Cow::Borrowed(*contents),
+    };
+    let mut spec = parse_spec_checked_and_sanitized(&contents).map_err(|e| format!("parse: {e}"))?;
+    let warnings = validate_spec_generators(&mut spec);
+    for w in &warnings {
+        tracing::warn!("{}: {w}", spec.name);
+    }
+    Ok(Arc::new(spec))
 }
 
 /// One alias collision detected during loading. Conflicts are diagnostic
