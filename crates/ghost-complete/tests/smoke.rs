@@ -4,9 +4,11 @@ use harness::GhostProcess;
 use std::thread;
 use std::time::Duration;
 
-/// DECSC — first byte emitted by render_popup.
+/// DECSC. Emitted by both `render_popup` and `clear_popup`; presence after a
+/// clean baseline indicates popup activity (not uniquely a fresh render).
 const POPUP_RENDER_MARKER: &[u8] = b"\x1b7";
-/// DECRC — last byte emitted by clear_popup.
+/// DECRC. Emitted near the end of `clear_popup` (an end-sync sequence may
+/// follow), so its appearance after a dismiss signals the teardown ran.
 const POPUP_TEARDOWN_MARKER: &[u8] = b"\x1b8";
 /// Long enough for any unblocked render to land; short enough to keep tests quick.
 const NO_RENDER_WINDOW: Duration = Duration::from_millis(500);
@@ -33,7 +35,14 @@ fn assert_no_popup_render_after(proc: &GhostProcess, mark: usize, context: &str)
     }
 }
 
-/// Drives a printable byte through the shell's pending read so the parser sees a display update without leaking into the next command.
+/// Drives a printable byte through the shell's pending read so the parser sees
+/// a display update without leaking into the next command.
+///
+/// Depends on the inner shell's TTY layer being in cooked mode with ECHO on:
+/// the byte we write to the master is consumed by `read` and only reaches the
+/// parser via the kernel echo. Do not call this against a shell that disables
+/// echo (e.g. `read -s`, `stty -echo`, or an init script that flips raw mode);
+/// the deferred trigger will never resolve and the test will time out.
 fn advance_display(proc: &mut GhostProcess) -> usize {
     let mark = proc.output_len();
     proc.write_raw(b"x");
@@ -376,7 +385,10 @@ fn test_popup_defers_until_display_after_osc_only_pty_read() {
 
     let mark_before_osc = proc.output_len();
 
-    // OSC 7770 raw framing avoids `printf` percent-format interpretation; `read` blocks the shell from emitting follow-up display bytes.
+    // `printf` interprets the `\033`/`\007` backslash escapes into ESC/BEL,
+    // which is what frames the OSC sequence; `read` then parks the shell so
+    // it cannot emit follow-up display bytes that would resolve the defer on
+    // their own.
     proc.send_line(r"printf '\033]7770;4;git \007'; read _gc_defer_gate");
 
     assert_no_popup_render_after(&proc, mark_before_osc, "OSC-only PTY read defer");
@@ -393,7 +405,7 @@ fn test_popup_defers_until_display_after_osc_only_pty_read() {
         let since_redraw = &snapshot[mark_before_redraw..];
         panic!(
             "Deferred trigger failed to resolve into a popup render after \
-             display advanced. This is the issue #107 fix regression check.\n\
+             display advanced.\n\
              Bytes since redraw mark ({} bytes, lossy UTF-8):\n{:?}",
             since_redraw.len(),
             String::from_utf8_lossy(since_redraw),
@@ -407,7 +419,7 @@ fn test_popup_defers_until_display_after_osc_only_pty_read() {
 }
 
 #[test]
-fn test_popup_renders_when_osc_and_display_share_pty_read() {
+fn test_popup_renders_for_osc_with_inline_display_byte() {
     let mut proc = GhostProcess::spawn();
 
     proc.send_line("echo inline_smoke_ready_marker");
@@ -415,9 +427,11 @@ fn test_popup_renders_when_osc_and_display_share_pty_read() {
 
     let mark_before_trigger = proc.output_len();
 
-    // OSC + printable byte in the same `printf` — they coalesce into one PTY
-    // chunk, so the parser observes the display update alongside the buffer
-    // report and the trigger must fire without any external `advance_display`.
+    // OSC + printable byte in a single `printf` payload. The shell emits both
+    // before parking on `read`, so the popup must eventually render without
+    // any external `advance_display` nudge. Same-batch coalescing into one
+    // PTY read is not asserted here — kernel chunking can split the bytes
+    // across reads and the proxy's deferred path is allowed to resolve it.
     proc.send_line(r"printf '\033]7770;4;git \007X'; read _gc_inline_gate");
 
     let popup_rendered = proc.wait_for_bytes_after(
@@ -429,7 +443,7 @@ fn test_popup_renders_when_osc_and_display_share_pty_read() {
         let snapshot = proc.output_snapshot();
         let since_mark = &snapshot[mark_before_trigger..];
         panic!(
-            "Popup did not render within 5s when OSC and display update shared a PTY read.\n\
+            "Popup did not render within 5s for OSC with inline display byte.\n\
              Bytes since mark ({} bytes, lossy UTF-8):\n{:?}",
             since_mark.len(),
             String::from_utf8_lossy(since_mark),
