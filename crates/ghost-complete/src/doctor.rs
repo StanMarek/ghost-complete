@@ -217,56 +217,92 @@ fn check_terminal(config: &gc_config::GhostConfig) -> CheckResult {
     check_terminal_profile(&profile, config.experimental.multi_terminal)
 }
 
+fn load_specs_for_resolution(
+    dirs: &[PathBuf],
+    include_embedded: bool,
+) -> Result<gc_suggest::SpecLoadResult> {
+    if include_embedded {
+        gc_suggest::SpecStore::load_with_embedded(dirs)
+    } else {
+        gc_suggest::SpecStore::load_from_dirs(dirs)
+    }
+}
+
+fn load_specs_for_config(config: &gc_config::GhostConfig) -> Result<gc_suggest::SpecLoadResult> {
+    let resolution =
+        gc_suggest::spec_dirs::resolve_spec_dirs_with_provenance(&config.paths.spec_dirs);
+    load_specs_for_resolution(&resolution.dirs, resolution.include_embedded)
+}
+
 /// Check 6: Completion specs actually load.
 ///
-/// Resolves spec dirs and calls `SpecStore::load_from_dirs` exactly the way
-/// the PTY proxy does at startup, then reports the spec count. Catches the
-/// "binary works, but autocomplete is empty" failure mode where neither
-/// `~/.config/ghost-complete/specs` nor a sibling `specs/` dir exists and
-/// the embedded fallback fails to materialize.
+/// Resolves spec dirs with runtime provenance and uses the same embedded
+/// fallback policy as the PTY proxy, then reports the resolved runtime spec
+/// count. Catches the "binary works, but autocomplete is empty" failure mode
+/// where neither filesystem specs nor the embedded fallback produce usable
+/// completions.
 fn check_specs(config: &gc_config::GhostConfig) -> CheckResult {
-    let dirs = gc_suggest::spec_dirs::resolve_spec_dirs(&config.paths.spec_dirs);
-    let dir_count = dirs.len();
+    let resolution =
+        gc_suggest::spec_dirs::resolve_spec_dirs_with_provenance(&config.paths.spec_dirs);
+    check_specs_for_resolution(&resolution.dirs, resolution.include_embedded)
+}
 
-    let result = match gc_suggest::SpecStore::load_from_dirs(&dirs) {
+fn check_specs_for_resolution(dirs: &[PathBuf], include_embedded: bool) -> CheckResult {
+    let result = match load_specs_for_resolution(dirs, include_embedded) {
         Ok(r) => r,
         Err(e) => return CheckResult::fail(format!("Spec load failed: {e}")),
     };
 
-    let loaded = result.store.len();
-    let dir_summary = dirs
+    let loaded = result.store.iter().count();
+    let mut sources = dirs
         .iter()
         .map(|d| d.display().to_string())
-        .collect::<Vec<_>>()
-        .join(", ");
+        .collect::<Vec<_>>();
+    if include_embedded {
+        sources.push("<embedded>".to_string());
+    }
+    let source_count = sources.len();
+    let source_summary = sources.join(", ");
+    let lazy_errors = result.store.force_load_errors();
+
+    let mut issue_summary = String::new();
+    if !result.directory_errors.is_empty() {
+        issue_summary.push_str(&format!(
+            " ({} spec dir(s) failed to scan)",
+            result.directory_errors.len()
+        ));
+    }
+    if !lazy_errors.is_empty() {
+        issue_summary.push_str(&format!(
+            " ({} spec file(s) failed to parse — run `ghost-complete \
+             validate-specs` for details)",
+            lazy_errors.len()
+        ));
+    }
 
     if loaded == 0 {
         // Loud FAIL so a user running `doctor` after a fresh `cargo install`
         // gets an actionable signal instead of silently degraded
         // autocomplete.
         return CheckResult::fail(format!(
-            "Completion specs: 0 loaded from {dir_count} directory(ies) \
-             [{dir_summary}] — autocomplete will be missing all per-command \
+            "Completion specs: 0 loaded from {source_count} source(s) \
+             [{source_summary}]{issue_summary} — autocomplete will be missing all per-command \
              completions. Run `ghost-complete install` to deploy the \
              bundled spec set."
         ));
     }
 
     let mut msg = format!(
-        "Completion specs: {loaded} loaded from {dir_count} directory(ies) \
-         [{dir_summary}]"
+        "Completion specs: {loaded} loaded from {source_count} source(s) \
+         [{source_summary}]"
     );
-    if !result.errors.is_empty() {
-        msg.push_str(&format!(
-            " ({} spec(s) failed to parse — run `ghost-complete \
-             validate-specs` for details)",
-            result.errors.len()
-        ));
+
+    if !result.directory_errors.is_empty() || !lazy_errors.is_empty() {
+        msg.push_str(&issue_summary);
         return CheckResult::warn(msg);
     }
     CheckResult::ok(msg)
 }
-
 /// Count generators on a single spec that carry a `_corrected_in` marker.
 /// Walks args, options, and the full subcommand tree iteratively to avoid
 /// re-introducing the recursion-depth attack surface removed from the other
@@ -310,12 +346,12 @@ fn count_corrected_generators_in_spec(spec: &gc_suggest::CompletionSpec) -> usiz
 /// fresh local install should not report a health warning for known corpus
 /// accounting.
 ///
-/// Re-loads specs with the same resolver `check_specs` uses — cheaper than
-/// plumbing the store out of Check 6, and keeps the two checks independent
-/// (a broken spec dir still produces a skip here rather than a hard fail).
+/// Re-loads specs with the same runtime resolver `check_specs` uses — cheaper
+/// than plumbing the store out of Check 6, and keeps the two checks
+/// independent (a broken spec dir still produces a skip here rather than a
+/// hard fail).
 fn check_corrections(config: &gc_config::GhostConfig) -> CheckResult {
-    let dirs = gc_suggest::spec_dirs::resolve_spec_dirs(&config.paths.spec_dirs);
-    let result = match gc_suggest::SpecStore::load_from_dirs(&dirs) {
+    let result = match load_specs_for_config(config) {
         Ok(r) => r,
         // Spec load already failed in check_specs — no point duplicating the
         // failure; skip so the doctor output stays readable.
@@ -461,8 +497,7 @@ fn check_alias_conflicts_for_store(store: &gc_suggest::SpecStore) -> CheckResult
 /// Entry point that resolves spec dirs and dispatches to
 /// [`check_alias_conflicts_for_store`].
 fn check_alias_conflicts(config: &gc_config::GhostConfig) -> CheckResult {
-    let dirs = gc_suggest::spec_dirs::resolve_spec_dirs(&config.paths.spec_dirs);
-    let result = match gc_suggest::SpecStore::load_from_dirs(&dirs) {
+    let result = match load_specs_for_config(config) {
         Ok(r) => r,
         Err(_) => {
             return CheckResult::skip(
@@ -688,8 +723,7 @@ fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> C
 /// Entry point that resolves spec dirs and dispatches to
 /// [`check_embedded_runtime_metadata_for_store`].
 fn check_embedded_runtime_metadata(config: &gc_config::GhostConfig) -> CheckResult {
-    let dirs = gc_suggest::spec_dirs::resolve_spec_dirs(&config.paths.spec_dirs);
-    let result = match gc_suggest::SpecStore::load_from_dirs(&dirs) {
+    let result = match load_specs_for_config(config) {
         Ok(r) => r,
         Err(_) => {
             return CheckResult::skip(
@@ -884,9 +918,9 @@ mod tests {
 
     /// Pin the user-facing spec health check to the embedded fallback path.
     ///
-    /// `check_specs` calls `resolve_spec_dirs` + `SpecStore::load_from_dirs`
-    /// — the same chain the PTY proxy uses — and must never report OK with
-    /// zero specs loaded.
+    /// `check_specs` calls `resolve_spec_dirs_with_provenance` and preserves
+    /// the PTY proxy's embedded fallback policy, and must never report OK
+    /// with zero specs loaded.
     ///
     /// We can't directly stub the resolver's environment lookups in this
     /// process, but we *can* assert that with a default config the check
@@ -917,6 +951,25 @@ mod tests {
         );
     }
 
+    #[test]
+    fn check_specs_reports_lazy_parse_failures() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(dir.path().join("broken.json"), "{not valid json").unwrap();
+
+        let result = check_specs_for_resolution(&[dir.path().to_path_buf()], false);
+
+        assert!(
+            matches!(result.severity, Severity::Fail | Severity::Warn),
+            "lazy parse failure must not report OK: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("failed to parse") || result.message.contains("failed"),
+            "message should surface lazy parse failure: {}",
+            result.message
+        );
+    }
+
     /// Build a `SpecStore` by writing fixtures to a temp directory and
     /// loading them via the normal loader. Keeps the test honest — exercises
     /// the same deserialization path real specs go through.
@@ -929,9 +982,9 @@ mod tests {
         }
         let result = gc_suggest::SpecStore::load_from_dirs(&[dir.path().to_path_buf()]).unwrap();
         assert!(
-            result.errors.is_empty(),
-            "fixture load errors: {:?}",
-            result.errors
+            result.directory_errors.is_empty(),
+            "fixture directory load errors: {:?}",
+            result.directory_errors
         );
         (result.store, dir)
     }

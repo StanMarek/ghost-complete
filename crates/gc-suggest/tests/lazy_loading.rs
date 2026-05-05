@@ -146,7 +146,7 @@ fn lazy_load_failure_is_sticky() {
     // Filesystem walk succeeded — only the JSON itself is broken,
     // and the failure surfaces lazily.
     assert_eq!(store.entries().len(), 2);
-    assert!(result.errors.is_empty());
+    assert!(result.directory_errors.is_empty());
 
     assert!(store.get("broken").is_none());
     let broken = store.entries().iter().find(|e| e.id == "broken").unwrap();
@@ -204,7 +204,7 @@ fn invalid_filesystem_override_falls_back_to_embedded_spec() {
     write_spec(dir.path(), "git.json", "{not valid json");
 
     let result = SpecStore::load_with_embedded(&[dir.path().to_path_buf()]).unwrap();
-    assert!(result.errors.is_empty());
+    assert!(result.directory_errors.is_empty());
 
     let git = result
         .store
@@ -278,7 +278,7 @@ fn force_load_errors_reports_lazy_parse_failures() {
     write_spec(dir.path(), "ok.json", &minimal_spec("ok"));
 
     let result = SpecStore::load_from_dir(dir.path()).unwrap();
-    assert!(result.errors.is_empty());
+    assert!(result.directory_errors.is_empty());
 
     let errors = result.store.force_load_errors();
     assert_eq!(errors.len(), 1, "expected one forced load error");
@@ -368,5 +368,8 @@ fn runtime_does_not_materialize_embedded_to_cache_dir() {
         !result.store.is_empty(),
         "embedded corpus must register via load_with_embedded"
     );
-    assert!(result.errors.is_empty(), "no filesystem dirs to fail");
+    assert!(
+        result.directory_errors.is_empty(),
+        "no filesystem dirs to fail"
+    );
 }

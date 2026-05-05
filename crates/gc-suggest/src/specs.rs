@@ -779,7 +779,7 @@ type AliasIndex = HashMap<String, Vec<Arc<SpecEntry>>>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum AliasFallbackPolicy {
-    DropLowerPrecedence,
+    KeepDirectoryPrecedence,
     KeepLowerPrecedence,
 }
 
@@ -802,7 +802,7 @@ pub struct SpecLoadResult {
     /// JSON read/parse failures are lazy and are reported by
     /// [`SpecStore::force_load_errors`] or [`SpecEntry::load_error`] after a
     /// lookup/force-load touches the entry.
-    pub errors: Vec<String>,
+    pub directory_errors: Vec<String>,
 }
 
 impl SpecStore {
@@ -821,7 +821,7 @@ impl SpecStore {
         let mut entries: Vec<Arc<SpecEntry>> = Vec::new();
         let mut by_alias: AliasIndex = HashMap::new();
         let mut conflicts: Vec<AliasConflict> = Vec::new();
-        let mut errors: Vec<String> = Vec::new();
+        let mut directory_errors: Vec<String> = Vec::new();
 
         for dir in dirs {
             match load_dir_into_pending(dir, alias_for_filesystem_file) {
@@ -831,16 +831,16 @@ impl SpecStore {
                         &mut entries,
                         &mut by_alias,
                         &mut conflicts,
-                        AliasFallbackPolicy::DropLowerPrecedence,
+                        AliasFallbackPolicy::KeepDirectoryPrecedence,
                     );
                 }
                 Err(e) => {
                     // Directory-level IO failure (e.g., EACCES on read_dir).
-                    // Accumulate into errors instead of bailing — a broken
-                    // dir earlier in the list must not hide valid dirs
-                    // later in the list. Per-file IO failures are deferred
-                    // to lazy parse and surface via SpecEntry::load_error.
-                    errors.push(format!("{}: {e}", dir.display()));
+                    // Accumulate into directory_errors instead of bailing — a
+                    // broken dir earlier in the list must not hide valid dirs
+                    // later in the list. Per-file IO failures are deferred to
+                    // lazy parse and surface via SpecEntry::load_error.
+                    directory_errors.push(format!("{}: {e}", dir.display()));
                 }
             }
         }
@@ -851,7 +851,7 @@ impl SpecStore {
                 by_alias,
                 conflicts,
             },
-            errors,
+            directory_errors,
         })
     }
 
@@ -880,7 +880,7 @@ impl SpecStore {
         let mut entries: Vec<Arc<SpecEntry>> = Vec::new();
         let mut by_alias: AliasIndex = HashMap::new();
         let mut conflicts: Vec<AliasConflict> = Vec::new();
-        let mut errors: Vec<String> = Vec::new();
+        let mut directory_errors: Vec<String> = Vec::new();
 
         for dir in filesystem_dirs {
             match load_dir_into_pending(dir, alias_for_filesystem_file) {
@@ -890,11 +890,11 @@ impl SpecStore {
                         &mut entries,
                         &mut by_alias,
                         &mut conflicts,
-                        AliasFallbackPolicy::DropLowerPrecedence,
+                        AliasFallbackPolicy::KeepDirectoryPrecedence,
                     );
                 }
                 Err(e) => {
-                    errors.push(format!("{}: {e}", dir.display()));
+                    directory_errors.push(format!("{}: {e}", dir.display()));
                 }
             }
         }
@@ -925,7 +925,7 @@ impl SpecStore {
                 by_alias,
                 conflicts,
             },
-            errors,
+            directory_errors,
         })
     }
 
@@ -987,7 +987,7 @@ impl SpecStore {
 
     /// Force every registered entry through its lazy parse and return
     /// per-entry failures. Directory/read_dir failures remain on
-    /// [`SpecLoadResult::errors`]; this method reports JSON read/parse
+    /// [`SpecLoadResult::directory_errors`]; this method reports JSON read/parse
     /// failures that are intentionally deferred at startup.
     pub fn force_load_errors(&self) -> Vec<SpecEntryLoadError> {
         self.force_load_all();
@@ -1001,6 +1001,20 @@ impl SpecStore {
                 })
             })
             .collect()
+    }
+
+    /// Yield the runtime-resolved entries: the first successfully loaded
+    /// candidate for each alias, de-duplicated to one item per spec entry.
+    ///
+    /// Force-loads every registered candidate so a lower-precedence fallback
+    /// can become resolved when an earlier candidate fails lazy parsing.
+    /// Call [`Self::entries`] for raw registration diagnostics, including
+    /// hidden fallback candidates and lazy load errors.
+    pub fn resolved_entries(&self) -> impl Iterator<Item = &Arc<SpecEntry>> {
+        self.force_load_all();
+        self.entries
+            .iter()
+            .filter(|entry| self.entry_is_first_successful_candidate(entry))
     }
 
     fn entry_is_first_successful_candidate(&self, entry: &Arc<SpecEntry>) -> bool {
@@ -1023,14 +1037,8 @@ impl SpecStore {
     /// every alias — callers that want to enumerate aliases use
     /// [`SpecStore::entries`] directly.
     pub fn iter(&self) -> impl Iterator<Item = (&str, &CompletionSpec)> {
-        self.force_load_all();
-        self.entries.iter().filter_map(|e| {
-            if self.entry_is_first_successful_candidate(e) {
-                e.spec().map(|s| (e.id.as_str(), s))
-            } else {
-                None
-            }
-        })
+        self.resolved_entries()
+            .filter_map(|e| e.spec().map(|s| (e.id.as_str(), s)))
     }
 
     /// Number of registered spec entries. Differs from
@@ -1155,15 +1163,16 @@ fn alias_for_filesystem_file(_filename: &str, path: &Path) -> Option<String> {
     shallow_parse_name(path)
 }
 
-/// Carrier for a parsed spec on its way into `register_entries`. We can't
+/// Registration metadata for a spec on its way into `register_entries`. We can't
 /// build the final `SpecEntry` at this stage because the `aliases` vec
 /// depends on which alias slots are still free across the merged dir set.
 ///
 /// Holds metadata only — `serde_json::from_str` is deferred until the
 /// owning `SpecEntry::spec()` is called for the first time. The
-/// `name_alias` field is pre-resolved by the caller from the build-time
-/// `EMBEDDED_SPEC_ALIASES` table or set to `None` for truly custom
-/// user specs.
+/// `name_alias` field is pre-resolved by the caller from a shallow
+/// filesystem header parse or the build-time `EMBEDDED_SPEC_ALIASES` table.
+/// `None` means no usable distinct name alias was found, including when a
+/// shallow filesystem parse failed.
 struct PendingSpec {
     filename_stem: String,
     /// Pre-resolved `CompletionSpec.name` alias when it differs from
@@ -1308,6 +1317,9 @@ fn register_entries(
             } else {
                 AliasConflictKind::NameMatchesOtherStem
             };
+            let keep_as_fallback = fallback_policy == AliasFallbackPolicy::KeepLowerPrecedence
+                || (fallback_policy == AliasFallbackPolicy::KeepDirectoryPrecedence
+                    && kind == AliasConflictKind::DirectoryPrecedence);
             tracing::debug!(
                 stem = %filename_stem,
                 existing_stem = %existing.filename_stem,
@@ -1336,7 +1348,7 @@ fn register_entries(
                 },
             });
 
-            if fallback_policy == AliasFallbackPolicy::DropLowerPrecedence {
+            if !keep_as_fallback {
                 continue;
             }
             can_create_aliases = false;
@@ -1412,7 +1424,7 @@ fn register_entries(
                 },
             });
 
-            if fallback_policy == AliasFallbackPolicy::DropLowerPrecedence {
+            if fallback_policy != AliasFallbackPolicy::KeepLowerPrecedence {
                 continue;
             }
         } else if !can_create_aliases {
@@ -2667,7 +2679,7 @@ mod tests {
         std::fs::write(dir.path().join("beta.json"), r#"{"name": "beta"}"#).unwrap();
 
         let result = SpecStore::load_from_dir(dir.path()).unwrap();
-        assert!(result.errors.is_empty(), "no errors expected");
+        assert!(result.directory_errors.is_empty(), "no errors expected");
         assert!(result.store.get("alpha").is_some());
         assert!(result.store.get("beta").is_some());
     }
@@ -2675,7 +2687,7 @@ mod tests {
     #[test]
     fn test_load_from_dir_nonexistent() {
         let result = SpecStore::load_from_dir(Path::new("/nonexistent/path/specs")).unwrap();
-        assert!(result.errors.is_empty());
+        assert!(result.directory_errors.is_empty());
         assert!(result.store.get("anything").is_none());
     }
 
@@ -3252,7 +3264,7 @@ mod tests {
         //
         // Lazy-loading note: the depth check fires inside SpecEntry::spec()
         // (the deferred parse), so the rejection surfaces via load_error
-        // rather than SpecLoadResult.errors.
+        // rather than SpecLoadResult::directory_errors.
         let dir = tempfile::TempDir::new().unwrap();
         std::fs::write(
             dir.path().join("evil.json"),
@@ -3332,9 +3344,9 @@ mod tests {
 
         let result = SpecStore::load_from_dir(dir.path()).unwrap();
         assert!(
-            result.errors.is_empty(),
-            "depth-12 spec should parse cleanly, got errors: {:?}",
-            result.errors
+            result.directory_errors.is_empty(),
+            "depth-12 spec should parse cleanly, got directory errors: {:?}",
+            result.directory_errors
         );
         assert!(
             result.store.get("x").is_some(),
@@ -4750,11 +4762,66 @@ mod tests {
         assert_eq!(c.winner.source_dir, user_dir.path());
         assert_eq!(c.loser.source_dir, embedded_dir.path());
 
-        // Only the user copy becomes an entry — the embedded loser is
-        // skipped entirely (it has nothing addressable left after
-        // losing its only stem).
-        assert_eq!(store.entries().len(), 1);
+        // The lower-precedence copy remains registered as a fallback
+        // candidate, but the valid higher-precedence copy is the only
+        // resolved entry.
+        assert_eq!(store.entries().len(), 2);
+        assert_eq!(store.iter().count(), 1);
         assert_eq!(store.aliases_count(), 1);
+    }
+
+    #[test]
+    fn lower_precedence_filesystem_duplicate_used_when_primary_fails() {
+        let bad_dir = tempfile::TempDir::new().unwrap();
+        let good_dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(bad_dir.path().join("git.json"), "{not valid json").unwrap();
+        std::fs::write(
+            good_dir.path().join("git.json"),
+            r#"{"name":"git","subcommands":[{"name":"from-good-dir"}]}"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dirs(&[
+            bad_dir.path().to_path_buf(),
+            good_dir.path().to_path_buf(),
+        ])
+        .unwrap();
+        let store = &result.store;
+
+        let by_git = store
+            .get("git")
+            .expect("valid lower-precedence spec should win");
+        assert_eq!(by_git.subcommands[0].name, "from-good-dir");
+        let bad_entry = store
+            .entries()
+            .iter()
+            .find(|entry| matches!(&entry.source, SpecSource::Filesystem(path) if path.starts_with(bad_dir.path())))
+            .expect("bad primary remains visible for diagnostics");
+        assert!(bad_entry.load_error().is_some());
+        assert_eq!(store.iter().count(), 1);
+    }
+
+    #[test]
+    fn filesystem_duplicate_fallback_wins_before_embedded() {
+        let bad_dir = tempfile::TempDir::new().unwrap();
+        let good_dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(bad_dir.path().join("git.json"), "{not valid json").unwrap();
+        std::fs::write(
+            good_dir.path().join("git.json"),
+            r#"{"name":"git","subcommands":[{"name":"from-good-dir"}]}"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_with_embedded(&[
+            bad_dir.path().to_path_buf(),
+            good_dir.path().to_path_buf(),
+        ])
+        .unwrap();
+        let by_git = result
+            .store
+            .get("git")
+            .expect("valid filesystem fallback should win before embedded");
+        assert_eq!(by_git.subcommands[0].name, "from-good-dir");
     }
 
     #[test]

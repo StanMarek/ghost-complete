@@ -294,11 +294,11 @@ impl SuggestionEngine {
         } else {
             SpecStore::load_from_dirs(spec_dirs)?
         };
-        if !result.errors.is_empty() {
+        if !result.directory_errors.is_empty() {
             tracing::warn!(
-                "{} spec(s) failed to load (run `ghost-complete validate-specs` for details): {}",
-                result.errors.len(),
-                result.errors.join(", ")
+                "{} spec dir(s) failed to scan (run `ghost-complete validate-specs` for details): {}",
+                result.directory_errors.len(),
+                result.directory_errors.join(", ")
             );
         }
         Ok(Self {

@@ -313,8 +313,9 @@ pub struct StatusOutcome {
     pub fully_functional: usize,
     pub partially_functional: usize,
     pub js_commands: Vec<String>,
-    /// Per-dir spec-load error strings, already sanitised for terminal
-    /// output. Retained so the JSON path can surface them too.
+    /// Directory scan and per-spec lazy parse error strings, already
+    /// sanitised for terminal output. Retained so the JSON path can surface
+    /// them too.
     pub parse_error_lines: Vec<String>,
     /// Most counters mirror the runtime loader index (so they reflect what
     /// completion actually sees), but `requires_js_generators_total` is
@@ -338,9 +339,9 @@ pub struct StatusOutcome {
     /// Surfaced so users can see at a glance whether their requires_js
     /// generators will run.
     pub js_runtime_enabled: bool,
-    /// File-level scan results — sourced from the JSON behind each
-    /// runtime-kept `SpecEntry` so the raw generator counters follow the
-    /// same source precedence as completion lookups.
+    /// File-level scan results — sourced from the JSON behind each resolved
+    /// runtime `SpecEntry` so the raw generator counters follow completion
+    /// lookup fallback behavior.
     pub file_scan: FileScan,
 }
 
@@ -404,8 +405,8 @@ fn alias_conflict_kind_str(kind: &AliasConflictKind) -> &'static str {
 /// structured `CompletionSpec` shape.
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct FileScan {
-    /// Number of runtime-kept spec JSON sources, after source precedence
-    /// removes lower-priority duplicate filenames.
+    /// Number of resolved runtime spec JSON sources, after lazy fallback
+    /// candidates have been reduced to the first successful source.
     pub spec_files_total: usize,
     /// Total count of `requires_js: true` generators across ALL spec files
     /// (including ones that lose their addressability slot to a duplicate
@@ -468,15 +469,15 @@ fn scan_resolved_specs(
         SpecStore::load_from_dirs(dirs)?
     };
     let store = result.store;
-    for err in &result.errors {
+    for err in &result.directory_errors {
         parse_error_lines.push(sanitize_for_terminal(err));
     }
 
-    // Calling SpecEntry::spec() force-loads every entry, so any per-entry
-    // lazy-parse failures are pinned in OnceLock by the time we walk
-    // entries() for SpecEntry::load_error below.
+    // resolved_entries() force-loads every registered candidate, so any
+    // per-entry lazy-parse failures are pinned in OnceLock by the time we
+    // call force_load_errors below.
     let mut specs: Vec<(&str, &CompletionSpec, bool)> = Vec::new();
-    for entry in store.entries() {
+    for entry in store.resolved_entries() {
         let is_filesystem = matches!(&entry.source, SpecSource::Filesystem(_));
         if let Some(spec) = entry.spec() {
             specs.push((entry.id.as_str(), spec, is_filesystem));
@@ -487,11 +488,9 @@ fn scan_resolved_specs(
     // Surface lazy-parse failures alongside directory-level errors.
     // The per-entry path returns an error message keyed by the spec's
     // id (filename stem) so operators can locate the offending file.
-    for entry in store.entries() {
-        if let Some(err) = entry.load_error() {
-            let label = format!("{}.json: {err}", entry.filename_stem);
-            parse_error_lines.push(sanitize_for_terminal(&label));
-        }
+    for err in store.force_load_errors() {
+        let label = format!("{}.json: {}", err.id, err.error);
+        parse_error_lines.push(sanitize_for_terminal(&label));
     }
     let total_parse_errors = parse_error_lines.len();
 
@@ -524,9 +523,8 @@ fn scan_resolved_specs(
     //
     // Walk the SpecStore's resolved entries instead of read_dir-ing every
     // configured spec_dir: when two sources ship a copy of the same spec
-    // (e.g. user-config + embedded), first-match-wins keeps only one
-    // entry, but a per-directory/raw-corpus walk would still sum every
-    // copy and double-count the requires_js generators.
+    // (e.g. user-config + embedded), lazy fallback keeps the hidden
+    // candidates registered, but runtime resolution selects only one source.
     let file_scan = scan_spec_files(&store)?;
     let requires_js_generators_total = file_scan.requires_js_generators_total;
     // Classify every requires_js generator on disk into supported /
@@ -538,9 +536,9 @@ fn scan_resolved_specs(
         requires_js_generators_total.saturating_sub(requires_js_generators_supported);
 
     // commands_addressable: the alias index size, i.e. the number of
-    // unique command keys users can type on the shell to reach a spec.
-    // Always ≥ entry count because each spec contributes its filename
-    // stem plus optionally a non-conflicting `name` alias.
+    // unique command keys users can type on the shell. Hidden fallback
+    // candidates share aliases with higher-precedence candidates, so this is
+    // a command-key count rather than a raw registered-entry count.
     let commands_addressable = store.aliases_count();
     let commands_nonfunctional = total_parse_errors;
 
@@ -579,12 +577,10 @@ fn scan_resolved_specs(
     })
 }
 
-/// Walk the spec entries the runtime loader actually kept and count
-/// `requires_js: true` generators across them. SpecStore keys on filename
-/// stem so the entry count equals `spec_files_total` per addressable
-/// spec, but the loader stores trailing option args in `extra_args` —
-/// the file-level walk stays the source of truth for
-/// `requires_js_generators_total`.
+/// Walk the resolved spec entries the runtime loader will actually use and
+/// count `requires_js: true` generators across them. Hidden fallback
+/// candidates remain registered for lazy failover, so `spec_files_total`
+/// reflects resolved runtime sources, not raw registration entries.
 ///
 /// Counts `requires_js: true` via a raw `serde_json::Value` walk rather
 /// than going through `parse_spec_checked_and_sanitized`. The structured
@@ -593,12 +589,11 @@ fn scan_resolved_specs(
 /// reads `args` would underreport against the source corpus, so the raw
 /// JSON walk is the source of truth for this counter.
 ///
-/// Iterates [`SpecStore::entries`] and reads each [`SpecSource`] directly so
-/// two overlapping sources shipping copies of the same filename do NOT cause
-/// every copy's requires_js generators to be counted. The loader applies
-/// first-match-wins precedence; this scan mirrors that decision instead of
-/// re-walking every configured directory or the full embedded corpus in
-/// isolation.
+/// Iterates [`SpecStore::resolved_entries`] and reads each [`SpecSource`]
+/// directly so two overlapping sources shipping copies of the same filename
+/// do NOT cause every fallback candidate's requires_js generators to be
+/// counted. The scan mirrors runtime resolution instead of re-walking every
+/// configured directory or the full embedded corpus in isolation.
 ///
 /// Errors are tolerant — a missing path is silently skipped (matches
 /// the loader's behavior). Read or parse failures emit a `tracing::warn!`
@@ -610,7 +605,7 @@ fn scan_resolved_specs(
 fn scan_spec_files(store: &SpecStore) -> Result<FileScan> {
     let mut scan = FileScan::default();
 
-    for entry in store.entries() {
+    for entry in store.resolved_entries() {
         let (contents, source_label): (std::borrow::Cow<'_, str>, String) = match &entry.source {
             SpecSource::Filesystem(path) => {
                 if !path.exists() {
@@ -1215,8 +1210,8 @@ fn run_status_json(
 /// of:
 ///   - zero parsed runtime specs are available (nothing to complete against),
 ///     or
-///   - one or more spec files failed to parse (`SpecLoadResult::errors`
-///     non-empty in at least one dir).
+///   - one or more spec directories failed to scan or spec files failed lazy
+///     parsing.
 ///
 /// When `json` is `true`, the report is a machine-readable JSON object on
 /// stdout instead of human text; strict-mode error lines are suppressed
@@ -1391,10 +1386,10 @@ mod tests {
     }
 
     /// When two resolved spec_dirs ship copies of the same filename,
-    /// the file-level walk MUST count only the entry SpecStore kept
-    /// (first-match-wins), not every dir's copy. Without the
-    /// entry-source scan the second dir's `git.json` would
-    /// re-enter the totals and double the requires_js count.
+    /// the file-level walk MUST count only the entry SpecStore resolves at
+    /// runtime, not every fallback candidate. Without the resolved-entry scan
+    /// the second dir's `git.json` would re-enter the totals and double the
+    /// requires_js count.
     #[test]
     fn status_file_scan_does_not_double_count_overlapping_dirs() {
         let tmp = tempfile::TempDir::new().unwrap();
@@ -1415,8 +1410,9 @@ mod tests {
         let cfg = write_config_for_dirs(&[&primary_dir, &fallback_dir], &tmp);
         let outcome = scan_specs(Some(cfg.to_str().unwrap())).unwrap();
 
-        // SpecStore: only the primary entry survives.
-        assert_eq!(outcome.fs_specs, 1, "first-match-wins keeps one entry");
+        // SpecStore keeps fallback candidates, but only the primary entry
+        // resolves while it parses successfully.
+        assert_eq!(outcome.fs_specs, 1, "only one duplicate resolves");
         // file_scan now mirrors that — counts ONLY the primary file.
         assert_eq!(
             outcome.file_scan.spec_files_total, 1,
@@ -1479,6 +1475,32 @@ mod tests {
         assert!(
             outcome.requires_js_generators_total > 0,
             "embedded-only status should report embedded requires_js totals"
+        );
+    }
+
+    #[test]
+    fn status_counts_resolved_filesystem_entry_once_with_embedded_fallback() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("git.json"),
+            r#"{"name":"git","subcommands":[{"name":"from-filesystem"}],"options":[],"args":[]}"#,
+        )
+        .unwrap();
+
+        let config = gc_config::GhostConfig::default();
+        let outcome = scan_resolved_specs(&config, &[dir], true).unwrap();
+
+        assert_eq!(outcome.fs_specs, 1);
+        assert_eq!(
+            outcome.fully_functional + outcome.partially_functional,
+            outcome.embedded_count,
+            "filesystem git should replace embedded git in resolved counts, not add to it"
+        );
+        assert_eq!(
+            outcome.file_scan.spec_files_total, outcome.embedded_count,
+            "file_scan should count resolved sources, not hidden fallback candidates"
         );
     }
 
