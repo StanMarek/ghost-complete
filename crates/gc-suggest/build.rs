@@ -88,7 +88,11 @@ fn main() {
 
     // Process each spec: parse, strip any legacy js_source straggler,
     // assert js_runtime.source survives the strip, re-serialise compactly.
+    // Also captures `(filename, name_alias)` per spec into `alias_table`
+    // so the runtime alias index can register `CompletionSpec.name`
+    // aliases without parsing JSON at startup.
     let mut entries: Vec<(String, PathBuf)> = Vec::with_capacity(specs.len());
+    let mut alias_table: Vec<(String, Option<String>)> = Vec::with_capacity(specs.len());
     for (name, src_path) in &specs {
         let src = fs::read_to_string(src_path)
             .unwrap_or_else(|e| panic!("read {}: {e}", src_path.display()));
@@ -99,6 +103,23 @@ fn main() {
         // runtime reads it to drive the JS evaluator; an accidental strip
         // would silently disable JS-driven generators across the corpus.
         assert_js_runtime_source_preserved(&value, src_path);
+
+        // Capture the spec's declared `name` if it differs from the
+        // filename stem. Used by EMBEDDED_SPEC_ALIASES below.
+        let declared_name = value
+            .get("name")
+            .and_then(|v| v.as_str())
+            .map(str::to_owned);
+        let stem = name
+            .strip_suffix(".json")
+            .expect("emitted entries always end with .json")
+            .to_owned();
+        let name_alias = match declared_name {
+            Some(n) if n != stem => Some(n),
+            _ => None,
+        };
+        alias_table.push((name.clone(), name_alias));
+
         let minified = serde_json::to_string(&value)
             .unwrap_or_else(|e| panic!("serialize {}: {e}", src_path.display()));
 
@@ -129,6 +150,41 @@ fn main() {
             path.display().to_string()
         )
         .unwrap();
+    }
+    writeln!(f, "];").unwrap();
+
+    // Emit EMBEDDED_SPEC_ALIASES: index-aligned with EMBEDDED_SPECS.
+    // Each entry is (filename, Option<name_alias>) where the alias is
+    // populated only when the spec's `CompletionSpec.name` differs from
+    // its filename stem. The runtime spec loader uses this table to
+    // register name aliases without parsing JSON contents at startup,
+    // which is the prerequisite for lazy spec loading.
+    writeln!(f).unwrap();
+    writeln!(
+        f,
+        "/// Pre-resolved name aliases for embedded specs. `Some(name)` when"
+    )
+    .unwrap();
+    writeln!(
+        f,
+        "/// the spec's `CompletionSpec.name` field differs from its filename"
+    )
+    .unwrap();
+    writeln!(
+        f,
+        "/// stem; `None` when they match. Index-aligned with `EMBEDDED_SPECS`."
+    )
+    .unwrap();
+    writeln!(
+        f,
+        "pub const EMBEDDED_SPEC_ALIASES: &[(&str, Option<&str>)] = &["
+    )
+    .unwrap();
+    for (filename, name_alias) in &alias_table {
+        match name_alias {
+            Some(n) => writeln!(f, "    ({:?}, Some({:?})),", filename, n).unwrap(),
+            None => writeln!(f, "    ({:?}, None),", filename).unwrap(),
+        }
     }
     writeln!(f, "];").unwrap();
 }
