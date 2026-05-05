@@ -45,6 +45,39 @@ use std::sync::atomic::{AtomicU64, Ordering};
 // `build.rs` for details.
 include!(concat!(env!("OUT_DIR"), "/embedded_specs.rs"));
 
+/// Look up an embedded spec's JSON contents by filename (e.g. `"git.json"`).
+///
+/// Returns `Some(contents)` when the binary ships with that spec. Used by
+/// the runtime spec loader to read embedded specs in-memory without going
+/// through the on-disk materialisation path.
+pub fn embedded_spec_contents(filename: &str) -> Option<&'static str> {
+    EMBEDDED_SPECS
+        .iter()
+        .find(|(name, _)| *name == filename)
+        .map(|(_, contents)| *contents)
+}
+
+/// Iterate every embedded `(filename, contents, name_alias)` triple in
+/// emit order. The alias is the `CompletionSpec.name` field captured at
+/// build time when it differs from the filename stem; `None` otherwise.
+///
+/// This is the single source of truth for the runtime fallback path —
+/// callers iterate it instead of materialising specs to disk first.
+pub fn embedded_entries_with_aliases(
+) -> impl Iterator<Item = (&'static str, &'static str, Option<&'static str>)> {
+    EMBEDDED_SPECS
+        .iter()
+        .zip(EMBEDDED_SPEC_ALIASES.iter())
+        .map(|((filename, contents), (alias_filename, name_alias))| {
+            debug_assert_eq!(
+                *filename, *alias_filename,
+                "EMBEDDED_SPECS and EMBEDDED_SPEC_ALIASES are emitted in the \
+                 same order by build.rs; mismatch indicates a build-script bug"
+            );
+            (*filename, *contents, *name_alias)
+        })
+}
+
 /// Path under the user's home where embedded specs are materialized for the
 /// auto-detected spec-dir path. Kept separate from the `~/.config` install
 /// location so a fresh `cargo install` user gets specs without
@@ -358,6 +391,42 @@ fn materialize_embedded_specs_at(dir: &Path) -> Option<PathBuf> {
 mod tests {
     use super::*;
     use tempfile::TempDir;
+
+    #[test]
+    fn embedded_spec_aliases_aligns_with_specs() {
+        assert_eq!(
+            EMBEDDED_SPECS.len(),
+            EMBEDDED_SPEC_ALIASES.len(),
+            "EMBEDDED_SPECS and EMBEDDED_SPEC_ALIASES must have matching lengths"
+        );
+        for ((spec_name, _), (alias_name, _)) in
+            EMBEDDED_SPECS.iter().zip(EMBEDDED_SPEC_ALIASES.iter())
+        {
+            assert_eq!(
+                spec_name, alias_name,
+                "EMBEDDED_SPECS / EMBEDDED_SPEC_ALIASES filename ordering must agree"
+            );
+        }
+    }
+
+    #[test]
+    fn embedded_entries_with_aliases_yields_known_alias() {
+        // appwrite.json declares `name: "index"` — the build.rs captures
+        // it as a non-stem alias. Pin a known live entry so a future
+        // refactor of the build script can't silently zero out the table.
+        let appwrite = embedded_entries_with_aliases()
+            .find(|(filename, _, _)| *filename == "appwrite.json")
+            .expect("appwrite.json must ship in the embedded corpus");
+        assert_eq!(appwrite.2, Some("index"));
+    }
+
+    #[test]
+    fn embedded_spec_contents_round_trips() {
+        for (filename, contents) in EMBEDDED_SPECS {
+            assert_eq!(embedded_spec_contents(filename), Some(*contents));
+        }
+        assert!(embedded_spec_contents("does-not-exist.json").is_none());
+    }
 
     #[test]
     fn embedded_specs_slice_is_non_empty() {
