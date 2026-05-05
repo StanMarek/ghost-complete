@@ -1607,7 +1607,7 @@ mod tests {
 
         assert_eq!(exit, StatusExit::Failure);
         assert!(
-            txt.contains("broken.json: parse:"),
+            txt.contains("broken.json: shallow parse") && txt.contains("header:"),
             "strict status should print the lazy parse failure line:\n{txt}"
         );
         assert!(
@@ -2794,8 +2794,9 @@ mod tests {
         let tmp = tempfile::TempDir::new().unwrap();
         let spec_dir = tmp.path().join("specs");
         std::fs::create_dir_all(&spec_dir).unwrap();
-        // Two specs declaring the same `name` — the second loses the
-        // duplicate alias and surfaces a `DuplicateName` conflict.
+        // Two specs declaring the same `name` — the second remains behind
+        // the primary owner as a lazy fallback and surfaces a `DuplicateName`
+        // conflict.
         std::fs::write(spec_dir.join("a.json"), r#"{"name": "duplicate"}"#).unwrap();
         std::fs::write(spec_dir.join("b.json"), r#"{"name": "duplicate"}"#).unwrap();
         let cfg = write_config_for(&spec_dir, &tmp);
@@ -2813,7 +2814,7 @@ mod tests {
         let entry = &details[0];
         assert_eq!(entry["alias"], "duplicate");
         assert_eq!(entry["kind"], "duplicate_name");
-        assert_eq!(entry["disposition"], "rejected");
+        assert_eq!(entry["disposition"], "fallback_candidate");
         // Either spec stem may win depending on dir-walk order; both are
         // valid as long as winner != loser.
         assert_ne!(entry["winner_stem"], entry["loser_stem"]);

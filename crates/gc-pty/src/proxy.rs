@@ -10,7 +10,8 @@ use tokio::sync::{mpsc, Notify};
 use gc_config::GhostConfig;
 
 use gc_overlay::{parse_style, PopupTheme};
-use gc_suggest::spec_dirs::resolve_spec_dirs_with_provenance;
+use gc_suggest::spec_dirs::{resolve_spec_dirs_with_provenance, SpecDirResolution};
+use gc_terminal::TerminalProfile;
 
 use crate::config_watch::spawn_config_watcher;
 use crate::handler::{InputHandler, Keybindings, OverlayWriteTicket, TriggerPrepared};
@@ -38,6 +39,28 @@ impl RawModeGuard {
 impl Drop for RawModeGuard {
     fn drop(&mut self) {
         let _ = crossterm::terminal::disable_raw_mode();
+    }
+}
+
+fn input_handler_for_resolution(
+    resolution: &SpecDirResolution,
+    terminal_profile: TerminalProfile,
+) -> Result<InputHandler> {
+    match InputHandler::new_with_embedded(
+        &resolution.dirs,
+        terminal_profile.clone(),
+        resolution.include_embedded,
+    ) {
+        Ok(handler) => Ok(handler),
+        Err(e) => {
+            tracing::warn!("failed to init suggestion engine: {}, trying fallback", e);
+            InputHandler::new_with_embedded(
+                &[std::path::PathBuf::from(".")],
+                terminal_profile,
+                true,
+            )
+            .context("fallback handler also failed — cannot start proxy")
+        }
     }
 }
 
@@ -176,24 +199,9 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     };
 
     // Initialize suggestion handler with config
-    let handler = Arc::new(Mutex::new({
-        let h = match InputHandler::new_with_embedded(
-            &spec_dir_resolution.dirs,
-            terminal_profile.clone(),
-            spec_dir_resolution.include_embedded,
-        ) {
-            Ok(h) => h,
-            Err(e) => {
-                tracing::warn!("failed to init suggestion engine: {}, trying fallback", e);
-                InputHandler::new_with_embedded(
-                    &[std::path::PathBuf::from(".")],
-                    terminal_profile,
-                    true,
-                )
-                .context("fallback handler also failed — cannot start proxy")?
-            }
-        };
-        h.with_keybindings(keybindings)
+    let handler = Arc::new(Mutex::new(
+        input_handler_for_resolution(&spec_dir_resolution, terminal_profile)?
+            .with_keybindings(keybindings)
             .with_theme(theme)
             .with_popup_config(config.popup.max_visible)
             .with_feedback_dismiss_ms(config.popup.feedback_dismiss_ms)
@@ -209,8 +217,8 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 config.suggest.providers.git,
                 config.suggest.providers.js_runtime,
                 config.suggest.generator_timeout_ms,
-            )
-    }));
+            ),
+    ));
 
     // Config hot-reload: watch config.toml for changes
     let config_watcher_handle = if let Some(config_dir) = gc_config::config_dir() {
@@ -1716,6 +1724,77 @@ mod tests {
         let osc = format!("\x1b]7770;{cursor};{buffer}\x07");
         parser.lock().unwrap().process_bytes(osc.as_bytes());
         parser
+    }
+
+    fn write_custom_only_spec(dir: &std::path::Path) {
+        std::fs::write(
+            dir.join("custom-only.json"),
+            r#"{"name":"custom-only","subcommands":[{"name":"local"}]}"#,
+        )
+        .unwrap();
+    }
+
+    fn proxy_resolution_test_handler(resolution: &SpecDirResolution) -> InputHandler {
+        input_handler_for_resolution(resolution, TerminalProfile::for_ghostty())
+            .expect("handler")
+            .with_suggest_config(20, false, 0, false, true, false, false, 100)
+    }
+
+    fn trigger_texts(handler: &mut InputHandler, buffer: &str) -> Vec<String> {
+        let parser = parser_with_buffer(buffer);
+        let mut stdout = Vec::new();
+        handler.trigger(&parser, &mut stdout);
+        handler
+            .current_suggestions()
+            .iter()
+            .map(|suggestion| suggestion.text.clone())
+            .collect()
+    }
+
+    #[test]
+    fn input_handler_resolution_includes_embedded_specs_when_requested() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let _enter = runtime.enter();
+        let specs_dir = tempfile::TempDir::new().unwrap();
+        write_custom_only_spec(specs_dir.path());
+        let resolution = SpecDirResolution {
+            dirs: vec![specs_dir.path().to_path_buf()],
+            include_embedded: true,
+        };
+        let mut handler = proxy_resolution_test_handler(&resolution);
+
+        let texts = trigger_texts(&mut handler, "git ");
+
+        assert!(
+            texts.iter().any(|text| text == "checkout"),
+            "embedded git subcommands should be available with include_embedded=true: {texts:?}"
+        );
+    }
+
+    #[test]
+    fn input_handler_resolution_excludes_embedded_specs_when_not_requested() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let _enter = runtime.enter();
+        let specs_dir = tempfile::TempDir::new().unwrap();
+        write_custom_only_spec(specs_dir.path());
+        let resolution = SpecDirResolution {
+            dirs: vec![specs_dir.path().to_path_buf()],
+            include_embedded: false,
+        };
+        let mut handler = proxy_resolution_test_handler(&resolution);
+
+        let texts = trigger_texts(&mut handler, "git ");
+
+        assert!(
+            !texts.iter().any(|text| text == "checkout"),
+            "embedded git subcommands should not be available with include_embedded=false: {texts:?}"
+        );
     }
 
     #[test]

@@ -632,10 +632,15 @@ pub struct SpecEntry {
     pub source_dir: PathBuf,
     /// Every alias this spec resolves under, in the order they were
     /// considered: filename stem first, then `CompletionSpec.name` when
-    /// it differs from the stem and does not collide with another entry.
+    /// it differs from the stem. Colliding aliases are retained as fallback
+    /// candidates behind the primary owner.
     pub aliases: Vec<String>,
     /// Where to load the spec contents from on first access.
     pub source: SpecSource,
+    /// Error observed while shallow-parsing a filesystem header for alias
+    /// registration. Stored separately so diagnostics stay lazy: the error is
+    /// copied into `parsed` only when the entry is first touched.
+    shallow_parse_error: Option<String>,
     /// Lazy parse target. `Ok(Arc<CompletionSpec>)` on success;
     /// `Err(error_message)` on parse failure (sticky — never retried).
     parsed: OnceLock<Result<Arc<CompletionSpec>, String>>,
@@ -652,7 +657,11 @@ impl SpecEntry {
     fn parsed_result(&self) -> std::result::Result<&Arc<CompletionSpec>, &str> {
         self.parsed
             .get_or_init(|| {
-                let parsed = parse_entry_source(&self.source);
+                let parsed = if let Some(err) = &self.shallow_parse_error {
+                    Err(err.clone())
+                } else {
+                    parse_entry_source(&self.source)
+                };
                 if let Err(err) = &parsed {
                     tracing::warn!(
                         spec_id = %self.id,
@@ -738,8 +747,8 @@ fn parse_entry_source(source: &SpecSource) -> Result<Arc<CompletionSpec>, String
 /// One alias collision detected during loading. `winner` and `loser`
 /// describe registration precedence for the contended alias; inspect
 /// [`AliasConflict::disposition`] to tell whether the lower-precedence
-/// entry was rejected from that alias or kept as a lazy-parse fallback
-/// candidate. Surfaced via [`SpecStore::conflicts`].
+/// entry is reachable as a lazy-parse fallback candidate. Surfaced via
+/// [`SpecStore::conflicts`].
 #[derive(Debug, Clone)]
 pub struct AliasConflict {
     /// The alias that two specs both wanted to register.
@@ -775,6 +784,7 @@ pub enum AliasConflictKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AliasConflictDisposition {
     /// The lower-precedence entry is not reachable through the contended alias.
+    /// Kept for status/doctor compatibility with older loaders.
     Rejected,
     /// The lower-precedence entry remains registered behind the primary owner
     /// and can resolve if earlier candidates fail lazy parsing.
@@ -791,19 +801,16 @@ pub struct AliasOwner {
 
 type AliasIndex = HashMap<String, Vec<Arc<SpecEntry>>>;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum AliasFallbackPolicy {
-    KeepDirectoryPrecedence,
-    KeepLowerPrecedence,
-}
-
 /// Read-only view of every registered spec entry, plus the alias index that
 /// resolves command keys to those specs.
 ///
 /// `SpecStore` is immutable after construction — every mutation is
-/// confined to [`SpecStore::load_from_dirs`] / [`SpecStore::load_from_dir`].
-/// Lookups go through the alias index; iteration yields entries (not
-/// aliases) so status counts don't double-count one spec under two keys.
+/// confined to [`SpecStore::load_from_dirs`], [`SpecStore::load_from_dir`],
+/// and [`SpecStore::load_with_embedded`]. Lookups go through the alias index
+/// and try candidates in precedence order. [`SpecStore::resolved_entries`]
+/// reports the first successfully parsed candidate per alias, while
+/// [`SpecStore::entries`] keeps raw registered entries for status and doctor
+/// diagnostics.
 pub struct SpecStore {
     entries: Vec<Arc<SpecEntry>>,
     by_alias: AliasIndex,
@@ -813,7 +820,7 @@ pub struct SpecStore {
 pub struct SpecLoadResult {
     pub store: SpecStore,
     /// Directory-level loading errors such as `read_dir` failures. Per-file
-    /// JSON read/parse failures are lazy and are reported by
+    /// JSON read/parse/header failures are lazy and are reported by
     /// [`SpecStore::force_load_errors`] or [`SpecEntry::load_error`] after a
     /// lookup/force-load touches the entry.
     pub directory_errors: Vec<String>,
@@ -824,14 +831,14 @@ impl SpecStore {
     /// index. A spec from an earlier directory is the primary candidate when
     /// it parses successfully, matching the user intuition that earlier
     /// entries in config's `paths.spec_dirs` take precedence (e.g., user
-    /// overrides before system defaults). Later copies with the same filename
-    /// remain registered as lazy-parse fallbacks.
+    /// overrides before system defaults). Later alias collisions remain
+    /// registered as lazy-parse fallbacks.
     ///
     /// Each spec is keyed in the alias index by its filename stem
-    /// (canonical id) and, when free, by its `CompletionSpec.name`. Files
+    /// (canonical id) and by its `CompletionSpec.name` when present. Files
     /// whose declared `name` collides with another spec's name or stem surface
-    /// a [`AliasConflict`] entry. The conflict disposition says whether that
-    /// alias was rejected or retained as a fallback candidate.
+    /// a [`AliasConflict`] entry and stay behind the primary owner as fallback
+    /// candidates.
     pub fn load_from_dirs(dirs: &[PathBuf]) -> Result<SpecLoadResult> {
         let mut entries: Vec<Arc<SpecEntry>> = Vec::new();
         let mut by_alias: AliasIndex = HashMap::new();
@@ -841,20 +848,14 @@ impl SpecStore {
         for dir in dirs {
             match load_dir_into_pending(dir, alias_for_filesystem_file) {
                 Ok(pending) => {
-                    register_entries(
-                        pending,
-                        &mut entries,
-                        &mut by_alias,
-                        &mut conflicts,
-                        AliasFallbackPolicy::KeepDirectoryPrecedence,
-                    );
+                    register_entries(pending, &mut entries, &mut by_alias, &mut conflicts);
                 }
                 Err(e) => {
                     // Directory-level IO failure (e.g., EACCES on read_dir).
                     // Accumulate into directory_errors instead of bailing — a
                     // broken dir earlier in the list must not hide valid dirs
-                    // later in the list. Per-file IO failures are deferred to
-                    // lazy parse and surface via SpecEntry::load_error.
+                    // later in the list. Per-file failures are exposed lazily
+                    // through SpecEntry::load_error.
                     directory_errors.push(format!("{}: {e}", dir.display()));
                 }
             }
@@ -900,13 +901,7 @@ impl SpecStore {
         for dir in filesystem_dirs {
             match load_dir_into_pending(dir, alias_for_filesystem_file) {
                 Ok(pending) => {
-                    register_entries(
-                        pending,
-                        &mut entries,
-                        &mut by_alias,
-                        &mut conflicts,
-                        AliasFallbackPolicy::KeepDirectoryPrecedence,
-                    );
+                    register_entries(pending, &mut entries, &mut by_alias, &mut conflicts);
                 }
                 Err(e) => {
                     directory_errors.push(format!("{}: {e}", dir.display()));
@@ -921,6 +916,7 @@ impl SpecStore {
                 Some(PendingSpec {
                     filename_stem: stem,
                     name_alias: name_alias.map(str::to_owned),
+                    shallow_parse_error: None,
                     source_dir: embedded_dir.clone(),
                     source: SpecSource::Embedded(contents),
                 })
@@ -931,7 +927,6 @@ impl SpecStore {
             &mut entries,
             &mut by_alias,
             &mut conflicts,
-            AliasFallbackPolicy::KeepLowerPrecedence,
         );
 
         Ok(SpecLoadResult {
@@ -1095,7 +1090,7 @@ impl SpecStore {
     }
 
     /// Alias collisions detected at load time. Surfaced via doctor / status so
-    /// users can distinguish rejected aliases from lazy-parse fallback chains.
+    /// users can inspect lazy-parse fallback chains.
     pub fn conflicts(&self) -> &[AliasConflict] {
         &self.conflicts
     }
@@ -1108,9 +1103,9 @@ impl SpecStore {
         self.entries.iter().map(|entry| entry.location()).collect()
     }
 
-    /// Real on-disk path for every filesystem entry the loader actually kept,
-    /// in load order. Embedded specs are intentionally omitted because they do
-    /// not have a filesystem path.
+    /// Real on-disk path for every registered filesystem entry, including
+    /// lower-precedence fallback candidates, in load order. Embedded specs are
+    /// intentionally omitted because they do not have a filesystem path.
     pub fn filesystem_paths(&self) -> Vec<(String, PathBuf)> {
         self.entries
             .iter()
@@ -1121,18 +1116,14 @@ impl SpecStore {
             .collect()
     }
 
-    /// Real on-disk path for every filesystem entry the loader actually kept,
-    /// in load order. Embedded specs are intentionally omitted because they do
-    /// not have a filesystem path.
+    /// Alias for [`Self::filesystem_paths`]. Kept for status code that scans
+    /// registered on-disk JSON sources directly; embedded specs remain omitted
+    /// because they do not have filesystem paths. Use
+    /// [`Self::resolved_entries`] when the caller needs runtime-resolved specs
+    /// after lazy fallback selection.
     ///
-    /// Used by `ghost-complete status` to count requires_js generators
-    /// without double-counting when overlapping spec_dirs each ship a
-    /// copy of the same filename. A naïve file scan that walked every
-    /// configured directory and summed their generator counts would
-    /// inflate the reported number on configs where the embedded specs
-    /// dir and a user override dir both contained `git.json`; this
-    /// method follows the loader's kept filesystem entries instead of
-    /// inventing paths for in-memory embedded specs.
+    /// This follows the loader's registered entries instead of inventing paths
+    /// for in-memory embedded specs.
     pub fn canonical_paths(&self) -> Vec<(String, PathBuf)> {
         self.filesystem_paths()
     }
@@ -1159,16 +1150,21 @@ struct SpecHeader {
 /// the sanitised form (matching the behaviour callers see when they
 /// later look up `entry.spec().name`).
 ///
-/// Returns `None` on read or parse failure (the entry will be
-/// aliased by filename stem only — its lazy-parse failure surfaces
-/// later via [`SpecEntry::load_error`]).
-fn shallow_parse_name(path: &Path) -> Option<String> {
-    let contents = std::fs::read_to_string(path).ok()?;
-    check_json_depth(&contents, MAX_SPEC_JSON_DEPTH).ok()?;
-    let header: SpecHeader = serde_json::from_str(&contents).ok()?;
-    let mut name = header.name?;
+/// Returns `Ok(None)` for a syntactically valid JSON header with no top-level
+/// `name`. Read, depth, and header-deserialization failures are returned so the
+/// entry can surface them through normal lazy load diagnostics.
+fn shallow_parse_name(path: &Path) -> Result<Option<String>> {
+    let contents = std::fs::read_to_string(path)
+        .map_err(|e| anyhow::anyhow!("shallow parse {}: read: {e}", path.display()))?;
+    check_json_depth(&contents, MAX_SPEC_JSON_DEPTH)
+        .map_err(|e| anyhow::anyhow!("shallow parse {}: depth: {e}", path.display()))?;
+    let header: SpecHeader = serde_json::from_str(&contents)
+        .map_err(|e| anyhow::anyhow!("shallow parse {}: header: {e}", path.display()))?;
+    let Some(mut name) = header.name else {
+        return Ok(None);
+    };
     sanitize_string(&mut name);
-    Some(name)
+    Ok(Some(name))
 }
 
 /// Resolve a filesystem spec's `name` alias by shallow-parsing the
@@ -1186,7 +1182,7 @@ fn shallow_parse_name(path: &Path) -> Option<String> {
 /// `EMBEDDED_SPECS`) skip this path entirely: their alias is taken
 /// from the build-time `EMBEDDED_SPEC_ALIASES` table at zero parse
 /// cost.
-fn alias_for_filesystem_file(_filename: &str, path: &Path) -> Option<String> {
+fn alias_for_filesystem_file(_filename: &str, path: &Path) -> Result<Option<String>> {
     shallow_parse_name(path)
 }
 
@@ -1196,15 +1192,17 @@ fn alias_for_filesystem_file(_filename: &str, path: &Path) -> Option<String> {
 ///
 /// Holds metadata only — `serde_json::from_str` is deferred until the
 /// owning `SpecEntry::spec()` is called for the first time. The
-/// `name_alias` field is pre-resolved by the caller from a shallow
+/// `name_alias` field is pre-resolved by the caller from a successful shallow
 /// filesystem header parse or the build-time `EMBEDDED_SPEC_ALIASES` table.
-/// `None` means no usable distinct name alias was found, including when a
-/// shallow filesystem parse failed.
+/// `None` means no usable distinct name alias was found. Shallow filesystem
+/// parse failures are kept separately so they can surface as lazy load errors
+/// for the entry.
 struct PendingSpec {
     filename_stem: String,
     /// Pre-resolved `CompletionSpec.name` alias when it differs from
     /// the filename stem. `None` means "stem-only aliasing".
     name_alias: Option<String>,
+    shallow_parse_error: Option<String>,
     source_dir: PathBuf,
     source: SpecSource,
 }
@@ -1218,11 +1216,11 @@ struct PendingSpec {
 /// registration.
 ///
 /// Filesystem errors at directory-read time are returned as a hard
-/// `Err`; per-file IO errors during the lazy parse surface later via
-/// [`SpecEntry::load_error`].
+/// `Err`; per-file shallow header failures are recorded on the entry and
+/// surface later via [`SpecEntry::load_error`] when lazy diagnostics touch it.
 fn load_dir_into_pending(
     dir: &Path,
-    name_alias_for: impl Fn(&str, &Path) -> Option<String>,
+    name_alias_for: impl Fn(&str, &Path) -> Result<Option<String>>,
 ) -> Result<Vec<PendingSpec>> {
     let mut pending: Vec<PendingSpec> = Vec::new();
 
@@ -1263,10 +1261,14 @@ fn load_dir_into_pending(
             Some(s) => s.to_owned(),
             None => continue,
         };
-        let name_alias = name_alias_for(&filename, &path);
+        let (name_alias, shallow_parse_error) = match name_alias_for(&filename, &path) {
+            Ok(name_alias) => (name_alias, None),
+            Err(err) => (None, Some(err.to_string())),
+        };
         pending.push(PendingSpec {
             filename_stem: stem,
             name_alias,
+            shallow_parse_error,
             source_dir: dir.to_path_buf(),
             source: SpecSource::Filesystem(path),
         });
@@ -1279,20 +1281,18 @@ fn load_dir_into_pending(
 /// state. Two passes:
 ///   1. Register every filename stem. Stems are the canonical id and
 ///      always take precedence over `name` aliases. A stem already
-///      owned by an earlier directory's same filename is appended as a
-///      lower-precedence fallback with a `DirectoryPrecedence` conflict;
-///      a stem that collides with a different file's previously-registered
-///      `name` alias is either rejected or appended as a fallback depending on
-///      the loader policy, with `NameMatchesOtherStem` recorded from the
+///      owned by an earlier entry is appended as a lower-precedence fallback;
+///      same-filename collisions record `DirectoryPrecedence`, while a stem
+///      that collides with a different file's previously-registered `name`
+///      alias records `NameMatchesOtherStem` from the
 ///      inverted perspective — the new file's stem matches what an existing
 ///      file's name claim already owns.
 ///   2. Register `CompletionSpec.name` aliases for entries whose name
-///      differs from the stem. Aliases yield to stems unconditionally;
-///      a name that collides with another spec's stem records
-///      NameMatchesOtherStem, and a name that collides with another
-///      already-registered name records DuplicateName. The fallback policy
-///      determines whether the colliding name alias is rejected or retained
-///      behind the primary candidate.
+///      differs from the stem. A name that collides with another spec's stem
+///      records NameMatchesOtherStem, and a name that collides with another
+///      already-registered name records DuplicateName. The colliding alias is
+///      retained behind the primary candidate so lookup can fall back if the
+///      primary lazy parse fails.
 ///
 /// The two-pass shape exists so the canonical spec wins its own name —
 /// e.g. `kubectl.json` keeps the `kubectl` alias even though
@@ -1304,7 +1304,6 @@ fn register_entries(
     entries: &mut Vec<Arc<SpecEntry>>,
     by_alias: &mut AliasIndex,
     conflicts: &mut Vec<AliasConflict>,
-    fallback_policy: AliasFallbackPolicy,
 ) {
     // Pass 1: register every stem. The PendingSpec carries a SpecSource
     // that the new SpecEntry takes ownership of — no parsing happens
@@ -1325,6 +1324,7 @@ fn register_entries(
         let PendingSpec {
             filename_stem,
             name_alias,
+            shallow_parse_error,
             source_dir,
             source,
         } = ps;
@@ -1338,18 +1338,14 @@ fn register_entries(
             //   - The new file's stem collides with a different file's
             //     already-registered alias (the existing entry came from
             //     a different filename — typically its `name` claim or
-            //     even its stem under an unrelated path). Under normal
-            //     first-match loading the lower-precedence candidate is
-            //     dropped; when loading embedded specs, it is retained only as
-            //     a fallback candidate behind the existing alias owner.
+            //     even its stem under an unrelated path). The lower-precedence
+            //     candidate remains behind the existing alias owner as a lazy
+            //     fallback.
             let kind = if existing.filename_stem == filename_stem {
                 AliasConflictKind::DirectoryPrecedence
             } else {
                 AliasConflictKind::NameMatchesOtherStem
             };
-            let keep_as_fallback = fallback_policy == AliasFallbackPolicy::KeepLowerPrecedence
-                || (fallback_policy == AliasFallbackPolicy::KeepDirectoryPrecedence
-                    && kind == AliasConflictKind::DirectoryPrecedence);
             tracing::debug!(
                 stem = %filename_stem,
                 existing_stem = %existing.filename_stem,
@@ -1361,11 +1357,7 @@ fn register_entries(
             conflicts.push(AliasConflict {
                 alias: filename_stem.clone(),
                 kind,
-                disposition: if keep_as_fallback {
-                    AliasConflictDisposition::FallbackCandidate
-                } else {
-                    AliasConflictDisposition::Rejected
-                },
+                disposition: AliasConflictDisposition::FallbackCandidate,
                 winner: AliasOwner {
                     filename_stem: existing.filename_stem.clone(),
                     source_dir: existing.source_dir.clone(),
@@ -1383,9 +1375,6 @@ fn register_entries(
                 },
             });
 
-            if !keep_as_fallback {
-                continue;
-            }
             can_create_aliases = false;
         }
 
@@ -1395,6 +1384,7 @@ fn register_entries(
             source_dir: source_dir.clone(),
             aliases: vec![filename_stem.clone()],
             source,
+            shallow_parse_error,
             parsed: OnceLock::new(),
         });
         let idx = entries.len();
@@ -1441,11 +1431,7 @@ fn register_entries(
             conflicts.push(AliasConflict {
                 alias: name.clone(),
                 kind,
-                disposition: if fallback_policy == AliasFallbackPolicy::KeepLowerPrecedence {
-                    AliasConflictDisposition::FallbackCandidate
-                } else {
-                    AliasConflictDisposition::Rejected
-                },
+                disposition: AliasConflictDisposition::FallbackCandidate,
                 winner: AliasOwner {
                     filename_stem: existing.filename_stem.clone(),
                     source_dir: existing.source_dir.clone(),
@@ -1462,10 +1448,6 @@ fn register_entries(
                     spec_name: name.clone(),
                 },
             });
-
-            if fallback_policy != AliasFallbackPolicy::KeepLowerPrecedence {
-                continue;
-            }
         } else if !can_create_aliases {
             continue;
         }
@@ -1484,6 +1466,7 @@ fn register_entries(
             source_dir: prev.source_dir.clone(),
             aliases: new_aliases,
             source: prev.source.clone(),
+            shallow_parse_error: prev.shallow_parse_error.clone(),
             parsed: OnceLock::new(),
         };
         let new_arc = Arc::new(new_entry);
@@ -4847,6 +4830,137 @@ mod tests {
     }
 
     #[test]
+    fn filesystem_stem_alias_fallback_wins_when_shallow_name_owner_fails() {
+        let bad_dir = tempfile::TempDir::new().unwrap();
+        let good_dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            bad_dir.path().join("foo.json"),
+            r#"{"name":"kubectl","subcommands":"not an array"}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            good_dir.path().join("kubectl.json"),
+            r#"{"name":"kubectl","subcommands":[{"name":"from-kubectl"}]}"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dirs(&[
+            bad_dir.path().to_path_buf(),
+            good_dir.path().to_path_buf(),
+        ])
+        .unwrap();
+        let store = &result.store;
+
+        let by_kubectl = store
+            .get("kubectl")
+            .expect("valid lower-precedence stem should fall back behind bad name owner");
+        assert_eq!(by_kubectl.subcommands[0].name, "from-kubectl");
+
+        let bad_entry = store
+            .entries()
+            .iter()
+            .find(|entry| matches!(&entry.source, SpecSource::Filesystem(path) if path.starts_with(bad_dir.path())))
+            .expect("bad name owner remains visible for diagnostics");
+        assert!(
+            bad_entry.load_error().is_some(),
+            "failed shallow-name owner should record its lazy parse error"
+        );
+
+        let conflict = store
+            .conflicts()
+            .iter()
+            .find(|conflict| {
+                conflict.alias == "kubectl"
+                    && conflict.kind == AliasConflictKind::NameMatchesOtherStem
+                    && conflict.winner.filename_stem == "foo"
+                    && conflict.loser.filename_stem == "kubectl"
+            })
+            .expect("filesystem stem fallback should be recorded as a conflict");
+        assert_eq!(
+            conflict.disposition,
+            AliasConflictDisposition::FallbackCandidate
+        );
+        assert_eq!(store.entries().len(), 2);
+    }
+
+    #[test]
+    fn filesystem_duplicate_name_fallback_wins_when_primary_fails() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("alpha.json"),
+            r#"{"name":"shared","subcommands":"not an array"}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("beta.json"),
+            r#"{"name":"shared","subcommands":[{"name":"from-beta"}]}"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let store = &result.store;
+
+        let by_shared = store
+            .get("shared")
+            .expect("valid duplicate-name fallback should win after bad primary");
+        assert_eq!(by_shared.subcommands[0].name, "from-beta");
+
+        let bad_entry = store
+            .entries()
+            .iter()
+            .find(|entry| entry.filename_stem == "alpha")
+            .expect("bad duplicate-name primary remains visible for diagnostics");
+        assert!(
+            bad_entry.load_error().is_some(),
+            "failed duplicate-name primary should record its lazy parse error"
+        );
+
+        let conflict = store
+            .conflicts()
+            .iter()
+            .find(|conflict| {
+                conflict.alias == "shared"
+                    && conflict.kind == AliasConflictKind::DuplicateName
+                    && conflict.winner.filename_stem == "alpha"
+                    && conflict.loser.filename_stem == "beta"
+            })
+            .expect("duplicate-name filesystem fallback should be recorded as a conflict");
+        assert_eq!(
+            conflict.disposition,
+            AliasConflictDisposition::FallbackCandidate
+        );
+        assert_eq!(store.entries().len(), 2);
+        assert_eq!(store.aliases_count(), 3);
+    }
+
+    #[test]
+    fn shallow_header_parse_failure_surfaces_as_lazy_load_error() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("bad-header.json"),
+            r#"{"name":["not","a","string"]}"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_from_dir(dir.path()).unwrap();
+        let store = &result.store;
+        assert_eq!(store.entries().len(), 1);
+        assert!(
+            store.entries()[0].load_error().is_none(),
+            "shallow parse failures should stay lazy until diagnostics force-load the entry"
+        );
+
+        let errors = store.force_load_errors();
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].id, "bad-header");
+        assert!(
+            errors[0].error.contains("shallow parse"),
+            "expected shallow parse diagnostic, got {:?}",
+            errors[0].error
+        );
+    }
+
+    #[test]
     fn nonfunctional_alias_count_increments_when_all_candidates_fail() {
         let dir = tempfile::TempDir::new().unwrap();
         std::fs::write(dir.path().join("broken.json"), "{not valid json").unwrap();
@@ -4999,10 +5113,9 @@ mod tests {
                 .unwrap();
         let store = &result.store;
 
-        // dir1's foo.json wins both stems it touches: `foo` (its own)
-        // and `kubectl` (its declared name). dir2's kubectl.json is
-        // rejected: its stem `kubectl` is already owned by foo.json's
-        // name alias, so it has nothing addressable left.
+        // dir1's foo.json wins both aliases while it parses: `foo` (its own)
+        // and `kubectl` (its declared name). dir2's kubectl.json remains behind
+        // it as a lazy fallback candidate for `kubectl`.
         assert_eq!(
             store.get("foo").unwrap().subcommands[0].name,
             "from-foo",
@@ -5033,10 +5146,13 @@ mod tests {
         assert_eq!(c.winner.source_dir, dir1.path());
         assert_eq!(c.loser.filename_stem, "kubectl");
         assert_eq!(c.loser.source_dir, dir2.path());
+        assert_eq!(c.disposition, AliasConflictDisposition::FallbackCandidate);
 
-        // dir2's kubectl.json is dropped entirely — the only entry is
-        // dir1's foo.json.
-        assert_eq!(store.entries().len(), 1);
+        // dir2's kubectl.json remains registered for fallback diagnostics, but
+        // the valid higher-precedence alias owner is still the only resolved
+        // entry.
+        assert_eq!(store.entries().len(), 2);
+        assert_eq!(store.iter().count(), 1);
         // Aliases: `foo` stem + `kubectl` name = 2.
         assert_eq!(store.aliases_count(), 2);
     }
