@@ -752,6 +752,68 @@ impl SpecStore {
         Self::load_from_dirs(&[dir.to_path_buf()])
     }
 
+    /// Load specs from filesystem dirs followed by the binary's
+    /// embedded corpus. The runtime spec loader (proxy mode) calls
+    /// this so users who never ran `ghost-complete install` still
+    /// get completions, without paying the disk-write cost of
+    /// [`crate::embedded::write_embedded_specs`].
+    ///
+    /// Filesystem dirs win precedence in registration order;
+    /// embedded specs fill in any filenames the user dirs did not
+    /// cover. The embedded source is recorded as
+    /// [`SpecSource::Embedded`] so first-touch parsing reads the
+    /// binary slice in-memory — no disk I/O.
+    ///
+    /// Aliases for embedded specs come from the build-time
+    /// `EMBEDDED_SPEC_ALIASES` table at zero parse cost; aliases for
+    /// filesystem specs come from a shallow parse of the
+    /// `CompletionSpec.name` field per file.
+    pub fn load_with_embedded(filesystem_dirs: &[PathBuf]) -> Result<SpecLoadResult> {
+        let mut entries: Vec<Arc<SpecEntry>> = Vec::new();
+        let mut by_alias: HashMap<String, Arc<SpecEntry>> = HashMap::new();
+        let mut conflicts: Vec<AliasConflict> = Vec::new();
+        let mut errors: Vec<String> = Vec::new();
+
+        for dir in filesystem_dirs {
+            match load_dir_into_pending(dir, alias_for_filesystem_file) {
+                Ok(pending) => {
+                    register_entries(pending, &mut entries, &mut by_alias, &mut conflicts);
+                }
+                Err(e) => {
+                    errors.push(format!("{}: {e}", dir.display()));
+                }
+            }
+        }
+
+        let embedded_dir = PathBuf::from(EMBEDDED_VIRTUAL_DIR);
+        let embedded_pending: Vec<PendingSpec> = crate::embedded::embedded_entries_with_aliases()
+            .filter_map(|(filename, contents, name_alias)| {
+                let stem = filename.strip_suffix(".json")?.to_owned();
+                Some(PendingSpec {
+                    filename_stem: stem,
+                    name_alias: name_alias.map(str::to_owned),
+                    source_dir: embedded_dir.clone(),
+                    source: SpecSource::Embedded(contents),
+                })
+            })
+            .collect();
+        register_entries(
+            embedded_pending,
+            &mut entries,
+            &mut by_alias,
+            &mut conflicts,
+        );
+
+        Ok(SpecLoadResult {
+            store: Self {
+                entries,
+                by_alias,
+                conflicts,
+            },
+            errors,
+        })
+    }
+
     /// Resolve a command alias (filename stem or non-conflicting
     /// `CompletionSpec.name`) to the parsed spec. Returns `None` when
     /// no loaded spec advertises this alias OR when the lazy parse
