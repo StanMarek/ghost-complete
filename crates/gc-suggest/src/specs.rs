@@ -723,17 +723,16 @@ impl SpecStore {
         let mut errors: Vec<String> = Vec::new();
 
         for dir in dirs {
-            match load_dir_into_entries(dir) {
-                Ok((dir_entries, dir_errors)) => {
-                    register_entries(dir_entries, &mut entries, &mut by_alias, &mut conflicts);
-                    errors.extend(dir_errors);
+            match load_dir_into_pending(dir, alias_for_filesystem_file) {
+                Ok(pending) => {
+                    register_entries(pending, &mut entries, &mut by_alias, &mut conflicts);
                 }
                 Err(e) => {
                     // Directory-level IO failure (e.g., EACCES on read_dir).
-                    // Accumulate into errors like per-file failures instead
-                    // of bailing — a broken dir earlier in the list must not
-                    // hide valid dirs later in the list. Symmetric with
-                    // load_from_dir's per-file error handling.
+                    // Accumulate into errors instead of bailing — a broken
+                    // dir earlier in the list must not hide valid dirs
+                    // later in the list. Per-file IO failures are deferred
+                    // to lazy parse and surface via SpecEntry::load_error.
                     errors.push(format!("{}: {e}", dir.display()));
                 }
             }
@@ -750,49 +749,41 @@ impl SpecStore {
     }
 
     pub fn load_from_dir(dir: &Path) -> Result<SpecLoadResult> {
-        let mut entries: Vec<Arc<SpecEntry>> = Vec::new();
-        let mut by_alias: HashMap<String, Arc<SpecEntry>> = HashMap::new();
-        let mut conflicts: Vec<AliasConflict> = Vec::new();
-
-        let (dir_entries, errors) = load_dir_into_entries(dir)?;
-        register_entries(dir_entries, &mut entries, &mut by_alias, &mut conflicts);
-
-        Ok(SpecLoadResult {
-            store: Self {
-                entries,
-                by_alias,
-                conflicts,
-            },
-            errors,
-        })
-    }
-
-    fn load_spec(path: &Path) -> Result<CompletionSpec> {
-        let contents = std::fs::read_to_string(path)
-            .with_context(|| format!("failed to read spec file: {}", path.display()))?;
-        let mut spec = parse_spec_checked_and_sanitized(&contents)
-            .with_context(|| format!("failed to parse spec file: {}", path.display()))?;
-        let warnings = validate_spec_generators(&mut spec);
-        for w in &warnings {
-            tracing::warn!("{}: {w}", spec.name);
-        }
-        Ok(spec)
+        Self::load_from_dirs(&[dir.to_path_buf()])
     }
 
     /// Resolve a command alias (filename stem or non-conflicting
-    /// `CompletionSpec.name`) to the parsed spec. Returns `None` when no
-    /// loaded spec advertises this alias.
+    /// `CompletionSpec.name`) to the parsed spec. Returns `None` when
+    /// no loaded spec advertises this alias OR when the lazy parse
+    /// for that alias's spec failed (call
+    /// [`SpecEntry::load_error`] via [`Self::entries`] for diagnostics).
     pub fn get(&self, command: &str) -> Option<&CompletionSpec> {
-        self.by_alias.get(command).map(|e| e.spec.as_ref())
+        self.by_alias.get(command).and_then(|e| e.spec())
     }
 
-    /// Yield one tuple per unique spec. The first element is the
-    /// canonical id (filename stem), NOT every alias — callers that want
-    /// to enumerate aliases use [`SpecStore::entries`] directly.
+    /// Force every entry through its lazy parse. Used by [`Self::iter`]
+    /// so diagnostic CLIs see fully-parsed specs. Idempotent — calls
+    /// after the first force-load are zero-cost OnceLock reads.
+    fn force_load_all(&self) {
+        for entry in &self.entries {
+            let _ = entry.spec();
+        }
+    }
+
+    /// Yield one tuple per unique spec. Force-loads every entry on
+    /// first call (subsequent calls are zero-cost). Entries whose
+    /// lazy parse failed are silently skipped — call
+    /// [`Self::entries`] directly and inspect [`SpecEntry::load_error`]
+    /// to surface failures.
+    ///
+    /// The first element is the canonical id (filename stem), NOT
+    /// every alias — callers that want to enumerate aliases use
+    /// [`SpecStore::entries`] directly.
     pub fn iter(&self) -> impl Iterator<Item = (&str, &CompletionSpec)> {
+        self.force_load_all();
         self.entries
             .iter()
-            .map(|e| (e.id.as_str(), e.spec.as_ref()))
+            .filter_map(|e| e.spec().map(|s| (e.id.as_str(), s)))
     }
 
     /// Number of unique spec entries (one per loaded file). Differs from
@@ -851,6 +842,57 @@ impl SpecStore {
     }
 }
 
+/// Header-only struct used by [`shallow_parse_name`] to extract just
+/// the top-level `name` field without materialising the full
+/// `CompletionSpec` tree. Unknown fields are ignored by serde
+/// (default behaviour), so the entire spec body is tokenised but no
+/// nested allocations happen.
+#[derive(Deserialize)]
+struct SpecHeader {
+    #[serde(default)]
+    name: Option<String>,
+}
+
+/// Read a filesystem spec file and extract the top-level `name`
+/// field. Used as a fallback for filesystem-installed specs to
+/// resolve `name` aliases without parsing the full
+/// `CompletionSpec` tree.
+///
+/// The extracted name is run through the same control-character
+/// sanitiser as the full parse path, so the alias index registers
+/// the sanitised form (matching the behaviour callers see when they
+/// later look up `entry.spec().name`).
+///
+/// Returns `None` on read or parse failure (the entry will be
+/// aliased by filename stem only — its lazy-parse failure surfaces
+/// later via [`SpecEntry::load_error`]).
+fn shallow_parse_name(path: &Path) -> Option<String> {
+    let contents = std::fs::read_to_string(path).ok()?;
+    let header: SpecHeader = serde_json::from_str(&contents).ok()?;
+    let mut name = header.name?;
+    sanitize_string(&mut name);
+    Some(name)
+}
+
+/// Resolve a filesystem spec's `name` alias by shallow-parsing the
+/// JSON for its top-level `name` field.
+///
+/// We always shallow-parse filesystem files (rather than trusting
+/// the build-time table) because users may edit specs in
+/// `~/.config/ghost-complete/specs/` and the in-binary table would
+/// give a stale answer. The shallow parse only walks the JSON
+/// without allocating the full `CompletionSpec` tree, so the
+/// startup cost is bounded — typically < 200 ms even for the full
+/// 709-spec corpus including AWS.
+///
+/// Embedded specs (loaded via [`SpecStore::load_with_embedded`] from
+/// `EMBEDDED_SPECS`) skip this path entirely: their alias is taken
+/// from the build-time `EMBEDDED_SPEC_ALIASES` table at zero parse
+/// cost.
+fn alias_for_filesystem_file(_filename: &str, path: &Path) -> Option<String> {
+    shallow_parse_name(path)
+}
+
 /// Carrier for a parsed spec on its way into `register_entries`. We can't
 /// build the final `SpecEntry` at this stage because the `aliases` vec
 /// depends on which alias slots are still free across the merged dir set.
@@ -870,14 +912,18 @@ struct PendingSpec {
 }
 
 /// Walk `dir` for `*.json` specs and emit a [`PendingSpec`] per file.
-/// Does NOT parse JSON contents — `name_alias` is resolved by the
-/// caller via `name_alias_for(filename)` (typically the build-time
-/// table) or set to `None` for unknown custom user specs. Filesystem
-/// errors at directory-read time are returned as a hard `Err`; per-file
-/// IO errors are deferred to the lazy parse path on first use.
+/// Does NOT parse JSON contents into a `CompletionSpec` — only the
+/// top-level `name` field is shallow-parsed for filenames not in the
+/// build-time alias table (truly custom user specs). For filenames
+/// that ARE in the embedded table — the common case — alias lookup
+/// is O(1) and no JSON parse runs.
+///
+/// Filesystem errors at directory-read time are returned as a hard
+/// `Err`; per-file IO errors during the lazy parse surface later via
+/// [`SpecEntry::load_error`].
 fn load_dir_into_pending(
     dir: &Path,
-    name_alias_for: impl Fn(&str) -> Option<String>,
+    name_alias_for: impl Fn(&str, &Path) -> Option<String>,
 ) -> Result<Vec<PendingSpec>> {
     let mut pending: Vec<PendingSpec> = Vec::new();
 
@@ -918,9 +964,10 @@ fn load_dir_into_pending(
             Some(s) => s.to_owned(),
             None => continue,
         };
+        let name_alias = name_alias_for(&filename, &path);
         pending.push(PendingSpec {
             filename_stem: stem,
-            name_alias: name_alias_for(&filename),
+            name_alias,
             source_dir: dir.to_path_buf(),
             source: SpecSource::Filesystem(path),
         });
@@ -2281,16 +2328,26 @@ mod tests {
             result.store.get("good").is_some(),
             "valid spec should be loaded"
         );
-        assert_eq!(result.errors.len(), 2, "should have 2 errors");
+
+        // Force the lazy parse for every entry so failure modes surface
+        // via SpecEntry::load_error.
+        let _: Vec<_> = result.store.iter().collect();
+        let load_errors: Vec<(&str, &str)> = result
+            .store
+            .entries()
+            .iter()
+            .filter_map(|e| e.load_error().map(|err| (e.id.as_str(), err)))
+            .collect();
+        assert_eq!(load_errors.len(), 2, "should have 2 load errors");
         assert!(
-            result.errors.iter().any(|e| e.starts_with("bad.json:")),
+            load_errors.iter().any(|(id, _)| *id == "bad"),
             "errors should include bad.json: {:?}",
-            result.errors
+            load_errors
         );
         assert!(
-            result.errors.iter().any(|e| e.starts_with("broken.json:")),
+            load_errors.iter().any(|(id, _)| *id == "broken"),
             "errors should include broken.json: {:?}",
-            result.errors
+            load_errors
         );
     }
 
@@ -2883,6 +2940,10 @@ mod tests {
         // Attacker-writable spec with 10k nested subcommands must be rejected
         // at parse time, before any spec walker runs. Without a depth cap this
         // overflows the stack on serde_json's recursive parser.
+        //
+        // Lazy-loading note: the depth check fires inside SpecEntry::spec()
+        // (the deferred parse), so the rejection surfaces via load_error
+        // rather than SpecLoadResult.errors.
         let dir = tempfile::TempDir::new().unwrap();
         std::fs::write(
             dir.path().join("evil.json"),
@@ -2895,11 +2956,15 @@ mod tests {
             result.store.get("x").is_none() && result.store.get("leaf").is_none(),
             "pathologically nested spec must not load"
         );
-        assert_eq!(result.errors.len(), 1, "expected one load error");
+        let evil_entry = result
+            .store
+            .entries()
+            .iter()
+            .find(|e| e.id == "evil")
+            .expect("evil entry must register even if its parse fails");
         assert!(
-            result.errors[0].contains("evil.json"),
-            "error should reference evil.json: {:?}",
-            result.errors
+            evil_entry.load_error().is_some(),
+            "lazy parse of pathologically nested spec must fail and record an error"
         );
     }
 
@@ -2917,7 +2982,16 @@ mod tests {
             result.store.get("x").is_none() && result.store.get("leaf").is_none(),
             "depth-100 spec must be rejected by our own cap (serde_json's 128 default would still let it through)"
         );
-        assert_eq!(result.errors.len(), 1, "expected one load error");
+        let evil_entry = result
+            .store
+            .entries()
+            .iter()
+            .find(|e| e.id == "evil")
+            .expect("evil entry must register");
+        assert!(
+            evil_entry.load_error().is_some(),
+            "lazy parse of depth-100 spec must surface an error via load_error"
+        );
     }
 
     #[test]

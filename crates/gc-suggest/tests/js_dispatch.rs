@@ -88,7 +88,12 @@ fn make_engine() -> SuggestionEngine {
     SuggestionEngine::with_providers(store, history, commands)
 }
 
-fn engine_from_spec_json(filename: &str, spec_json: &str) -> SuggestionEngine {
+/// Build an engine wrapped around a spec written to a fresh temp dir.
+/// Returns the `TempDir` along with the engine so the directory
+/// outlives the engine — the lazy spec loader keeps a `SpecSource`
+/// path back into the temp dir and parses on first use, so dropping
+/// the temp dir before the engine would invalidate every lookup.
+fn engine_from_spec_json(filename: &str, spec_json: &str) -> (SuggestionEngine, tempfile::TempDir) {
     let temp = tempfile::tempdir().expect("tempdir");
     std::fs::write(temp.path().join(filename), spec_json).expect("write spec fixture");
     let store = SpecStore::load_from_dir(temp.path())
@@ -96,7 +101,10 @@ fn engine_from_spec_json(filename: &str, spec_json: &str) -> SuggestionEngine {
         .store;
     let history = HistoryProvider::from_entries(Vec::new());
     let commands = CommandsProvider::from_list(Vec::new());
-    SuggestionEngine::with_providers(store, history, commands)
+    (
+        SuggestionEngine::with_providers(store, history, commands),
+        temp,
+    )
 }
 
 fn script_function_generator(source: &str) -> Arc<GeneratorSpec> {
@@ -421,7 +429,7 @@ async fn custom_can_read_fig_context_aliases() {
 #[tokio::test]
 async fn suggest_sync_schedules_requires_js_custom_generator() {
     let home = std::env::var("HOME").expect("HOME should be set in test environment");
-    let engine = engine_from_spec_json(
+    let (engine, _spec_dir) = engine_from_spec_json(
         "phase5-sync-custom.json",
         r#"{
             "name": "phase5-sync-custom",

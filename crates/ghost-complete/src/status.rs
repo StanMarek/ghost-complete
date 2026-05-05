@@ -444,13 +444,26 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
 
     let result = SpecStore::load_from_dirs(&dirs)?;
     let store = result.store;
-    let total_parse_errors = result.errors.len();
     for err in &result.errors {
         parse_error_lines.push(sanitize_for_terminal(err));
     }
 
+    // iter() force-loads every entry, so any per-entry lazy-parse
+    // failures are pinned in OnceLock by the time we walk entries()
+    // for SpecEntry::load_error below.
     let mut specs: Vec<(&str, &CompletionSpec)> = store.iter().collect();
     specs.sort_by_key(|(name, _)| *name);
+
+    // Surface lazy-parse failures alongside directory-level errors.
+    // The per-entry path returns an error message keyed by the spec's
+    // id (filename stem) so operators can locate the offending file.
+    for entry in store.entries() {
+        if let Some(err) = entry.load_error() {
+            let label = format!("{}.json: {err}", entry.filename_stem);
+            parse_error_lines.push(sanitize_for_terminal(&label));
+        }
+    }
+    let total_parse_errors = parse_error_lines.len();
 
     // Per-spec classification uses the structured loader: a spec is
     // partially functional iff at least one parsed generator carries
