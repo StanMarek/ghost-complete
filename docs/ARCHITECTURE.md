@@ -179,7 +179,7 @@ SpecStore::load_with_embedded(&[]) ──► register every (filename, &'static 
 store.get("git") ──► first touch: serde_json::from_str(json) into
                      Arc<CompletionSpec>, store in OnceLock
                      ─► subsequent get("git") hits the OnceLock fast path
-                        (~11 ns: HashMap lookup + Arc::clone)
+                        (~11 ns: HashMap lookup + OnceLock read + borrow)
 ```
 
 Each `SpecEntry` holds:
@@ -188,9 +188,11 @@ Each `SpecEntry` holds:
 |-------|---------|
 | `source: SpecSource` | `Filesystem(PathBuf)` for user specs, `Embedded(&'static str)` for the binary corpus. The lazy parse path reads from this without re-touching disk for embedded specs. |
 | `parsed: OnceLock<Result<Arc<CompletionSpec>, String>>` | First-touch parse result. The `Result` makes parse failures **sticky** — a malformed spec doesn't get re-parsed on every lookup. Surfaces via `SpecEntry::load_error()`. |
-| `name_alias: Option<String>` | When `CompletionSpec.name` differs from the filename stem, this is captured at registration time so the alias resolver doesn't need to parse the body. For the embedded corpus the build script emits an `EMBEDDED_SPEC_ALIASES` table; for filesystem specs we run a shallow `serde_json::from_str::<SpecHeader>` (just `name`) at load time. |
+| `aliases: Vec<String>` | Every command name that resolves to this entry: filename stem first, then a non-conflicting `CompletionSpec.name` alias when it differs from the stem. |
 
-`SpecStore::iter()` force-loads every entry — used by `ghost-complete status` and `validate-specs` to surface load errors. `SpecStore::get()` only loads the requested entry. The embedded corpus is registered with the lowest precedence, so a filesystem spec with the same name (e.g. user-edited `~/.config/ghost-complete/specs/git.json`) wins.
+Registration-time alias metadata is collected before a `SpecEntry` is stored. For the embedded corpus the build script emits an `EMBEDDED_SPEC_ALIASES` table; for filesystem specs the loader runs a shallow `serde_json::from_str::<SpecHeader>` (just `name`) at load time. That transient `name_alias` is folded into `SpecEntry.aliases`.
+
+`SpecStore::iter()` force-loads every entry — used by `ghost-complete status` to surface load errors. `validate-specs` uses its separate validator and parses configured spec directories directly. `SpecStore::get()` only loads the requested entry. The embedded corpus is registered with the lowest precedence, so a filesystem spec with the same name (e.g. user-edited `~/.config/ghost-complete/specs/git.json`) wins.
 
 The runtime no longer materialises the embedded corpus to `~/.cache/ghost-complete/embedded-specs/`. `ghost-complete install` and `uninstall` purge that legacy path if a pre-v0.12.4 binary left it behind.
 

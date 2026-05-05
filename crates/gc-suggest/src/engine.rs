@@ -279,7 +279,21 @@ pub struct SuggestionEngine {
 
 impl SuggestionEngine {
     pub fn new(spec_dirs: &[PathBuf]) -> Result<Self> {
-        let result = SpecStore::load_with_embedded(spec_dirs)?;
+        let include_embedded =
+            crate::spec_dirs::active_include_embedded_for(spec_dirs).unwrap_or(true);
+        Self::new_with_embedded(spec_dirs, include_embedded)
+    }
+
+    /// Construct an engine with explicit control over embedded spec fallback.
+    ///
+    /// `include_embedded = false` preserves `paths.spec_dirs` as an exact
+    /// override. `true` is the auto-detected/fallback runtime path.
+    pub fn new_with_embedded(spec_dirs: &[PathBuf], include_embedded: bool) -> Result<Self> {
+        let result = if include_embedded {
+            SpecStore::load_with_embedded(spec_dirs)?
+        } else {
+            SpecStore::load_from_dirs(spec_dirs)?
+        };
         if !result.errors.is_empty() {
             tracing::warn!(
                 "{} spec(s) failed to load (run `ghost-complete validate-specs` for details): {}",
@@ -1772,6 +1786,51 @@ mod tests {
             quote_state: QuoteState::None,
             is_first_segment: true,
         }
+    }
+
+    #[test]
+    fn explicit_spec_dir_resolution_does_not_register_embedded_specs() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("only-custom.json"),
+            r#"{"name":"only-custom","subcommands":[{"name":"local-only"}]}"#,
+        )
+        .unwrap();
+        let resolution = crate::spec_dirs::SpecDirResolution {
+            dirs: vec![dir.path().to_path_buf()],
+            include_embedded: false,
+        };
+
+        let engine = crate::spec_dirs::with_spec_dir_resolution(&resolution, || {
+            SuggestionEngine::new(&resolution.dirs)
+        })
+        .unwrap();
+
+        assert!(engine.spec_store.get("only-custom").is_some());
+        assert!(
+            engine.spec_store.get("git").is_none(),
+            "explicit spec dirs must not be supplemented by embedded-only commands"
+        );
+    }
+
+    #[test]
+    fn constructor_registers_embedded_specs_without_parsing_them() {
+        let engine = SuggestionEngine::new(&[]).unwrap();
+
+        assert!(
+            !engine.spec_store.is_empty(),
+            "embedded corpus must be registered by the daemon constructor"
+        );
+        let parsed_count = engine
+            .spec_store
+            .entries()
+            .iter()
+            .filter(|entry| entry.is_parsed())
+            .count();
+        assert_eq!(
+            parsed_count, 0,
+            "daemon constructor must not force-parse embedded specs"
+        );
     }
 
     #[test]

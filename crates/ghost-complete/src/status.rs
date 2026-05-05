@@ -3,10 +3,10 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use gc_suggest::spec_dirs::resolve_spec_dirs;
+use gc_suggest::spec_dirs::{partition_spec_dirs, resolve_spec_dirs};
 use gc_suggest::specs::{
     AliasConflict, AliasConflictKind, ArgSpec, CompletionSpec, GeneratorSpec, OptionSpec,
-    SubcommandSpec,
+    SpecSource, SubcommandSpec,
 };
 use gc_suggest::SpecStore;
 use serde::{Deserialize, Serialize};
@@ -321,7 +321,7 @@ pub struct StatusOutcome {
     /// sourced from `scan_spec_files`'s raw-JSON walk, NOT from
     /// `SpecStore`. The structured loader keeps the first option arg in
     /// `OptionSpec.args` and the rest in `extra_args`, so naive sums over
-    /// `args` would underreport against the on-disk corpus; the file-walk
+    /// `args` would underreport against the source corpus; the file-walk
     /// count is the source of truth for that single field.
     pub commands_addressable: usize,
     pub commands_partially_functional: usize,
@@ -338,10 +338,9 @@ pub struct StatusOutcome {
     /// Surfaced so users can see at a glance whether their requires_js
     /// generators will run.
     pub js_runtime_enabled: bool,
-    /// File-level scan results — independent of the loader-level index so
-    /// any divergence between `spec_files_total` and the loader's entry
-    /// count remains visible. SpecStore keys on filename stem, so the
-    /// entry count equals `spec_files_total` per addressable spec.
+    /// File-level scan results — sourced from the JSON behind each
+    /// runtime-kept `SpecEntry` so the raw generator counters follow the
+    /// same source precedence as completion lookups.
     pub file_scan: FileScan,
 }
 
@@ -399,14 +398,14 @@ fn alias_conflict_kind_str(kind: &AliasConflictKind) -> &'static str {
     }
 }
 
-/// File-level scan, populated independently from the runtime loader index.
-/// Walks the embedded specs (and on-disk override dirs) and counts both
-/// files and total `requires_js: true` occurrences without going through
-/// SpecStore's dedupe-by-name pipeline.
+/// File-level scan, populated from the runtime loader's kept entries.
+/// Walks both embedded and filesystem sources and counts total
+/// `requires_js: true` occurrences from raw JSON without relying on the
+/// structured `CompletionSpec` shape.
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct FileScan {
-    /// Number of `*.json` spec files seen across all embedded + override
-    /// dirs, before any name-keyed deduplication.
+    /// Number of runtime-kept spec JSON sources, after source precedence
+    /// removes lower-priority duplicate filenames.
     pub spec_files_total: usize,
     /// Total count of `requires_js: true` generators across ALL spec files
     /// (including ones that lose their addressability slot to a duplicate
@@ -429,11 +428,32 @@ pub struct FileScan {
     pub requires_js_generators_supported_custom: usize,
 }
 
-/// Scan filesystem spec dirs and collect the numbers the status report
+/// True when status should supplement resolved filesystem dirs with the
+/// embedded corpus. A valid explicit `paths.spec_dirs` is an exact override;
+/// otherwise the runtime falls back to embedded specs after auto-detection.
+fn include_embedded_for_configured_dirs(configured: &[String]) -> bool {
+    if configured.is_empty() {
+        return true;
+    }
+
+    partition_spec_dirs(configured).valid.is_empty()
+}
+
+/// Scan resolved runtime specs and collect the numbers the status report
 /// needs. Does NOT produce any output.
 fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
     let config = gc_config::GhostConfig::load(config_path).context("failed to load config")?;
     let dirs = resolve_spec_dirs(&config.paths.spec_dirs);
+    let include_embedded = include_embedded_for_configured_dirs(&config.paths.spec_dirs);
+
+    scan_resolved_specs(&config, &dirs, include_embedded)
+}
+
+fn scan_resolved_specs(
+    config: &gc_config::GhostConfig,
+    dirs: &[PathBuf],
+    include_embedded: bool,
+) -> Result<StatusOutcome> {
     let embedded_count = crate::install::EMBEDDED_SPECS.len();
 
     let mut fs_specs = 0usize;
@@ -442,17 +462,27 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
     let mut js_commands: Vec<String> = Vec::new();
     let mut parse_error_lines: Vec<String> = Vec::new();
 
-    let result = SpecStore::load_from_dirs(&dirs)?;
+    let result = if include_embedded {
+        SpecStore::load_with_embedded(dirs)?
+    } else {
+        SpecStore::load_from_dirs(dirs)?
+    };
     let store = result.store;
     for err in &result.errors {
         parse_error_lines.push(sanitize_for_terminal(err));
     }
 
-    // iter() force-loads every entry, so any per-entry lazy-parse
-    // failures are pinned in OnceLock by the time we walk entries()
-    // for SpecEntry::load_error below.
-    let mut specs: Vec<(&str, &CompletionSpec)> = store.iter().collect();
-    specs.sort_by_key(|(name, _)| *name);
+    // Calling SpecEntry::spec() force-loads every entry, so any per-entry
+    // lazy-parse failures are pinned in OnceLock by the time we walk
+    // entries() for SpecEntry::load_error below.
+    let mut specs: Vec<(&str, &CompletionSpec, bool)> = Vec::new();
+    for entry in store.entries() {
+        let is_filesystem = matches!(&entry.source, SpecSource::Filesystem(_));
+        if let Some(spec) = entry.spec() {
+            specs.push((entry.id.as_str(), spec, is_filesystem));
+        }
+    }
+    specs.sort_by_key(|(name, _, _)| *name);
 
     // Surface lazy-parse failures alongside directory-level errors.
     // The per-entry path returns an error message keyed by the spec's
@@ -471,12 +501,14 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
     // see at completion time. `name` here is the canonical id (filename
     // stem), so `js_commands` lists the on-shell command keys users would
     // actually type.
-    for (name, spec) in &specs {
-        fs_specs += 1;
+    for (name, spec, is_filesystem) in specs {
+        if is_filesystem {
+            fs_specs += 1;
+        }
         let js_count = count_requires_js_generators(spec);
         if js_count > 0 {
             partially_functional += 1;
-            js_commands.push((*name).to_string());
+            js_commands.push(name.to_string());
         } else {
             fully_functional += 1;
         }
@@ -491,10 +523,10 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
     // raw JSON walk.
     //
     // Walk the SpecStore's resolved entries instead of read_dir-ing every
-    // configured spec_dir: when two dirs ship a copy of the same spec
-    // (e.g. user-config + workspace), first-match-wins keeps only one
-    // entry, but a per-directory walk would still sum every dir's copy
-    // and double-count the requires_js generators.
+    // configured spec_dir: when two sources ship a copy of the same spec
+    // (e.g. user-config + embedded), first-match-wins keeps only one
+    // entry, but a per-directory/raw-corpus walk would still sum every
+    // copy and double-count the requires_js generators.
     let file_scan = scan_spec_files(&store)?;
     let requires_js_generators_total = file_scan.requires_js_generators_total;
     // Classify every requires_js generator on disk into supported /
@@ -558,14 +590,15 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
 /// than going through `parse_spec_checked_and_sanitized`. The structured
 /// deserializer keeps the first option arg in `OptionSpec.args` and the
 /// rest in `extra_args` (see `deserialize_option_args`); a sum that only
-/// reads `args` would underreport against the on-disk corpus, so the raw
+/// reads `args` would underreport against the source corpus, so the raw
 /// JSON walk is the source of truth for this counter.
 ///
-/// Iterates [`SpecStore::canonical_paths`] so two overlapping spec_dirs
-/// shipping copies of the same filename do NOT cause every copy's
-/// requires_js generators to be counted. The loader applies first-match-
-/// wins precedence; this scan now mirrors that decision instead of
-/// re-walking every configured directory in isolation.
+/// Iterates [`SpecStore::entries`] and reads each [`SpecSource`] directly so
+/// two overlapping sources shipping copies of the same filename do NOT cause
+/// every copy's requires_js generators to be counted. The loader applies
+/// first-match-wins precedence; this scan mirrors that decision instead of
+/// re-walking every configured directory or the full embedded corpus in
+/// isolation.
 ///
 /// Errors are tolerant — a missing path is silently skipped (matches
 /// the loader's behavior). Read or parse failures emit a `tracing::warn!`
@@ -577,26 +610,38 @@ fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
 fn scan_spec_files(store: &SpecStore) -> Result<FileScan> {
     let mut scan = FileScan::default();
 
-    for (_stem, path) in store.canonical_paths() {
-        if !path.exists() {
-            continue;
-        }
-        let contents = match std::fs::read_to_string(&path) {
-            Ok(c) => c,
-            Err(e) => {
-                tracing::warn!(
-                    file = %path.display(),
-                    error = %e,
-                    "status file scan: skipping spec (read failed); requires_js totals undercount"
-                );
-                continue;
+    for entry in store.entries() {
+        let (contents, source_label): (std::borrow::Cow<'_, str>, String) = match &entry.source {
+            SpecSource::Filesystem(path) => {
+                if !path.exists() {
+                    continue;
+                }
+                let contents = match std::fs::read_to_string(path) {
+                    Ok(c) => c,
+                    Err(e) => {
+                        tracing::warn!(
+                            file = %path.display(),
+                            error = %e,
+                            "status file scan: skipping spec (read failed); requires_js totals undercount"
+                        );
+                        continue;
+                    }
+                };
+                (
+                    std::borrow::Cow::Owned(contents),
+                    path.display().to_string(),
+                )
             }
+            SpecSource::Embedded(contents) => (
+                std::borrow::Cow::Borrowed(*contents),
+                format!("<embedded>/{}.json", entry.filename_stem),
+            ),
         };
         let value: serde_json::Value = match serde_json::from_str(&contents) {
             Ok(v) => v,
             Err(e) => {
                 tracing::warn!(
-                    file = %path.display(),
+                    file = %source_label,
                     error = %e,
                     "status file scan: skipping spec (parse failed); requires_js totals undercount"
                 );
@@ -1168,8 +1213,8 @@ fn run_status_json(
 /// Render the status report. When `strict` is `true`, prints the full report
 /// first and then exits with code 1 if spec health is degraded — meaning any
 /// of:
-///   - zero specs loaded across all configured spec dirs AND no embedded
-///     specs available (nothing to complete against), or
+///   - zero parsed runtime specs are available (nothing to complete against),
+///     or
 ///   - one or more spec files failed to parse (`SpecLoadResult::errors`
 ///     non-empty in at least one dir).
 ///
@@ -1195,14 +1240,15 @@ pub fn run_status_with_opts(
     };
 
     if strict {
-        let no_specs_available = outcome.fs_specs == 0 && outcome.embedded_count == 0;
+        let parsed_runtime_specs = outcome.fully_functional + outcome.partially_functional;
+        let no_specs_available = parsed_runtime_specs == 0 && outcome.total_parse_errors == 0;
         if no_specs_available || outcome.total_parse_errors > 0 {
             if !json {
                 writeln!(&mut handle)?;
                 if no_specs_available {
                     writeln!(
                         &mut handle,
-                        "\x1b[31mstrict mode: no specs available (0 embedded, 0 filesystem).\x1b[0m"
+                        "\x1b[31mstrict mode: no runtime specs available.\x1b[0m"
                     )?;
                 }
                 if outcome.total_parse_errors > 0 {
@@ -1347,7 +1393,7 @@ mod tests {
     /// When two resolved spec_dirs ship copies of the same filename,
     /// the file-level walk MUST count only the entry SpecStore kept
     /// (first-match-wins), not every dir's copy. Without the
-    /// `canonical_paths`-based scan the second dir's `git.json` would
+    /// entry-source scan the second dir's `git.json` would
     /// re-enter the totals and double the requires_js count.
     #[test]
     fn status_file_scan_does_not_double_count_overlapping_dirs() {
@@ -1384,6 +1430,55 @@ mod tests {
         assert_eq!(
             outcome.command_alias_conflicts, 1,
             "fallback copy is rejected as a DirectoryPrecedence conflict"
+        );
+    }
+
+    #[test]
+    fn status_file_scan_counts_embedded_runtime_entries() {
+        let result = gc_suggest::SpecStore::load_with_embedded(&[]).unwrap();
+        assert!(
+            !result.store.is_empty(),
+            "embedded-only runtime store must register entries"
+        );
+
+        let scan = scan_spec_files(&result.store).unwrap();
+
+        assert_eq!(
+            scan.spec_files_total,
+            result.store.len(),
+            "file_scan must count embedded entries from SpecSource::Embedded"
+        );
+        assert!(
+            scan.requires_js_generators_total > 0,
+            "embedded corpus should contribute requires_js totals"
+        );
+    }
+
+    #[test]
+    fn status_counts_embedded_runtime_store_when_no_dirs_resolved() {
+        let config = gc_config::GhostConfig::default();
+
+        let outcome = scan_resolved_specs(&config, &[], true).unwrap();
+
+        assert_eq!(
+            outcome.fs_specs, 0,
+            "embedded fallback should not be reported as filesystem overrides"
+        );
+        assert!(
+            outcome.fully_functional > 0,
+            "embedded-only status should classify parsed runtime specs"
+        );
+        assert!(
+            outcome.commands_addressable > 0,
+            "embedded-only status should expose addressable command aliases"
+        );
+        assert!(
+            outcome.file_scan.spec_files_total > 0,
+            "embedded-only status should count embedded file_scan entries"
+        );
+        assert!(
+            outcome.requires_js_generators_total > 0,
+            "embedded-only status should report embedded requires_js totals"
         );
     }
 

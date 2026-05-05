@@ -36,7 +36,7 @@ pub use json_path::{JsonPath, JsonPathSegment};
 pub use pipeline::try_run_pipeline;
 pub use specs::{
     check_json_depth, parse_spec_checked_and_sanitized, sanitize_spec_strings, AliasConflict,
-    AliasConflictKind, AliasOwner, CompletionSpec, SpecEntry, SpecLoadResult, SpecStore,
-    MAX_SPEC_JSON_DEPTH,
+    AliasConflictKind, AliasOwner, CompletionSpec, SpecEntry, SpecEntryLoadError, SpecLoadResult,
+    SpecLocation, SpecLookupError, SpecStore, MAX_SPEC_JSON_DEPTH,
 };
 pub use types::{Suggestion, SuggestionKind, SuggestionSource};

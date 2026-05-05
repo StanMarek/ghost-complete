@@ -25,8 +25,9 @@
 //! ## Invariants
 //!
 //! - The emitted `EMBEDDED_SPECS` list preserves the exact filename keys
-//!   from `specs/` (so `write_embedded_specs` still materialises a
-//!   directory that the on-disk spec loader can re-read).
+//!   from `specs/` so the runtime can register filename-stem aliases,
+//!   keep `EMBEDDED_SPEC_ALIASES` aligned with `EMBEDDED_SPECS`, and let
+//!   install copy the same embedded corpus to `~/.config/ghost-complete/specs`.
 //! - `_corrected_in` is intentionally NOT stripped — it is consumed at
 //!   runtime by `ghost-complete doctor` to surface generators that
 //!   previously mis-converted.

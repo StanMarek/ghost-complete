@@ -9,9 +9,12 @@
 //! and `validate-specs` displayed a different set of spec dirs than the
 //! proxy actually loaded.
 //!
-//! This module is the single source of truth. Both crates call
-//! [`resolve_spec_dirs`] to get the same behavior.
+//! This module is the single source of truth. Legacy callers use
+//! [`resolve_spec_dirs`] for the resolved directory list, while runtime
+//! loaders use [`resolve_spec_dirs_with_provenance`] to preserve embedded
+//! fallback policy.
 
+use std::cell::RefCell;
 use std::path::PathBuf;
 
 /// Partition result from [`partition_spec_dirs`]: tilde-expanded valid
@@ -20,6 +23,57 @@ use std::path::PathBuf;
 pub struct SpecDirPartition {
     pub valid: Vec<PathBuf>,
     pub invalid: Vec<String>,
+}
+
+/// Runtime loading policy attached to a resolved spec directory list.
+///
+/// `dirs` preserves the legacy [`resolve_spec_dirs`] return value. Runtime
+/// callers additionally use `include_embedded` to decide whether the embedded
+/// corpus should be registered after those directories.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SpecDirResolution {
+    pub dirs: Vec<PathBuf>,
+    pub include_embedded: bool,
+}
+
+thread_local! {
+    static ACTIVE_SPEC_DIR_RESOLUTIONS: RefCell<Vec<SpecDirResolution>> =
+        const { RefCell::new(Vec::new()) };
+}
+
+struct ActiveSpecDirResolutionGuard;
+
+impl Drop for ActiveSpecDirResolutionGuard {
+    fn drop(&mut self) {
+        ACTIVE_SPEC_DIR_RESOLUTIONS.with(|stack| {
+            stack.borrow_mut().pop();
+        });
+    }
+}
+
+/// Run `f` with a scoped spec-dir resolution visible to constructors that
+/// still accept only `&[PathBuf]`.
+///
+/// This keeps [`resolve_spec_dirs`] source-compatible while letting the PTY
+/// startup path preserve whether the dirs came from an explicit override or
+/// auto-detection until `SuggestionEngine` is constructed.
+pub fn with_spec_dir_resolution<T>(resolution: &SpecDirResolution, f: impl FnOnce() -> T) -> T {
+    ACTIVE_SPEC_DIR_RESOLUTIONS.with(|stack| {
+        stack.borrow_mut().push(resolution.clone());
+    });
+    let _guard = ActiveSpecDirResolutionGuard;
+    f()
+}
+
+pub(crate) fn active_include_embedded_for(dirs: &[PathBuf]) -> Option<bool> {
+    ACTIVE_SPEC_DIR_RESOLUTIONS.with(|stack| {
+        stack
+            .borrow()
+            .iter()
+            .rev()
+            .find(|resolution| resolution.dirs.as_slice() == dirs)
+            .map(|resolution| resolution.include_embedded)
+    })
 }
 
 /// Partition configured spec_dirs into valid/invalid entries after tilde
@@ -43,7 +97,8 @@ pub fn partition_spec_dirs(configured: &[String]) -> SpecDirPartition {
     SpecDirPartition { valid, invalid }
 }
 
-/// Resolve spec directories from config, with tilde expansion.
+/// Resolve spec directories from config, with tilde expansion and runtime
+/// embedded-corpus policy.
 ///
 /// If `configured` is non-empty, validate each entry and use the valid
 /// subset exactly; emit a `tracing::warn!` for each invalid entry. If
@@ -57,10 +112,11 @@ pub fn partition_spec_dirs(configured: &[String]) -> SpecDirPartition {
 ///
 /// The runtime fallback path no longer materialises embedded specs to
 /// `~/.cache/ghost-complete/embedded-specs/`. The embedded corpus is
-/// consumed in-memory by [`crate::specs::SpecStore::load_with_embedded`]
-/// instead — same registration semantics as a filesystem dir, no disk
-/// I/O. Explicit `paths.spec_dirs` remains an exact override.
-pub fn resolve_spec_dirs(configured: &[String]) -> Vec<PathBuf> {
+/// consumed in-memory when `include_embedded` is true instead — same
+/// registration semantics as a filesystem dir, no disk I/O. Explicit
+/// `paths.spec_dirs` remains an exact override and sets `include_embedded`
+/// to false.
+pub fn resolve_spec_dirs_with_provenance(configured: &[String]) -> SpecDirResolution {
     if !configured.is_empty() {
         let partition = partition_spec_dirs(configured);
         for bad in &partition.invalid {
@@ -71,12 +127,28 @@ pub fn resolve_spec_dirs(configured: &[String]) -> Vec<PathBuf> {
             );
         }
         if !partition.valid.is_empty() {
-            return partition.valid;
+            return SpecDirResolution {
+                dirs: partition.valid,
+                include_embedded: false,
+            };
         }
         tracing::warn!("all configured spec_dirs are invalid — falling back to auto-detection");
     }
 
-    auto_detect_spec_dirs()
+    SpecDirResolution {
+        dirs: auto_detect_spec_dirs(),
+        include_embedded: true,
+    }
+}
+
+/// Resolve spec directories from config, with tilde expansion.
+///
+/// This compatibility API returns the same directory list as
+/// [`resolve_spec_dirs_with_provenance`] and discards the runtime embedded
+/// loading policy. New runtime callers should prefer the provenance-returning
+/// API.
+pub fn resolve_spec_dirs(configured: &[String]) -> Vec<PathBuf> {
+    resolve_spec_dirs_with_provenance(configured).dirs
 }
 
 fn auto_detect_spec_dirs() -> Vec<PathBuf> {
@@ -166,6 +238,31 @@ mod tests {
         assert_eq!(
             partition.invalid,
             vec!["/ghost-complete-fake-path-zzz".to_string()]
+        );
+    }
+
+    #[test]
+    fn valid_configured_spec_dirs_disable_embedded_fallback() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let configured = vec![dir.path().display().to_string()];
+
+        let resolution = resolve_spec_dirs_with_provenance(&configured);
+
+        assert_eq!(resolution.dirs, vec![dir.path().to_path_buf()]);
+        assert!(
+            !resolution.include_embedded,
+            "valid explicit paths.spec_dirs must be an exact runtime override"
+        );
+        assert_eq!(resolve_spec_dirs(&configured), resolution.dirs);
+    }
+
+    #[test]
+    fn auto_detected_spec_dirs_include_embedded_fallback() {
+        let resolution = resolve_spec_dirs_with_provenance(&[]);
+
+        assert!(
+            resolution.include_embedded,
+            "auto-detected runtime dirs must still be supplemented by embedded specs"
         );
     }
 

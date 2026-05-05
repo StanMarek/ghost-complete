@@ -315,16 +315,16 @@ fn memory_benchmarks(c: &mut Criterion) {
 ///   entire embedded corpus as `SpecSource::Embedded` entries without
 ///   parsing any spec body. A regression here usually means an upstream
 ///   caller force-loaded specs at startup.
-/// - `first_get_git` measures the cost of the first lookup that triggers
-///   a shallow→full parse of a small spec.
+/// - `first_get_git` measures registration plus the first full parse of a
+///   small embedded spec.
 /// - `first_get_aws` measures the same for the largest spec in the corpus
 ///   (~36 MB minified, 17 K subcommands). This is the dominant cost users
 ///   pay when they first type `aws ` — it's ~exactly the work the eager
 ///   loader was doing for *every* spec at startup pre-fix.
 /// - `warm_get_git` measures the steady-state lookup cost after the
 ///   `OnceLock` is populated. This is what users pay on every subsequent
-///   lookup of the same spec — should be ~5-10 ns (table lookup + clone
-///   of an `Arc`).
+///   lookup of the same spec — should be ~5-10 ns (HashMap lookup +
+///   OnceLock read + borrow).
 fn lazy_load_benchmarks(c: &mut Criterion) {
     let mut group = c.benchmark_group("lazy_load");
 

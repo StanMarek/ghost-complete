@@ -32,10 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in sync. `ghost-complete install` and `ghost-complete uninstall` now
   remove the legacy cache directory if a pre-v0.12.4 binary left it
   behind.
-- **`status` and `validate-specs` now report lazy parse errors.** A spec
-  that fails to parse no longer crashes loading — it stays registered
-  and surfaces through `SpecEntry::load_error()`. `ghost-complete status`
-  walks the entries after force-loading and lists each error inline.
+- **`status` now reports lazy parse errors.** A spec that fails to parse
+  no longer crashes loading — it stays registered and surfaces through
+  `SpecEntry::load_error()`. `ghost-complete status` walks the entries
+  after force-loading and lists each error inline. `validate-specs`
+  continues to parse configured spec directories directly through its
+  separate validator.
 
 ## [0.12.3] - 2026-05-05
 

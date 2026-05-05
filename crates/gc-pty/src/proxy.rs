@@ -10,7 +10,7 @@ use tokio::sync::{mpsc, Notify};
 use gc_config::GhostConfig;
 
 use gc_overlay::{parse_style, PopupTheme};
-use gc_suggest::spec_dirs::resolve_spec_dirs;
+use gc_suggest::spec_dirs::{resolve_spec_dirs_with_provenance, with_spec_dir_resolution};
 
 use crate::config_watch::spawn_config_watcher;
 use crate::handler::{InputHandler, Keybindings, OverlayWriteTicket, TriggerPrepared};
@@ -143,8 +143,9 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     let (cols, rows) = crossterm::terminal::size().unwrap_or((80, 24));
     let parser = Arc::new(Mutex::new(TerminalParser::new(rows, cols)));
 
-    // Resolve spec directories from config
-    let spec_dirs = resolve_spec_dirs(&config.paths.spec_dirs);
+    // Resolve spec directories from config, preserving whether runtime should
+    // supplement them with embedded specs.
+    let spec_dir_resolution = resolve_spec_dirs_with_provenance(&config.paths.spec_dirs);
 
     // Resolve keybindings from config (fail fast on invalid key names)
     let keybindings = Keybindings::from_config(&config.keybindings)?;
@@ -176,7 +177,9 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
 
     // Initialize suggestion handler with config
     let handler = Arc::new(Mutex::new({
-        let h = match InputHandler::new(&spec_dirs, terminal_profile.clone()) {
+        let h = match with_spec_dir_resolution(&spec_dir_resolution, || {
+            InputHandler::new(&spec_dir_resolution.dirs, terminal_profile.clone())
+        }) {
             Ok(h) => h,
             Err(e) => {
                 tracing::warn!("failed to init suggestion engine: {}, trying fallback", e);
