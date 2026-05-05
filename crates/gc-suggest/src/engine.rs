@@ -279,7 +279,7 @@ pub struct SuggestionEngine {
 
 impl SuggestionEngine {
     pub fn new(spec_dirs: &[PathBuf]) -> Result<Self> {
-        let result = SpecStore::load_from_dirs(spec_dirs)?;
+        let result = SpecStore::load_with_embedded(spec_dirs)?;
         if !result.errors.is_empty() {
             tracing::warn!(
                 "{} spec(s) failed to load (run `ghost-complete validate-specs` for details): {}",

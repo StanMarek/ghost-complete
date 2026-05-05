@@ -1806,8 +1806,20 @@ mod tests {
         assert_eq!(outcome, OverlayWriteOutcome::Stale);
     }
 
+    // The trigger() / handle_terminal_output() paths spawn a tokio task
+    // for async generator dispatch when the engine resolves a known
+    // command. Now that SuggestionEngine::new loads the embedded corpus
+    // (so `git ` resolves), these tests need a runtime in scope to host
+    // the spawn. The previous SpecStore::load_from_dirs(&[]) flow
+    // produced an empty store, so dispatch never fired and a runtime
+    // was unnecessary.
     #[test]
     fn write_overlay_if_current_discards_owned_state_on_stale_write() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let _enter = runtime.enter();
         let handler = Arc::new(Mutex::new(
             InputHandler::new(&[], gc_terminal::TerminalProfile::for_ghostty()).expect("handler"),
         ));
@@ -1838,6 +1850,11 @@ mod tests {
 
     #[test]
     fn write_overlay_if_current_preserves_newer_overlay_after_stale_render_race() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let _enter = runtime.enter();
         let handler = Arc::new(Mutex::new(
             InputHandler::new(&[], gc_terminal::TerminalProfile::for_ghostty()).expect("handler"),
         ));
@@ -1880,6 +1897,11 @@ mod tests {
 
     #[test]
     fn write_overlay_if_current_lets_shell_cleanup_supersede_stale_teardown_cleanup() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let _enter = runtime.enter();
         let handler = Arc::new(Mutex::new(
             InputHandler::new(&[], gc_terminal::TerminalProfile::for_ghostty()).expect("handler"),
         ));
