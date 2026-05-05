@@ -14,8 +14,6 @@
 
 use std::path::PathBuf;
 
-use crate::embedded;
-
 /// Partition result from [`partition_spec_dirs`]: tilde-expanded valid
 /// directories and the raw (pre-expansion) strings for entries that don't
 /// resolve to an existing directory.
@@ -56,34 +54,13 @@ pub fn partition_spec_dirs(configured: &[String]) -> SpecDirPartition {
 ///   1. `~/.config/ghost-complete/specs` (installed by `ghost-complete install`)
 ///   2. `<current_exe_dir>/specs` (development / `cargo run`)
 ///   3. `./specs` (cwd, development)
-///   4. `~/.cache/ghost-complete/embedded-specs` (materialized lazily from
-///      `gc_suggest::embedded::EMBEDDED_SPECS` via
-///      [`embedded::materialize_embedded_specs`])
 ///
-/// In the auto-detected path, the embedded directory is appended as the
-/// lowest-precedence source, not only when every filesystem source is
-/// missing. This closes both the `cargo install ghost-complete &&
-/// ghost-complete` case and the Homebrew / installer-upgrade case where
-/// `~/.config/ghost-complete/specs` exists but is stale and lacks specs
-/// added by the newer binary. Explicit `paths.spec_dirs` remains an exact
-/// override.
+/// The runtime fallback path no longer materialises embedded specs to
+/// `~/.cache/ghost-complete/embedded-specs/`. The embedded corpus is
+/// consumed in-memory by [`crate::specs::SpecStore::load_with_embedded`]
+/// instead — same registration semantics as a filesystem dir, no disk
+/// I/O. Explicit `paths.spec_dirs` remains an exact override.
 pub fn resolve_spec_dirs(configured: &[String]) -> Vec<PathBuf> {
-    resolve_spec_dirs_with_embedded(
-        configured,
-        auto_detect_spec_dirs,
-        embedded::materialize_embedded_specs,
-    )
-}
-
-fn resolve_spec_dirs_with_embedded<A, E>(
-    configured: &[String],
-    auto_detect: A,
-    materialize_embedded: E,
-) -> Vec<PathBuf>
-where
-    A: FnOnce() -> Vec<PathBuf>,
-    E: FnOnce() -> Option<PathBuf>,
-{
     if !configured.is_empty() {
         let partition = partition_spec_dirs(configured);
         for bad in &partition.invalid {
@@ -99,31 +76,7 @@ where
         tracing::warn!("all configured spec_dirs are invalid — falling back to auto-detection");
     }
 
-    let mut dirs = auto_detect();
-
-    if let Some(embedded_dir) = materialize_embedded() {
-        if !dirs.iter().any(|dir| dir == &embedded_dir) {
-            dirs.push(embedded_dir);
-        }
-    } else {
-        match dirs.is_empty() {
-            true => {
-                tracing::warn!(
-                    "no spec directory available — autocomplete will fall back \
-                     to filesystem/history/$PATH only. Run `ghost-complete \
-                     install` to deploy the bundled completion specs."
-                );
-            }
-            false => {
-                tracing::warn!(
-                    "embedded completion specs unavailable; using only \
-                     auto-detected filesystem spec dirs"
-                );
-            }
-        }
-    }
-
-    dirs
+    auto_detect_spec_dirs()
 }
 
 fn auto_detect_spec_dirs() -> Vec<PathBuf> {
@@ -256,76 +209,26 @@ mod tests {
         );
     }
 
-    /// Exercises the end-to-end chain the proxy hits: the embedded spec set
-    /// must be reachable from `gc-suggest` and must load into a non-empty
-    /// `SpecStore` via `load_from_dirs`. If `EMBEDDED_SPECS` is ever moved
-    /// out of `gc-suggest`, or if the materialization helper stops actually
-    /// writing files, this test will fail rather than silently regress
-    /// autocomplete.
+    /// Filesystem-installed specs win precedence over the embedded
+    /// corpus when both ship the same filename. Pre-v0.12.4 this was
+    /// expressed by appending the materialised embedded dir to the
+    /// auto-detected list; v0.12.4 onward the embedded corpus is
+    /// loaded in-memory by `SpecStore::load_with_embedded`, but the
+    /// precedence semantics are identical.
     #[test]
-    fn embedded_fallback_yields_non_empty_spec_store() {
-        // Materialize into a private tempdir rather than touching the user's
-        // real `~/.cache/...`. This mirrors what
-        // `embedded::materialize_embedded_specs` does internally and what
-        // the spec loader will see when the auto-detection chain bottoms
-        // out on a bare-install system.
-        let tmp = tempfile::TempDir::new().unwrap();
-        let count = embedded::write_embedded_specs(tmp.path()).unwrap();
-        assert!(
-            count > 0,
-            "embedded spec set must contain at least one entry"
-        );
-
-        let result = crate::specs::SpecStore::load_from_dirs(&[tmp.path().to_path_buf()]).unwrap();
-        assert!(
-            !result.store.is_empty(),
-            "SpecStore must be non-empty after loading from the embedded \
-             fallback dir — empty here would mean the runtime fallback is \
-             still broken"
-        );
-        // A few well-known commands every embedded set should contain. If
-        // ALL three are missing the embedded set was truncated in transit.
-        let known = ["git", "docker", "cargo"];
-        assert!(
-            known.iter().any(|cmd| result.store.get(cmd).is_some()),
-            "expected at least one of {known:?} to be loaded from the \
-             embedded fallback; the fallback may be empty"
-        );
-    }
-
-    #[test]
-    fn embedded_fallback_supplements_stale_installed_specs() {
+    fn installed_specs_win_precedence_over_embedded_via_load_with_embedded() {
         let installed = tempfile::TempDir::new().unwrap();
-        let embedded = tempfile::TempDir::new().unwrap();
         std::fs::write(
             installed.path().join("git.json"),
             r#"{"name":"git","subcommands":[{"name":"installed-copy"}]}"#,
         )
         .unwrap();
-        std::fs::write(
-            embedded.path().join("git.json"),
-            r#"{"name":"git","subcommands":[{"name":"embedded-copy"}]}"#,
-        )
+
+        let result = crate::specs::SpecStore::load_with_embedded(&[installed
+            .path()
+            .to_path_buf()])
         .unwrap();
-
-        let dirs: Vec<String> = Vec::new();
-        let installed_path = installed.path().to_path_buf();
-        let embedded_path = embedded.path().to_path_buf();
-        let resolved = resolve_spec_dirs_with_embedded(
-            &dirs,
-            || vec![installed_path.clone()],
-            || Some(embedded_path.clone()),
-        );
-        assert_eq!(
-            resolved,
-            vec![installed_path.clone(), embedded_path.clone()],
-            "embedded specs must be appended after installed specs as the \
-             lowest-precedence source"
-        );
-
-        let result = crate::specs::SpecStore::load_from_dirs(&resolved).unwrap();
         let git = result.store.get("git").expect("git spec must load");
-
         assert_eq!(
             git.subcommands[0].name, "installed-copy",
             "installed specs must keep precedence when embedded ships the \
@@ -333,24 +236,23 @@ mod tests {
         );
     }
 
+    /// `load_with_embedded` with no filesystem dirs registers the
+    /// binary's embedded corpus directly. If `EMBEDDED_SPECS` is ever
+    /// moved out of `gc-suggest`, or if the in-memory wiring breaks,
+    /// this test fails rather than silently regress autocomplete.
     #[test]
-    fn embedded_materialization_failure_warns_even_with_auto_detected_dirs() {
-        let (captured, _guard) = install_log_capture();
-        let installed = tempfile::TempDir::new().unwrap();
-        let installed_path = installed.path().to_path_buf();
-
-        let dirs: Vec<String> = Vec::new();
-        let resolved =
-            resolve_spec_dirs_with_embedded(&dirs, || vec![installed_path.clone()], || None);
-
-        assert_eq!(resolved, vec![installed_path]);
-        let logs = String::from_utf8_lossy(&captured.lock().expect("capture buffer poisoned"))
-            .into_owned();
+    fn embedded_corpus_yields_non_empty_spec_store() {
+        let result = crate::specs::SpecStore::load_with_embedded(&[]).unwrap();
         assert!(
-            logs.contains(
-                "embedded completion specs unavailable; using only auto-detected filesystem spec dirs"
-            ),
-            "expected supplemental embedded fallback failure to be logged, got:\n{logs}"
+            !result.store.is_empty(),
+            "SpecStore must be non-empty after loading the embedded corpus"
+        );
+        // A few well-known commands every embedded set should contain.
+        let known = ["git", "docker", "cargo"];
+        assert!(
+            known.iter().any(|cmd| result.store.get(cmd).is_some()),
+            "expected at least one of {known:?} to be loaded from the \
+             embedded corpus; the corpus may be empty"
         );
     }
 }
