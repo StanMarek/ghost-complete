@@ -309,6 +309,76 @@ fn memory_benchmarks(c: &mut Criterion) {
     group.finish();
 }
 
+/// Lazy-loading benchmarks pinning the v0.12.4 contract:
+///
+/// - `load_with_embedded_no_parse` quantifies the cost of registering the
+///   entire embedded corpus as `SpecSource::Embedded` entries without
+///   parsing any spec body. A regression here usually means an upstream
+///   caller force-loaded specs at startup.
+/// - `first_get_git` measures the cost of the first lookup that triggers
+///   a shallow→full parse of a small spec.
+/// - `first_get_aws` measures the same for the largest spec in the corpus
+///   (~36 MB minified, 17 K subcommands). This is the dominant cost users
+///   pay when they first type `aws ` — it's ~exactly the work the eager
+///   loader was doing for *every* spec at startup pre-fix.
+/// - `warm_get_git` measures the steady-state lookup cost after the
+///   `OnceLock` is populated. This is what users pay on every subsequent
+///   lookup of the same spec — should be ~5-10 ns (table lookup + clone
+///   of an `Arc`).
+fn lazy_load_benchmarks(c: &mut Criterion) {
+    let mut group = c.benchmark_group("lazy_load");
+
+    group.bench_function("load_with_embedded_no_parse", |b| {
+        b.iter(|| {
+            let result = SpecStore::load_with_embedded(&[]).expect("embedded corpus must load");
+            // Hold the store across the iter() call so the compiler can't
+            // elide the load. Crucially we do NOT iterate — that would
+            // force-load every entry and conflate the lazy contract with
+            // the parse cost.
+            std::hint::black_box(result.store);
+        });
+    });
+
+    // First-touch parse benchmarks: each iter() rebuilds the store so
+    // every iteration measures the cost of registering + first-touching
+    // a single spec from scratch. Without rebuilding we'd hit the
+    // OnceLock cache after iter #1 and report the warm-path latency.
+    group.bench_function("first_get_git", |b| {
+        b.iter(|| {
+            let result = SpecStore::load_with_embedded(&[]).expect("embedded corpus must load");
+            let store = result.store;
+            let spec = store.get("git").expect("git spec must resolve");
+            std::hint::black_box(spec);
+        });
+    });
+
+    group.bench_function("first_get_aws", |b| {
+        b.iter(|| {
+            let result = SpecStore::load_with_embedded(&[]).expect("embedded corpus must load");
+            let store = result.store;
+            let spec = store.get("aws").expect("aws spec must resolve");
+            std::hint::black_box(spec);
+        });
+    });
+
+    // Warm path: build the store once outside the timed loop and time
+    // only the lookup. The OnceLock is populated by the first iter, every
+    // subsequent iter takes the fast path.
+    let warm_result =
+        SpecStore::load_with_embedded(&[]).expect("embedded corpus must load for warm bench");
+    let warm_store = warm_result.store;
+    // Prime the cache for git so the first iter doesn't pay the parse cost.
+    let _ = warm_store.get("git");
+    group.bench_function("warm_get_git", |b| {
+        b.iter(|| {
+            let spec = warm_store.get("git").expect("git spec must resolve");
+            std::hint::black_box(spec);
+        });
+    });
+
+    group.finish();
+}
+
 criterion_group!(
     benches,
     fuzzy_benchmarks,
@@ -318,5 +388,6 @@ criterion_group!(
     engine_benchmarks,
     priority_sort_benchmarks,
     memory_benchmarks,
+    lazy_load_benchmarks,
 );
 criterion_main!(benches);
