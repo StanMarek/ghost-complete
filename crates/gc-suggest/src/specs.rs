@@ -4925,6 +4925,49 @@ mod tests {
     }
 
     #[test]
+    fn embedded_name_alias_falls_back_when_filesystem_name_alias_parse_fails() {
+        let bad_dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            bad_dir.path().join("foo.json"),
+            r#"{"name":"index","subcommands":"not an array"}"#,
+        )
+        .unwrap();
+
+        let result = SpecStore::load_with_embedded(&[bad_dir.path().to_path_buf()]).unwrap();
+        let store = &result.store;
+
+        let by_index = store
+            .get("index")
+            .expect("embedded appwrite should fall back behind bad filesystem name alias");
+        assert_eq!(by_index.name, "index");
+
+        let bad_entry = store
+            .entries()
+            .iter()
+            .find(|entry| matches!(&entry.source, SpecSource::Filesystem(path) if path.starts_with(bad_dir.path())))
+            .expect("bad filesystem entry remains visible for diagnostics");
+        assert!(
+            bad_entry.load_error().is_some(),
+            "failed filesystem alias owner should record its lazy parse error"
+        );
+
+        let conflict = store
+            .conflicts()
+            .iter()
+            .find(|conflict| {
+                conflict.alias == "index"
+                    && conflict.kind == AliasConflictKind::DuplicateName
+                    && conflict.winner.filename_stem == "foo"
+                    && conflict.loser.filename_stem == "appwrite"
+            })
+            .expect("embedded appwrite name alias fallback should be recorded as a conflict");
+        assert_eq!(
+            conflict.disposition,
+            AliasConflictDisposition::FallbackCandidate
+        );
+    }
+
+    #[test]
     fn cross_dir_stem_matches_earlier_name_alias_is_not_directory_precedence() {
         // Cross-dir name-vs-stem collision: dir1 owns the `kubectl`
         // alias via foo.json's `name: "kubectl"` claim, then dir2's
