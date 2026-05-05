@@ -150,7 +150,7 @@ Task B notifies Task C via `tokio::sync::Notify` when the buffer is dirty but no
 
 ## Completion Spec Architecture
 
-Ghost Complete ships 709 Fig-compatible JSON specs embedded in the binary via `include_str!`. At startup, specs are deserialized and indexed by command name.
+Ghost Complete ships 709 Fig-compatible JSON specs embedded in the binary via `include_str!`. At startup, specs are **registered but not parsed** — see "Lazy Spec Loading" below for the rationale and contract. Once parsed, specs are indexed by command name.
 
 Specs support multiple generator types:
 
@@ -165,6 +165,34 @@ Specs support multiple generator types:
 Script generator output passes through a transform pipeline (`split_lines`, `trim`, `regex_extract`, `json_extract`, `column_extract`, etc.) that is validated at spec load time.
 
 Generator results are cached in-memory with configurable TTL per-generator. `cache_by_directory` keys cache entries by CWD for commands whose output is directory-dependent. JS post-processed output uses a separate keyspace (`CacheKey::JsProcessed { source_hash }`) so two `js_runtime.source` bodies sharing the same script don't cross-contaminate.
+
+### Lazy Spec Loading (v0.12.4+)
+
+Pre-v0.12.4, every embedded spec was parsed into `Arc<CompletionSpec>` at startup. The AWS spec alone (~36 MB minified, ~17 K subcommands, ~116 K descriptions) ballooned the daemon's physical footprint to ~333 MB on first load — most of which the user never touched. The fix decouples *registration* from *parsing*:
+
+```text
+SpecStore::load_with_embedded(&[]) ──► register every (filename, &'static str)
+                                       as SpecEntry { source: Embedded(json),
+                                                      parsed: OnceLock::new() }
+                                       ─► ~183 µs, ~5 MB heap
+
+store.get("git") ──► first touch: serde_json::from_str(json) into
+                     Arc<CompletionSpec>, store in OnceLock
+                     ─► subsequent get("git") hits the OnceLock fast path
+                        (~11 ns: HashMap lookup + Arc::clone)
+```
+
+Each `SpecEntry` holds:
+
+| Field | Purpose |
+|-------|---------|
+| `source: SpecSource` | `Filesystem(PathBuf)` for user specs, `Embedded(&'static str)` for the binary corpus. The lazy parse path reads from this without re-touching disk for embedded specs. |
+| `parsed: OnceLock<Result<Arc<CompletionSpec>, String>>` | First-touch parse result. The `Result` makes parse failures **sticky** — a malformed spec doesn't get re-parsed on every lookup. Surfaces via `SpecEntry::load_error()`. |
+| `name_alias: Option<String>` | When `CompletionSpec.name` differs from the filename stem, this is captured at registration time so the alias resolver doesn't need to parse the body. For the embedded corpus the build script emits an `EMBEDDED_SPEC_ALIASES` table; for filesystem specs we run a shallow `serde_json::from_str::<SpecHeader>` (just `name`) at load time. |
+
+`SpecStore::iter()` force-loads every entry — used by `ghost-complete status` and `validate-specs` to surface load errors. `SpecStore::get()` only loads the requested entry. The embedded corpus is registered with the lowest precedence, so a filesystem spec with the same name (e.g. user-edited `~/.config/ghost-complete/specs/git.json`) wins.
+
+The runtime no longer materialises the embedded corpus to `~/.cache/ghost-complete/embedded-specs/`. `ghost-complete install` and `uninstall` purge that legacy path if a pre-v0.12.4 binary left it behind.
 
 ## Popup Rendering
 
