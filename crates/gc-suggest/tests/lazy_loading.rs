@@ -92,11 +92,7 @@ fn lazy_load_failure_is_sticky() {
     assert!(result.errors.is_empty());
 
     assert!(store.get("broken").is_none());
-    let broken = store
-        .entries()
-        .iter()
-        .find(|e| e.id == "broken")
-        .unwrap();
+    let broken = store.entries().iter().find(|e| e.id == "broken").unwrap();
     assert!(broken.load_error().is_some());
 
     // Second lookup must not retry — the OnceLock pinned the failure.

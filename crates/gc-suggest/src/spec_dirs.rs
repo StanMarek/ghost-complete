@@ -184,10 +184,8 @@ mod tests {
         )
         .unwrap();
 
-        let result = crate::specs::SpecStore::load_with_embedded(&[installed
-            .path()
-            .to_path_buf()])
-        .unwrap();
+        let result =
+            crate::specs::SpecStore::load_with_embedded(&[installed.path().to_path_buf()]).unwrap();
         let git = result.store.get("git").expect("git spec must load");
         assert_eq!(
             git.subcommands[0].name, "installed-copy",

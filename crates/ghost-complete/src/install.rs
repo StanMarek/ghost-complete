@@ -279,9 +279,7 @@ fn report_cache_purge() {
         }
         Ok(None) => {}
         Err(e) => {
-            eprintln!(
-                "  \x1b[33mNote:\x1b[0m Could not purge orphan embedded-spec cache: {e}",
-            );
+            eprintln!("  \x1b[33mNote:\x1b[0m Could not purge orphan embedded-spec cache: {e}",);
         }
     }
 }

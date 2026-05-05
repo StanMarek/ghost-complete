@@ -60,17 +60,16 @@ pub fn embedded_spec_contents(filename: &str) -> Option<&'static str> {
 /// callers iterate it instead of materialising specs to disk first.
 pub fn embedded_entries_with_aliases(
 ) -> impl Iterator<Item = (&'static str, &'static str, Option<&'static str>)> {
-    EMBEDDED_SPECS
-        .iter()
-        .zip(EMBEDDED_SPEC_ALIASES.iter())
-        .map(|((filename, contents), (alias_filename, name_alias))| {
+    EMBEDDED_SPECS.iter().zip(EMBEDDED_SPEC_ALIASES.iter()).map(
+        |((filename, contents), (alias_filename, name_alias))| {
             debug_assert_eq!(
                 *filename, *alias_filename,
                 "EMBEDDED_SPECS and EMBEDDED_SPEC_ALIASES are emitted in the \
                  same order by build.rs; mismatch indicates a build-script bug"
             );
             (*filename, *contents, *name_alias)
-        })
+        },
+    )
 }
 
 /// Path of the legacy `~/.cache/ghost-complete/embedded-specs/` directory
@@ -239,7 +238,10 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let absent = tmp.path().join("never-existed");
         let meta = std::fs::symlink_metadata(&absent);
-        assert!(meta.is_err(), "test precondition: {absent:?} must be absent");
+        assert!(
+            meta.is_err(),
+            "test precondition: {absent:?} must be absent"
+        );
 
         // Direct exercise of the inner deletion path — purge_embedded_cache_if_present
         // is keyed off `dirs::home_dir()` and therefore cannot be unit-tested

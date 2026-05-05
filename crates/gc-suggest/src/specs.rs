@@ -633,12 +633,12 @@ impl SpecEntry {
 fn parse_entry_source(source: &SpecSource) -> Result<Arc<CompletionSpec>, String> {
     let contents: std::borrow::Cow<'_, str> = match source {
         SpecSource::Filesystem(path) => std::borrow::Cow::Owned(
-            std::fs::read_to_string(path)
-                .map_err(|e| format!("read {}: {e}", path.display()))?,
+            std::fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?,
         ),
         SpecSource::Embedded(contents) => std::borrow::Cow::Borrowed(*contents),
     };
-    let mut spec = parse_spec_checked_and_sanitized(&contents).map_err(|e| format!("parse: {e}"))?;
+    let mut spec =
+        parse_spec_checked_and_sanitized(&contents).map_err(|e| format!("parse: {e}"))?;
     let warnings = validate_spec_generators(&mut spec);
     for w in &warnings {
         tracing::warn!("{}: {w}", spec.name);
@@ -1128,9 +1128,7 @@ fn register_entries(
                 loser: AliasOwner {
                     filename_stem: filename_stem.clone(),
                     source_dir: source_dir.clone(),
-                    spec_name: name_alias
-                        .clone()
-                        .unwrap_or_else(|| filename_stem.clone()),
+                    spec_name: name_alias.clone().unwrap_or_else(|| filename_stem.clone()),
                 },
             });
             continue;
