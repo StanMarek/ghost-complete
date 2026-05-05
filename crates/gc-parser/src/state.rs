@@ -56,6 +56,13 @@ pub struct TerminalState {
     command_buffer: Option<String>,
     buffer_cursor: usize,
     buffer_dirty: bool,
+    /// True iff the most recent buffer event has not yet been followed by ANY
+    /// display-changing op. Best-effort proxy for "shell ZLE redraw has applied" —
+    /// the proxy treats the next display op as evidence the redraw landed, so
+    /// the popup is anchored to fresh cursor geometry.
+    /// Set sites: `set_command_buffer`. Clear sites: `clear_command_buffer`,
+    /// `mark_display_dirty`.
+    buffer_pending_display: bool,
     cwd_dirty: bool,
     cursor_sync_requested: bool,
     cpr_synced: bool,
@@ -98,6 +105,7 @@ impl TerminalState {
             command_buffer: None,
             buffer_cursor: 0,
             buffer_dirty: false,
+            buffer_pending_display: false,
             cwd_dirty: false,
             cursor_sync_requested: false,
             cpr_synced: false,
@@ -166,6 +174,13 @@ impl TerminalState {
         let dirty = self.buffer_dirty;
         self.buffer_dirty = false;
         dirty
+    }
+
+    /// True while a buffer report is awaiting a display-changing byte. Callers
+    /// (notably the proxy's trigger gate) should suppress popup placement on
+    /// `true` to avoid anchoring to stale cursor geometry.
+    pub fn buffer_pending_display(&self) -> bool {
+        self.buffer_pending_display
     }
 
     /// Returns true if the CWD changed since the last check,
@@ -485,16 +500,27 @@ impl TerminalState {
         }
     }
 
+    /// Apply a shell-reported buffer state (typically from OSC 7770/7772).
+    /// Raises `buffer_dirty` (signals "recompute suggestions") and
+    /// `buffer_pending_display` (signals "wait for the matching redraw before
+    /// placing the popup").
     pub(crate) fn set_command_buffer(&mut self, buffer: String, cursor: usize) {
         let clamped = cursor.min(buffer.chars().count());
         self.command_buffer = Some(buffer);
         self.buffer_cursor = clamped;
         self.buffer_dirty = true;
+        self.buffer_pending_display = true;
     }
 
+    /// Resets buffer state to absent. `buffer_dirty` and `buffer_pending_display`
+    /// describe events on the (now-cleared) buffer, so they are dropped here —
+    /// otherwise a pending consumer would act on a stale event for a buffer that
+    /// no longer exists. Mirrors `set_command_buffer`, which raises both flags.
     pub(crate) fn clear_command_buffer(&mut self) {
         self.command_buffer = None;
         self.buffer_cursor = 0;
+        self.buffer_dirty = false;
+        self.buffer_pending_display = false;
     }
 
     pub(crate) fn set_autowrap(&mut self, enabled: bool) {
@@ -540,8 +566,15 @@ impl TerminalState {
         }
     }
 
+    /// Marks the display dirty AND clears `buffer_pending_display` — every
+    /// shell-driven mutation that advances the visible display funnels
+    /// through here so the proxy's deferred-trigger gate can resolve once
+    /// the redraw lands. CPR responses (`set_cursor_from_report`) and
+    /// SIGWINCH (`update_dimensions`) intentionally bypass this helper
+    /// because they reflect terminal state rather than a fresh redraw.
     fn mark_display_dirty(&mut self) {
         self.display_dirty = true;
+        self.buffer_pending_display = false;
     }
 
     fn wrap_to_next_line(&mut self) {
@@ -846,6 +879,85 @@ mod tests {
         assert_eq!(dropped, 1);
         assert_eq!(state.cpr_queue_len(), 1);
         assert_eq!(state.claim_next_cpr(), Some(CprOwner::Shell));
+    }
+
+    #[test]
+    fn buffer_pending_display_initially_false() {
+        let state = TerminalState::new(24, 80);
+        assert!(!state.buffer_pending_display());
+    }
+
+    #[test]
+    fn buffer_pending_display_set_by_buffer_update() {
+        let mut state = TerminalState::new(24, 80);
+        state.set_command_buffer("git ".to_string(), 4);
+        assert!(state.buffer_pending_display());
+        assert!(state.take_buffer_dirty());
+    }
+
+    #[test]
+    fn buffer_pending_display_cleared_by_display_op_after_buffer_update() {
+        let mut state = TerminalState::new(24, 80);
+        state.set_command_buffer("git ".to_string(), 4);
+        assert!(state.buffer_pending_display());
+        state.advance_col(1);
+        assert!(
+            !state.buffer_pending_display(),
+            "advance_col must clear the pending-display flag (representative of any op that funnels through mark_display_dirty)"
+        );
+    }
+
+    #[test]
+    fn buffer_pending_display_re_armed_by_subsequent_buffer_update() {
+        let mut state = TerminalState::new(24, 80);
+        state.set_command_buffer("git ".to_string(), 4);
+        state.advance_col(1);
+        assert!(!state.buffer_pending_display());
+        state.set_command_buffer("git c".to_string(), 5);
+        assert!(state.buffer_pending_display());
+    }
+
+    #[test]
+    fn buffer_pending_display_unaffected_by_take_buffer_dirty() {
+        let mut state = TerminalState::new(24, 80);
+        state.set_command_buffer("git ".to_string(), 4);
+        let _ = state.take_buffer_dirty();
+        assert!(
+            state.buffer_pending_display(),
+            "draining buffer_dirty must not advance the pending-display flag"
+        );
+    }
+
+    #[test]
+    fn buffer_pending_display_via_process_bytes_osc_then_print() {
+        // OSC sets the flag, the printable byte after it clears the flag — this
+        // is the in-frame fast path the proxy relies on.
+        let mut p = crate::TerminalParser::new(24, 80);
+        p.process_bytes(b"\x1b]7770;3;git\x07x");
+        assert!(!p.state().buffer_pending_display());
+    }
+
+    #[test]
+    fn clear_command_buffer_resets_dirty_and_pending_flags() {
+        let mut state = TerminalState::new(24, 80);
+        state.set_command_buffer("git ".to_string(), 4);
+        assert!(state.buffer_pending_display());
+        state.clear_command_buffer();
+        assert!(!state.take_buffer_dirty());
+        assert!(!state.buffer_pending_display());
+    }
+
+    #[test]
+    fn predict_command_buffer_does_not_set_or_clear_pending_display() {
+        let mut state = TerminalState::new(24, 80);
+        // From clean state, predict must not arm the flag.
+        state.predict_command_buffer("ls".to_string(), 2);
+        assert!(!state.buffer_pending_display());
+        // With the flag armed by a prior shell report, predict must not clear it.
+        state.set_command_buffer("git ".to_string(), 4);
+        assert!(state.buffer_pending_display());
+        state.predict_command_buffer("git st".to_string(), 6);
+        assert!(state.buffer_pending_display());
     }
 
     #[test]

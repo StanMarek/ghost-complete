@@ -483,6 +483,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     let debounce_notify_b = Arc::clone(&debounce_notify);
     let stdout_handle = tokio::task::spawn_blocking(move || {
         let mut buf = [0u8; 8192];
+        let mut pending_trigger = PendingTrigger::new();
         loop {
             let n = match reader.read(&mut buf) {
                 Ok(0) => break, // PTY closed
@@ -607,12 +608,12 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 }
             }
 
-            // Check if shell reported a buffer update via OSC 7770.
-            // Trigger suggestions here (Task B) instead of Task A to ensure
-            // we have the shell's updated buffer, fixing the stale-buffer bug.
-            let buffer_dirty = {
+            let (buffer_dirty, buffer_pending_display) = {
                 match parser_for_stdout.lock() {
-                    Ok(mut p) => p.state_mut().take_buffer_dirty(),
+                    Ok(mut p) => {
+                        let state = p.state_mut();
+                        (state.take_buffer_dirty(), state.buffer_pending_display())
+                    }
                     Err(e) => {
                         tracing::warn!("parser mutex poisoned in stdout task: {e}");
                         break;
@@ -636,16 +637,26 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         delay_ms,
                         h.auto_trigger_enabled(),
                         h.is_debounce_suppressed(),
+                        buffer_pending_display,
                     );
                     if had_pending_trigger {
                         h.clear_trigger_request();
                     }
                     match action {
-                        BufferDirtyAction::Trigger => {
-                            h.trigger(&parser_for_stdout, &mut render_buf)
+                        BufferDirtyAction::Immediate(Action::Trigger) => {
+                            pending_trigger.clear_for_supersede("immediate Trigger");
+                            h.trigger(&parser_for_stdout, &mut render_buf);
                         }
-                        BufferDirtyAction::Debounce => debounce_notify_b.notify_one(),
-                        BufferDirtyAction::Ignore => {}
+                        BufferDirtyAction::Immediate(Action::Debounce) => {
+                            pending_trigger.clear_for_supersede("immediate Debounce");
+                            debounce_notify_b.notify_one();
+                        }
+                        BufferDirtyAction::Defer(action) => {
+                            pending_trigger.stash(action);
+                        }
+                        BufferDirtyAction::Ignore => {
+                            pending_trigger.clear_for_supersede("Ignore");
+                        }
                     }
                     h.overlay_write_ticket()
                 };
@@ -654,6 +665,39 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                         write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
                     {
                         tracing::debug!("Task B overlay write/flush failed: {e}");
+                        break;
+                    }
+                }
+            }
+
+            if pending_trigger.is_pending() && !buffer_pending_display {
+                let mut render_buf = Vec::new();
+                let render_ticket = {
+                    let mut h = match handler_for_stdout.lock() {
+                        Ok(h) => h,
+                        Err(e) => {
+                            tracing::warn!("handler mutex poisoned in stdout task: {e}");
+                            break;
+                        }
+                    };
+                    let resolved = pending_trigger
+                        .resolve(h.auto_trigger_enabled(), h.is_debounce_suppressed());
+                    match resolved {
+                        Some(Action::Trigger) => {
+                            h.trigger(&parser_for_stdout, &mut render_buf);
+                        }
+                        Some(Action::Debounce) => {
+                            debounce_notify_b.notify_one();
+                        }
+                        None => {}
+                    }
+                    h.overlay_write_ticket()
+                };
+                if !render_buf.is_empty() {
+                    if let Err(e) =
+                        write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
+                    {
+                        tracing::debug!("Task B deferred overlay write/flush failed: {e}");
                         break;
                     }
                 }
@@ -913,10 +957,30 @@ fn poll_until(
     }
 }
 
+/// What the dispatcher should do with a single suggestion-relevant action,
+/// independent of timing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Action {
+    /// Fire suggestions synchronously. Bypasses `debounce_suppressed` because
+    /// the variant is only produced by paths that already cleared that gate —
+    /// `has_pending_trigger=true` (returns Trigger before the suppression
+    /// check) or `delay_ms == 0` (only reached when the suppression check
+    /// returned false).
+    Trigger,
+    /// Notify the debounce loop; the loop re-checks suppression at fire time.
+    Debounce,
+}
+
+/// Outcome of `buffer_dirty_action` — three-way split over the action axis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum BufferDirtyAction {
-    Trigger,
-    Debounce,
+    /// Apply the action immediately; the display has caught up to the buffer report.
+    Immediate(Action),
+    /// Stash the action until the parser observes a display-changing byte;
+    /// ensures popup geometry is computed against a current cursor.
+    Defer(Action),
+    /// Drop the buffer event (auto-trigger disabled, or debounce suppressed
+    /// with no pending user-trigger to bypass it).
     Ignore,
 }
 
@@ -925,20 +989,107 @@ fn buffer_dirty_action(
     delay_ms: u64,
     auto_trigger_enabled: bool,
     debounce_suppressed: bool,
+    buffer_pending_display: bool,
 ) -> BufferDirtyAction {
     if !auto_trigger_enabled {
         return BufferDirtyAction::Ignore;
     }
     if has_pending_trigger {
-        return BufferDirtyAction::Trigger;
+        return if buffer_pending_display {
+            BufferDirtyAction::Defer(Action::Trigger)
+        } else {
+            BufferDirtyAction::Immediate(Action::Trigger)
+        };
     }
     if debounce_suppressed {
         return BufferDirtyAction::Ignore;
     }
     if delay_ms == 0 {
-        BufferDirtyAction::Trigger
+        if buffer_pending_display {
+            BufferDirtyAction::Defer(Action::Trigger)
+        } else {
+            BufferDirtyAction::Immediate(Action::Trigger)
+        }
+    } else if buffer_pending_display {
+        BufferDirtyAction::Defer(Action::Debounce)
     } else {
-        BufferDirtyAction::Debounce
+        BufferDirtyAction::Immediate(Action::Debounce)
+    }
+}
+
+/// Single-slot stash for a deferred `Action`. Encapsulates the three
+/// invariants that the stdout task relies on:
+///
+/// 1. `stash` unconditionally overwrites — a newer buffer event always
+///    reflects newer cursor geometry, so merging or keeping the old entry
+///    would let stale geometry win.
+/// 2. `resolve` always drains the slot when present, even when gating drops
+///    the action — leaving an entry behind would let it fire on a later
+///    redraw cycle that no longer matches the user's intent.
+/// 3. The asymmetry between Trigger and Debounce on debounce-suppression is
+///    documented on `resolve` — Trigger came from a code path that already
+///    bypassed the suppression check, so re-checking here would lose the
+///    invariant.
+#[derive(Debug, Default)]
+struct PendingTrigger(Option<Action>);
+
+impl PendingTrigger {
+    fn new() -> Self {
+        Self(None)
+    }
+
+    /// Stash a deferred action. Logs at trace when an existing stash is
+    /// overwritten so a developer can correlate "the popup didn't fire"
+    /// with a defer-overwrites-defer race.
+    fn stash(&mut self, action: Action) {
+        if let Some(prior) = self.0 {
+            tracing::trace!(?prior, new = ?action, "PendingTrigger: overwriting prior stash");
+        } else {
+            tracing::trace!(new = ?action, "PendingTrigger: stashing");
+        }
+        self.0 = Some(action);
+    }
+
+    fn is_pending(&self) -> bool {
+        self.0.is_some()
+    }
+
+    /// Clear the slot if a fresher non-Defer action superseded it. Logs at
+    /// trace so a Defer(Trigger)→Debounce/Ignore demotion is visible at
+    /// `RUST_LOG=trace`.
+    fn clear_for_supersede(&mut self, reason: &'static str) {
+        if let Some(prior) = self.0.take() {
+            tracing::trace!(?prior, reason, "PendingTrigger: clearing on supersede");
+        }
+    }
+
+    /// Drain the slot if non-empty. Returns None when auto_trigger is
+    /// disabled. Returns None for a stashed Debounce when debounce is
+    /// suppressed; a stashed Trigger always survives (it originated from
+    /// a path — `has_pending_trigger` or `delay_ms == 0` — that already
+    /// bypasses `debounce_suppressed`, so re-checking would lose the
+    /// user-explicit-trigger-bypasses-debounce invariant).
+    fn resolve(&mut self, auto_trigger_enabled: bool, debounce_suppressed: bool) -> Option<Action> {
+        let action = self.0.take()?;
+        if !auto_trigger_enabled {
+            tracing::trace!(?action, "PendingTrigger: dropped (auto_trigger disabled)");
+            return None;
+        }
+        match action {
+            Action::Trigger => {
+                tracing::trace!("PendingTrigger: fired Trigger");
+                Some(Action::Trigger)
+            }
+            Action::Debounce => {
+                if debounce_suppressed {
+                    tracing::trace!("PendingTrigger: dropped Debounce (suppressed)");
+                    None
+                } else {
+                    tracing::trace!("PendingTrigger: fired Debounce");
+                    Some(Action::Debounce)
+                }
+            }
+        }
     }
 }
 
@@ -1300,43 +1451,248 @@ mod tests {
     }
 
     #[test]
-    fn buffer_dirty_action_triggers_immediately_when_delay_zero() {
+    fn buffer_dirty_action_triggers_immediately_when_delay_zero_and_display_caught_up() {
+        // OSC + redraw landed in same batch → buffer_pending_display=false
         assert_eq!(
-            buffer_dirty_action(false, 0, true, false),
-            BufferDirtyAction::Trigger
+            buffer_dirty_action(false, 0, true, false, false),
+            BufferDirtyAction::Immediate(Action::Trigger)
+        );
+    }
+
+    #[test]
+    fn buffer_dirty_action_defers_when_delay_zero_and_display_pending() {
+        // OSC arrived alone, redraw hasn't been processed yet
+        assert_eq!(
+            buffer_dirty_action(false, 0, true, false, true),
+            BufferDirtyAction::Defer(Action::Trigger)
         );
     }
 
     #[test]
     fn buffer_dirty_action_ignores_when_auto_trigger_disabled() {
+        // Exhaustive over has_pending_trigger × buffer_pending_display × delay_ms.
+        // auto_disabled must dominate every combination — guards against a
+        // future refactor that hoists has_pending_trigger above the
+        // auto-disabled check.
+        for has_pending in [false, true] {
+            for pending in [false, true] {
+                for delay_ms in [0u64, 150] {
+                    for suppressed in [false, true] {
+                        assert_eq!(
+                            buffer_dirty_action(has_pending, delay_ms, false, suppressed, pending),
+                            BufferDirtyAction::Ignore,
+                            "auto-disabled must dominate (has_pending={has_pending}, \
+                             delay_ms={delay_ms}, suppressed={suppressed}, \
+                             pending_display={pending})"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn buffer_dirty_action_ignores_when_debounce_suppressed_and_no_pending_trigger() {
+        // Exhaustive over delay_ms × buffer_pending_display. The early
+        // `if debounce_suppressed { return Ignore }` returns regardless of
+        // delay_ms; iterating both cells guards against a future refactor that
+        // hoists the delay_ms != 0 branch above the suppression check and
+        // silently flips delay_ms=150 to Defer/Immediate(Debounce).
+        for delay_ms in [0u64, 150] {
+            for pending in [false, true] {
+                assert_eq!(
+                    buffer_dirty_action(false, delay_ms, true, true, pending),
+                    BufferDirtyAction::Ignore,
+                    "suppressed must dominate (delay_ms={delay_ms}, pending_display={pending})"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn buffer_dirty_action_debounces_when_delay_positive_and_display_caught_up() {
         assert_eq!(
-            buffer_dirty_action(false, 0, false, false),
-            BufferDirtyAction::Ignore
+            buffer_dirty_action(false, 150, true, false, false),
+            BufferDirtyAction::Immediate(Action::Debounce)
         );
     }
 
     #[test]
-    fn buffer_dirty_action_ignores_when_debounce_suppressed() {
+    fn buffer_dirty_action_defers_to_debounce_when_delay_positive_and_display_pending() {
         assert_eq!(
-            buffer_dirty_action(false, 0, true, true),
-            BufferDirtyAction::Ignore
+            buffer_dirty_action(false, 150, true, false, true),
+            BufferDirtyAction::Defer(Action::Debounce)
         );
     }
 
     #[test]
-    fn buffer_dirty_action_debounces_when_delay_positive() {
+    fn buffer_dirty_action_prefers_pending_trigger_when_display_caught_up() {
+        // Pending trigger from input handler bypasses debounce_suppressed
         assert_eq!(
-            buffer_dirty_action(false, 150, true, false),
-            BufferDirtyAction::Debounce
+            buffer_dirty_action(true, 150, true, true, false),
+            BufferDirtyAction::Immediate(Action::Trigger)
         );
     }
 
     #[test]
-    fn buffer_dirty_action_prefers_pending_trigger() {
+    fn buffer_dirty_action_defers_pending_trigger_when_display_pending() {
+        // Pending trigger but redraw hasn't applied yet — must defer to avoid stale cursor.
         assert_eq!(
-            buffer_dirty_action(true, 150, true, true),
-            BufferDirtyAction::Trigger
+            buffer_dirty_action(true, 150, true, true, true),
+            BufferDirtyAction::Defer(Action::Trigger)
         );
+    }
+
+    #[test]
+    fn pending_trigger_resolve_returns_none_when_empty() {
+        let mut pending = PendingTrigger::new();
+        assert_eq!(pending.resolve(true, false), None);
+        assert!(!pending.is_pending());
+    }
+
+    #[test]
+    fn pending_trigger_resolve_clears_slot_on_resolution() {
+        let mut pending = PendingTrigger::new();
+        pending.stash(Action::Trigger);
+        let resolved = pending.resolve(true, false);
+        assert_eq!(resolved, Some(Action::Trigger));
+        assert!(
+            !pending.is_pending(),
+            "slot must be cleared so a stale entry cannot fire later"
+        );
+    }
+
+    #[test]
+    fn pending_trigger_resolve_drops_when_auto_trigger_disabled() {
+        let mut pending = PendingTrigger::new();
+        pending.stash(Action::Trigger);
+        assert_eq!(pending.resolve(false, false), None);
+        assert!(
+            !pending.is_pending(),
+            "disabled auto-trigger must drain the slot, not leave it for a later batch"
+        );
+    }
+
+    #[test]
+    fn pending_trigger_resolve_drops_debounce_when_auto_trigger_disabled() {
+        // Pins that the auto_trigger check gates Debounce too — guards against
+        // a refactor that moves the auto_trigger_enabled check inside the
+        // match arms and silently lets stashed Debounce fire.
+        let mut pending = PendingTrigger::new();
+        pending.stash(Action::Debounce);
+        assert_eq!(pending.resolve(false, false), None);
+        assert!(!pending.is_pending());
+    }
+
+    #[test]
+    fn pending_trigger_resolve_skips_debounce_when_suppressed() {
+        let mut pending = PendingTrigger::new();
+        pending.stash(Action::Debounce);
+        assert_eq!(pending.resolve(true, true), None);
+        assert!(!pending.is_pending());
+    }
+
+    #[test]
+    fn pending_trigger_resolve_keeps_immediate_trigger_under_debounce_suppression() {
+        // Action::Trigger was stashed by has_pending_trigger or delay_ms=0.
+        // Both bypass debounce_suppressed, so the resolve path must too.
+        let mut pending = PendingTrigger::new();
+        pending.stash(Action::Trigger);
+        assert_eq!(pending.resolve(true, true), Some(Action::Trigger));
+        assert!(!pending.is_pending());
+    }
+
+    #[test]
+    fn pending_trigger_stash_supersedes_prior_entry() {
+        // A stale defer must never out-survive a fresh one — the second buffer
+        // event reflects newer cursor geometry.
+        let mut pending = PendingTrigger::new();
+        pending.stash(Action::Trigger);
+        assert!(pending.is_pending());
+        pending.stash(Action::Debounce);
+        assert_eq!(
+            pending.resolve(true, false),
+            Some(Action::Debounce),
+            "newer Defer must overwrite the prior stash, not merge or be discarded"
+        );
+    }
+
+    /// Exercise the dispatcher's `pending_trigger` reset wiring: the stdout
+    /// task clears the slot on every non-Defer arm so a stashed entry from a
+    /// prior iteration cannot survive a newer Trigger/Debounce/Ignore and
+    /// fire spuriously when display catches up later.
+    fn apply_buffer_dirty_action(slot: &mut PendingTrigger, action: BufferDirtyAction) {
+        match action {
+            BufferDirtyAction::Immediate(_) => slot.clear_for_supersede("immediate"),
+            BufferDirtyAction::Defer(a) => slot.stash(a),
+            BufferDirtyAction::Ignore => slot.clear_for_supersede("ignore"),
+        }
+    }
+
+    #[test]
+    fn pending_trigger_cleared_by_immediate_trigger() {
+        let mut slot = PendingTrigger::new();
+        slot.stash(Action::Trigger);
+        apply_buffer_dirty_action(&mut slot, BufferDirtyAction::Immediate(Action::Trigger));
+        assert!(
+            !slot.is_pending(),
+            "immediate Trigger must drain prior stash"
+        );
+    }
+
+    #[test]
+    fn pending_trigger_cleared_by_immediate_debounce() {
+        let mut slot = PendingTrigger::new();
+        slot.stash(Action::Trigger);
+        apply_buffer_dirty_action(&mut slot, BufferDirtyAction::Immediate(Action::Debounce));
+        assert!(
+            !slot.is_pending(),
+            "immediate Debounce must drain prior Trigger stash even though it demotes the user intent"
+        );
+    }
+
+    #[test]
+    fn pending_trigger_cleared_by_ignore() {
+        let mut slot = PendingTrigger::new();
+        slot.stash(Action::Trigger);
+        apply_buffer_dirty_action(&mut slot, BufferDirtyAction::Ignore);
+        assert!(!slot.is_pending(), "Ignore must drain prior stash");
+    }
+
+    #[test]
+    fn pending_trigger_overwritten_by_defer() {
+        let mut slot = PendingTrigger::new();
+        slot.stash(Action::Trigger);
+        apply_buffer_dirty_action(&mut slot, BufferDirtyAction::Defer(Action::Debounce));
+        assert!(
+            slot.is_pending(),
+            "Defer must keep slot populated (with overwritten action)"
+        );
+        assert_eq!(slot.resolve(true, false), Some(Action::Debounce));
+    }
+
+    #[test]
+    fn resolved_defer_debounce_drives_notify_one() {
+        // Mirrors the stdout-task wiring: PendingTrigger::resolve →
+        // Some(Debounce) → debounce_notify.notify_one(). A waiter parked on
+        // .notified() must complete after that single notify_one.
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("current-thread runtime");
+        rt.block_on(async {
+            let notify = Arc::new(Notify::new());
+            let mut pending = PendingTrigger::new();
+            pending.stash(Action::Debounce);
+            let resolved = pending.resolve(true, false);
+            assert_eq!(resolved, Some(Action::Debounce));
+            if let Some(Action::Debounce) = resolved {
+                notify.notify_one();
+            }
+            tokio::time::timeout(std::time::Duration::from_millis(100), notify.notified())
+                .await
+                .expect("notify_one must wake a parked waiter");
+        });
     }
 
     use gc_parser::TerminalParser;
