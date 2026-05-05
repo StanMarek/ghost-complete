@@ -961,9 +961,11 @@ fn poll_until(
 /// independent of timing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Action {
-    /// Fire suggestions synchronously (bypasses debounce_suppressed: stashed
-    /// only via `has_pending_trigger` or `delay_ms == 0`, both of which
-    /// already passed the suppression gate before reaching this point).
+    /// Fire suggestions synchronously. Bypasses `debounce_suppressed` because
+    /// the variant is only produced by paths that already cleared that gate —
+    /// `has_pending_trigger=true` (returns Trigger before the suppression
+    /// check) or `delay_ms == 0` (only reached when the suppression check
+    /// returned false).
     Trigger,
     /// Notify the debounce loop; the loop re-checks suppression at fire time.
     Debounce,
@@ -978,7 +980,7 @@ enum BufferDirtyAction {
     /// ensures popup geometry is computed against a current cursor.
     Defer(Action),
     /// Drop the buffer event (auto-trigger disabled, or debounce suppressed
-    /// without an upgrading pending_trigger).
+    /// with no pending user-trigger to bypass it).
     Ignore,
 }
 
@@ -1054,8 +1056,7 @@ impl PendingTrigger {
 
     /// Clear the slot if a fresher non-Defer action superseded it. Logs at
     /// trace so a Defer(Trigger)→Debounce/Ignore demotion is visible at
-    /// `RUST_LOG=trace` (the user keystroke that set up the Trigger has
-    /// already cleared `h.trigger_requested`).
+    /// `RUST_LOG=trace`.
     fn clear_for_supersede(&mut self, reason: &'static str) {
         if let Some(prior) = self.0.take() {
             tracing::trace!(?prior, reason, "PendingTrigger: clearing on supersede");
@@ -1492,11 +1493,19 @@ mod tests {
 
     #[test]
     fn buffer_dirty_action_ignores_when_debounce_suppressed_and_no_pending_trigger() {
-        for pending in [false, true] {
-            assert_eq!(
-                buffer_dirty_action(false, 0, true, true, pending),
-                BufferDirtyAction::Ignore
-            );
+        // Exhaustive over delay_ms × buffer_pending_display. The early
+        // `if debounce_suppressed { return Ignore }` returns regardless of
+        // delay_ms; iterating both cells guards against a future refactor that
+        // hoists the delay_ms != 0 branch above the suppression check and
+        // silently flips delay_ms=150 to Defer/Immediate(Debounce).
+        for delay_ms in [0u64, 150] {
+            for pending in [false, true] {
+                assert_eq!(
+                    buffer_dirty_action(false, delay_ms, true, true, pending),
+                    BufferDirtyAction::Ignore,
+                    "suppressed must dominate (delay_ms={delay_ms}, pending_display={pending})"
+                );
+            }
         }
     }
 
@@ -1562,6 +1571,17 @@ mod tests {
             !pending.is_pending(),
             "disabled auto-trigger must drain the slot, not leave it for a later batch"
         );
+    }
+
+    #[test]
+    fn pending_trigger_resolve_drops_debounce_when_auto_trigger_disabled() {
+        // Pins that the auto_trigger check gates Debounce too — guards against
+        // a refactor that moves the auto_trigger_enabled check inside the
+        // match arms and silently lets stashed Debounce fire.
+        let mut pending = PendingTrigger::new();
+        pending.stash(Action::Debounce);
+        assert_eq!(pending.resolve(false, false), None);
+        assert!(!pending.is_pending());
     }
 
     #[test]

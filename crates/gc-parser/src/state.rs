@@ -500,6 +500,10 @@ impl TerminalState {
         }
     }
 
+    /// Apply a shell-reported buffer state (typically from OSC 7770/7772).
+    /// Raises `buffer_dirty` (signals "recompute suggestions") and
+    /// `buffer_pending_display` (signals "wait for the matching redraw before
+    /// placing the popup").
     pub(crate) fn set_command_buffer(&mut self, buffer: String, cursor: usize) {
         let clamped = cursor.min(buffer.chars().count());
         self.command_buffer = Some(buffer);
