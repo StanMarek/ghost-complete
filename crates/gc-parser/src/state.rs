@@ -567,8 +567,11 @@ impl TerminalState {
     }
 
     /// Marks the display dirty AND clears `buffer_pending_display` — every
-    /// cursor- or screen-affecting mutation must funnel through here so the
-    /// proxy's deferred-trigger gate can resolve once the redraw lands.
+    /// shell-driven mutation that advances the visible display funnels
+    /// through here so the proxy's deferred-trigger gate can resolve once
+    /// the redraw lands. CPR responses (`set_cursor_from_report`) and
+    /// SIGWINCH (`update_dimensions`) intentionally bypass this helper
+    /// because they reflect terminal state rather than a fresh redraw.
     fn mark_display_dirty(&mut self) {
         self.display_dirty = true;
         self.buffer_pending_display = false;
