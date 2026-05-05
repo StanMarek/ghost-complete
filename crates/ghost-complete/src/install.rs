@@ -6,12 +6,19 @@ use std::path::Path;
 
 use crate::sanitize::{sanitize_for_terminal, sanitize_path};
 
-// `EMBEDDED_SPECS` was moved into `gc-suggest` so the runtime spec loader can
-// fall back to it when no on-disk spec dir is found. Install still needs to
-// write the same set to `~/.config/ghost-complete/specs`, so we re-export
-// from the canonical home; `status.rs` and the install tests reach it
-// through `crate::install::EMBEDDED_SPECS` exactly as before.
+// `EMBEDDED_SPECS` lives in `gc-suggest` because the spec loader consumes
+// the corpus in-memory (v0.12.4+). Install still writes the same set to
+// `~/.config/ghost-complete/specs`, so we re-export from the canonical
+// home; `status.rs` and the install tests reach it through
+// `crate::install::EMBEDDED_SPECS` exactly as before.
 pub(crate) use gc_suggest::EMBEDDED_SPECS;
+
+// Pre-v0.12.4 the runtime materialised the embedded corpus to
+// `~/.cache/ghost-complete/embedded-specs/` on first start. v0.12.4+ no
+// longer writes there — `purge_embedded_cache_if_present` removes the
+// orphan dir on (un)install so upgraders don't keep a 25 MB stale copy
+// around indefinitely.
+use gc_suggest::purge_embedded_cache_if_present;
 
 const ZSH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.zsh");
 const ZSH_INIT: &str = include_str!("../../../shell/init.zsh");
@@ -258,6 +265,27 @@ fn post_install_summary(config_dir: &Path, wrote_zshrc: bool) -> String {
     out
 }
 
+/// Print a one-line report describing what `purge_embedded_cache_if_present`
+/// did. Failure is non-fatal — the install workflow has already succeeded
+/// and a leftover cache dir is annoying, not broken. We surface the error
+/// on stderr so a sysadmin can investigate without blocking the user.
+fn report_cache_purge() {
+    match purge_embedded_cache_if_present() {
+        Ok(Some(dir)) => {
+            println!(
+                "  Removed orphan embedded-spec cache at {} (no longer used in v0.12.4+)",
+                sanitize_path(&dir)
+            );
+        }
+        Ok(None) => {}
+        Err(e) => {
+            eprintln!(
+                "  \x1b[33mNote:\x1b[0m Could not purge orphan embedded-spec cache: {e}",
+            );
+        }
+    }
+}
+
 fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()> {
     // 1. Write zsh shell scripts
     let shell_dir = config_dir.join("shell");
@@ -284,6 +312,14 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
         } else {
             println!("  Config already exists at {}", sanitize_path(&config_path));
         }
+        if let Some(cache) = gc_suggest::embedded::embedded_cache_dir() {
+            if cache.is_dir() {
+                println!(
+                    "  Would remove orphan embedded-spec cache at {}",
+                    sanitize_path(&cache)
+                );
+            }
+        }
         println!("  Would update {}\n", sanitize_path(zshrc_path));
         println!("  \x1b[36m\u{2139}\x1b[0m  The following would be added to your shell config:\n");
         print_shell_blocks(&init_path, &script_path);
@@ -303,6 +339,12 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
 
     // 1b. Copy completion specs
     copy_specs(config_dir)?;
+
+    // 1b.1 Purge the legacy ~/.cache/ghost-complete/embedded-specs/ dir
+    // if a pre-v0.12.4 binary materialised it. The runtime no longer
+    // touches that path; leaving the 25 MB on disk indefinitely is
+    // wasteful but not dangerous, so we never fail the install over it.
+    report_cache_purge();
 
     // 1c. Write default config.toml if one doesn't exist (never clobber).
     // Uses create_new(true) so the existence check and file creation are
@@ -472,6 +514,12 @@ fn uninstall_from(zshrc_path: &Path, config_dir: &Path) -> Result<()> {
     if shell_dir.exists() {
         let _ = fs::remove_dir(&shell_dir); // only succeeds if empty
     }
+
+    // 3b. Purge the legacy ~/.cache/ghost-complete/embedded-specs/ dir
+    // if a pre-v0.12.4 binary materialised it. Same rationale as
+    // install: the runtime hasn't touched it since v0.12.4 and leaving
+    // 25 MB on disk after uninstall is rude.
+    report_cache_purge();
 
     // 4. Note about retained files
     let specs_dir = config_dir.join("specs");

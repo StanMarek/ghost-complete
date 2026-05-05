@@ -30,7 +30,7 @@ pub mod ssh;
 pub mod transform;
 pub mod types;
 
-pub use embedded::EMBEDDED_SPECS;
+pub use embedded::{purge_embedded_cache_if_present, EMBEDDED_SPECS};
 pub use engine::{SuggestionEngine, SyncResult};
 pub use json_path::{JsonPath, JsonPathSegment};
 pub use pipeline::try_run_pipeline;
