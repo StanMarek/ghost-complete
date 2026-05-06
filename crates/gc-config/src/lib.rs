@@ -555,6 +555,28 @@ impl GhostConfig {
             );
             self.popup.feedback_dismiss_ms = FEEDBACK_DISMISS_MS_UPPER;
         }
+        // Spec cache sanity. Only apply when eviction is enabled —
+        // a config with idle_ttl_secs=0 means the user opted out and
+        // the other fields are unused.
+        if self.suggest.spec_cache.idle_ttl_secs > 0 {
+            if self.suggest.spec_cache.sweep_interval_secs == 0 {
+                tracing::warn!(
+                    "suggest.spec_cache.sweep_interval_secs=0 with eviction enabled \
+                     is invalid; clamping to 60"
+                );
+                self.suggest.spec_cache.sweep_interval_secs = 60;
+            }
+            if self.suggest.spec_cache.sweep_interval_secs
+                >= self.suggest.spec_cache.idle_ttl_secs
+            {
+                tracing::warn!(
+                    sweep_interval = self.suggest.spec_cache.sweep_interval_secs,
+                    idle_ttl = self.suggest.spec_cache.idle_ttl_secs,
+                    "sweep_interval_secs >= idle_ttl_secs — eviction will lag the \
+                     configured TTL"
+                );
+            }
+        }
     }
 
     pub fn load(path: Option<&str>) -> Result<Self> {
@@ -755,6 +777,38 @@ max_resident_mb = 100
         assert_eq!(parsed.suggest.spec_cache.sweep_interval_secs, 30);
         assert_eq!(parsed.suggest.spec_cache.keep_warm, vec!["git", "cd"]);
         assert_eq!(parsed.suggest.spec_cache.max_resident_mb, 100);
+    }
+
+    #[test]
+    fn spec_cache_normalize_clamps_zero_sweep_interval_when_eviction_enabled() {
+        let mut config = GhostConfig {
+            suggest: SuggestConfig {
+                spec_cache: SpecCacheConfig {
+                    idle_ttl_secs: 300,
+                    sweep_interval_secs: 0,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        config.normalize();
+        assert_eq!(
+            config.suggest.spec_cache.sweep_interval_secs, 60,
+            "sweep_interval_secs=0 with eviction enabled must clamp to 60"
+        );
+    }
+
+    #[test]
+    fn spec_cache_normalize_does_not_touch_disabled_eviction() {
+        let mut config = GhostConfig::default();
+        // idle_ttl_secs=0 (eviction disabled) — no normalization triggered.
+        config.suggest.spec_cache.sweep_interval_secs = 0;
+        config.normalize();
+        assert_eq!(
+            config.suggest.spec_cache.sweep_interval_secs, 0,
+            "disabled eviction should not auto-fix sweep_interval"
+        );
     }
 
     #[test]
