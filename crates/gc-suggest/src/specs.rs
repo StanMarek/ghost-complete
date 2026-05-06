@@ -1681,12 +1681,14 @@ fn accumulate_counters_from_generators(
     }
 }
 
-/// Canonical predicate deciding whether a `requires_js: true` generator can
-/// actually be dispatched by the runtime. Mirrors the gate inside
-/// [`collect_generators`] (the engine's load-time supported-shape check) so
-/// the corpus-wide [`SpecResolutionCounters`] published from
-/// [`SpecStore::counters`] agrees with the legacy raw-JSON walker in
-/// `ghost-complete::status::scan_spec_files`.
+/// Canonical predicate deciding whether a `requires_js: true` generator
+/// can actually be dispatched by the runtime. Mirrors the legacy
+/// raw-JSON walker `supported_kind` in
+/// `crates/ghost-complete/src/status.rs` — the structured-walk
+/// counterpart used by [`SpecResolutionCounters`] (published from
+/// [`SpecStore::counters`]) so the schema-1.6 `counters` block agrees
+/// byte-for-byte with the legacy `spec_counts` block in
+/// `ghost-complete status --json`.
 ///
 /// The three supported shapes are:
 ///
@@ -1706,17 +1708,35 @@ fn accumulate_counters_from_generators(
 /// A `requires_js: true` generator that does NOT match one of these
 /// three shapes (missing `js_runtime`, empty `source`, missing script,
 /// or `self_contained: false` on a `script_function`/`custom`) is
-/// classified as unsupported — the engine drops it at dispatch time
-/// (see `collect_generators`), and the diagnostic counters MUST report
-/// the same truthful state.
+/// classified as unsupported.
 ///
-/// This helper is the single source of truth: both the structured walk
-/// in [`accumulate_counters_from_generators`] (Phase 1 counters) and
-/// the engine's runtime gate consult it. The raw-JSON walker in
-/// `ghost-complete::status::supported_kind` mirrors the same predicate
-/// shape — keeping them in lockstep is enforced by the corpus-invariant
-/// integration test in `crates/ghost-complete/src/status.rs`.
-pub fn is_requires_js_supported(gen: &GeneratorSpec) -> bool {
+/// # Predicate alignment across the engine
+///
+/// Today there are three predicates encoding the same supported-shape
+/// rule, kept in lockstep by convention:
+///
+/// 1. This helper (the structured-walk counter source).
+/// 2. [`collect_generators`] at load time. Its inline match is
+///    *slightly looser* — it accepts a `post_process` generator with an
+///    empty `source` as long as a script is present — but the engine's
+///    runtime hot-path filter
+///    [`engine::is_supported_script_generator`] re-applies the
+///    non-empty-source check at dispatch time, so observable runtime
+///    behaviour is identical to this predicate.
+/// 3. [`engine::is_supported_script_generator`] (hot-path filter).
+///
+/// Routing (2) and (3) through this single helper would make it a
+/// literal single source of truth instead of a "by convention" one.
+/// That is intentionally a follow-up — the runtime semantic change is
+/// out of scope for the ux-9b precursor (purely additive) and is
+/// deferred to a future PR.
+///
+/// Drift between the structured walk here and the raw-JSON walker
+/// `supported_kind` is enforced by the corpus-invariant integration
+/// test `corpus_counters_match_legacy_walker_against_embedded_corpus`
+/// in `crates/ghost-complete/src/status.rs` — the load-bearing pin
+/// future maintainers should consult before changing either side.
+pub(crate) fn is_requires_js_supported(gen: &GeneratorSpec) -> bool {
     if !gen.requires_js {
         return false;
     }
