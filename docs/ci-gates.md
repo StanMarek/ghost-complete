@@ -14,17 +14,20 @@ Five CI gates live in `.github/workflows/ci.yml`: binary size, snapshot diff, fi
 **YAML key:** `binary-size-gate`
 **Trigger:** `needs: [check]` — runs after the `check` job succeeds.
 
-**Purpose:** enforces two independent size constraints on the release binary:
+**Purpose:** enforces two independent size constraints on the release binary, and records the measured size as a workflow artifact:
 
-1. **Absolute ceiling (110 MB)** — the binary must not exceed 110 MB. Raising it requires an explicit plan amendment. The ceiling moved from 30 MB to 110 MB in `ux-8` to admit the AWS completion spec; zstd-compressing embedded specs (a separate plan) is the principled reclaim path that should drop the binary back near the original ceiling.
-2. **Per-phase delta budget (default +2 MB)** — the binary must not have grown by more than `PHASE_BUDGET` (set to `2MB` in the job env) since the size recorded in [`benchmarks/binary-size-baseline.txt`](../benchmarks/binary-size-baseline.txt).
+1. **Recorded size artifact** — every CI run writes `size.txt` (single integer, bytes, with trailing newline — same format as [`benchmarks/binary-size-baseline.txt`](../benchmarks/binary-size-baseline.txt)) and uploads it as the `ghost-complete-size` workflow artifact. PR reviewers and the release author can download the artifact from the run summary page to see the exact byte count without re-running the job. The size is computed with `wc -c` rather than `du -b` because BSD `du` on `macos-latest` runners has no `-b` flag.
+2. **Absolute ceiling (110 MB)** — the binary must not exceed 110 MB. Raising it requires an explicit plan amendment. The ceiling moved from 30 MB to 110 MB in `ux-8` to admit the AWS completion spec; zstd-compressing embedded specs (a separate plan) is the principled reclaim path that should drop the binary back near the original ceiling.
+3. **Per-phase delta budget (default +2 MB, label override +5 MB)** — the binary must not have grown by more than the delta budget since the size recorded in [`benchmarks/binary-size-baseline.txt`](../benchmarks/binary-size-baseline.txt). The default budget is `PHASE_BUDGET` (`2MB`). On `pull_request` events, applying the **`binary-size-allow-delta`** label raises the budget to `LABEL_OVERRIDE_BUDGET` (`5MB`) for that PR only — the gate's "Pick delta budget" step inspects `github.event.pull_request.labels` and emits the override decision in the job log. Pushes to `master` always use the strict 2 MB budget (no PR labels to read). The label is the explicit acknowledgement that a PR is expected to grow the binary; without it, growth >2 MB fails the gate. Update the baseline file in the same PR (see "Baseline maintenance" below) once the change is justified — the override is for the merge, not for permanent tolerance. Create the label one-time via `gh label create binary-size-allow-delta --description "Raise binary-size delta budget from 2MB to 5MB for this PR" --color FBCA04`; the gate fails closed (strict 2 MB) if the label is missing.
+
+**Stripping note (deferred).** Per SPEC § D the gate measures the "stripped release binary size", but the workspace `[profile.release]` does not currently set `strip`, and the on-disk baseline was captured against the unstripped build. Adding `strip = "symbols"` would shave roughly 1.5 MB and require a coordinated baseline refresh; the toggle is intentionally deferred so this gate stays internally consistent (baseline and live measurement use the same shape). When the strip toggle lands it should be paired with a baseline refresh in the same commit.
 
 **Failure modes:**
 
 - Absolute ceiling failure: binary size exceeds 110 MB.
-- Delta budget failure: binary grew by more than `PHASE_BUDGET` since the baseline was recorded.
+- Delta budget failure: binary grew by more than the selected budget (2 MB strict / 5 MB with label) since the baseline was recorded.
 
-**Status today:** production-live and **passing**. The binary-size intervention (minified embedded specs + stripped `js_source`) dropped the binary to ~28.4 MB, under the original 30 MB ceiling. The `ux-8` AWS spec restoration brought the binary to ~102 MB; the ceiling moved to 110 MB to match plus headroom. Ready to add to branch protection.
+**Status today:** production-live and **passing**. The binary-size intervention (minified embedded specs + stripped `js_source`) dropped the binary to ~28.4 MB, under the original 30 MB ceiling. The `ux-8` AWS spec restoration brought the binary to ~102 MB; the ceiling moved to 110 MB to match plus headroom. The artifact upload + label override were added in `ux-9b` Phase 4. Ready to add to branch protection.
 
 **How to debug locally:**
 
@@ -32,11 +35,26 @@ Five CI gates live in `.github/workflows/ci.yml`: binary size, snapshot diff, fi
 cargo build --release
 scripts/check-binary-size.sh --absolute-max 110MB
 scripts/check-binary-size.sh --delta-max 2MB
+# Equivalent of the artifact upload step:
+wc -c < target/release/ghost-complete | tr -d ' ' > size.txt
 ```
 
-**Baseline maintenance:** when a change legitimately grows the binary, update the baseline file:
+For exploratory size attribution (which crate / function dominates the binary), run `cargo bloat`:
 
 ```bash
+cargo install cargo-bloat                    # one-time
+cargo bloat --release --crates                # crate-level breakdown
+cargo bloat --release -n 30                   # top 30 functions by size
+cargo bloat --release --filter '^aws'         # focus on a path prefix
+```
+
+`cargo bloat` is a debugging tool, **not a CI gate** — its codegen-unit estimates are too coarse for a hard fail. Use it locally when investigating an unexpected binary growth flagged by the delta gate.
+
+**Baseline maintenance:** when a change legitimately grows the binary, update the baseline file. The script accepts both formats (bare integer or `du -b` output) but the canonical form for macOS-latest CI runners is the bare-integer `wc -c` output:
+
+```bash
+wc -c < target/release/ghost-complete | tr -d ' ' > benchmarks/binary-size-baseline.txt
+# or equivalently on a GNU coreutils machine:
 du -b target/release/ghost-complete > benchmarks/binary-size-baseline.txt
 ```
 
@@ -194,6 +212,10 @@ These checks are added **alongside** any existing required checks (e.g. `Check`,
 **"Why is the ceiling 110 MB?"**
 
 The 30 MB ceiling was set during the requires-js-specs initiative as the target the binary needed to reach after specs were trimmed. The intervention (minified embedded specs + stripped `js_source`) brought the release binary to ~28.4 MB, under budget. In `ux-8` the AWS spec was restored: 409 inlined service sub-specs (upstream ships 418 `.js` files but the top-level `aws.js` only references 408 via `loadSpec` — 9 deprecated services are unreferenced) carrying ~28 MB of upstream description text, which `include_str!` roundtrips into ~2× `__const` data. The release binary moved to ~102 MB; the ceiling moved to 110 MB to match plus ~8% headroom. The delta budget (`PHASE_BUDGET=2MB`) still handles the near-term constraint — "don't grow from the current baseline". These are two independent checks; both must pass. zstd-compressing embedded specs is tracked as a follow-on plan; landing it should let the ceiling drop back near the original 30 MB level.
+
+**"When should I apply the `binary-size-allow-delta` label?"**
+
+Only when a PR is *expected* to grow the binary by more than 2 MB and the growth is reviewed and justified — for example, restoring a previously-pruned spec, adding a new built-in provider with substantial static data, or opting into a new compile-time feature. The label raises the delta gate from 2 MB to 5 MB for that PR. The 110 MB absolute ceiling still applies; the label cannot override it. Pushes to master always use the strict 2 MB budget (no PR labels to read), so the label only affects the PR build that introduces the change. Update [`benchmarks/binary-size-baseline.txt`](../benchmarks/binary-size-baseline.txt) in the same PR — the override exists to admit a single justified jump, not to live with permanent slack.
 
 **"Can I skip a gate on a specific PR?"**
 

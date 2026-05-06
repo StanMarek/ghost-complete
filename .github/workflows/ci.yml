@@ -76,13 +76,33 @@ jobs:
     needs: [check]
     runs-on: macos-latest
     env:
+      # Default per-phase delta budget. PRs carrying the
+      # `binary-size-allow-delta` label may override up to LABEL_OVERRIDE_BUDGET
+      # (see "Pick delta budget" step below).
       PHASE_BUDGET: 2MB
+      LABEL_OVERRIDE_BUDGET: 5MB
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Build release binary
         run: cargo build --release
+      # Record the release binary size as a workflow artifact. `size.txt`
+      # contains a single integer (bytes) followed by a newline, matching
+      # the format of `benchmarks/binary-size-baseline.txt`. `wc -c` is
+      # used (not `du -b`) because BSD `du` on macOS-latest runners has
+      # no `-b` flag; `wc -c` is portable and reports raw bytes.
+      - name: Record release binary size
+        run: |
+          bytes="$(wc -c < target/release/ghost-complete | tr -d ' ')"
+          printf '%s\n' "$bytes" > size.txt
+          printf 'Recorded binary size: %s bytes (%.2f MB)\n' \
+            "$bytes" "$(awk -v b="$bytes" 'BEGIN { printf "%.2f", b / (1024*1024) }')"
+      - name: Upload binary size artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ghost-complete-size
+          path: size.txt
       # Ceiling raised from 30MB to 110MB in ux-8 to admit the AWS spec.
       # The actual restored-AWS binary is ~102 MB (the SPEC predicted ~40 MB
       # but undercounted: the 418 inlined sub-specs carry ~28 MB of upstream
@@ -91,8 +111,29 @@ jobs:
       # reclaim path; this ceiling is the honest measurement plus ~8% headroom.
       - name: Absolute ceiling (110MB)
         run: scripts/check-binary-size.sh --absolute-max 110MB
+      # On PR builds, raise the delta budget from PHASE_BUDGET (2MB) to
+      # LABEL_OVERRIDE_BUDGET (5MB) when the PR carries the
+      # `binary-size-allow-delta` label. The label is the explicit
+      # acknowledgement that a PR is expected to grow the binary; without
+      # it the strict 2MB delta still applies. Pushes to master always
+      # use the strict budget — there is no PR context to read labels from.
+      - name: Pick delta budget
+        id: budget
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          LABEL_NAMES: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          budget="$PHASE_BUDGET"
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            if printf '%s' "$LABEL_NAMES" | grep -q '"binary-size-allow-delta"'; then
+              budget="$LABEL_OVERRIDE_BUDGET"
+              printf 'Label `binary-size-allow-delta` found; raising delta budget to %s.\n' "$budget"
+            fi
+          fi
+          printf 'Selected delta budget: %s\n' "$budget"
+          printf 'budget=%s\n' "$budget" >> "$GITHUB_OUTPUT"
       - name: Per-phase delta budget
-        run: scripts/check-binary-size.sh --delta-max "$PHASE_BUDGET"
+        run: scripts/check-binary-size.sh --delta-max "${{ steps.budget.outputs.budget }}"
 
   snapshot-diff-gate:
     name: Snapshot diff gate
