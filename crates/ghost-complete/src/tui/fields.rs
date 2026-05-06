@@ -37,6 +37,7 @@ pub const SECTIONS: &[&str] = &[
     "popup",
     "suggest",
     "suggest.providers",
+    "suggest.spec_cache",
     "keybindings",
     "theme",
     "paths",
@@ -53,6 +54,7 @@ pub fn section_label(section: &str) -> &'static str {
         "popup" => "Popup",
         "suggest" => "Suggest",
         "suggest.providers" => "Providers",
+        "suggest.spec_cache" => "Spec Cache",
         "keybindings" => "Keybindings",
         "theme" => "Theme",
         "paths" => "Paths",
@@ -186,6 +188,39 @@ pub fn all_fields() -> Vec<FieldMeta> {
             default: "true",
             reload: ReloadBehavior::RequiresRestart,
             help: "Enable git branch/tag/remote completions",
+        },
+        // suggest.spec_cache
+        FieldMeta {
+            section: "suggest.spec_cache",
+            key: "idle_ttl_secs",
+            field_type: FieldType::U64,
+            default: "0",
+            reload: ReloadBehavior::RequiresRestart,
+            help: "Seconds idle before evicting parsed specs (0 disables eviction)",
+        },
+        FieldMeta {
+            section: "suggest.spec_cache",
+            key: "sweep_interval_secs",
+            field_type: FieldType::U64,
+            default: "60",
+            reload: ReloadBehavior::RequiresRestart,
+            help: "How often the eviction sweep runs (seconds, ignored when eviction disabled)",
+        },
+        FieldMeta {
+            section: "suggest.spec_cache",
+            key: "keep_warm",
+            field_type: FieldType::StringArray,
+            default: "[]",
+            reload: ReloadBehavior::RequiresRestart,
+            help: "Spec aliases (filename stems) that must never be evicted",
+        },
+        FieldMeta {
+            section: "suggest.spec_cache",
+            key: "max_resident_mb",
+            field_type: FieldType::U64,
+            default: "0",
+            reload: ReloadBehavior::RequiresRestart,
+            help: "LRU backstop cap in MiB after TTL eviction (0 disables)",
         },
         // keybindings
         FieldMeta {
@@ -336,4 +371,52 @@ pub fn all_fields() -> Vec<FieldMeta> {
             help: "Enable proxy in unsupported terminals",
         },
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_section_has_at_least_one_field() {
+        let fields = all_fields();
+        for section in SECTIONS {
+            assert!(
+                fields.iter().any(|f| f.section == *section),
+                "section {section:?} declared in SECTIONS has no fields"
+            );
+        }
+    }
+
+    #[test]
+    fn every_section_has_a_label() {
+        for section in SECTIONS {
+            assert_ne!(
+                section_label(section),
+                "Unknown",
+                "section {section:?} is missing a label"
+            );
+        }
+    }
+
+    #[test]
+    fn spec_cache_section_exposes_all_config_fields() {
+        let fields = all_fields();
+        let keys: Vec<&str> = fields
+            .iter()
+            .filter(|f| f.section == "suggest.spec_cache")
+            .map(|f| f.key)
+            .collect();
+        for expected in [
+            "idle_ttl_secs",
+            "sweep_interval_secs",
+            "keep_warm",
+            "max_resident_mb",
+        ] {
+            assert!(
+                keys.contains(&expected),
+                "suggest.spec_cache.{expected} missing from config editor"
+            );
+        }
+    }
 }
