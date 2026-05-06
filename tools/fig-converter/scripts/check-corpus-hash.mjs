@@ -52,9 +52,15 @@ function runConverter(outDir) {
 }
 
 function main() {
-    const dir1 = mkdtempSync(join(tmpdir(), 'gc-corpus-'));
-    const dir2 = mkdtempSync(join(tmpdir(), 'gc-corpus-'));
+    // Both tempdirs are created INSIDE the try so that a throw from the
+    // second `mkdtempSync` (or any prior step) doesn't leak the first.
+    // The finally guards each rmSync with a null check.
+    let dir1 = null;
+    let dir2 = null;
     try {
+        dir1 = mkdtempSync(join(tmpdir(), 'gc-corpus-'));
+        dir2 = mkdtempSync(join(tmpdir(), 'gc-corpus-'));
+
         process.stderr.write(`[corpus-hash] run 1 -> ${dir1}\n`);
         runConverter(dir1);
         process.stderr.write(`[corpus-hash] run 2 -> ${dir2}\n`);
@@ -65,12 +71,15 @@ function main() {
 
         if (h1 !== h2) {
             process.stderr.write(`Hash mismatch:\n  run 1: ${h1}\n  run 2: ${h2}\n`);
-            process.exit(1);
+            // Set exitCode (instead of process.exit) so the finally below
+            // still runs and cleans up both tempdirs.
+            process.exitCode = 1;
+            return;
         }
         process.stdout.write(`OK ${h1}\n`);
     } finally {
-        rmSync(dir1, { recursive: true, force: true });
-        rmSync(dir2, { recursive: true, force: true });
+        if (dir1) rmSync(dir1, { recursive: true, force: true });
+        if (dir2) rmSync(dir2, { recursive: true, force: true });
     }
 }
 

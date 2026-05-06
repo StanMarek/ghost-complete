@@ -884,7 +884,11 @@ async function main() {
   const deterministic = !values['no-deterministic'] && values.deterministic !== false;
 
   if (!outputDir && !isDryRun) {
-    console.error('Usage: node src/index.js --output <dir> [--specs name1,name2] [--dry-run] [--batch-size N] [--no-deterministic]');
+    console.error(
+      'Usage: node src/index.js --output <dir> [--specs name1,name2] [--dry-run]\n' +
+      '                          [--batch-size N] [--deterministic|--no-deterministic]\n' +
+      '                          (default: --deterministic)',
+    );
     process.exit(1);
   }
 

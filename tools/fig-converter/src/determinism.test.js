@@ -158,7 +158,7 @@ describe('writeCorpusHash', () => {
       for (const [name, spec] of Object.entries(FIXTURE)) {
         await writeFile(join(dirA, `${name}.json`), stringifySorted(spec, 2) + '\n');
       }
-      // Mutate one spec so dirB differs from dirA in exactly one byte.
+      // Mutate one spec so dirB differs from dirA in spec content.
       const mutated = { ...FIXTURE };
       mutated['fixture-c'] = { name: 'fixture-c-CHANGED' };
       for (const [name, spec] of Object.entries(mutated)) {
