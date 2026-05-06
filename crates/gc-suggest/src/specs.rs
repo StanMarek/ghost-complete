@@ -1584,6 +1584,90 @@ impl SpecStore {
     pub fn canonical_paths(&self) -> Vec<(String, PathBuf)> {
         self.filesystem_paths()
     }
+
+    /// Corpus-wide [`SpecResolutionCounters`] across every loaded spec.
+    ///
+    /// Walks the resolved-entry set (one entry per alias after lazy
+    /// fallback resolution) and visits every [`GeneratorSpec`] reachable
+    /// from each [`CompletionSpec`] (args, options, recursive
+    /// subcommands). For each `requires_js` generator:
+    ///   - `requires_js_total` increments unconditionally;
+    ///   - `requires_js_supported` increments when `js_runtime` is populated;
+    ///   - `requires_js_unsupported` increments when `js_runtime` is missing.
+    ///
+    /// The five migration-future fields stay at zero in this PR — they are
+    /// populated by ux-10/11/12/13/14 once the converter starts emitting
+    /// the corresponding metadata.
+    ///
+    /// This force-loads every entry through [`Self::resolved_entries`], so
+    /// it is a diagnostic call (not a hot path). The trade-off is documented
+    /// because computing counters at corpus-load time requires materializing
+    /// every spec — for the embedded corpus this is the same parse work
+    /// `status` already performs to answer the legacy `spec_counts` block.
+    pub fn counters(&self) -> SpecResolutionCounters {
+        let mut counters = SpecResolutionCounters::default();
+        for entry in self.resolved_entries() {
+            if let Some(spec) = entry.spec() {
+                accumulate_counters_from_spec(&spec, &mut counters);
+            }
+        }
+        counters
+    }
+}
+
+fn accumulate_counters_from_spec(spec: &CompletionSpec, counters: &mut SpecResolutionCounters) {
+    accumulate_counters_from_args(&spec.args, counters);
+    accumulate_counters_from_options(&spec.options, counters);
+    accumulate_counters_from_subcommands(&spec.subcommands, counters);
+}
+
+fn accumulate_counters_from_subcommands(
+    subs: &[SubcommandSpec],
+    counters: &mut SpecResolutionCounters,
+) {
+    for sub in subs {
+        accumulate_counters_from_args(&sub.args, counters);
+        accumulate_counters_from_options(&sub.options, counters);
+        accumulate_counters_from_subcommands(&sub.subcommands, counters);
+    }
+}
+
+fn accumulate_counters_from_options(opts: &[OptionSpec], counters: &mut SpecResolutionCounters) {
+    for opt in opts {
+        if let Some(arg) = opt.args.as_ref() {
+            accumulate_counters_from_arg(arg, counters);
+        }
+        for arg in &opt.extra_args {
+            accumulate_counters_from_arg(arg, counters);
+        }
+    }
+}
+
+fn accumulate_counters_from_args(args: &[ArgSpec], counters: &mut SpecResolutionCounters) {
+    for arg in args {
+        accumulate_counters_from_arg(arg, counters);
+    }
+}
+
+fn accumulate_counters_from_arg(arg: &ArgSpec, counters: &mut SpecResolutionCounters) {
+    accumulate_counters_from_generators(&arg.generators, counters);
+}
+
+fn accumulate_counters_from_generators(
+    gens: &[GeneratorSpec],
+    counters: &mut SpecResolutionCounters,
+) {
+    for gen in gens {
+        if !gen.requires_js {
+            continue;
+        }
+        counters.requires_js_total += 1;
+        if gen.js_runtime.is_some() {
+            counters.requires_js_supported += 1;
+        } else {
+            counters.requires_js_unsupported += 1;
+        }
+    }
 }
 
 /// Header-only struct used by [`shallow_parse_name`] to extract just
@@ -1983,6 +2067,38 @@ pub fn parse_spec_checked_and_sanitized(contents: &str) -> Result<CompletionSpec
     let mut spec: CompletionSpec = serde_json::from_str(contents)?;
     sanitize_spec_strings(&mut spec);
     Ok(spec)
+}
+
+/// Corpus-wide structural counters for the loaded [`SpecStore`].
+///
+/// These complement the per-call [`SpecResolution`] (which describes a
+/// single keystroke's dispatch outcome) with diagnostic totals over every
+/// generator reachable from every loaded spec. Surfaced through
+/// [`SpecStore::counters`] and the `counters` block of `ghost-complete
+/// status --json`. The five migration-future fields stay at zero today and
+/// are populated by ux-10 (lowering JS bodies to native transforms),
+/// ux-11 (subprocess-driven JS lifting), ux-12 (token-only sandbox),
+/// ux-13 (AWS SDK dispatch), and ux-14 (native tool providers).
+#[derive(Debug, Default, Clone, serde::Serialize)]
+pub struct SpecResolutionCounters {
+    /// Total `requires_js` generators in the corpus.
+    pub requires_js_total: usize,
+    /// Generators that load and dispatch successfully today.
+    pub requires_js_supported: usize,
+    /// Generators that load but skip at dispatch time.
+    pub requires_js_unsupported: usize,
+    /// Generators where the converter lowered a JS body to a native
+    /// transform pipeline (no QuickJS at runtime). Populated by ux-10.
+    pub lowered_to_transforms: usize,
+    /// Generators where the converter lifted a subprocess-driven JS
+    /// body into native script + transforms. Populated by ux-11.
+    pub static_extracted_subprocess: usize,
+    /// Generators promoted into the token-only sandbox. Populated by ux-12.
+    pub token_only_promoted: usize,
+    /// Generators dispatched through a typed AWS SDK call. Populated by ux-13.
+    pub aws_sdk_dispatched: usize,
+    /// Generators dispatched through a native tool provider. Populated by ux-14.
+    pub native_provider_dispatched: usize,
 }
 
 pub struct SpecResolution {

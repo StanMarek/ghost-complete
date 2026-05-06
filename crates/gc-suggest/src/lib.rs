@@ -39,6 +39,6 @@ pub use specs::{
     spawn_spec_cache_sweep, spawn_spec_cache_sweep_for_test, AliasConflict,
     AliasConflictDisposition, AliasConflictKind, AliasOwner, CompletionSpec, EvictionReport,
     SpecCacheSweep, SpecEntry, SpecEntryLoadError, SpecLoadResult, SpecLocation, SpecLookupError,
-    SpecStore, SweepReport, MAX_SPEC_JSON_DEPTH,
+    SpecResolutionCounters, SpecStore, SweepReport, MAX_SPEC_JSON_DEPTH,
 };
 pub use types::{Suggestion, SuggestionKind, SuggestionSource};

@@ -9,7 +9,7 @@ use gc_suggest::specs::{
     AliasConflict, AliasConflictDisposition, AliasConflictKind, ArgSpec, CompletionSpec,
     GeneratorSpec, OptionSpec, SpecSource, SubcommandSpec,
 };
-use gc_suggest::{SpecLocation, SpecStore};
+use gc_suggest::{SpecLocation, SpecResolutionCounters, SpecStore};
 use serde::{Deserialize, Serialize};
 
 use crate::sanitize::sanitize_for_terminal;
@@ -347,6 +347,13 @@ pub struct StatusOutcome {
     /// runtime `SpecEntry` so the raw generator counters follow completion
     /// lookup fallback behavior.
     pub file_scan: FileScan,
+    /// Corpus-wide [`SpecResolutionCounters`] derived from the structured
+    /// `SpecStore` walk. Surfaced under the new top-level `counters` block
+    /// of `status --json` (schema 1.6) and intentionally distinct from the
+    /// raw-JSON `file_scan` numbers so future converter migration phases
+    /// (ux-10..14) can populate the migration-future fields without
+    /// disturbing the legacy `spec_counts` block.
+    pub counters: SpecResolutionCounters,
     /// Effective spec-cache policy from the active config. Reflects the
     /// user's TOML-declared policy, not the running daemon's runtime state.
     pub spec_cache: gc_config::SpecCacheConfig,
@@ -580,6 +587,11 @@ fn scan_resolved_specs(
 
     let registered_specs = store.len();
 
+    // Diagnostic-only walk over the structured loader for the new schema-1.6
+    // `counters` block. Force-loads every resolved spec; the same parse
+    // work already runs during this status scan, so the cost is incremental.
+    let counters = store.counters();
+
     Ok(StatusOutcome {
         fs_specs,
         embedded_count,
@@ -599,6 +611,7 @@ fn scan_resolved_specs(
         js_runtime_enabled,
         registered_specs,
         file_scan,
+        counters,
         spec_cache: config.suggest.spec_cache.clone(),
     })
 }
@@ -1026,7 +1039,18 @@ fn run_status_inner_with_trend(
 ///       counters would describe the wrong store and mislead users into
 ///       thinking eviction was broken even when the running proxy daemon
 ///       had correctly evicted entries.
-const STATUS_SCHEMA_VERSION: &str = "1.5";
+/// 1.6 — adds a top-level `counters` block carrying
+///       [`SpecResolutionCounters`] (the corpus-wide structural counters
+///       used by the ux-9b precursor migration plan). The first three
+///       fields (`requires_js_total`, `requires_js_supported`,
+///       `requires_js_unsupported`) are populated immediately from the
+///       structured `SpecStore` walk; the five migration-future fields
+///       (`lowered_to_transforms`, `static_extracted_subprocess`,
+///       `token_only_promoted`, `aws_sdk_dispatched`,
+///       `native_provider_dispatched`) start at zero and are populated by
+///       ux-10/11/12/13/14. The legacy `spec_counts` block is unchanged —
+///       this is a pure addition so 1.5 consumers keep parsing 1.6 output.
+const STATUS_SCHEMA_VERSION: &str = "1.6";
 
 /// The shape emitted by `ghost-complete status --json`. Defining this as a
 /// `#[derive(Serialize)]` struct rather than inline `json!` macros fails
@@ -1052,6 +1076,12 @@ struct StatusReport {
     /// engine will not dispatch any requires_js generators even if their
     /// metadata is fully populated.
     js_runtime: JsRuntimeStatus,
+    /// Schema 1.6 addition: corpus-wide structural counters from the
+    /// structured `SpecStore` walk. The five migration-future fields
+    /// stay at zero in this release; they are populated incrementally
+    /// by ux-10..14. Distinct from `spec_counts.requires_js_*` (which
+    /// remain wired to the raw-JSON `file_scan`).
+    counters: SpecResolutionCounters,
     coverage_trend: Option<CoverageTrend>,
 }
 
@@ -1296,6 +1326,7 @@ fn run_status_json(
         js_runtime: JsRuntimeStatus {
             enabled: outcome.js_runtime_enabled,
         },
+        counters: outcome.counters.clone(),
         coverage_trend,
     };
 
@@ -2191,7 +2222,7 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.5");
+        assert_eq!(parsed["schema_version"], "1.6");
         assert!(
             parsed["spec_counts"].is_object(),
             "spec_counts must be an object"
@@ -2377,7 +2408,7 @@ mod tests {
 
         // Current schema surfaces every command and generator counter as
         // a numeric value.
-        assert_eq!(parsed["schema_version"], "1.5");
+        assert_eq!(parsed["schema_version"], "1.6");
         let counts = &parsed["spec_counts"];
         assert_eq!(
             counts["commands_addressable"].as_u64().unwrap(),
@@ -2415,6 +2446,91 @@ mod tests {
         assert_eq!(
             fs_block["requires_js_generators_total"].as_u64().unwrap(),
             1
+        );
+    }
+
+    /// Schema 1.6 adds a top-level `counters` block carrying
+    /// [`gc_suggest::SpecResolutionCounters`]. Pin the eight expected
+    /// fields and the populated-vs-zero contract: the first three fields
+    /// match the structured walk over the SpecStore; the five
+    /// migration-future fields stay at zero until ux-10..14 land.
+    #[test]
+    fn status_json_includes_counters_block() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        std::fs::write(
+            spec_dir.join("static-cmd.json"),
+            r#"{
+                "name": "static-cmd",
+                "subcommands": [{"name": "go"}]
+            }"#,
+        )
+        .unwrap();
+        std::fs::write(
+            spec_dir.join("unsupported-cmd.json"),
+            r#"{
+                "name": "unsupported-cmd",
+                "args": [{
+                    "name": "thing",
+                    "generators": [{"requires_js": true, "js_source": "ctx => []"}]
+                }]
+            }"#,
+        )
+        .unwrap();
+        std::fs::write(
+            spec_dir.join("supported-cmd.json"),
+            r#"{
+                "name": "supported-cmd",
+                "args": [{
+                    "name": "thing",
+                    "generators": [{
+                        "requires_js": true,
+                        "js_runtime": {
+                            "kind": "script_function",
+                            "source": "ctx => ['a','b']"
+                        }
+                    }]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        let txt = String::from_utf8_lossy(&out);
+        let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
+
+        assert_eq!(parsed["schema_version"], "1.6");
+        let counters = &parsed["counters"];
+        assert!(counters.is_object(), "counters must be a top-level object");
+
+        // Populated by this PR.
+        assert_eq!(counters["requires_js_total"].as_u64().unwrap(), 2);
+        assert_eq!(counters["requires_js_supported"].as_u64().unwrap(), 1);
+        assert_eq!(counters["requires_js_unsupported"].as_u64().unwrap(), 1);
+
+        // Migration-future fields — declared by SPEC § A but populated
+        // by ux-10/11/12/13/14 respectively. They MUST exist as numeric
+        // zeros so JSON consumers can rely on the schema shape.
+        assert_eq!(counters["lowered_to_transforms"].as_u64().unwrap(), 0);
+        assert_eq!(counters["static_extracted_subprocess"].as_u64().unwrap(), 0);
+        assert_eq!(counters["token_only_promoted"].as_u64().unwrap(), 0);
+        assert_eq!(counters["aws_sdk_dispatched"].as_u64().unwrap(), 0);
+        assert_eq!(counters["native_provider_dispatched"].as_u64().unwrap(), 0);
+
+        // Assert the legacy `spec_counts` block is unchanged: its raw-JSON
+        // `requires_js_generators_total` matches the structured counter
+        // even on this synthetic fixture, because total is a pure
+        // requires_js-flag count. The supported/unsupported numbers can
+        // legitimately diverge — the legacy walker also requires
+        // `self_contained: true` on `script_function`/`custom` generators
+        // — so we don't pin that here.
+        let counts = &parsed["spec_counts"];
+        assert_eq!(
+            counters["requires_js_total"].as_u64().unwrap(),
+            counts["requires_js_generators_total"].as_u64().unwrap(),
         );
     }
 
@@ -2978,7 +3094,7 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.5");
+        assert_eq!(parsed["schema_version"], "1.6");
         let details = parsed["spec_counts"]["command_alias_conflict_details"]
             .as_array()
             .expect("command_alias_conflict_details must be an array");
