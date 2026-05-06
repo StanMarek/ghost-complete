@@ -1706,6 +1706,50 @@ mod tests {
         );
     }
 
+    /// Corpus-invariant lockstep: the structured-walk
+    /// [`gc_suggest::SpecResolutionCounters`] and the raw-JSON walker
+    /// [`scan_spec_files`] MUST agree on every requires_js statistic
+    /// against the embedded corpus. Both sources read the same shipped
+    /// JSON; both share the same supported predicate
+    /// ([`gc_suggest::specs::is_requires_js_supported`] for the
+    /// structured side, [`supported_kind`] for the raw-JSON side).
+    /// If they ever drift, downstream migration phases
+    /// (ux-10/11/12/13/14) would measure different numbers depending on
+    /// which block the consumer reads. This test pins the alignment for
+    /// the lifetime of the codebase.
+    #[test]
+    fn corpus_counters_match_legacy_walker_against_embedded_corpus() {
+        let result = gc_suggest::SpecStore::load_with_embedded(&[]).unwrap();
+        let scan = scan_spec_files(&result.store).unwrap();
+        let counters = result.store.counters();
+
+        assert!(
+            counters.requires_js_supported > 0,
+            "embedded corpus must contribute supported requires_js generators"
+        );
+        assert!(
+            counters.requires_js_unsupported > 0,
+            "embedded corpus must contribute unsupported requires_js generators"
+        );
+        assert_eq!(
+            counters.requires_js_total, scan.requires_js_generators_total,
+            "structured walk and raw-JSON walker must agree on requires_js_total"
+        );
+        assert_eq!(
+            counters.requires_js_supported, scan.requires_js_generators_supported,
+            "structured walk and raw-JSON walker must agree on \
+             requires_js_supported (Phase 1 lockstep)"
+        );
+        let scan_unsupported = scan
+            .requires_js_generators_total
+            .saturating_sub(scan.requires_js_generators_supported);
+        assert_eq!(
+            counters.requires_js_unsupported, scan_unsupported,
+            "structured walk and raw-JSON walker must agree on \
+             requires_js_unsupported"
+        );
+    }
+
     #[test]
     fn status_counts_embedded_runtime_store_when_no_dirs_resolved() {
         let config = gc_config::GhostConfig::default();
@@ -2488,7 +2532,8 @@ mod tests {
                         "requires_js": true,
                         "js_runtime": {
                             "kind": "script_function",
-                            "source": "ctx => ['a','b']"
+                            "source": "ctx => ['a','b']",
+                            "self_contained": true
                         }
                     }]
                 }]
@@ -2520,17 +2565,28 @@ mod tests {
         assert_eq!(counters["aws_sdk_dispatched"].as_u64().unwrap(), 0);
         assert_eq!(counters["native_provider_dispatched"].as_u64().unwrap(), 0);
 
-        // Assert the legacy `spec_counts` block is unchanged: its raw-JSON
-        // `requires_js_generators_total` matches the structured counter
-        // even on this synthetic fixture, because total is a pure
-        // requires_js-flag count. The supported/unsupported numbers can
-        // legitimately diverge — the legacy walker also requires
-        // `self_contained: true` on `script_function`/`custom` generators
-        // — so we don't pin that here.
+        // The structured `counters` block and the legacy raw-JSON
+        // `spec_counts` block must agree on every requires_js statistic
+        // — they share the same supported predicate
+        // (`gc_suggest::specs::is_requires_js_supported` for the
+        // structured walk, `supported_kind` for the raw-JSON walk).
+        // Without this lockstep, every downstream migration phase
+        // (ux-10/11/12/13/14) would track different numbers depending
+        // on which block the consumer reads.
         let counts = &parsed["spec_counts"];
         assert_eq!(
             counters["requires_js_total"].as_u64().unwrap(),
             counts["requires_js_generators_total"].as_u64().unwrap(),
+        );
+        assert_eq!(
+            counters["requires_js_supported"].as_u64().unwrap(),
+            counts["requires_js_generators_supported"].as_u64().unwrap(),
+        );
+        assert_eq!(
+            counters["requires_js_unsupported"].as_u64().unwrap(),
+            counts["requires_js_generators_unsupported"]
+                .as_u64()
+                .unwrap(),
         );
     }
 

@@ -1592,8 +1592,19 @@ impl SpecStore {
     /// from each [`CompletionSpec`] (args, options, recursive
     /// subcommands). For each `requires_js` generator:
     ///   - `requires_js_total` increments unconditionally;
-    ///   - `requires_js_supported` increments when `js_runtime` is populated;
-    ///   - `requires_js_unsupported` increments when `js_runtime` is missing.
+    ///   - `requires_js_supported` increments when [`is_requires_js_supported`]
+    ///     returns true (post_process+script with non-empty source, OR
+    ///     script_function/custom with non-empty source AND
+    ///     `self_contained: true`);
+    ///   - `requires_js_unsupported` increments otherwise.
+    ///
+    /// The supported predicate intentionally matches the runtime dispatch
+    /// gate inside `collect_generators` and the raw-JSON walker in
+    /// `ghost-complete::status::scan_spec_files`, so the schema-1.6
+    /// `counters.requires_js_supported` agrees byte-for-byte with the
+    /// legacy `spec_counts.requires_js_generators_supported` against the
+    /// embedded corpus (~1944 supported / ~1697 unsupported / ~3641 total
+    /// at v0.13).
     ///
     /// The five migration-future fields stay at zero in this PR — they are
     /// populated by ux-10/11/12/13/14 once the converter starts emitting
@@ -1662,10 +1673,63 @@ fn accumulate_counters_from_generators(
             continue;
         }
         counters.requires_js_total += 1;
-        if gen.js_runtime.is_some() {
+        if is_requires_js_supported(gen) {
             counters.requires_js_supported += 1;
         } else {
             counters.requires_js_unsupported += 1;
+        }
+    }
+}
+
+/// Canonical predicate deciding whether a `requires_js: true` generator can
+/// actually be dispatched by the runtime. Mirrors the gate inside
+/// [`collect_generators`] (the engine's load-time supported-shape check) so
+/// the corpus-wide [`SpecResolutionCounters`] published from
+/// [`SpecStore::counters`] agrees with the legacy raw-JSON walker in
+/// `ghost-complete::status::scan_spec_files`.
+///
+/// The three supported shapes are:
+///
+/// - `kind == post_process` with `(script || script_template)` AND a
+///   non-empty `source`. `self_contained` is intentionally NOT required:
+///   post-process bodies only see stdout from the spawned child, not
+///   bundler-helper closures, so the converter does not have to prove
+///   them self-contained.
+/// - `kind == script_function` with a non-empty `source` AND
+///   `self_contained == true`. The latter is the converter's proof that
+///   the JS body does not close over `__exports__` /
+///   `__webpack_require__` / similar bundler bindings the QuickJS host
+///   refuses to install.
+/// - `kind == custom` with the same `source` + `self_contained`
+///   requirements as `script_function`.
+///
+/// A `requires_js: true` generator that does NOT match one of these
+/// three shapes (missing `js_runtime`, empty `source`, missing script,
+/// or `self_contained: false` on a `script_function`/`custom`) is
+/// classified as unsupported — the engine drops it at dispatch time
+/// (see `collect_generators`), and the diagnostic counters MUST report
+/// the same truthful state.
+///
+/// This helper is the single source of truth: both the structured walk
+/// in [`accumulate_counters_from_generators`] (Phase 1 counters) and
+/// the engine's runtime gate consult it. The raw-JSON walker in
+/// `ghost-complete::status::supported_kind` mirrors the same predicate
+/// shape — keeping them in lockstep is enforced by the corpus-invariant
+/// integration test in `crates/ghost-complete/src/status.rs`.
+pub fn is_requires_js_supported(gen: &GeneratorSpec) -> bool {
+    if !gen.requires_js {
+        return false;
+    }
+    let Some(runtime) = gen.js_runtime.as_ref() else {
+        return false;
+    };
+    match runtime.kind {
+        JsRuntimeKind::PostProcess => {
+            let has_script = gen.script.is_some() || gen.script_template.is_some();
+            has_script && !runtime.source.trim().is_empty()
+        }
+        JsRuntimeKind::ScriptFunction | JsRuntimeKind::Custom => {
+            runtime.self_contained && !runtime.source.trim().is_empty()
         }
     }
 }
