@@ -69,7 +69,7 @@ fn empty_keep_warm() -> HashSet<String> {
 }
 
 #[test]
-fn eviction_disabled_preserves_v0_12_4_contract() {
+fn eviction_disabled_preserves_lazy_loading_contract() {
     // idle_threshold = MAX means no entry is ever idle long enough.
     let dir = TempDir::new().unwrap();
     write_spec(dir.path(), "git.json", &minimal_spec("git"));
@@ -464,11 +464,12 @@ fn backstop_respects_keep_warm_under_pressure() {
 #[test]
 fn backstop_warns_when_keep_warm_pin_exceeds_cap() {
     // When every Loaded entry is in keep_warm and total > cap, backstop
-    // cannot reach the target. The implementation logs a warn once per
-    // sweep. This test pins the behaviour without asserting on the log
-    // (log-capture machinery lives in lazy_loading.rs); it asserts that
-    // the entries remain Loaded and the report's evicted_backstop_count
-    // is zero.
+    // cannot reach the target. The implementation logs a warn once for
+    // the lifetime of the SpecStore (backstop_cap_warned is one-shot,
+    // not per-tick). This test pins the behaviour without asserting on
+    // the log (log-capture machinery lives in lazy_loading.rs); it
+    // asserts that the entries remain Loaded and the report's
+    // evicted_backstop_count is zero.
     let dir = TempDir::new().unwrap();
     write_n_specs(dir.path(), 3);
     let store = SpecStore::load_from_dir(dir.path()).unwrap().store;

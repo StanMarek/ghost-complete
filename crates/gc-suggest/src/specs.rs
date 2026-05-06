@@ -562,8 +562,9 @@ pub enum SpecSource {
 ///
 /// * `Empty` — registered, never accessed. Zero heap.
 /// * `Loaded(Arc)` — parsed and resident. The Arc is shared with any
-///   reader that called `spec_arc()`; eviction drops the slot's
-///   strong-ref but readers' clones survive.
+///   reader that resolved this entry (via `spec`, `spec_arc`,
+///   `spec_result`, or the `SpecStore::get*` lookups); eviction drops
+///   the slot's strong-ref but readers' clones survive.
 /// * `Evicted` — was `Loaded`, then a TTL/backstop sweep took the write
 ///   lock and released the Arc. Next access re-parses.
 /// * `Failed(error)` — parse failed; sticky, never retried, never evicted.
@@ -674,11 +675,11 @@ pub struct SpecEntry {
     parsed: RwLock<ParsedSlot>,
     /// Last access as a relaxed-ordering Unix-epoch nanosecond. Bumped on
     /// every successful read (any of `spec`, `spec_arc`, `spec_result`, or
-    /// `SpecStore::get`). Backed by a monotonic clock with a fixed offset
-    /// captured at startup; may drift from real wall clock under NTP
-    /// corrections, but eviction comparisons remain consistent because both
-    /// sides use the same clock. Used by the sweep task to identify
-    /// TTL-eligible entries.
+    /// `SpecStore::get`). Backed by a monotonic clock on macOS (captured
+    /// against a Unix-epoch base at startup) and `CLOCK_REALTIME` on other
+    /// Unix-like systems. Eviction comparisons mask backward jumps via
+    /// `duration_since(...).unwrap_or_default()`. Used by the sweep task
+    /// to identify TTL-eligible entries.
     last_accessed_nanos: AtomicU64,
 }
 
@@ -769,7 +770,8 @@ impl SpecEntry {
         self.parsed_result_arc().ok()
     }
 
-    /// Like [`Self::spec`] but returns the cached `Arc` directly.
+    /// Equivalent to [`Self::spec`]; retained for API stability with
+    /// pre-eviction callers.
     pub fn spec_arc(&self) -> Option<Arc<CompletionSpec>> {
         self.parsed_result_arc().ok()
     }
@@ -1028,14 +1030,6 @@ pub struct SweepReport {
 /// drop; the spawned task ends at its next select! arm.
 pub struct SpecCacheSweep {
     shutdown_tx: tokio::sync::watch::Sender<()>,
-    handle: tokio::task::JoinHandle<()>,
-}
-
-impl SpecCacheSweep {
-    /// Returns the join handle for testing or explicit await.
-    pub fn handle(&self) -> &tokio::task::JoinHandle<()> {
-        &self.handle
-    }
 }
 
 impl Drop for SpecCacheSweep {
@@ -1043,9 +1037,9 @@ impl Drop for SpecCacheSweep {
         // Best-effort cancel signal. If the receiver is already gone
         // (task ended on its own), send returns Err — ignored.
         let _ = self.shutdown_tx.send(());
-        // Do NOT block-on-handle here: if drop runs on the same tokio
-        // runtime as the task, that deadlocks. The cancel signal makes
-        // the task end at its next iteration; the runtime reaps it.
+        // Do NOT block-on the join handle here: if drop runs on the same
+        // tokio runtime as the task, that deadlocks. The cancel signal
+        // makes the task end at its next iteration; the runtime reaps it.
     }
 }
 
@@ -1068,7 +1062,7 @@ pub fn spawn_spec_cache_sweep(
     let max_bytes = cfg.max_resident_bytes();
     let keep_warm: HashSet<String> = cfg.keep_warm.iter().cloned().collect();
 
-    let handle = tokio::spawn(async move {
+    tokio::spawn(async move {
         let mut interval = tokio::time::interval(Duration::from_secs(interval_secs));
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         // Skip the first immediate tick; the first sweep should fire after
@@ -1095,10 +1089,7 @@ pub fn spawn_spec_cache_sweep(
         }
     });
 
-    Some(SpecCacheSweep {
-        shutdown_tx: tx,
-        handle,
-    })
+    Some(SpecCacheSweep { shutdown_tx: tx })
 }
 
 /// Test-only spawn entry. Identical to [`spawn_spec_cache_sweep`] but

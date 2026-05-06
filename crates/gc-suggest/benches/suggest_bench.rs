@@ -309,7 +309,7 @@ fn memory_benchmarks(c: &mut Criterion) {
     group.finish();
 }
 
-/// Lazy-loading benchmarks pinning the v0.12.4 contract:
+/// Lazy-loading benchmarks pinning the lazy-loading contract:
 ///
 /// - `load_with_embedded_no_parse` quantifies the cost of registering the
 ///   entire embedded corpus as `SpecSource::Embedded` entries without

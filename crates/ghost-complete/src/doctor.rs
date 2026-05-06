@@ -1108,6 +1108,25 @@ mod tests {
     }
 
     #[test]
+    fn doctor_keep_warm_unmatched_ok_when_all_match() {
+        let store = gc_suggest::SpecStore::load_with_embedded(&[])
+            .unwrap()
+            .store;
+        let cfg = gc_config::SpecCacheConfig {
+            idle_ttl_secs: 300,
+            keep_warm: vec!["git".to_string()],
+            ..Default::default()
+        };
+
+        let result = check_keep_warm_unmatched(&store, &cfg);
+
+        assert!(matches!(result.severity, Severity::Ok));
+        assert!(result
+            .message
+            .contains("all entries match registered aliases"));
+    }
+
+    #[test]
     fn doctor_warns_at_90pct_resident_cap() {
         let dir = tempfile::TempDir::new().unwrap();
         let large_suggestion = "x".repeat(1_000_000);
