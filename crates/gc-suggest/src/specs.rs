@@ -759,10 +759,7 @@ impl SpecEntry {
     /// `SystemTime`. Production code uses `bump_last_accessed` exclusively.
     #[doc(hidden)]
     pub fn set_last_accessed_for_test(&self, ts: SystemTime) {
-        let nanos = ts
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_nanos() as u64;
+        let nanos = ts.duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos() as u64;
         self.last_accessed_nanos.store(nanos, Ordering::Relaxed);
     }
 
@@ -1207,7 +1204,12 @@ impl SpecStore {
         max_resident_bytes: Option<u64>,
         keep_warm: &HashSet<String>,
     ) -> EvictionReport {
-        self.evict_idle_at(SystemTime::now(), idle_threshold, max_resident_bytes, keep_warm)
+        self.evict_idle_at(
+            SystemTime::now(),
+            idle_threshold,
+            max_resident_bytes,
+            keep_warm,
+        )
     }
 
     /// Internal helper that takes an explicit `now` for deterministic tests.

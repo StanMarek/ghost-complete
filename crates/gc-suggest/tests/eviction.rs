@@ -48,7 +48,12 @@ fn evict_idle_evicts_loaded_past_threshold() {
     assert_eq!(store.parsed_count(), 1);
 
     // Force last_accessed to a known-old time.
-    let entry = store.entries().iter().find(|e| e.id == "git").unwrap().clone();
+    let entry = store
+        .entries()
+        .iter()
+        .find(|e| e.id == "git")
+        .unwrap()
+        .clone();
     let an_hour_ago = SystemTime::now() - Duration::from_secs(3600);
     entry.set_last_accessed_for_test(an_hour_ago);
 
@@ -68,17 +73,17 @@ fn evict_idle_skips_keep_warm_by_filename_stem() {
     write_spec(dir.path(), "git.json", &minimal_spec("git"));
     let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
     let _ = store.get("git");
-    let entry = store.entries().iter().find(|e| e.id == "git").unwrap().clone();
+    let entry = store
+        .entries()
+        .iter()
+        .find(|e| e.id == "git")
+        .unwrap()
+        .clone();
     entry.set_last_accessed_for_test(SystemTime::now() - Duration::from_secs(3600));
 
     let mut keep_warm = HashSet::new();
     keep_warm.insert("git".to_string());
-    let report = store.evict_idle_at(
-        SystemTime::now(),
-        Duration::from_secs(60),
-        None,
-        &keep_warm,
-    );
+    let report = store.evict_idle_at(SystemTime::now(), Duration::from_secs(60), None, &keep_warm);
     assert_eq!(report.evicted_idle_count, 0);
     assert_eq!(report.kept_warm_count, 1);
     assert_eq!(store.parsed_count(), 1);
@@ -105,12 +110,7 @@ fn evict_idle_skips_keep_warm_by_completion_name() {
 
     let mut keep_warm = HashSet::new();
     keep_warm.insert("mt".to_string()); // matches CompletionSpec.name, not stem
-    let report = store.evict_idle_at(
-        SystemTime::now(),
-        Duration::from_secs(60),
-        None,
-        &keep_warm,
-    );
+    let report = store.evict_idle_at(SystemTime::now(), Duration::from_secs(60), None, &keep_warm);
     assert_eq!(report.kept_warm_count, 1);
     assert_eq!(report.evicted_idle_count, 0);
 }
@@ -148,7 +148,12 @@ fn evict_idle_does_not_clear_empty_slot() {
     write_spec(dir.path(), "git.json", &minimal_spec("git"));
     let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
     // Never call get(); slot stays Empty.
-    let entry = store.entries().iter().find(|e| e.id == "git").unwrap().clone();
+    let entry = store
+        .entries()
+        .iter()
+        .find(|e| e.id == "git")
+        .unwrap()
+        .clone();
     assert!(!entry.is_parsed());
 
     let report = store.evict_idle_at(
@@ -161,7 +166,10 @@ fn evict_idle_does_not_clear_empty_slot() {
         report.evicted_idle_count, 0,
         "Empty slot must not count as evicted"
     );
-    assert!(!entry.is_parsed(), "Empty slot should remain Empty after sweep");
+    assert!(
+        !entry.is_parsed(),
+        "Empty slot should remain Empty after sweep"
+    );
 }
 
 #[test]
@@ -170,7 +178,12 @@ fn evict_idle_then_get_returns_fresh_arc_with_same_contents() {
     write_spec(dir.path(), "git.json", &minimal_spec("git"));
     let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
     let arc1 = store.get("git").expect("first get must resolve");
-    let entry = store.entries().iter().find(|e| e.id == "git").unwrap().clone();
+    let entry = store
+        .entries()
+        .iter()
+        .find(|e| e.id == "git")
+        .unwrap()
+        .clone();
     entry.set_last_accessed_for_test(SystemTime::now() - Duration::from_secs(3600));
 
     let _ = store.evict_idle_at(
@@ -197,7 +210,9 @@ fn last_sweep_records_under_lock() {
     let now = SystemTime::now();
     let _ = store.evict_idle_at(now, Duration::MAX, None, &empty_keep_warm());
 
-    let report = store.last_sweep().expect("last_sweep must record after a run");
+    let report = store
+        .last_sweep()
+        .expect("last_sweep must record after a run");
     assert_eq!(report.timestamp, now);
     assert_eq!(report.evicted_idle_count, 0);
 }
@@ -211,7 +226,12 @@ fn concurrent_evict_and_get_yields_single_parse() {
 
     // Force the slot to Evicted via a manual sweep-then-eligible.
     let _ = store.get("git");
-    let entry = store.entries().iter().find(|e| e.id == "git").unwrap().clone();
+    let entry = store
+        .entries()
+        .iter()
+        .find(|e| e.id == "git")
+        .unwrap()
+        .clone();
     entry.set_last_accessed_for_test(SystemTime::now() - Duration::from_secs(3600));
     let _ = store.evict_idle_at(
         SystemTime::now(),
@@ -255,7 +275,12 @@ fn force_load_errors_re_parses_evicted_entries() {
     // Prime: parse both. Broken stays Failed; git becomes Loaded.
     let _ = store.get("git");
     let _ = store.get("broken");
-    let git_entry = store.entries().iter().find(|e| e.id == "git").unwrap().clone();
+    let git_entry = store
+        .entries()
+        .iter()
+        .find(|e| e.id == "git")
+        .unwrap()
+        .clone();
     git_entry.set_last_accessed_for_test(SystemTime::now() - Duration::from_secs(3600));
 
     // Evict git (broken slot is Failed and survives).
@@ -271,7 +296,11 @@ fn force_load_errors_re_parses_evicted_entries() {
     // Loaded again) and return the broken entry's still-stuck Failed
     // error. Documented behaviour: status pays the re-parse cost.
     let errors = store.force_load_errors();
-    assert_eq!(errors.len(), 1, "only the broken entry should report an error");
+    assert_eq!(
+        errors.len(),
+        1,
+        "only the broken entry should report an error"
+    );
     assert_eq!(errors[0].id, "broken");
     assert_eq!(
         store.parsed_count(),
@@ -320,13 +349,16 @@ fn backstop_evicts_oldest_first() {
     }
     assert_eq!(store.parsed_count(), 5);
     let resident_before = store.estimated_resident_bytes();
-    assert!(resident_before > 1, "fixture specs should have non-zero heap estimate");
+    assert!(
+        resident_before > 1,
+        "fixture specs should have non-zero heap estimate"
+    );
 
     // Cap just below the current estimate forces exactly the oldest entry
     // out: freeing cmd3 is enough to get back under the cap.
     let report = store.evict_idle_at(
         now,
-        Duration::MAX,            // TTL phase: no-op
+        Duration::MAX,             // TTL phase: no-op
         Some(resident_before - 1), // backstop only
         &empty_keep_warm(),
     );
@@ -427,7 +459,12 @@ async fn sweep_smoke_evicts_idle_after_interval() {
     let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
     let store = Arc::new(store);
     let _ = store.get("git");
-    let entry = store.entries().iter().find(|e| e.id == "git").unwrap().clone();
+    let entry = store
+        .entries()
+        .iter()
+        .find(|e| e.id == "git")
+        .unwrap()
+        .clone();
     entry.set_last_accessed_for_test(SystemTime::now() - Duration::from_secs(3600));
 
     let cfg = SpecCacheConfig {
@@ -448,7 +485,11 @@ async fn sweep_smoke_evicts_idle_after_interval() {
     tokio::time::advance(Duration::from_secs(3)).await;
     tokio::task::yield_now().await; // give the sweep task a chance to run
 
-    assert_eq!(store.parsed_count(), 0, "sweep task must have evicted the idle entry");
+    assert_eq!(
+        store.parsed_count(),
+        0,
+        "sweep task must have evicted the idle entry"
+    );
 }
 
 #[tokio::test(flavor = "current_thread", start_paused = true)]

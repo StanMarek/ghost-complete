@@ -568,8 +568,7 @@ impl GhostConfig {
                 );
                 self.suggest.spec_cache.sweep_interval_secs = 60;
             }
-            if self.suggest.spec_cache.sweep_interval_secs
-                >= self.suggest.spec_cache.idle_ttl_secs
+            if self.suggest.spec_cache.sweep_interval_secs >= self.suggest.spec_cache.idle_ttl_secs
             {
                 tracing::warn!(
                     sweep_interval = self.suggest.spec_cache.sweep_interval_secs,
