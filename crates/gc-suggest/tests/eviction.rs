@@ -438,6 +438,11 @@ async fn sweep_smoke_evicts_idle_after_interval() {
     };
     let _sweep = gc_suggest::spawn_spec_cache_sweep_for_test(Arc::clone(&store), cfg);
     tokio::task::yield_now().await; // let the task consume interval's initial tick
+    assert_eq!(
+        store.parsed_count(),
+        1,
+        "initial interval tick must be skipped; first sweep waits one full interval"
+    );
 
     // Advance virtual time past one sweep tick.
     tokio::time::advance(Duration::from_secs(3)).await;
@@ -452,6 +457,7 @@ async fn sweep_smoke_cancels_on_drop() {
     write_spec(dir.path(), "git.json", &minimal_spec("git"));
     let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
     let store = Arc::new(store);
+    let weak_store = Arc::downgrade(&store);
 
     let cfg = SpecCacheConfig {
         idle_ttl_secs: 1,
@@ -460,12 +466,15 @@ async fn sweep_smoke_cancels_on_drop() {
         max_resident_mb: 0,
     };
     let sweep = gc_suggest::spawn_spec_cache_sweep_for_test(Arc::clone(&store), cfg);
+    drop(store);
     drop(sweep);
 
     tokio::time::advance(Duration::from_secs(10)).await;
     tokio::task::yield_now().await;
-    // No assertion needed — if the task is leaked, tokio runtime drop
-    // would log; the test simply must not hang.
+    assert!(
+        weak_store.upgrade().is_none(),
+        "dropping the sweep guard must let the task exit and release its SpecStore Arc"
+    );
 }
 
 #[tokio::test(flavor = "current_thread", start_paused = true)]

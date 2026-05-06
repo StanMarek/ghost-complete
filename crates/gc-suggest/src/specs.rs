@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -914,6 +914,8 @@ pub struct SpecStore {
     conflicts: Vec<AliasConflict>,
     /// Last completed sweep report. `None` until first sweep runs.
     last_sweep: RwLock<Option<SweepReport>>,
+    /// Ensures an unreachable resident cap does not warn on every sweep.
+    backstop_cap_warned: AtomicBool,
 }
 
 pub struct SpecLoadResult {
@@ -1085,6 +1087,7 @@ impl SpecStore {
                 by_alias,
                 conflicts,
                 last_sweep: RwLock::new(None),
+                backstop_cap_warned: AtomicBool::new(false),
             },
             directory_errors,
         })
@@ -1154,6 +1157,7 @@ impl SpecStore {
                 by_alias,
                 conflicts,
                 last_sweep: RwLock::new(None),
+                backstop_cap_warned: AtomicBool::new(false),
             },
             directory_errors,
         })
@@ -1284,7 +1288,7 @@ impl SpecStore {
                     evicted_backstop += 1;
                 }
 
-                if current > cap {
+                if current > cap && !self.backstop_cap_warned.swap(true, Ordering::Relaxed) {
                     tracing::warn!(
                         resident_bytes = current,
                         cap_bytes = cap,
