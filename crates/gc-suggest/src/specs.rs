@@ -953,6 +953,97 @@ pub struct SweepReport {
     pub estimated_resident_bytes_after: u64,
 }
 
+/// RAII guard for the cache-eviction sweep task. Cancellation fires on
+/// drop; the spawned task ends at its next select! arm.
+pub struct SpecCacheSweep {
+    shutdown_tx: tokio::sync::watch::Sender<()>,
+    handle: tokio::task::JoinHandle<()>,
+}
+
+impl SpecCacheSweep {
+    /// Returns the join handle for testing or explicit await.
+    pub fn handle(&self) -> &tokio::task::JoinHandle<()> {
+        &self.handle
+    }
+}
+
+impl Drop for SpecCacheSweep {
+    fn drop(&mut self) {
+        // Best-effort cancel signal. If the receiver is already gone
+        // (task ended on its own), send returns Err — ignored.
+        let _ = self.shutdown_tx.send(());
+        // Do NOT block-on-handle here: if drop runs on the same tokio
+        // runtime as the task, that deadlocks. The cancel signal makes
+        // the task end at its next iteration; the runtime reaps it.
+    }
+}
+
+/// Spawn a background sweep that periodically calls
+/// [`SpecStore::evict_idle`] using the policy in `cfg`. Returns the RAII
+/// guard the caller must keep alive for the duration of the engine.
+///
+/// Returns `None` when `cfg.idle_ttl_secs == 0` — eviction is opt-in;
+/// disabled is a no-op.
+pub fn spawn_spec_cache_sweep(
+    spec_store: Arc<SpecStore>,
+    cfg: gc_config::SpecCacheConfig,
+) -> Option<SpecCacheSweep> {
+    if !cfg.enabled() {
+        return None;
+    }
+    let (tx, mut rx) = tokio::sync::watch::channel(());
+    let interval_secs = cfg.sweep_interval_secs.max(1);
+    let idle_ttl = Duration::from_secs(cfg.idle_ttl_secs);
+    let max_bytes = cfg.max_resident_bytes();
+    let keep_warm: HashSet<String> = cfg.keep_warm.iter().cloned().collect();
+
+    let handle = tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(interval_secs));
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        // Skip the first immediate tick; the first sweep should fire after
+        // one full interval, not at startup.
+        interval.tick().await;
+
+        loop {
+            tokio::select! {
+                _ = rx.changed() => break,
+                _ = interval.tick() => {
+                    let report = spec_store.evict_idle(idle_ttl, max_bytes, &keep_warm);
+                    if report.evicted_idle_count > 0 || report.evicted_backstop_count > 0 {
+                        tracing::debug!(
+                            evicted_idle = report.evicted_idle_count,
+                            evicted_backstop = report.evicted_backstop_count,
+                            kept_warm = report.kept_warm_count,
+                            parsed = report.parsed_count_after,
+                            bytes = report.estimated_resident_bytes_after,
+                            "spec_cache sweep"
+                        );
+                    }
+                }
+            }
+        }
+    });
+
+    Some(SpecCacheSweep {
+        shutdown_tx: tx,
+        handle,
+    })
+}
+
+/// Test-only spawn entry. Identical to [`spawn_spec_cache_sweep`] but
+/// returns the guard unconditionally so tests can verify cancel behaviour
+/// without hitting the `enabled()` short-circuit.
+#[doc(hidden)]
+pub fn spawn_spec_cache_sweep_for_test(
+    spec_store: Arc<SpecStore>,
+    mut cfg: gc_config::SpecCacheConfig,
+) -> SpecCacheSweep {
+    if cfg.idle_ttl_secs == 0 {
+        cfg.idle_ttl_secs = 1;
+    }
+    spawn_spec_cache_sweep(spec_store, cfg).expect("test helper guarantees enabled() returns true")
+}
+
 impl SpecStore {
     /// Load specs from multiple directories into a precedence-ordered alias
     /// index. A spec from an earlier directory is the primary candidate when

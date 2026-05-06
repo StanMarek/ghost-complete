@@ -380,6 +380,16 @@ impl SuggestionEngine {
         self
     }
 
+    /// Spawn the cache-eviction sweep task using the provided config.
+    /// Returns `None` when eviction is disabled. The caller must keep
+    /// the returned guard alive for the lifetime of the engine.
+    pub fn spawn_spec_cache_sweep(
+        &self,
+        cfg: gc_config::SpecCacheConfig,
+    ) -> Option<crate::specs::SpecCacheSweep> {
+        crate::specs::spawn_spec_cache_sweep(Arc::clone(&self.spec_store), cfg)
+    }
+
     #[doc(hidden)]
     pub fn with_ssh_host_cache_path(mut self, path: std::path::PathBuf) -> Self {
         self.ssh_host_cache = Some(SshHostCache::new(path));

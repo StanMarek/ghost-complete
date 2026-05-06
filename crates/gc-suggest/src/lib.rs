@@ -37,7 +37,8 @@ pub use pipeline::try_run_pipeline;
 pub use specs::{
     check_json_depth, parse_spec_checked_and_sanitized, sanitize_spec_strings, AliasConflict,
     AliasConflictDisposition, AliasConflictKind, AliasOwner, CompletionSpec, EvictionReport,
-    SpecEntry, SpecEntryLoadError, SpecLoadResult, SpecLocation, SpecLookupError, SpecStore,
-    SweepReport, MAX_SPEC_JSON_DEPTH,
+    spawn_spec_cache_sweep, spawn_spec_cache_sweep_for_test, SpecCacheSweep, SpecEntry,
+    SpecEntryLoadError, SpecLoadResult, SpecLocation, SpecLookupError, SpecStore, SweepReport,
+    MAX_SPEC_JSON_DEPTH,
 };
 pub use types::{Suggestion, SuggestionKind, SuggestionSource};

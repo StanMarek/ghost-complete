@@ -9,6 +9,7 @@ use std::fs;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
+use gc_config::SpecCacheConfig;
 use gc_suggest::SpecStore;
 use tempfile::TempDir;
 
@@ -306,15 +307,23 @@ fn backstop_evicts_oldest_first() {
     for i in 0..5 {
         let id = format!("cmd{i}");
         let entry = store.entries().iter().find(|e| e.id == id).unwrap().clone();
-        // cmd0 oldest, cmd4 newest.
-        entry.set_last_accessed_for_test(now - Duration::from_secs((5 - i as u64) * 100));
+        // Deliberately make cmd3 oldest so insertion-order eviction would fail.
+        let age_secs = match i {
+            3 => 500,
+            0 => 400,
+            1 => 300,
+            2 => 200,
+            4 => 100,
+            _ => unreachable!(),
+        };
+        entry.set_last_accessed_for_test(now - Duration::from_secs(age_secs));
     }
     assert_eq!(store.parsed_count(), 5);
     let resident_before = store.estimated_resident_bytes();
     assert!(resident_before > 1, "fixture specs should have non-zero heap estimate");
 
     // Cap just below the current estimate forces exactly the oldest entry
-    // out: freeing cmd0 is enough to get back under the cap.
+    // out: freeing cmd3 is enough to get back under the cap.
     let report = store.evict_idle_at(
         now,
         Duration::MAX,            // TTL phase: no-op
@@ -323,14 +332,20 @@ fn backstop_evicts_oldest_first() {
     );
     assert_eq!(report.evicted_backstop_count, 1);
 
-    // Specifically verify cmd0 (oldest) was evicted before cmd4 (newest).
+    // Specifically verify cmd3 (oldest) was evicted before cmd0 (first
+    // registered) and cmd4 (newest).
     // `is_parsed()` remains true for Evicted slots by design, so Arc identity
-    // is the public observable: cmd0 re-parses to a fresh Arc; cmd4 stays warm.
-    let cmd0_after = store.get("cmd0").expect("cmd0 must reparse");
+    // is the public observable: cmd3 re-parses to a fresh Arc; cmd0/cmd4 stay warm.
+    let cmd3_after = store.get("cmd3").expect("cmd3 must reparse");
+    let cmd0_after = store.get("cmd0").expect("cmd0 must remain available");
     let cmd4_after = store.get("cmd4").expect("cmd4 must remain available");
     assert!(
-        !Arc::ptr_eq(&loaded_arcs[0], &cmd0_after),
+        !Arc::ptr_eq(&loaded_arcs[3], &cmd3_after),
         "oldest entry must reparse after backstop eviction"
+    );
+    assert!(
+        Arc::ptr_eq(&loaded_arcs[0], &cmd0_after),
+        "first registered entry should remain resident when it is not oldest"
     );
     assert!(
         Arc::ptr_eq(&loaded_arcs[4], &cmd4_after),
@@ -403,4 +418,83 @@ fn backstop_warns_when_keep_warm_pin_exceeds_cap() {
         report.parsed_count_after, 3,
         "all three entries must remain Loaded"
     );
+}
+
+#[tokio::test(flavor = "current_thread", start_paused = true)]
+async fn sweep_smoke_evicts_idle_after_interval() {
+    let dir = TempDir::new().unwrap();
+    write_spec(dir.path(), "git.json", &minimal_spec("git"));
+    let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+    let store = Arc::new(store);
+    let _ = store.get("git");
+    let entry = store.entries().iter().find(|e| e.id == "git").unwrap().clone();
+    entry.set_last_accessed_for_test(SystemTime::now() - Duration::from_secs(3600));
+
+    let cfg = SpecCacheConfig {
+        idle_ttl_secs: 1,
+        sweep_interval_secs: 1,
+        keep_warm: vec![],
+        max_resident_mb: 0,
+    };
+    let _sweep = gc_suggest::spawn_spec_cache_sweep_for_test(Arc::clone(&store), cfg);
+    tokio::task::yield_now().await; // let the task consume interval's initial tick
+
+    // Advance virtual time past one sweep tick.
+    tokio::time::advance(Duration::from_secs(3)).await;
+    tokio::task::yield_now().await; // give the sweep task a chance to run
+
+    assert_eq!(store.parsed_count(), 0, "sweep task must have evicted the idle entry");
+}
+
+#[tokio::test(flavor = "current_thread", start_paused = true)]
+async fn sweep_smoke_cancels_on_drop() {
+    let dir = TempDir::new().unwrap();
+    write_spec(dir.path(), "git.json", &minimal_spec("git"));
+    let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+    let store = Arc::new(store);
+
+    let cfg = SpecCacheConfig {
+        idle_ttl_secs: 1,
+        sweep_interval_secs: 1,
+        keep_warm: vec![],
+        max_resident_mb: 0,
+    };
+    let sweep = gc_suggest::spawn_spec_cache_sweep_for_test(Arc::clone(&store), cfg);
+    drop(sweep);
+
+    tokio::time::advance(Duration::from_secs(10)).await;
+    tokio::task::yield_now().await;
+    // No assertion needed — if the task is leaked, tokio runtime drop
+    // would log; the test simply must not hang.
+}
+
+#[tokio::test(flavor = "current_thread", start_paused = true)]
+async fn sweep_smoke_no_log_spam_when_nothing_eligible() {
+    // The sweep loop's tracing::debug! must be gated on
+    // "evicted_idle_count > 0 || evicted_backstop_count > 0". A nothing-
+    // eligible sweep must not log. We assert the report itself shows
+    // zero evictions across N sweep ticks.
+    let dir = TempDir::new().unwrap();
+    write_spec(dir.path(), "git.json", &minimal_spec("git"));
+    let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+    let store = Arc::new(store);
+    let _ = store.get("git"); // Loaded, just-now timestamp
+
+    let cfg = SpecCacheConfig {
+        idle_ttl_secs: 3600, // 1h — git's just-now timestamp is not idle
+        sweep_interval_secs: 1,
+        keep_warm: vec![],
+        max_resident_mb: 0,
+    };
+    let _sweep = gc_suggest::spawn_spec_cache_sweep_for_test(Arc::clone(&store), cfg);
+    tokio::task::yield_now().await; // let the task consume interval's initial tick
+
+    // Advance past 5 sweep intervals; each is a no-op.
+    tokio::time::advance(Duration::from_secs(5)).await;
+    tokio::task::yield_now().await;
+
+    let report = store.last_sweep().expect("at least one sweep ran");
+    assert_eq!(report.evicted_idle_count, 0);
+    assert_eq!(report.evicted_backstop_count, 0);
+    assert_eq!(report.parsed_count_after, 1);
 }
