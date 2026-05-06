@@ -43,6 +43,7 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # max_results = 50
 # max_history_results = 5
 # generator_timeout_ms = 5000  # Per-invocation timeout (ms) for async script/git generators
+# flags_require_dash = true  # Set false to mix spec flags into argument suggestions before user types '-'
 
 # [suggest.providers]
 # commands = true

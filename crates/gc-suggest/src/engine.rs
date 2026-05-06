@@ -275,6 +275,10 @@ pub struct SuggestionEngine {
     /// `js_runtime` were missing — they're dropped from the generator
     /// pool. Mirrors `ProvidersConfig::js_runtime` from `gc-config`.
     providers_js_runtime: bool,
+    /// When `true`, `Context::SpecArg` suppresses spec-declared flags;
+    /// they reach the popup only via `Context::FlagPrefix` (after the
+    /// user types `-`). Mirrors `SuggestConfig::flags_require_dash`.
+    flags_require_dash: bool,
 }
 
 impl SuggestionEngine {
@@ -317,6 +321,7 @@ impl SuggestionEngine {
             providers_specs: true,
             providers_git: true,
             providers_js_runtime: true,
+            flags_require_dash: true,
         })
     }
 
@@ -330,6 +335,7 @@ impl SuggestionEngine {
         specs: bool,
         git: bool,
         js_runtime: bool,
+        flags_require_dash: bool,
     ) -> Self {
         self.max_results = max_results;
         self.max_history_results = max_history_results;
@@ -338,6 +344,7 @@ impl SuggestionEngine {
         self.providers_specs = specs;
         self.providers_git = git;
         self.providers_js_runtime = js_runtime;
+        self.flags_require_dash = flags_require_dash;
         // Reload history only if enabled
         if max_history_results > 0 {
             self.history_provider = HistoryProvider::load(DEFAULT_MAX_HISTORY_ENTRIES);
@@ -371,6 +378,7 @@ impl SuggestionEngine {
             providers_specs: true,
             providers_git: true,
             providers_js_runtime: true,
+            flags_require_dash: true,
         }
     }
 
@@ -1205,7 +1213,9 @@ impl SuggestionEngine {
 
         if !suppress_commands {
             candidates.extend(subcommands);
-            candidates.extend(options);
+            if !self.flags_require_dash {
+                candidates.extend(options);
+            }
         }
 
         // Static `args.suggestions` are values for an arg position, not commands —
@@ -1991,6 +2001,44 @@ mod tests {
     }
 
     #[test]
+    fn flags_require_dash_default_hides_flags_in_spec_arg() {
+        // Default `flags_require_dash = true`: empty current_word in SpecArg
+        // context yields subcommands but no flags from the spec's `options`.
+        let engine = make_engine();
+        let ctx = make_ctx(Some("git"), vec![], "", 1);
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "git ")
+            .unwrap();
+        assert!(
+            !results
+                .suggestions
+                .iter()
+                .any(|s| s.kind == SuggestionKind::Flag),
+            "flags must not appear in SpecArg when flags_require_dash=true: {:?}",
+            results.suggestions,
+        );
+    }
+
+    #[test]
+    fn flags_require_dash_disabled_emits_flags_in_spec_arg() {
+        // Opt-out: with flags_require_dash=false the SpecArg arm still extends
+        // candidates with the spec's flags, matching pre-existing behavior.
+        let engine = make_engine().with_suggest_config(50, true, 5, true, true, true, false, false);
+        let ctx = make_ctx(Some("git"), vec![], "", 1);
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "git ")
+            .unwrap();
+        assert!(
+            results
+                .suggestions
+                .iter()
+                .any(|s| s.kind == SuggestionKind::Flag),
+            "flags must appear in SpecArg when flags_require_dash=false: {:?}",
+            results.suggestions,
+        );
+    }
+
+    #[test]
     fn test_git_checkout_with_flag_prefix_still_shows_flags() {
         // FlagPrefix context dispatches to suggest_flag_prefix which returns
         // spec-declared flags and subcommands only — no filesystem, no git
@@ -2458,7 +2506,7 @@ mod tests {
         let history = HistoryProvider::from_entries(vec![]);
         let commands = CommandsProvider::from_list(vec!["git".into(), "ls".into()]);
         let engine = SuggestionEngine::with_providers(spec_store, history, commands)
-            .with_suggest_config(50, false, 5, true, true, true, true);
+            .with_suggest_config(50, false, 5, true, true, true, true, false);
 
         let ctx = make_ctx(None, vec![], "gi", 0);
         let results = engine.suggest_sync(&ctx, Path::new("/tmp"), "gi").unwrap();

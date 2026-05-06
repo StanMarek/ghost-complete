@@ -217,6 +217,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 config.suggest.providers.git,
                 config.suggest.providers.js_runtime,
                 config.suggest.generator_timeout_ms,
+                config.suggest.flags_require_dash,
             ),
     ));
 
@@ -1753,7 +1754,7 @@ mod tests {
     fn proxy_resolution_test_handler(resolution: &SpecDirResolution) -> InputHandler {
         input_handler_for_resolution(resolution, TerminalProfile::for_ghostty())
             .expect("handler")
-            .with_suggest_config(20, false, 0, false, true, false, false, 100)
+            .with_suggest_config(20, false, 0, false, true, false, false, 100, false)
     }
 
     fn trigger_texts(handler: &mut InputHandler, buffer: &str) -> Vec<String> {

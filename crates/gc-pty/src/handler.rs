@@ -455,6 +455,7 @@ impl InputHandler {
         git: bool,
         js_runtime: bool,
         generator_timeout_ms: u64,
+        flags_require_dash: bool,
     ) -> Self {
         // During builder phase the Arc has exactly one reference, so try_unwrap succeeds.
         // Can't use .expect() directly because SuggestionEngine doesn't derive Debug;
@@ -471,6 +472,7 @@ impl InputHandler {
                 specs,
                 git,
                 js_runtime,
+                flags_require_dash,
             );
         Self {
             engine: Arc::new(engine),

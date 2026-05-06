@@ -154,6 +154,14 @@ pub fn all_fields() -> Vec<FieldMeta> {
             reload: ReloadBehavior::RequiresRestart,
             help: "Timeout in ms for async script generators",
         },
+        FieldMeta {
+            section: "suggest",
+            key: "flags_require_dash",
+            field_type: FieldType::Bool,
+            default: "true",
+            reload: ReloadBehavior::RequiresRestart,
+            help: "Show spec flags only after typing '-' (false = mix flags into argument suggestions)",
+        },
         // suggest.providers
         FieldMeta {
             section: "suggest.providers",
