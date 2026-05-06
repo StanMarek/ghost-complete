@@ -51,4 +51,17 @@ step "Reinstalling shell integration"
 ghost-complete install
 
 step "Opening config editor"
-exec ghost-complete config edit
+ghost-complete config edit
+
+cat <<'NOTE'
+
+[3m===========================================================================[0m
+[1;33mHeads up:[0m the running ghost-complete PTY proxy in your current shell is
+the OLD binary — proxies are spawned at shell startup and do not hot-reload
+their own code (only config.toml). To exercise the new binary:
+
+  • Open a new terminal, OR
+  • In this shell run:  pkill ghost-complete && exec zsh
+
+[3m===========================================================================[0m
+NOTE
