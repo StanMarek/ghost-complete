@@ -1123,7 +1123,7 @@ impl SpecStore {
         &self,
         now: SystemTime,
         idle_threshold: Duration,
-        _max_resident_bytes: Option<u64>,
+        max_resident_bytes: Option<u64>,
         keep_warm: &HashSet<String>,
     ) -> EvictionReport {
         let mut evicted_idle = 0usize;
@@ -1156,8 +1156,53 @@ impl SpecStore {
             evicted_idle += 1;
         }
 
-        // Phase 2: backstop. Implemented in Task 8.
-        let evicted_backstop = 0usize;
+        // Phase 2: LRU backstop. Only when a cap is set AND we still exceed it.
+        let mut evicted_backstop = 0usize;
+        if let Some(cap) = max_resident_bytes {
+            let mut current = self.estimated_resident_bytes();
+            if current > cap {
+                // Snapshot eligible entries with their last_accessed
+                // timestamps. We sort outside any lock; per-entry write
+                // locks are taken when actually evicting.
+                let mut victims: Vec<(SystemTime, &Arc<SpecEntry>)> = self
+                    .entries
+                    .iter()
+                    .filter(|e| !e.has_warm_alias(keep_warm))
+                    .filter_map(|e| {
+                        let guard = e.parsed.read().unwrap_or_else(|p| p.into_inner());
+                        if guard.is_loaded() {
+                            Some((e.last_accessed(), e))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+                victims.sort_by_key(|(ts, _)| *ts); // ascending — oldest first
+
+                for (_, entry) in &victims {
+                    if current <= cap {
+                        break;
+                    }
+                    let mut guard = entry.parsed.write().unwrap_or_else(|p| p.into_inner());
+                    let freed = match &*guard {
+                        ParsedSlot::Loaded(arc) => estimated_heap_bytes(arc.as_ref()) as u64,
+                        _ => continue, // raced — no longer Loaded
+                    };
+                    *guard = ParsedSlot::Evicted;
+                    current = current.saturating_sub(freed);
+                    evicted_backstop += 1;
+                }
+
+                if current > cap {
+                    tracing::warn!(
+                        resident_bytes = current,
+                        cap_bytes = cap,
+                        "spec_cache backstop unable to reach cap (likely keep_warm \
+                         pinned heap exceeds cap)"
+                    );
+                }
+            }
+        }
 
         let parsed_count = self.parsed_count();
         let resident = self.estimated_resident_bytes();

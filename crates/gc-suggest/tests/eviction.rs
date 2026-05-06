@@ -278,3 +278,129 @@ fn force_load_errors_re_parses_evicted_entries() {
         "git must have been re-parsed by force_load"
     );
 }
+
+fn write_n_specs(dir: &std::path::Path, n: usize) {
+    for i in 0..n {
+        write_spec(
+            dir,
+            &format!("cmd{i}.json"),
+            &minimal_spec(&format!("cmd{i}")),
+        );
+    }
+}
+
+#[test]
+fn backstop_evicts_oldest_first() {
+    let dir = TempDir::new().unwrap();
+    write_n_specs(dir.path(), 5);
+    let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+
+    // Load all 5; set distinct last_accessed timestamps.
+    let now = SystemTime::now();
+    let loaded_arcs: Vec<_> = (0..5)
+        .map(|i| {
+            let id = format!("cmd{i}");
+            store.get(&id).expect("spec must load")
+        })
+        .collect();
+    for i in 0..5 {
+        let id = format!("cmd{i}");
+        let entry = store.entries().iter().find(|e| e.id == id).unwrap().clone();
+        // cmd0 oldest, cmd4 newest.
+        entry.set_last_accessed_for_test(now - Duration::from_secs((5 - i as u64) * 100));
+    }
+    assert_eq!(store.parsed_count(), 5);
+    let resident_before = store.estimated_resident_bytes();
+    assert!(resident_before > 1, "fixture specs should have non-zero heap estimate");
+
+    // Cap just below the current estimate forces exactly the oldest entry
+    // out: freeing cmd0 is enough to get back under the cap.
+    let report = store.evict_idle_at(
+        now,
+        Duration::MAX,            // TTL phase: no-op
+        Some(resident_before - 1), // backstop only
+        &empty_keep_warm(),
+    );
+    assert_eq!(report.evicted_backstop_count, 1);
+
+    // Specifically verify cmd0 (oldest) was evicted before cmd4 (newest).
+    // `is_parsed()` remains true for Evicted slots by design, so Arc identity
+    // is the public observable: cmd0 re-parses to a fresh Arc; cmd4 stays warm.
+    let cmd0_after = store.get("cmd0").expect("cmd0 must reparse");
+    let cmd4_after = store.get("cmd4").expect("cmd4 must remain available");
+    assert!(
+        !Arc::ptr_eq(&loaded_arcs[0], &cmd0_after),
+        "oldest entry must reparse after backstop eviction"
+    );
+    assert!(
+        Arc::ptr_eq(&loaded_arcs[4], &cmd4_after),
+        "newest entry should remain resident when one eviction satisfies cap"
+    );
+}
+
+#[test]
+fn backstop_respects_keep_warm_under_pressure() {
+    let dir = TempDir::new().unwrap();
+    write_n_specs(dir.path(), 3);
+    let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+    let now = SystemTime::now();
+    for i in 0..3 {
+        let _ = store.get(&format!("cmd{i}"));
+    }
+    let cmd0_entry = store
+        .entries()
+        .iter()
+        .find(|e| e.id == "cmd0")
+        .unwrap()
+        .clone();
+    cmd0_entry.set_last_accessed_for_test(now - Duration::from_secs(3600));
+
+    let mut keep_warm = HashSet::new();
+    keep_warm.insert("cmd0".to_string());
+    let _ = store.evict_idle_at(
+        now,
+        Duration::MAX,
+        Some(1), // pathological cap
+        &keep_warm,
+    );
+    // cmd0 must remain Loaded despite being the oldest.
+    let cmd0_after = store.entries().iter().find(|e| e.id == "cmd0").unwrap();
+    assert!(
+        cmd0_after.spec_arc().is_some(),
+        "keep_warm entry must be exempt from backstop eviction"
+    );
+}
+
+#[test]
+fn backstop_warns_when_keep_warm_pin_exceeds_cap() {
+    // When every Loaded entry is in keep_warm and total > cap, backstop
+    // cannot reach the target. The implementation logs a warn once per
+    // sweep. This test pins the behaviour without asserting on the log
+    // (log-capture machinery lives in lazy_loading.rs); it asserts that
+    // the entries remain Loaded and the report's evicted_backstop_count
+    // is zero.
+    let dir = TempDir::new().unwrap();
+    write_n_specs(dir.path(), 3);
+    let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+    for i in 0..3 {
+        let _ = store.get(&format!("cmd{i}"));
+    }
+    let mut keep_warm = HashSet::new();
+    for i in 0..3 {
+        keep_warm.insert(format!("cmd{i}"));
+    }
+    let report = store.evict_idle_at(
+        SystemTime::now(),
+        Duration::MAX,
+        Some(1), // cap=1 byte forces backstop
+        &keep_warm,
+    );
+    assert_eq!(
+        report.evicted_backstop_count, 0,
+        "backstop must not evict keep_warm entries even when cap is unreachable"
+    );
+    assert_eq!(
+        report.parsed_count_after, 3,
+        "all three entries must remain Loaded"
+    );
+}
