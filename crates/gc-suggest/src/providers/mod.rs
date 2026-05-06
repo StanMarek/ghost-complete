@@ -34,7 +34,7 @@
 //! enum and awaits the concrete provider directly, which avoids needing
 //! `dyn` at all.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -77,6 +77,15 @@ pub struct ProviderCtx {
     /// The partially-typed token the user is currently completing. May
     /// be empty when the trigger fires on a space after a subcommand.
     pub current_token: String,
+    /// Generator-spec parameters resolved from the spec's `params`
+    /// field. Empty for providers that do not consume them. Stable key
+    /// order via `BTreeMap` so cache keys via [`Self::params_hash`] are
+    /// deterministic across runs.
+    ///
+    /// Read by spec-driven providers (e.g. the planned `AwsSdk`
+    /// provider in ux-13/14). Existing native providers ignore this
+    /// field; the channel is purely additive.
+    pub params: Arc<BTreeMap<String, String>>,
 }
 
 /// Errors produced when constructing a [`ProviderCtx`] via
@@ -120,6 +129,7 @@ impl ProviderCtx {
             cwd,
             env,
             current_token,
+            params: Arc::new(BTreeMap::new()),
         })
     }
 
@@ -138,7 +148,24 @@ impl ProviderCtx {
             cwd,
             env,
             current_token,
+            params: Arc::new(BTreeMap::new()),
         }
+    }
+
+    /// Stable hash of [`Self::params`] suitable for in-process cache
+    /// keys. `BTreeMap` iteration order is deterministic, and
+    /// [`std::collections::hash_map::DefaultHasher`] is fixed-seed,
+    /// so the result is stable across calls within a process. Cross-
+    /// process stability is NOT guaranteed and not required — this
+    /// hash exists for the in-process generator cache only.
+    pub fn params_hash(&self) -> u64 {
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        for (k, v) in self.params.iter() {
+            k.hash(&mut hasher);
+            v.hash(&mut hasher);
+        }
+        hasher.finish()
     }
 }
 
@@ -282,6 +309,43 @@ impl ProviderKind {
             Self::PandocInputFormats => "pandoc_input_formats",
             Self::PandocOutputFormats => "pandoc_output_formats",
         }
+    }
+}
+
+/// One native provider scheduled by spec resolution, paired with the
+/// `params` map declared on the source [`crate::specs::GeneratorSpec`].
+///
+/// Replaces the bare `Vec<ProviderKind>` carried through
+/// `SpecResolution.provider_generators` so the engine can build a
+/// per-provider [`ProviderCtx`] whose `params` are set to the spec's
+/// declared values. Existing native providers ignore `params`; future
+/// spec-driven providers (`AwsSdk`, etc.) read them via `ctx.params`.
+///
+/// `params` lives behind an `Arc<BTreeMap<...>>` so cloning the
+/// resolution is a refcount bump on the keystroke hot path. Stable
+/// `BTreeMap` iteration order is what makes
+/// [`ProviderCtx::params_hash`] usable as a cache key.
+#[derive(Debug, Clone)]
+pub struct ProviderResolution {
+    pub kind: ProviderKind,
+    pub params: Arc<BTreeMap<String, String>>,
+}
+
+impl ProviderResolution {
+    /// Convenience constructor for callers that only have a kind on
+    /// hand and don't need to thread params yet — the empty-params
+    /// case stays a one-liner.
+    pub fn from_kind(kind: ProviderKind) -> Self {
+        Self {
+            kind,
+            params: Arc::new(BTreeMap::new()),
+        }
+    }
+}
+
+impl From<ProviderKind> for ProviderResolution {
+    fn from(kind: ProviderKind) -> Self {
+        Self::from_kind(kind)
     }
 }
 
@@ -451,10 +515,12 @@ mod tests {
             cwd: PathBuf::from("/tmp"),
             env: Arc::new(HashMap::new()),
             current_token: String::new(),
+            params: Arc::new(BTreeMap::new()),
         };
         assert_eq!(ctx.cwd, PathBuf::from("/tmp"));
         assert!(ctx.env.is_empty());
         assert!(ctx.current_token.is_empty());
+        assert!(ctx.params.is_empty());
     }
 
     #[test]

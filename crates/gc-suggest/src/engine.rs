@@ -19,7 +19,7 @@ use crate::history::{HistoryProvider, DEFAULT_MAX_HISTORY_ENTRIES};
 use crate::js_runtime::{JsExecContext, JsRuntimeAdapter};
 use crate::priority;
 use crate::provider::Provider;
-use crate::providers::{self, ProviderCtx, ProviderKind};
+use crate::providers::{self, ProviderCtx, ProviderKind, ProviderResolution};
 use crate::script::{run_script, substitute_template};
 use crate::shell_runner::EngineShellRunner;
 use crate::specs::{self, GeneratorSpec, JsRuntimeKind, JsRuntimeSpec, SpecStore};
@@ -81,9 +81,13 @@ pub struct SyncResult {
     pub git_generators: Vec<git::GitQueryKind>,
     /// Native providers resolved from the spec (e.g. `arduino_cli_boards`).
     /// The caller dispatches these asynchronously via `resolve_providers`.
-    /// Carries pre-resolved `ProviderKind`s so the engine can dispatch
-    /// without re-parsing the `"type"` string on the keystroke hot path.
-    pub provider_generators: Vec<ProviderKind>,
+    /// Carries pre-resolved [`ProviderResolution`] entries — each pairs
+    /// a `ProviderKind` with the `Arc<BTreeMap<String, String>>` of
+    /// generator-spec `params` declared on the source `GeneratorSpec`.
+    /// The engine threads those params into [`ProviderCtx::params`] at
+    /// dispatch time so spec-driven providers can read them without a
+    /// trait-shape change.
+    pub provider_generators: Vec<ProviderResolution>,
 }
 
 impl SyncResult {
@@ -195,7 +199,7 @@ mod sync_result_tests {
             }],
             script_generators: vec![],
             git_generators: vec![],
-            provider_generators: vec![ProviderKind::DefaultsDomains],
+            provider_generators: vec![ProviderKind::DefaultsDomains.into()],
         };
         // top_sync = 30 (Flag), provider_base = 70 (ProviderValue) → 70 > 30 → true
         assert!(result.has_pending_high_priority());
@@ -213,6 +217,7 @@ mod sync_result_tests {
             js_runtime: None,
             corrected_in: None,
             template: None,
+            params: std::collections::BTreeMap::new(),
         })
     }
 
@@ -866,11 +871,11 @@ impl SuggestionEngine {
     /// `Err`.
     pub async fn resolve_providers(
         &self,
-        kinds: &[ProviderKind],
+        resolutions: &[ProviderResolution],
         ctx: &ProviderCtx,
         query: &str,
     ) -> Result<Vec<Suggestion>> {
-        if kinds.is_empty() {
+        if resolutions.is_empty() {
             return Ok(Vec::new());
         }
         if !ctx.cwd.is_absolute() {
@@ -881,11 +886,23 @@ impl SuggestionEngine {
             return Ok(Vec::new());
         }
         let mut all = Vec::new();
-        for &kind in kinds {
-            match providers::resolve(kind, ctx).await {
+        for resolution in resolutions {
+            // Per-resolution ctx clone with `params` overwritten from
+            // the spec-declared values. Native providers ignore
+            // `params`; spec-driven providers read it. The other ctx
+            // fields (cwd, env, current_token) are shared via the
+            // existing `Arc`s — only the `params` `Arc` pointer is
+            // swapped per call, which is essentially free.
+            let dispatch_ctx = ProviderCtx {
+                cwd: ctx.cwd.clone(),
+                env: Arc::clone(&ctx.env),
+                current_token: ctx.current_token.clone(),
+                params: Arc::clone(&resolution.params),
+            };
+            match providers::resolve(resolution.kind, &dispatch_ctx).await {
                 Ok(suggestions) => all.extend(suggestions),
                 Err(e) => {
-                    tracing::warn!(provider = ?kind, "provider failed: {e}");
+                    tracing::warn!(provider = ?resolution.kind, "provider failed: {e}");
                 }
             }
         }
@@ -910,6 +927,10 @@ impl SuggestionEngine {
     }
 
     /// Per-kind variant of [`Self::resolve_providers`] that surfaces errors instead of logging-and-swallowing.
+    /// The supplied `ctx` is forwarded as-is; callers that need to
+    /// override `ctx.params` for a single dispatch should clone the
+    /// ctx beforehand and overwrite the `params` field, mirroring the
+    /// per-resolution clone inside [`Self::resolve_providers`].
     pub async fn resolve_provider_kind(
         &self,
         kind: ProviderKind,
@@ -2730,7 +2751,7 @@ mod tests {
         );
 
         let results = engine
-            .resolve_providers(&[ProviderKind::CargoWorkspaceMembers], &ctx, "")
+            .resolve_providers(&[ProviderKind::CargoWorkspaceMembers.into()], &ctx, "")
             .await
             .unwrap();
 
@@ -2775,6 +2796,7 @@ mod tests {
             cwd: Path::new("/tmp").to_path_buf(),
             env: std::sync::Arc::new(std::collections::HashMap::new()),
             current_token: String::new(),
+            params: std::sync::Arc::new(std::collections::BTreeMap::new()),
         };
         let empty_query = engine.resolve_providers(&[], &ctx, "").await.unwrap();
         assert!(empty_query.is_empty());
@@ -2863,6 +2885,7 @@ mod tests {
             js_runtime: None,
             corrected_in: None,
             template: None,
+            params: std::collections::BTreeMap::new(),
         };
         let ctx = make_ctx(Some("test"), vec![], "", 1);
         let argv = super::resolve_script_argv(&gen, &ctx);
@@ -2882,6 +2905,7 @@ mod tests {
             js_runtime: None,
             corrected_in: None,
             template: None,
+            params: std::collections::BTreeMap::new(),
         };
         let ctx = make_ctx(Some("test"), vec!["arg1"], "", 2);
         let argv = super::resolve_script_argv(&gen, &ctx);
@@ -3418,6 +3442,7 @@ mod tests {
             })),
             corrected_in: None,
             template: None,
+            params: std::collections::BTreeMap::new(),
         });
 
         let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;
@@ -3474,6 +3499,7 @@ mod tests {
             js_runtime: None,
             corrected_in: None,
             template: None,
+            params: std::collections::BTreeMap::new(),
         });
 
         let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;

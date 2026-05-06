@@ -479,6 +479,7 @@ mod tests {
             cwd,
             env: std::sync::Arc::new(std::collections::HashMap::new()),
             current_token: String::new(),
+            params: std::sync::Arc::new(std::collections::BTreeMap::new()),
         }
     }
 

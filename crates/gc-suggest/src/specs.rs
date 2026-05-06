@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, OnceLock, RwLock};
@@ -8,7 +8,7 @@ use anyhow::{Context, Result};
 use serde::Deserialize;
 
 use crate::priority::Priority;
-use crate::providers::{self, ProviderKind};
+use crate::providers::{self, ProviderResolution};
 use crate::transform::Transform;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 use gc_buffer::CommandContext;
@@ -534,6 +534,15 @@ pub struct GeneratorSpec {
     /// or ["filepaths", "folders"]). Treated the same as `ArgSpec.template`.
     #[serde(default, deserialize_with = "deserialize_template")]
     pub template: Option<String>,
+    /// Generator-spec parameters surfaced to spec-driven providers via
+    /// [`crate::providers::ProviderCtx::params`]. Empty for generators
+    /// that don't declare any (the overwhelming majority today).
+    /// Populated when ux-13/14 providers (e.g. AWS SDK) need
+    /// structured selection (service, region, profile) at dispatch
+    /// time. Stable key order via [`BTreeMap`] so cache keys derived
+    /// via `ProviderCtx::params_hash()` are deterministic across runs.
+    #[serde(default)]
+    pub params: BTreeMap<String, String>,
 }
 
 /// Sentinel `source_dir` value used to label embedded specs in
@@ -2200,7 +2209,15 @@ pub struct SpecResolution {
     /// translate the `"type"` string into `ProviderKind` at spec
     /// resolution time so the engine does not re-parse strings on the
     /// keystroke hot path. See `providers::kind_from_type_str`.
-    pub provider_generators: Vec<ProviderKind>,
+    ///
+    /// Each entry pairs a `ProviderKind` with the [`Arc<BTreeMap>`] of
+    /// `params` declared on the source [`GeneratorSpec`]. The engine
+    /// hands those params to [`crate::providers::ProviderCtx::params`]
+    /// at dispatch time so spec-driven providers (e.g. the planned
+    /// `AwsSdk` provider) can read structured selection without a new
+    /// trait shape. Empty for every provider that does not declare
+    /// `params` — which is every existing one.
+    pub provider_generators: Vec<ProviderResolution>,
     /// `Arc<GeneratorSpec>` rather than `GeneratorSpec`: `collect_generators`
     /// and the downstream `handler::spawn_generators` copy this vec on the
     /// hot path (every resolution + every async spawn). Arc'ing makes each
@@ -2566,7 +2583,7 @@ fn collect_static_suggestions(entries: &[SuggestionEntry], out: &mut Vec<Suggest
 fn collect_generators(
     generators: &[GeneratorSpec],
     native: &mut Vec<String>,
-    provider: &mut Vec<ProviderKind>,
+    provider: &mut Vec<ProviderResolution>,
     script: &mut Vec<Arc<GeneratorSpec>>,
     wants_filepaths: &mut bool,
     wants_folders_only: &mut bool,
@@ -2621,7 +2638,16 @@ fn collect_generators(
                 // The provider IS the implementation; do not also push
                 // onto `native` or fall through to the script branch
                 // below.
-                provider.push(kind);
+                //
+                // Carry the spec's `params` map alongside the kind so
+                // the engine can populate `ProviderCtx::params` at
+                // dispatch. Cloned `BTreeMap` (typically empty) lives
+                // inside an `Arc` so subsequent dispatch is just a
+                // refcount bump.
+                provider.push(ProviderResolution {
+                    kind,
+                    params: Arc::new(gen.params.clone()),
+                });
                 true
             } else if KNOWN_NATIVE_GENERATOR_TYPES.contains(&gen_type.as_str()) {
                 native.push(gen_type.clone());
@@ -4466,8 +4492,13 @@ mod tests {
             let expected_kind = providers::kind_from_type_str(type_str)
                 .unwrap_or_else(|| panic!("kind_from_type_str({type_str:?}) returned None"));
             assert_eq!(
-                res.provider_generators[0], expected_kind,
+                res.provider_generators[0].kind, expected_kind,
                 "wrong ProviderKind variant for {type_str:?}"
+            );
+            assert!(
+                res.provider_generators[0].params.is_empty(),
+                "provider {type_str:?} must default to empty params; got {:?}",
+                res.provider_generators[0].params
             );
         }
     }
