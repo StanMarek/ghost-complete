@@ -1,8 +1,30 @@
 use portable_pty::{native_pty_system, CommandBuilder, PtySize};
 use std::io::{Read, Write};
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard, OnceLock};
 use std::thread;
 use std::time::{Duration, Instant};
+
+static PTY_PROCESS_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+
+fn lock_pty_process() -> MutexGuard<'static, ()> {
+    PTY_PROCESS_LOCK
+        .get_or_init(|| Mutex::new(()))
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+#[allow(dead_code)]
+pub fn acquire_pty_process_lock_for_test() -> MutexGuard<'static, ()> {
+    lock_pty_process()
+}
+
+#[allow(dead_code)]
+pub fn pty_process_lock_is_available_for_test() -> bool {
+    PTY_PROCESS_LOCK
+        .get_or_init(|| Mutex::new(()))
+        .try_lock()
+        .is_ok()
+}
 
 /// A ghost-complete process running inside a PTY for integration testing.
 ///
@@ -12,11 +34,14 @@ pub struct GhostProcess {
     output: Arc<(Mutex<Vec<u8>>, Condvar)>,
     child: Box<dyn portable_pty::Child + Send + Sync>,
     pid: Option<u32>,
+    _pty_process_guard: MutexGuard<'static, ()>,
 }
 
 impl GhostProcess {
     /// Spawn ghost-complete inside a PTY wrapping /bin/sh.
     pub fn spawn() -> Self {
+        let pty_process_guard = lock_pty_process();
+
         let pty_system = native_pty_system();
         let pty_pair = pty_system
             .openpty(PtySize {
@@ -83,6 +108,7 @@ impl GhostProcess {
             output,
             child,
             pid,
+            _pty_process_guard: pty_process_guard,
         }
     }
 

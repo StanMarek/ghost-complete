@@ -50,6 +50,15 @@ fn advance_display(proc: &mut GhostProcess) -> usize {
 }
 
 #[test]
+fn test_harness_pty_process_lock_is_exclusive() {
+    let _first_guard = harness::acquire_pty_process_lock_for_test();
+    assert!(
+        !harness::pty_process_lock_is_available_for_test(),
+        "second PTY-backed smoke process lock was available while first lock was held"
+    );
+}
+
+#[test]
 fn test_echo_passthrough() {
     let mut proc = GhostProcess::spawn();
     proc.send_line("echo hello_smoke_test");
