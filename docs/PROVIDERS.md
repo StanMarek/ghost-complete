@@ -29,6 +29,38 @@ Reference implementation: [`crates/gc-suggest/src/providers/arduino_cli.rs`](../
 
 6. **Regenerate specs.** `cd tools/fig-converter && npm run convert`. Spot-check that the affected generators now read `{"type": "<name>"}` with no `script`, `requires_js`, or `js_source` fields.
 
+## Generator-spec `params`
+
+Generators may carry a flat string-to-string `params` map that the engine threads into the dispatched provider via `ProviderCtx::params`. This is the channel ux-13/14 spec-driven providers (e.g. the planned `AwsSdk` provider) will use to route on structured selection (service, region, profile) without inventing a new generator schema per command. As of the ux-9b precursor no in-tree provider reads the field — the plumbing is purely additive.
+
+JSON shape on a generator:
+
+```json
+{
+  "type": "aws_sdk",
+  "params": {
+    "service": "s3",
+    "region": "us-east-1"
+  }
+}
+```
+
+`params` defaults to `{}` (`#[serde(default)]`) so existing specs remain valid without the field. Key order is preserved deterministically via `BTreeMap`, which matters for the cache-key hash described below.
+
+Reading from a `Provider`:
+
+```rust
+async fn generate(&self, ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
+    let service = ctx.params.get("service").map(String::as_str).unwrap_or("");
+    let region = ctx.params.get("region").map(String::as_str);
+    // ...
+    let cache_key = (self.name(), ctx.params_hash());
+    // ...
+}
+```
+
+`ProviderCtx::params_hash()` returns a `u64` over the sorted key/value pairs, suitable for in-process generator caches keyed on the spec's parameter selection. Cross-process stability is not a contract — the hash is stable within a single process only.
+
 ## Local-project providers
 
 A subset of providers do not shell out at all — they parse a project file in the user's CWD ancestry. Reference implementation: [`crates/gc-suggest/src/providers/local_project/`](../crates/gc-suggest/src/providers/local_project/) (UX-5). Same `Provider` trait as the subprocess providers, with two pattern differences:
