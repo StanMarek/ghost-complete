@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, OnceLock};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, RwLock};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
@@ -555,6 +557,33 @@ pub enum SpecSource {
     Embedded(&'static str),
 }
 
+/// Mutable parse state for a [`SpecEntry`]. Encodes the four states a
+/// lazy-parsed spec can be in:
+///
+/// * `Empty` — registered, never accessed. Zero heap.
+/// * `Loaded(Arc)` — parsed and resident. The Arc is shared with any
+///   reader that called `spec_arc()`; eviction drops the slot's
+///   strong-ref but readers' clones survive.
+/// * `Evicted` — was `Loaded`, then a TTL/backstop sweep took the write
+///   lock and released the Arc. Next access re-parses.
+/// * `Failed(error)` — parse failed; sticky, never retried, never evicted.
+///   Sweep skips this variant.
+#[derive(Debug)]
+pub(crate) enum ParsedSlot {
+    Empty,
+    Loaded(Arc<CompletionSpec>),
+    Evicted,
+    Failed(String),
+}
+
+impl ParsedSlot {
+    /// True when the slot holds a parsed `Arc`. Used by the sweep task
+    /// to filter eligible entries.
+    pub(crate) fn is_loaded(&self) -> bool {
+        matches!(self, ParsedSlot::Loaded(_))
+    }
+}
+
 /// Explicit source location for a registered spec entry.
 ///
 /// Filesystem specs have a real path. Embedded specs are in-memory slices
@@ -641,9 +670,12 @@ pub struct SpecEntry {
     /// registration. Stored separately so diagnostics stay lazy: the error is
     /// copied into `parsed` only when the entry is first touched.
     shallow_parse_error: Option<String>,
-    /// Lazy parse target. `Ok(Arc<CompletionSpec>)` on success;
-    /// `Err(error_message)` on parse failure (sticky — never retried).
-    parsed: OnceLock<Result<Arc<CompletionSpec>, String>>,
+    /// Mutable parse slot. See [`ParsedSlot`] for state semantics.
+    parsed: RwLock<ParsedSlot>,
+    /// Last access (read or write) as a relaxed-ordering Unix-epoch
+    /// nanosecond. Bumped on every successful `spec_arc()` hit. Used by
+    /// the sweep task to identify TTL-eligible entries.
+    last_accessed_nanos: AtomicU64,
 }
 
 impl SpecEntry {
@@ -654,62 +686,104 @@ impl SpecEntry {
         }
     }
 
-    fn parsed_result(&self) -> std::result::Result<&Arc<CompletionSpec>, &str> {
-        self.parsed
-            .get_or_init(|| {
-                let parsed = if let Some(err) = &self.shallow_parse_error {
-                    Err(err.clone())
-                } else {
-                    parse_entry_source(&self.source)
-                };
-                if let Err(err) = &parsed {
-                    tracing::warn!(
-                        spec_id = %self.id,
-                        source = %self.source_label(),
-                        error = %err,
-                        "spec lazy load failed"
-                    );
+    /// Lazy-parse the entry and return an owned `Arc<CompletionSpec>` clone.
+    /// Errors are sticky — a parse failure is recorded once and never
+    /// retried. Eviction (`ParsedSlot::Evicted`) does not affect
+    /// stickiness; only successful loads can be evicted.
+    fn parsed_result_arc(&self) -> std::result::Result<Arc<CompletionSpec>, String> {
+        // Fast path: read lock. Uncontended in steady state.
+        {
+            let guard = self.parsed.read().unwrap_or_else(|p| p.into_inner());
+            match &*guard {
+                ParsedSlot::Loaded(arc) => {
+                    self.bump_last_accessed();
+                    return Ok(Arc::clone(arc));
                 }
-                parsed
-            })
-            .as_ref()
-            .map_err(String::as_str)
+                ParsedSlot::Failed(err) => return Err(err.clone()),
+                ParsedSlot::Empty | ParsedSlot::Evicted => {}
+            }
+        }
+
+        // Slow path: write lock. Re-check (another writer may have
+        // filled the slot between our drop and re-acquire).
+        let mut guard = self.parsed.write().unwrap_or_else(|p| p.into_inner());
+        match &*guard {
+            ParsedSlot::Loaded(arc) => {
+                self.bump_last_accessed();
+                return Ok(Arc::clone(arc));
+            }
+            ParsedSlot::Failed(err) => return Err(err.clone()),
+            ParsedSlot::Empty | ParsedSlot::Evicted => {}
+        }
+        let parsed = if let Some(err) = &self.shallow_parse_error {
+            Err(err.clone())
+        } else {
+            parse_entry_source(&self.source)
+        };
+        match parsed {
+            Ok(arc) => {
+                *guard = ParsedSlot::Loaded(Arc::clone(&arc));
+                self.bump_last_accessed();
+                Ok(arc)
+            }
+            Err(err) => {
+                tracing::warn!(
+                    spec_id = %self.id,
+                    source = %self.source_label(),
+                    error = %err,
+                    "spec lazy load failed"
+                );
+                let cloned = err.clone();
+                *guard = ParsedSlot::Failed(err);
+                Err(cloned)
+            }
+        }
     }
 
-    /// Lazily parse and return the spec. Returns `None` if parsing
-    /// failed (the failure is recorded once and never retried — call
-    /// [`Self::load_error`] for diagnostics).
-    pub fn spec(&self) -> Option<&CompletionSpec> {
-        self.parsed_result().ok().map(|arc| arc.as_ref())
+    fn bump_last_accessed(&self) {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos() as u64;
+        self.last_accessed_nanos.store(nanos, Ordering::Relaxed);
     }
 
-    /// Like [`Self::spec`] but returns an owned clone of the cached
-    /// `Arc`. Use when the caller needs to hold the spec across a
-    /// boundary that requires `'static` lifetime; prefer [`Self::spec`]
-    /// otherwise.
+    /// Last access timestamp as `SystemTime`. Returns `UNIX_EPOCH` when
+    /// the entry has never been accessed.
+    pub fn last_accessed(&self) -> SystemTime {
+        let nanos = self.last_accessed_nanos.load(Ordering::Relaxed);
+        UNIX_EPOCH + Duration::from_nanos(nanos)
+    }
+
+    /// Lazily parse and return the spec. Returns `None` if parsing failed.
+    pub fn spec(&self) -> Option<Arc<CompletionSpec>> {
+        self.parsed_result_arc().ok()
+    }
+
+    /// Like [`Self::spec`] but returns the cached `Arc` directly.
     pub fn spec_arc(&self) -> Option<Arc<CompletionSpec>> {
-        self.parsed_result().ok().cloned()
+        self.parsed_result_arc().ok()
     }
 
-    /// Like [`Self::spec`] but preserves the lazy parse error instead of
-    /// collapsing it into `None`.
-    pub fn spec_result(&self) -> std::result::Result<&CompletionSpec, &str> {
-        self.parsed_result().map(|arc| arc.as_ref())
+    /// Like [`Self::spec`] but preserves the lazy parse error.
+    pub fn spec_result(&self) -> std::result::Result<Arc<CompletionSpec>, String> {
+        self.parsed_result_arc()
     }
 
     /// Returns the parse error message if the lazy load failed.
-    /// Returns `None` if the spec has not yet been touched OR loaded
-    /// successfully — disambiguate via [`Self::is_parsed`].
-    pub fn load_error(&self) -> Option<&str> {
-        self.parsed
-            .get()
-            .and_then(|r| r.as_ref().err())
-            .map(String::as_str)
+    pub fn load_error(&self) -> Option<String> {
+        let guard = self.parsed.read().unwrap_or_else(|p| p.into_inner());
+        match &*guard {
+            ParsedSlot::Failed(err) => Some(err.clone()),
+            _ => None,
+        }
     }
 
-    /// True iff this entry has been touched (lazy parse attempted).
+    /// True iff this entry has been touched (parse attempted), regardless
+    /// of outcome or current cache residence.
     pub fn is_parsed(&self) -> bool {
-        self.parsed.get().is_some()
+        let guard = self.parsed.read().unwrap_or_else(|p| p.into_inner());
+        !matches!(&*guard, ParsedSlot::Empty)
     }
 
     pub fn location(&self) -> SpecLocation {
@@ -727,7 +801,7 @@ impl SpecEntry {
 
 /// Parse the JSON behind a [`SpecSource`] into an `Arc<CompletionSpec>`.
 /// Wraps existing parse + sanitize machinery; returns the error as a
-/// `String` so the failure is `Send + Sync` and storable in `OnceLock`.
+/// `String` so the failure is `Send + Sync` and storable in the parse slot.
 fn parse_entry_source(source: &SpecSource) -> Result<Arc<CompletionSpec>, String> {
     let contents: std::borrow::Cow<'_, str> = match source {
         SpecSource::Filesystem(path) => std::borrow::Cow::Owned(
@@ -944,7 +1018,7 @@ impl SpecStore {
     /// no loaded spec advertises this alias OR when every candidate for
     /// that alias failed to parse. Use [`Self::get_result`] to distinguish
     /// unknown commands from parse failures.
-    pub fn get(&self, command: &str) -> Option<&CompletionSpec> {
+    pub fn get(&self, command: &str) -> Option<Arc<CompletionSpec>> {
         self.get_result(command).ok()
     }
 
@@ -955,7 +1029,7 @@ impl SpecStore {
     pub fn get_result(
         &self,
         command: &str,
-    ) -> std::result::Result<&CompletionSpec, SpecLookupError> {
+    ) -> std::result::Result<Arc<CompletionSpec>, SpecLookupError> {
         let Some(candidates) = self.by_alias.get(command) else {
             return Err(SpecLookupError::NoSuchSpec {
                 command: command.to_string(),
@@ -965,14 +1039,14 @@ impl SpecStore {
         let mut first_failure: Option<SpecLookupError> = None;
         for entry in candidates {
             match entry.spec_result() {
-                Ok(spec) => return Ok(spec),
+                Ok(arc) => return Ok(arc),
                 Err(err) => {
                     if first_failure.is_none() {
                         first_failure = Some(SpecLookupError::LoadFailed {
                             command: command.to_string(),
                             id: entry.id.clone(),
                             source: entry.location(),
-                            error: err.to_string(),
+                            error: err,
                         });
                     }
                 }
@@ -987,8 +1061,8 @@ impl SpecStore {
     }
 
     /// Force every entry through its lazy parse. Used by [`Self::iter`]
-    /// so diagnostic CLIs see fully-parsed specs. Idempotent — calls
-    /// after the first force-load are zero-cost OnceLock reads.
+    /// so diagnostic CLIs see fully-parsed specs. Idempotent while entries
+    /// remain loaded.
     fn force_load_all(&self) {
         for entry in &self.entries {
             let _ = entry.spec();
@@ -1007,7 +1081,7 @@ impl SpecStore {
                 entry.load_error().map(|error| SpecEntryLoadError {
                     id: entry.id.clone(),
                     source: entry.location(),
-                    error: error.to_string(),
+                    error,
                 })
             })
             .collect()
@@ -1046,7 +1120,7 @@ impl SpecStore {
     /// The first element is the canonical id (filename stem), NOT
     /// every alias — callers that want to enumerate aliases use
     /// [`SpecStore::entries`] directly.
-    pub fn iter(&self) -> impl Iterator<Item = (&str, &CompletionSpec)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&str, Arc<CompletionSpec>)> {
         self.resolved_entries()
             .filter_map(|e| e.spec().map(|s| (e.id.as_str(), s)))
     }
@@ -1385,7 +1459,8 @@ fn register_entries(
             aliases: vec![filename_stem.clone()],
             source,
             shallow_parse_error,
-            parsed: OnceLock::new(),
+            parsed: RwLock::new(ParsedSlot::Empty),
+            last_accessed_nanos: AtomicU64::new(0),
         });
         let idx = entries.len();
         entries.push(Arc::clone(&entry));
@@ -1455,7 +1530,7 @@ fn register_entries(
         // Append the alias by rebuilding the Arc<SpecEntry>.
         // SpecEntry's fields are not interior-mutable; the rebuild is
         // confined to load time so the steady-state hot path never
-        // pays this cost. Critically, the OnceLock stays empty in the
+        // pays this cost. Critically, the parse slot stays empty in the
         // new entry — parsing is still deferred to first SpecEntry::spec().
         let prev = Arc::clone(&entries[idx]);
         let mut new_aliases = prev.aliases.clone();
@@ -1467,7 +1542,8 @@ fn register_entries(
             aliases: new_aliases,
             source: prev.source.clone(),
             shallow_parse_error: prev.shallow_parse_error.clone(),
-            parsed: OnceLock::new(),
+            parsed: RwLock::new(ParsedSlot::Empty),
+            last_accessed_nanos: AtomicU64::new(0),
         };
         let new_arc = Arc::new(new_entry);
         replace_entry_arc(entries, by_alias, &prev, Arc::clone(&new_arc));
@@ -2297,6 +2373,68 @@ mod tests {
     }
 
     #[test]
+    fn parsed_slot_starts_empty_for_fresh_entry() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("foo.json"),
+            r#"{"name":"foo","subcommands":[],"options":[],"args":[]}"#,
+        )
+        .unwrap();
+        let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+        let entry = store.entries().iter().find(|e| e.id == "foo").unwrap();
+        assert!(!entry.is_parsed(), "fresh entry must be Empty (not parsed)");
+    }
+
+    #[test]
+    fn parsed_slot_loads_on_first_get_and_bumps_last_accessed() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("foo.json"),
+            r#"{"name":"foo","subcommands":[],"options":[],"args":[]}"#,
+        )
+        .unwrap();
+        let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+        let before = std::time::SystemTime::now();
+        let _ = store.get("foo");
+        let entry = store.entries().iter().find(|e| e.id == "foo").unwrap();
+        assert!(entry.is_parsed());
+        assert!(
+            entry.last_accessed() >= before,
+            "first get() must bump last_accessed"
+        );
+    }
+
+    #[test]
+    fn parsed_slot_failed_is_sticky_across_repeated_gets() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(dir.path().join("broken.json"), "{not valid json").unwrap();
+        let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+        assert!(store.get("broken").is_none());
+        let entry = store.entries().iter().find(|e| e.id == "broken").unwrap();
+        let first_err = entry.load_error().unwrap().to_string();
+        assert!(store.get("broken").is_none()); // does not retry
+        assert_eq!(entry.load_error().unwrap(), first_err);
+    }
+
+    #[test]
+    fn store_get_returns_arc_clone_independent_of_slot() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("foo.json"),
+            r#"{"name":"foo","subcommands":[],"options":[],"args":[]}"#,
+        )
+        .unwrap();
+        let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+        let arc1 = store.get("foo").expect("must resolve");
+        let arc2 = store.get("foo").expect("must resolve again");
+        assert!(
+            Arc::ptr_eq(&arc1, &arc2),
+            "two warm gets must return the same Arc identity"
+        );
+        assert_eq!(arc1.name, "foo");
+    }
+
+    #[test]
     fn test_curl_dash_o_resolve_spec_sets_wants_filepaths() {
         let spec_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs/curl.json");
         if !spec_path.exists() {
@@ -2675,7 +2813,7 @@ mod tests {
         // Force the lazy parse for every entry so failure modes surface
         // via SpecEntry::load_error.
         let _: Vec<_> = result.store.iter().collect();
-        let load_errors: Vec<(&str, &str)> = result
+        let load_errors: Vec<(&str, String)> = result
             .store
             .entries()
             .iter()
@@ -3410,8 +3548,8 @@ mod tests {
             .store
             .get("evil[2J")
             .expect("sanitized name should also resolve as alias");
-        assert!(std::ptr::eq(by_stem, by_alias));
-        let spec = by_stem;
+        assert!(Arc::ptr_eq(&by_stem, &by_alias));
+        let spec = by_stem.as_ref();
         assert!(
             !spec.name.contains('\x1b'),
             "name kept ESC: {:?}",
@@ -4224,7 +4362,10 @@ mod tests {
         const BUDGET_BYTES: usize = 128 * 1024 * 1024;
         let spec_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
         let store = SpecStore::load_from_dir(&spec_dir).unwrap().store;
-        let total: usize = store.iter().map(|(_, s)| estimated_heap_bytes(s)).sum();
+        let total: usize = store
+            .iter()
+            .map(|(_, s)| estimated_heap_bytes(s.as_ref()))
+            .sum();
         assert!(
             total < BUDGET_BYTES,
             "embedded specs heap {} bytes exceeds budget {} bytes — investigate before raising the limit",

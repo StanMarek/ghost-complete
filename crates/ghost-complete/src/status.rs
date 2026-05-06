@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use gc_suggest::spec_dirs::{partition_spec_dirs, resolve_spec_dirs};
@@ -484,9 +485,9 @@ fn scan_resolved_specs(
     }
 
     // resolved_entries() force-loads every registered candidate, so any
-    // per-entry lazy-parse failures are pinned in OnceLock by the time we
-    // call force_load_errors below.
-    let mut specs: Vec<(&str, &CompletionSpec, bool)> = Vec::new();
+    // per-entry lazy-parse failures are pinned in the parse slot by the time
+    // we call force_load_errors below.
+    let mut specs: Vec<(&str, Arc<CompletionSpec>, bool)> = Vec::new();
     for entry in store.resolved_entries() {
         let is_filesystem = matches!(&entry.source, SpecSource::Filesystem(_));
         if let Some(spec) = entry.spec() {
@@ -521,7 +522,7 @@ fn scan_resolved_specs(
         if is_filesystem {
             fs_specs += 1;
         }
-        let js_count = count_requires_js_generators(spec);
+        let js_count = count_requires_js_generators(spec.as_ref());
         if js_count > 0 {
             partially_functional += 1;
             js_commands.push(name.to_string());

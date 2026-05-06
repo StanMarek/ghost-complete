@@ -301,7 +301,7 @@ fn memory_benchmarks(c: &mut Criterion) {
         b.iter(|| {
             let total: usize = store
                 .iter()
-                .map(|(_, s)| specs::estimated_heap_bytes(s))
+                .map(|(_, s)| specs::estimated_heap_bytes(s.as_ref()))
                 .sum();
             std::hint::black_box(total)
         });

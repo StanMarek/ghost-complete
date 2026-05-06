@@ -371,7 +371,7 @@ fn check_corrections_for_store(store: &gc_suggest::SpecStore) -> CheckResult {
     let mut affected_specs: Vec<(&str, usize)> = store
         .iter()
         .filter_map(|(name, spec)| {
-            let n = count_corrected_generators_in_spec(spec);
+            let n = count_corrected_generators_in_spec(spec.as_ref());
             if n == 0 {
                 None
             } else {
@@ -659,7 +659,7 @@ fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> C
     let mut affected: Vec<(&str, usize)> = store
         .iter()
         .filter_map(|(name, spec)| {
-            let n = count_missing_js_runtime_in_spec(spec);
+            let n = count_missing_js_runtime_in_spec(spec.as_ref());
             if n == 0 {
                 None
             } else {
@@ -670,7 +670,7 @@ fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> C
     let mut unproven: Vec<(&str, usize)> = store
         .iter()
         .filter_map(|(name, spec)| {
-            let n = count_unproven_js_runtime_in_spec(spec);
+            let n = count_unproven_js_runtime_in_spec(spec.as_ref());
             if n == 0 {
                 None
             } else {

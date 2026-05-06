@@ -188,14 +188,14 @@ mod tests {
             .get("appwrite")
             .expect("appwrite stem must resolve through embedded corpus");
         assert_eq!(by_stem.name, "index");
-        let stem_ptr = by_stem as *const _;
 
         let by_alias = store
             .get("index")
             .expect("appwrite name alias must resolve through embedded corpus");
         assert_eq!(by_alias.name, "index");
         assert_eq!(
-            stem_ptr, by_alias as *const _,
+            by_stem.as_ref() as *const _,
+            by_alias.as_ref() as *const _,
             "stem and name alias must resolve to the same parsed embedded spec"
         );
     }
