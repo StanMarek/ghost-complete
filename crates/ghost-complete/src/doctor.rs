@@ -1138,6 +1138,67 @@ mod tests {
         assert!(result.message.contains(">90% of cap"));
     }
 
+    /// OK branch: eviction is enabled and a cap is configured, but the
+    /// resident heap sits well below 90% of it. Pins the comparison so a
+    /// regression that flips `>` to `>=` or drops the threshold math would
+    /// fail loudly.
+    #[test]
+    fn doctor_resident_cap_ok_when_below_threshold() {
+        let store = gc_suggest::SpecStore::load_with_embedded(&[])
+            .unwrap()
+            .store;
+        // Force-load every entry so resident_bytes reflects the full
+        // parsed corpus (the same heap an uncapped daemon would hold).
+        let _ = store.iter().count();
+        let cfg = gc_config::SpecCacheConfig {
+            idle_ttl_secs: 300,
+            max_resident_mb: 1024,
+            ..Default::default()
+        };
+
+        let result = check_resident_near_cap(&store, &cfg);
+
+        assert!(
+            matches!(result.severity, Severity::Ok),
+            "resident heap below 90% of cap must be OK: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("below warning threshold"),
+            "OK message should name the threshold check: {}",
+            result.message
+        );
+    }
+
+    /// OK branch: eviction is enabled but no resident cap is configured
+    /// (`max_resident_mb = 0`). The check must short-circuit with an OK
+    /// result naming the missing cap, never compute a threshold against
+    /// an unset value.
+    #[test]
+    fn doctor_resident_cap_ok_when_no_cap_with_eviction_enabled() {
+        let store = gc_suggest::SpecStore::load_with_embedded(&[])
+            .unwrap()
+            .store;
+        let cfg = gc_config::SpecCacheConfig {
+            idle_ttl_secs: 300,
+            max_resident_mb: 0,
+            ..Default::default()
+        };
+
+        let result = check_resident_near_cap(&store, &cfg);
+
+        assert!(
+            matches!(result.severity, Severity::Ok),
+            "no-cap config must produce an OK result: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("no cap configured"),
+            "OK message should explain the unset cap: {}",
+            result.message
+        );
+    }
+
     #[test]
     fn doctor_spec_cache_check_force_loads_for_resident_cap() {
         let dir = tempfile::TempDir::new().unwrap();

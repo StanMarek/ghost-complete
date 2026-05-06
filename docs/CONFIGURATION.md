@@ -68,8 +68,8 @@ Shell history loads up to 10,000 entries.
 ### `[suggest.spec_cache]`
 
 Cache eviction policy for parsed completion specs. Eviction is opt-in; the
-default (`idle_ttl_secs = 0`) preserves the v0.12.4 "parse once, hold
-forever" contract.
+default (`idle_ttl_secs = 0`) preserves the lazy-loading layer's "parse
+once, hold forever" behavior.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -93,7 +93,7 @@ forwarding is unaffected; only the popup for that one keystroke is delayed.
 
 Enable this when daemon idle resident memory matters: long-running shells,
 modest-RAM machines, or multiple terminals. The default disables eviction
-because v0.12.4 lazy loading already keeps idle daemon memory low until a
+because the lazy-loading layer already keeps idle daemon memory low until a
 heavy spec has been parsed.
 
 Hot reload is not supported. Restart the daemon after changing this

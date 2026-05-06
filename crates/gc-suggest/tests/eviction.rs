@@ -6,12 +6,55 @@
 
 use std::collections::HashSet;
 use std::fs;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
 
 use gc_config::SpecCacheConfig;
 use gc_suggest::SpecStore;
 use tempfile::TempDir;
+use tracing_subscriber::fmt::MakeWriter;
+
+#[derive(Clone)]
+struct CaptureWriter(Arc<Mutex<Vec<u8>>>);
+
+impl std::io::Write for CaptureWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0
+            .lock()
+            .expect("capture buffer poisoned")
+            .extend_from_slice(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a> MakeWriter<'a> for CaptureWriter {
+    type Writer = CaptureWriter;
+
+    fn make_writer(&'a self) -> Self::Writer {
+        self.clone()
+    }
+}
+
+fn install_log_capture() -> (Arc<Mutex<Vec<u8>>>, tracing::subscriber::DefaultGuard) {
+    let captured = Arc::new(Mutex::new(Vec::<u8>::new()));
+    let writer = CaptureWriter(Arc::clone(&captured));
+    let subscriber = tracing_subscriber::fmt()
+        .with_writer(writer)
+        .with_max_level(tracing::Level::WARN)
+        .with_ansi(false)
+        .finish();
+    let guard = tracing::subscriber::set_default(subscriber);
+    tracing_core::callsite::rebuild_interest_cache();
+    (captured, guard)
+}
+
+fn captured_logs(captured: &Arc<Mutex<Vec<u8>>>) -> String {
+    String::from_utf8_lossy(&captured.lock().expect("capture buffer poisoned")).into_owned()
+}
 
 fn write_spec(dir: &std::path::Path, filename: &str, body: &str) {
     fs::write(dir.join(filename), body).unwrap();
@@ -547,4 +590,145 @@ async fn sweep_smoke_no_log_spam_when_nothing_eligible() {
     assert_eq!(report.evicted_idle_count, 0);
     assert_eq!(report.evicted_backstop_count, 0);
     assert_eq!(report.parsed_count_after, 1);
+}
+
+#[tokio::test(flavor = "current_thread", start_paused = true)]
+async fn sweep_smoke_does_not_panic_when_sweep_interval_zero() {
+    // `tokio::time::interval(Duration::from_secs(0))` panics. The
+    // `sweep_interval_secs.max(1)` clamp inside `spawn_spec_cache_sweep`
+    // is the only guard for callers that bypass `GhostConfig::normalize`.
+    let dir = TempDir::new().unwrap();
+    write_spec(dir.path(), "git.json", &minimal_spec("git"));
+    let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+    let store = Arc::new(store);
+
+    let cfg = SpecCacheConfig {
+        idle_ttl_secs: 1,
+        sweep_interval_secs: 0,
+        keep_warm: vec![],
+        max_resident_mb: 0,
+    };
+    let _sweep = gc_suggest::spawn_spec_cache_sweep_for_test(Arc::clone(&store), cfg);
+    tokio::task::yield_now().await; // let the task consume interval's initial tick
+
+    tokio::time::advance(Duration::from_secs(3)).await;
+    tokio::task::yield_now().await;
+
+    assert!(
+        store.last_sweep().is_some(),
+        "the clamped 1-second interval must allow at least one sweep to complete"
+    );
+}
+
+#[test]
+fn repeated_get_bumps_last_accessed_each_call() {
+    // The read-lock fast path inside `parsed_result_arc` must call
+    // `bump_last_accessed` on every successful hit, otherwise an actively-
+    // used spec could be evicted as if it were idle.
+    let dir = TempDir::new().unwrap();
+    write_spec(dir.path(), "git.json", &minimal_spec("git"));
+    let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+    let _ = store.get("git"); // first parse, populates Loaded
+    let entry = store
+        .entries()
+        .iter()
+        .find(|e| e.id == "git")
+        .unwrap()
+        .clone();
+
+    // Backdate the timestamp; a second get() must bump it back to ~now.
+    let now = SystemTime::now();
+    entry.set_last_accessed_for_test(now - Duration::from_secs(3600));
+    let _ = store.get("git").expect("warm get must resolve");
+    assert!(
+        entry.last_accessed() >= now - Duration::from_secs(60),
+        "warm read-lock fast path must bump last_accessed on every hit"
+    );
+
+    // The just-warmed entry must survive a TTL sweep.
+    let report = store.evict_idle_at(
+        SystemTime::now(),
+        Duration::from_secs(60),
+        None,
+        &empty_keep_warm(),
+    );
+    assert_eq!(report.evicted_idle_count, 0);
+    assert_eq!(store.parsed_count(), 1);
+}
+
+#[test]
+fn backstop_warn_emits_only_once_across_repeated_sweeps() {
+    // `backstop_cap_warned` is one-shot for the lifetime of the SpecStore.
+    // Three sweeps under unreachable-cap pressure must produce exactly one
+    // warn line, not three.
+    let dir = TempDir::new().unwrap();
+    write_n_specs(dir.path(), 3);
+    let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+    for i in 0..3 {
+        let _ = store.get(&format!("cmd{i}"));
+    }
+    let mut keep_warm = HashSet::new();
+    for i in 0..3 {
+        keep_warm.insert(format!("cmd{i}"));
+    }
+
+    let (captured, _guard) = install_log_capture();
+    for _ in 0..3 {
+        let _ = store.evict_idle_at(SystemTime::now(), Duration::MAX, Some(1), &keep_warm);
+    }
+
+    let logs = captured_logs(&captured);
+    assert_eq!(
+        logs.matches("backstop unable to reach cap").count(),
+        1,
+        "warn-once guard must collapse repeated unreachable-cap sweeps to a single log line:\n{logs}"
+    );
+}
+
+#[test]
+fn evict_idle_on_empty_store_reports_zero() {
+    // An empty spec dir produces a SpecStore with zero entries. evict_idle
+    // must walk it without panicking and report all-zero counters.
+    let dir = TempDir::new().unwrap();
+    let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+    let report = store.evict_idle_at(
+        SystemTime::now(),
+        Duration::from_secs(0),
+        Some(0), // also exercises the cap=0 path with no entries
+        &empty_keep_warm(),
+    );
+    assert_eq!(report.evicted_idle_count, 0);
+    assert_eq!(report.evicted_backstop_count, 0);
+    assert_eq!(report.parsed_count_after, 0);
+    assert_eq!(report.estimated_resident_bytes_after, 0);
+}
+
+#[test]
+fn backstop_with_single_entry_evicts_to_zero_under_pressure() {
+    // Cap = 0 forces the backstop to evict every Loaded entry. The
+    // saturating-sub of `current` against `freed` keeps the loop sound when
+    // freed bytes exceed remaining bytes. Post-sweep, the store must
+    // re-parse cleanly on the next get.
+    let dir = TempDir::new().unwrap();
+    write_spec(dir.path(), "git.json", &minimal_spec("git"));
+    let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+    let _ = store.get("git").expect("first load must succeed");
+    assert_eq!(store.parsed_count(), 1);
+
+    let report = store.evict_idle_at(
+        SystemTime::now(),
+        Duration::MAX, // disable Phase 1
+        Some(0),       // cap=0 forces every Loaded entry out via Phase 2
+        &empty_keep_warm(),
+    );
+    assert_eq!(report.evicted_backstop_count, 1);
+    assert_eq!(store.parsed_count(), 0);
+
+    // Post-sweep, the entry must re-parse cleanly through the standard
+    // `get` path.
+    let arc = store
+        .get("git")
+        .expect("post-eviction re-parse must succeed");
+    assert_eq!(arc.name, "git");
+    assert_eq!(store.parsed_count(), 1);
 }

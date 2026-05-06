@@ -198,8 +198,8 @@ impl Default for ProvidersConfig {
 }
 
 /// Cache eviction policy for parsed completion specs. Eviction is opt-in:
-/// `idle_ttl_secs = 0` (default) preserves the v0.12.4 "parse once, hold
-/// forever" contract.
+/// `idle_ttl_secs = 0` (default) preserves the lazy-loading layer's
+/// "parse once, hold forever" behavior.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SpecCacheConfig {

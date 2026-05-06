@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result};
 use gc_suggest::spec_dirs::{partition_spec_dirs, resolve_spec_dirs};
@@ -348,15 +347,9 @@ pub struct StatusOutcome {
     /// runtime `SpecEntry` so the raw generator counters follow completion
     /// lookup fallback behavior.
     pub file_scan: FileScan,
-    /// Count of currently resident parsed specs. Evicted specs and sticky
-    /// parse failures are excluded.
-    pub parsed_resident: usize,
-    /// Estimated heap held by resident parsed specs, in bytes.
-    pub estimated_resident_bytes: u64,
-    /// Effective spec-cache policy from the active config.
+    /// Effective spec-cache policy from the active config. Reflects the
+    /// user's TOML-declared policy, not the running daemon's runtime state.
     pub spec_cache: gc_config::SpecCacheConfig,
-    /// Most recent eviction sweep, when the runtime has run one.
-    pub last_sweep: Option<gc_suggest::SweepReport>,
 }
 
 /// Serialised view of a single [`AliasConflict`]. Distinct from the
@@ -586,9 +579,6 @@ fn scan_resolved_specs(
     let js_runtime_enabled = config.suggest.providers.js_runtime;
 
     let registered_specs = store.len();
-    let parsed_resident = store.parsed_count();
-    let estimated_resident_bytes = store.estimated_resident_bytes();
-    let last_sweep = store.last_sweep();
 
     Ok(StatusOutcome {
         fs_specs,
@@ -609,10 +599,7 @@ fn scan_resolved_specs(
         js_runtime_enabled,
         registered_specs,
         file_scan,
-        parsed_resident,
-        estimated_resident_bytes,
         spec_cache: config.suggest.spec_cache.clone(),
-        last_sweep,
     })
 }
 
@@ -1028,10 +1015,21 @@ fn run_status_inner_with_trend(
 ///       `command_alias_conflict_details` entries also include a
 ///       `disposition` field so consumers can distinguish rejected aliases
 ///       from fallback candidates.
-/// 1.4 — adds a top-level `specs` block with resident spec-cache counters
+/// 1.4 — added a top-level `specs` block with resident spec-cache counters
 ///       and policy/sweep visibility: `parsed_resident`,
 ///       `estimated_resident_bytes`, `spec_cache`, and `last_sweep`.
-const STATUS_SCHEMA_VERSION: &str = "1.4";
+/// 1.5 — removes `parsed_resident`, `estimated_resident_bytes`, and
+///       `last_sweep` from the `specs` block. Those fields described the
+///       transient SpecStore that `ghost-complete status` builds in its own
+///       process, not the running proxy daemon — so they always reported
+///       the post-`force_load_all` corpus and `last_sweep: null`,
+///       misleading users into thinking eviction was broken even when the
+///       daemon had correctly evicted entries. The remaining `specs` fields
+///       (`registered`, `addressable_aliases`, `spec_cache`) are
+///       purely structural / policy-level and do not depend on daemon
+///       runtime state. This is a breaking removal — JSON consumers that
+///       relied on those keys must be updated.
+const STATUS_SCHEMA_VERSION: &str = "1.5";
 
 /// The shape emitted by `ghost-complete status --json`. Defining this as a
 /// `#[derive(Serialize)]` struct rather than inline `json!` macros fails
@@ -1144,14 +1142,21 @@ struct SupportedByKind {
 }
 
 /// Runtime spec-store status surfaced under `status --json`'s `specs` key.
+///
+/// All fields here are corpus-structural or policy-level — the count of
+/// registered entries, the alias index size, and the user-declared
+/// spec-cache policy. None of them claim to reflect the running proxy
+/// daemon's live parse state: this struct is built inside the one-shot
+/// `ghost-complete status` process, which loads its own transient
+/// `SpecStore`. Schema 1.4 surfaced `parsed_resident`,
+/// `estimated_resident_bytes`, and `last_sweep` here too, but those values
+/// described the status process's own freshly-loaded store rather than the
+/// daemon's working set, so they were dropped in 1.5.
 #[derive(Debug, Serialize)]
 struct SpecsStatus {
     registered: usize,
     addressable_aliases: usize,
-    parsed_resident: usize,
-    estimated_resident_bytes: u64,
     spec_cache: SpecCacheStatus,
-    last_sweep: Option<LastSweepJson>,
 }
 
 impl SpecsStatus {
@@ -1159,10 +1164,7 @@ impl SpecsStatus {
         Self {
             registered: outcome.registered_specs,
             addressable_aliases: outcome.commands_addressable,
-            parsed_resident: outcome.parsed_resident,
-            estimated_resident_bytes: outcome.estimated_resident_bytes,
             spec_cache: SpecCacheStatus::from_config(&outcome.spec_cache),
-            last_sweep: outcome.last_sweep.clone().map(LastSweepJson::from_report),
         }
     }
 }
@@ -1187,64 +1189,6 @@ impl SpecCacheStatus {
             max_resident_mb: cfg.max_resident_mb,
         }
     }
-}
-
-/// JSON block for the most recent spec-cache sweep.
-#[derive(Debug, Serialize)]
-struct LastSweepJson {
-    timestamp: String,
-    evicted_idle: usize,
-    evicted_backstop: usize,
-    kept_warm: usize,
-    parsed_after: usize,
-    estimated_resident_bytes_after: u64,
-}
-
-impl LastSweepJson {
-    fn from_report(report: gc_suggest::SweepReport) -> Self {
-        Self {
-            timestamp: format_system_time_rfc3339_utc(report.timestamp),
-            evicted_idle: report.evicted_idle_count,
-            evicted_backstop: report.evicted_backstop_count,
-            kept_warm: report.kept_warm_count,
-            parsed_after: report.parsed_count_after,
-            estimated_resident_bytes_after: report.estimated_resident_bytes_after,
-        }
-    }
-}
-
-/// Format a [`SystemTime`] as RFC3339 UTC (`YYYY-MM-DDTHH:MM:SSZ`).
-/// Zero-dep and second-precision, matching the build metadata formatter.
-fn format_system_time_rfc3339_utc(ts: SystemTime) -> String {
-    let secs = ts
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
-    let (y, mo, d, h, mi, s) = civil_from_unix_seconds(secs);
-    format!("{y:04}-{mo:02}-{d:02}T{h:02}:{mi:02}:{s:02}Z")
-}
-
-// Howard Hinnant's days_from_civil inverse; integer-only.
-fn civil_from_unix_seconds(secs: u64) -> (i32, u32, u32, u32, u32, u32) {
-    let days = (secs / 86_400) as i64;
-    let sod = (secs % 86_400) as u32;
-    let h = sod / 3600;
-    let mi = (sod % 3600) / 60;
-    let s = sod % 60;
-
-    // Shift epoch from 1970-01-01 to 0000-03-01.
-    let z = days + 719_468;
-    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
-    let doe = (z - era * 146_097) as u64;
-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
-    let y = yoe as i64 + era * 400;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
-    let mo = (if mp < 10 { mp + 3 } else { mp - 9 }) as u32;
-    let y = (y + if mo <= 2 { 1 } else { 0 }) as i32;
-
-    (y, mo, d, h, mi, s)
 }
 
 #[derive(Debug, Serialize)]
@@ -1480,10 +1424,7 @@ mod tests {
         let specs = SpecsStatus {
             registered: store.len(),
             addressable_aliases: store.aliases_count(),
-            parsed_resident: store.parsed_count(),
-            estimated_resident_bytes: store.estimated_resident_bytes(),
             spec_cache: SpecCacheStatus::from_config(cfg),
-            last_sweep: store.last_sweep().map(LastSweepJson::from_report),
         };
 
         serde_json::to_string_pretty(&specs).unwrap()
@@ -1503,29 +1444,41 @@ mod tests {
         assert!(json.contains("\"idle_ttl_secs\": 0"));
     }
 
+    /// `SpecCacheStatus::from_config` must surface every policy field as a
+    /// number / array / boolean when eviction is opted in. Pins the
+    /// `enabled = true` branch and the non-default values for
+    /// `idle_ttl_secs`, `sweep_interval_secs`, `keep_warm`, and
+    /// `max_resident_mb` so a regression that flips `enabled` for a
+    /// non-zero TTL or drops a policy field from the JSON would fail loudly.
     #[test]
-    fn status_last_sweep_is_null_when_no_sweep_run() {
+    fn status_spec_cache_block_when_eviction_enabled() {
         let store = gc_suggest::SpecStore::load_with_embedded(&[])
             .unwrap()
             .store;
-        let cfg = gc_config::SpecCacheConfig::default();
+        let cfg = gc_config::SpecCacheConfig {
+            idle_ttl_secs: 300,
+            sweep_interval_secs: 60,
+            keep_warm: vec!["git".to_string()],
+            max_resident_mb: 100,
+        };
 
         let json = render_specs_status_for_test(&store, &cfg);
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let block = &parsed["spec_cache"];
 
-        assert!(json.contains("\"last_sweep\": null"));
-    }
-
-    #[test]
-    fn status_reports_parsed_resident_count() {
-        let store = gc_suggest::SpecStore::load_with_embedded(&[])
-            .unwrap()
-            .store;
-        let _ = store.get("git");
-        let cfg = gc_config::SpecCacheConfig::default();
-
-        let json = render_specs_status_for_test(&store, &cfg);
-
-        assert!(json.contains("\"parsed_resident\": 1"));
+        assert_eq!(block["enabled"], serde_json::Value::Bool(true));
+        assert_eq!(block["idle_ttl_secs"].as_u64().unwrap(), 300);
+        assert_eq!(block["sweep_interval_secs"].as_u64().unwrap(), 60);
+        assert_eq!(
+            block["keep_warm"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_str().unwrap())
+                .collect::<Vec<_>>(),
+            vec!["git"]
+        );
+        assert_eq!(block["max_resident_mb"].as_u64().unwrap(), 100);
     }
 
     #[test]
@@ -2238,7 +2191,7 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.4");
+        assert_eq!(parsed["schema_version"], "1.5");
         assert!(
             parsed["spec_counts"].is_object(),
             "spec_counts must be an object"
@@ -2246,8 +2199,23 @@ mod tests {
         assert!(parsed["specs"].is_object(), "specs must be an object");
         assert!(parsed["specs"]["registered"].is_number());
         assert!(parsed["specs"]["addressable_aliases"].is_number());
-        assert!(parsed["specs"]["parsed_resident"].is_number());
-        assert!(parsed["specs"]["estimated_resident_bytes"].is_number());
+        // 1.5 dropped `parsed_resident`, `estimated_resident_bytes`, and
+        // `last_sweep` from the `specs` block — those described the
+        // transient SpecStore the status command builds in its own
+        // process, not the running daemon. Guard the removal so a
+        // regression that re-adds them under `specs` would fail here.
+        assert!(
+            parsed["specs"].get("parsed_resident").is_none(),
+            "parsed_resident must not be present in 1.5"
+        );
+        assert!(
+            parsed["specs"].get("estimated_resident_bytes").is_none(),
+            "estimated_resident_bytes must not be present in 1.5"
+        );
+        assert!(
+            parsed["specs"].get("last_sweep").is_none(),
+            "last_sweep must not be present in 1.5"
+        );
         assert!(
             parsed["specs"]["spec_cache"].is_object(),
             "spec_cache block must be present"
@@ -2257,10 +2225,6 @@ mod tests {
         assert!(parsed["specs"]["spec_cache"]["sweep_interval_secs"].is_number());
         assert!(parsed["specs"]["spec_cache"]["keep_warm"].is_array());
         assert!(parsed["specs"]["spec_cache"]["max_resident_mb"].is_number());
-        assert!(
-            parsed["specs"]["last_sweep"].is_null(),
-            "fresh status scan should not have a sweep report"
-        );
         assert!(parsed["spec_counts"]["total"].is_number());
         assert!(parsed["spec_counts"]["fully_functional"].is_number());
         assert!(parsed["spec_counts"]["partially_functional"].is_number());
@@ -2413,7 +2377,7 @@ mod tests {
 
         // Current schema surfaces every command and generator counter as
         // a numeric value.
-        assert_eq!(parsed["schema_version"], "1.4");
+        assert_eq!(parsed["schema_version"], "1.5");
         let counts = &parsed["spec_counts"];
         assert_eq!(
             counts["commands_addressable"].as_u64().unwrap(),
@@ -3014,7 +2978,7 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.4");
+        assert_eq!(parsed["schema_version"], "1.5");
         let details = parsed["spec_counts"]["command_alias_conflict_details"]
             .as_array()
             .expect("command_alias_conflict_details must be an array");

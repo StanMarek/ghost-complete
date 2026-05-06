@@ -672,9 +672,13 @@ pub struct SpecEntry {
     shallow_parse_error: Option<String>,
     /// Mutable parse slot. See [`ParsedSlot`] for state semantics.
     parsed: RwLock<ParsedSlot>,
-    /// Last access (read or write) as a relaxed-ordering Unix-epoch
-    /// nanosecond. Bumped on every successful `spec_arc()` hit. Used by
-    /// the sweep task to identify TTL-eligible entries.
+    /// Last access as a relaxed-ordering Unix-epoch nanosecond. Bumped on
+    /// every successful read (any of `spec`, `spec_arc`, `spec_result`, or
+    /// `SpecStore::get`). Backed by a monotonic clock with a fixed offset
+    /// captured at startup; may drift from real wall clock under NTP
+    /// corrections, but eviction comparisons remain consistent because both
+    /// sides use the same clock. Used by the sweep task to identify
+    /// TTL-eligible entries.
     last_accessed_nanos: AtomicU64,
 }
 
@@ -775,7 +779,10 @@ impl SpecEntry {
         self.parsed_result_arc()
     }
 
-    /// Returns the parse error message if the lazy load failed.
+    /// Returns the parse error message if the lazy load failed. Returns
+    /// `None` for Empty, Loaded, or Evicted slots — disambiguate via
+    /// [`Self::is_parsed`] (Empty vs. parsed) and [`Self::spec`]
+    /// (Loaded/Evicted vs. Failed).
     pub fn load_error(&self) -> Option<String> {
         let guard = self.parsed.read().unwrap_or_else(|p| p.into_inner());
         match &*guard {
@@ -972,7 +979,11 @@ pub struct SpecStore {
     conflicts: Vec<AliasConflict>,
     /// Last completed sweep report. `None` until first sweep runs.
     last_sweep: RwLock<Option<SweepReport>>,
-    /// Ensures an unreachable resident cap does not warn on every sweep.
+    /// One-shot warn-once guard for the lifetime of this `SpecStore`. The
+    /// first sweep that finds the resident cap unreachable logs a warning
+    /// and flips this flag; subsequent sweeps stay silent. Intentionally
+    /// not reset: the goal is diagnostic signal without per-tick log spam,
+    /// and `keep_warm` reconfiguration ships through a daemon restart.
     backstop_cap_warned: AtomicBool,
 }
 
@@ -1269,9 +1280,9 @@ impl SpecStore {
         self.evict_idle_at(now, idle_threshold, max_resident_bytes, keep_warm)
     }
 
-    /// Internal helper that takes an explicit `now` for deterministic tests.
-    /// Public for integration-test access; production callers use
-    /// [`Self::evict_idle`].
+    /// Test-visible variant of `evict_idle` that takes an explicit `now` so
+    /// tests can drive eviction with a deterministic clock. Production
+    /// callers use [`Self::evict_idle`].
     #[doc(hidden)]
     pub fn evict_idle_at(
         &self,
@@ -1333,7 +1344,7 @@ impl SpecStore {
                     .collect();
                 victims.sort_by_key(|(ts, _)| *ts); // ascending — oldest first
 
-                for (_, entry) in &victims {
+                for (snapshot_ts, entry) in &victims {
                     if current <= cap {
                         break;
                     }
@@ -1342,6 +1353,13 @@ impl SpecStore {
                         ParsedSlot::Loaded(arc) => estimated_heap_bytes(arc.as_ref()) as u64,
                         _ => continue, // raced — no longer Loaded
                     };
+                    // Re-check under the lock — a reader may have bumped the
+                    // timestamp between the snapshot and the write-lock
+                    // acquisition. Mirrors the Phase 1 guard so a just-warmed
+                    // entry isn't evicted on stale ordering.
+                    if entry.last_accessed() > *snapshot_ts {
+                        continue;
+                    }
                     *guard = ParsedSlot::Evicted;
                     current = current.saturating_sub(freed);
                     evicted_backstop += 1;

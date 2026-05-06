@@ -12,13 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Opt-in TTL/LRU eviction for parsed completion specs.** The
   `[suggest.spec_cache]` config section accepts `idle_ttl_secs`,
   `sweep_interval_secs`, `keep_warm`, and `max_resident_mb`. Eviction is
-  disabled by default (`idle_ttl_secs = 0`), preserving the v0.12.4
-  "parse once, hold forever" contract for users who do not opt in.
+  disabled by default (`idle_ttl_secs = 0`), preserving the lazy-loading
+  layer's "parse once, hold forever" behavior for users who do not opt in.
 - **Spec cache status and doctor diagnostics.** `ghost-complete status
-  --json` now includes `parsed_resident`, `estimated_resident_bytes`,
-  `spec_cache`, and `last_sweep` under `specs`. `ghost-complete doctor`
-  warns when a `keep_warm` entry does not match a registered spec alias
-  and when resident heap exceeds 90% of `max_resident_mb`.
+  --json` bumps `schema_version` from `1.3` to `1.5` and adds a top-level
+  `specs` block exposing `registered`, `addressable_aliases`, and a
+  `spec_cache` policy reflection (`enabled`, `idle_ttl_secs`,
+  `sweep_interval_secs`, `keep_warm`, `max_resident_mb`). The `specs`
+  block is corpus-structural and policy-level only — it does not claim
+  to reflect the running daemon's live parse state, since `status` runs
+  in its own short-lived process. `ghost-complete doctor` warns when a
+  `keep_warm` entry does not match a registered spec alias and when
+  estimated resident heap exceeds 90% of `max_resident_mb`.
 
 ### Changed
 
@@ -29,12 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   spec remains valid across cache mutations.
 - **Runtime no longer materialises embedded specs to disk.** Previous
   versions wrote `~/.cache/ghost-complete/embedded-specs/` on first run
-  after a binary upgrade (~25 MB write, sentinel-versioned). v0.12.4
-  consumes the embedded corpus in-memory via `SpecStore::load_with_embedded`
-  — same precedence semantics, no disk I/O, no version sentinel to keep
-  in sync. `ghost-complete install` and `ghost-complete uninstall` now
-  remove the legacy cache directory if a pre-v0.12.4 binary left it
-  behind.
+  after a binary upgrade (~25 MB write, sentinel-versioned). The runtime
+  now consumes the embedded corpus in-memory via
+  `SpecStore::load_with_embedded` — same precedence semantics, no disk
+  I/O, no version sentinel to keep in sync. `ghost-complete install` and
+  `ghost-complete uninstall` now remove the legacy cache directory if an
+  earlier binary left it behind.
 - **`status` now reports lazy parse errors.** A spec that fails to parse
   no longer crashes loading — it stays registered and surfaces through
   `SpecEntry::load_error()`. `ghost-complete status` walks the entries

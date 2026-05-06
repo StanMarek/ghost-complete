@@ -341,7 +341,7 @@ fn lazy_load_benchmarks(c: &mut Criterion) {
     // First-touch parse benchmarks: each iter() rebuilds the store so
     // every iteration measures the cost of registering + first-touching
     // a single spec from scratch. Without rebuilding we'd hit the
-    // OnceLock cache after iter #1 and report the warm-path latency.
+    // parse slot after iter #1 and report the warm-path latency.
     group.bench_function("first_get_git", |b| {
         b.iter(|| {
             let result = SpecStore::load_with_embedded(&[]).expect("embedded corpus must load");
@@ -375,8 +375,8 @@ fn lazy_load_benchmarks(c: &mut Criterion) {
         });
     });
 
-    // After v0.12.5 the warm path goes through RwLock<ParsedSlot> + an
-    // AtomicU64 timestamp bump. This pins the new eviction-aware hot path.
+    // With opt-in eviction, the warm path goes through RwLock<ParsedSlot> +
+    // an AtomicU64 timestamp bump. This pins the new eviction-aware hot path.
     group.bench_function("warm_get_git_under_eviction_path", |b| {
         let result = SpecStore::load_with_embedded(&[]).expect("embedded corpus must load");
         let store = result.store;
