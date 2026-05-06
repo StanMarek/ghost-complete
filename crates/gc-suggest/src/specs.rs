@@ -2780,7 +2780,11 @@ mod tests {
         )
         .unwrap();
         let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
-        let before = std::time::SystemTime::now();
+        // Capture `before` from the same clock source as `bump_last_accessed`.
+        // Mixing `SystemTime::now()` against a `now_unix_nanos()`-derived
+        // timestamp races on Linux release builds where the two CLOCK_REALTIME
+        // reads can be ordered inconsistently.
+        let before = UNIX_EPOCH + Duration::from_nanos(now_unix_nanos());
         let _ = store.get("foo");
         let entry = store.entries().iter().find(|e| e.id == "foo").unwrap();
         assert!(entry.is_parsed());
