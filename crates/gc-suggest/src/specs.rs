@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, OnceLock, RwLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result};
@@ -741,11 +741,8 @@ impl SpecEntry {
     }
 
     fn bump_last_accessed(&self) {
-        let nanos = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_nanos() as u64;
-        self.last_accessed_nanos.store(nanos, Ordering::Relaxed);
+        self.last_accessed_nanos
+            .store(now_unix_nanos(), Ordering::Relaxed);
     }
 
     /// Last access timestamp as `SystemTime`. Returns `UNIX_EPOCH` when
@@ -836,6 +833,70 @@ fn parse_entry_source(source: &SpecSource) -> Result<Arc<CompletionSpec>, String
 fn entry_is_idle_at(entry: &SpecEntry, now: SystemTime, threshold: Duration) -> bool {
     let last = entry.last_accessed();
     now.duration_since(last).unwrap_or_default() >= threshold
+}
+
+#[cfg(target_os = "macos")]
+fn now_unix_nanos() -> u64 {
+    static BASE_UNIX_NANOS: OnceLock<u64> = OnceLock::new();
+
+    let mono = monotonic_nanos();
+    let base = *BASE_UNIX_NANOS.get_or_init(|| system_time_unix_nanos().saturating_sub(mono));
+    base.saturating_add(mono)
+}
+
+#[cfg(target_os = "macos")]
+#[allow(deprecated)]
+fn monotonic_nanos() -> u64 {
+    // SAFETY: mach_absolute_time is thread-safe and takes no pointers.
+    let ticks = unsafe { libc::mach_absolute_time() };
+    let (numer, denom) = mach_timebase();
+    ((ticks as u128).saturating_mul(numer as u128) / denom as u128).min(u64::MAX as u128) as u64
+}
+
+#[cfg(target_os = "macos")]
+#[allow(deprecated)]
+fn mach_timebase() -> (u64, u64) {
+    static TIMEBASE: OnceLock<(u64, u64)> = OnceLock::new();
+    *TIMEBASE.get_or_init(|| {
+        let mut info = std::mem::MaybeUninit::<libc::mach_timebase_info>::uninit();
+        // SAFETY: info points to valid, writable storage for libc to initialize.
+        let rc = unsafe { libc::mach_timebase_info(info.as_mut_ptr()) };
+        if rc == 0 {
+            // SAFETY: mach_timebase_info succeeded and initialized info.
+            let info = unsafe { info.assume_init() };
+            (u64::from(info.numer), u64::from(info.denom.max(1)))
+        } else {
+            (1, 1)
+        }
+    })
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn now_unix_nanos() -> u64 {
+    let mut ts = std::mem::MaybeUninit::<libc::timespec>::uninit();
+    // SAFETY: ts points to valid, writable storage for libc to initialize.
+    let rc = unsafe { libc::clock_gettime(libc::CLOCK_REALTIME, ts.as_mut_ptr()) };
+    if rc == 0 {
+        // SAFETY: clock_gettime succeeded and initialized ts.
+        let ts = unsafe { ts.assume_init() };
+        (ts.tv_sec as u64)
+            .saturating_mul(1_000_000_000)
+            .saturating_add(ts.tv_nsec as u64)
+    } else {
+        system_time_unix_nanos()
+    }
+}
+
+#[cfg(not(unix))]
+fn now_unix_nanos() -> u64 {
+    system_time_unix_nanos()
+}
+
+fn system_time_unix_nanos() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos() as u64
 }
 
 /// One alias collision detected during loading. `winner` and `loser`
@@ -1204,12 +1265,8 @@ impl SpecStore {
         max_resident_bytes: Option<u64>,
         keep_warm: &HashSet<String>,
     ) -> EvictionReport {
-        self.evict_idle_at(
-            SystemTime::now(),
-            idle_threshold,
-            max_resident_bytes,
-            keep_warm,
-        )
+        let now = UNIX_EPOCH + Duration::from_nanos(now_unix_nanos());
+        self.evict_idle_at(now, idle_threshold, max_resident_bytes, keep_warm)
     }
 
     /// Internal helper that takes an explicit `now` for deterministic tests.
