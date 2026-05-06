@@ -129,6 +129,30 @@ pub fn all_fields() -> Vec<FieldMeta> {
             reload: ReloadBehavior::Live,
             help: "Show provider names in error feedback",
         },
+        FieldMeta {
+            section: "popup",
+            key: "gutter_padding",
+            field_type: FieldType::Usize,
+            default: "1",
+            reload: ReloadBehavior::Live,
+            help: "Trailing spaces between the kind icon and suggestion text (0-8)",
+        },
+        FieldMeta {
+            section: "popup",
+            key: "fixed_width",
+            field_type: FieldType::Bool,
+            default: "false",
+            reload: ReloadBehavior::Live,
+            help: "Always render at max width (60 cols) instead of fitting content",
+        },
+        FieldMeta {
+            section: "popup",
+            key: "truncation_indicator",
+            field_type: FieldType::String,
+            default: "",
+            reload: ReloadBehavior::Live,
+            help: "Appended when text/description overflows; e.g. \"…\" (1 col) or \"...\" (3 cols)",
+        },
         // suggest
         FieldMeta {
             section: "suggest",

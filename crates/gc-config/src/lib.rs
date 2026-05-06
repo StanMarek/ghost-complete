@@ -109,6 +109,18 @@ pub struct PopupConfig {
     /// later). Clamped to `[0, 300]` during normalization. Default: 80 ms,
     /// chosen to stay below the human perception threshold for "instant".
     pub render_block_ms: u16,
+    /// Number of trailing spaces between the kind icon and suggestion text.
+    /// Layout reserves `1 + icon + gutter_padding` columns; default `1`
+    /// preserves the historical `" K "` rendering. Clamped to `[0, 8]`.
+    pub gutter_padding: u8,
+    /// When `true`, the popup always renders at `max_width` (clamped to the
+    /// terminal) regardless of the longest visible suggestion. When `false`
+    /// (default), width fits content within `[min_width, max_width]`.
+    pub fixed_width: bool,
+    /// String appended to suggestion text or description when it overflows
+    /// the row's column budget. Empty string (default) preserves silent
+    /// truncation. A typical setting is `"…"` (1 column).
+    pub truncation_indicator: String,
 }
 
 impl Default for PopupConfig {
@@ -120,6 +132,9 @@ impl Default for PopupConfig {
             spinner: true,
             show_provider_errors: false,
             render_block_ms: 80,
+            gutter_padding: 1,
+            fixed_width: false,
+            truncation_indicator: String::new(),
         }
     }
 }
@@ -501,6 +516,7 @@ const MAX_RESULTS_UPPER: usize = 10_000;
 const MAX_RESULTS_DEFAULT: usize = 50;
 const RENDER_BLOCK_MS_UPPER: u16 = 300;
 const FEEDBACK_DISMISS_MS_UPPER: u16 = 10_000;
+const GUTTER_PADDING_UPPER: u8 = 8;
 
 impl GhostConfig {
     /// Clamp config values to sane bounds, logging warnings when clamping.
@@ -556,6 +572,32 @@ impl GhostConfig {
                 FEEDBACK_DISMISS_MS_UPPER,
             );
             self.popup.feedback_dismiss_ms = FEEDBACK_DISMISS_MS_UPPER;
+        }
+        if self.popup.gutter_padding > GUTTER_PADDING_UPPER {
+            tracing::warn!(
+                "popup.gutter_padding={} exceeds maximum {}, clamping",
+                self.popup.gutter_padding,
+                GUTTER_PADDING_UPPER,
+            );
+            self.popup.gutter_padding = GUTTER_PADDING_UPPER;
+        }
+        // Truncation indicator: warn (do not clamp) when it is suspiciously
+        // long. Per-row truncation budget varies with popup width / gutter /
+        // description length, so clamping at config time would be too
+        // aggressive — but a multi-character indicator is almost certainly a
+        // misconfiguration. Char count is a safe upper bound: every non-empty
+        // grapheme contributes at least 1 column. Common indicators are
+        // `…` (1 char) and `...` (3 chars); we warn at 5+.
+        const TRUNCATION_INDICATOR_CHAR_WARN: usize = 4;
+        let indicator_chars = self.popup.truncation_indicator.chars().count();
+        if indicator_chars > TRUNCATION_INDICATOR_CHAR_WARN {
+            tracing::warn!(
+                "popup.truncation_indicator={:?} is {} chars long; values wider than \
+                 the per-row text budget fall back to silent truncation. Consider \
+                 \"…\" (1 col) or \"...\" (3 cols).",
+                self.popup.truncation_indicator,
+                indicator_chars,
+            );
         }
         // Spec cache sanity. Only apply when eviction is enabled —
         // a config with idle_ttl_secs=0 means the user opted out and

@@ -4,13 +4,16 @@ use unicode_width::UnicodeWidthStr;
 use crate::types::PopupLayout;
 use crate::util::display_text;
 
-/// Display-column width of the gutter area (" K ") in a popup row.
-///
-/// Nerd Font PUA codepoints used for kind icons (e.g. \u{F120}) report
-/// `UnicodeWidthChar::width == 1` but render as 2 columns in Nerd Font
-/// terminals. We use 4 (space + 2-col icon + space) to prevent off-by-one
-/// overflow in width calculations.
-pub(crate) const GUTTER_COLS: usize = 4;
+/// Display-column width of the leading space + kind icon, before any
+/// trailing padding. Nerd Font PUA codepoints used for kind icons
+/// (e.g. \u{F120}) report `UnicodeWidthChar::width == 1` but render as 2
+/// columns in Nerd Font terminals — we reserve 2 here to prevent
+/// off-by-one overflow in width calculations.
+pub(crate) const ICON_BASE_COLS: usize = 3;
+
+/// Default gutter width when no `PopupTheme` is supplied (tests, fallbacks).
+/// Matches `gutter_padding = 1` — the historical `" K "` rendering.
+pub(crate) const DEFAULT_GUTTER_COLS: usize = ICON_BASE_COLS + 1;
 
 /// Display-column width of the gap rendered between suggestion text and its
 /// inline description. Two spaces: wide enough to be visually distinct from
@@ -36,6 +39,8 @@ pub fn compute_layout(
     min_width: u16,
     max_width: u16,
     borders: bool,
+    gutter_cols: usize,
+    fixed_width: bool,
 ) -> PopupLayout {
     // Suppress rendering entirely when the terminal is too narrow for the
     // minimum popup width — rendering off-screen corrupts terminal state.
@@ -52,25 +57,26 @@ pub fn compute_layout(
     let visible_count = suggestions.len().min(max_visible);
     let border_pad: u16 = if borders { 2 } else { 0 };
 
-    // Compute width from visible suggestions (content only, no border)
-    let content_width = suggestions
-        .iter()
-        .skip(scroll_offset)
-        .take(max_visible)
-        .map(item_display_width)
-        .max()
-        .unwrap_or(min_width.saturating_sub(border_pad) as usize);
     // Defense-in-depth: ensure the clamp upper bound is never below min_width.
     // The early return at the top of this function guards the common path
     // (screen_cols < min_width), but any future caller that bypasses it — or a
     // future refactor that lets max_width shrink below min_width — would
     // otherwise hit `clamp(min, max)` with min > max, which is an unconditional
     // panic in std. `.max(min_width)` collapses the degenerate bound into a
-    // no-op clamp that returns min_width. Phase 1 CRIT-2 fix claimed this
-    // guard was added to compute_layout but only added the early return in
-    // render_popup — this line closes the gap.
+    // no-op clamp that returns min_width.
     let effective_max_w = max_width.min(screen_cols).max(min_width);
-    let width = (content_width as u16 + border_pad).clamp(min_width, effective_max_w);
+    let width = if fixed_width {
+        effective_max_w
+    } else {
+        let content_width = suggestions
+            .iter()
+            .skip(scroll_offset)
+            .take(max_visible)
+            .map(|s| item_display_width(s, gutter_cols))
+            .max()
+            .unwrap_or(min_width.saturating_sub(border_pad) as usize);
+        (content_width as u16 + border_pad).clamp(min_width, effective_max_w)
+    };
 
     // Height includes border rows when enabled
     let height = (visible_count as u16) + border_pad;
@@ -96,9 +102,9 @@ pub fn compute_layout(
 }
 
 /// Calculate display width for a single suggestion line.
-/// Format: " K text  description " where K is kind char.
-fn item_display_width(suggestion: &Suggestion) -> usize {
-    // gutter = GUTTER_COLS, then text, then optional "  desc", then trailing space
+/// Format: " K<padding>text  description " where K is the kind icon and
+/// `<padding>` is `gutter_cols - ICON_BASE_COLS` trailing spaces.
+fn item_display_width(suggestion: &Suggestion, gutter_cols: usize) -> usize {
     let (dt, _) = display_text(suggestion);
     let text_len = UnicodeWidthStr::width(dt);
     let desc_len = suggestion
@@ -106,7 +112,7 @@ fn item_display_width(suggestion: &Suggestion) -> usize {
         .as_ref()
         .map(|d| UnicodeWidthStr::width(d.as_str()) + DESC_GAP_COLS)
         .unwrap_or(0);
-    GUTTER_COLS + text_len + desc_len + TRAILING_PAD_COLS
+    gutter_cols + text_len + desc_len + TRAILING_PAD_COLS
 }
 
 #[cfg(test)]
@@ -146,6 +152,8 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             true,
+            DEFAULT_GUTTER_COLS,
+            false,
         );
         assert_eq!(layout.scroll_deficit, 0);
         assert_eq!(layout.start_row, 6);
@@ -166,6 +174,8 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             true,
+            DEFAULT_GUTTER_COLS,
+            false,
         );
         // Layout always places below — start_row = cursor_row + 1
         assert_eq!(layout.start_row, 23);
@@ -186,6 +196,8 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             true,
+            DEFAULT_GUTTER_COLS,
+            false,
         );
         assert!(layout.start_col + layout.width <= 80);
     }
@@ -204,6 +216,8 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             true,
+            DEFAULT_GUTTER_COLS,
+            false,
         );
         assert_eq!(layout.start_row, 1);
         assert_eq!(layout.start_col, 0);
@@ -223,6 +237,8 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             true,
+            DEFAULT_GUTTER_COLS,
+            false,
         );
         assert!(layout.width >= DEFAULT_MIN_POPUP_WIDTH);
     }
@@ -242,6 +258,8 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             true,
+            DEFAULT_GUTTER_COLS,
+            false,
         );
         assert!(layout.width <= DEFAULT_MAX_POPUP_WIDTH);
     }
@@ -261,6 +279,8 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             true,
+            DEFAULT_GUTTER_COLS,
+            false,
         );
         assert_eq!(layout.height, DEFAULT_MAX_VISIBLE as u16 + 2); // +2 for borders
     }
@@ -280,6 +300,8 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             true,
+            DEFAULT_GUTTER_COLS,
+            false,
         );
         assert_eq!(layout.height, 7); // 5 content + 2 borders
     }
@@ -292,25 +314,25 @@ mod tests {
         // based on "file.txt" (8 chars), not the full 25-byte path.
         let deep = make_path("src/deeply/nested/file.txt", SuggestionKind::FilePath, None);
         let shallow = make_path("file.txt", SuggestionKind::FilePath, None);
-        assert_eq!(item_display_width(&deep), item_display_width(&shallow));
+        assert_eq!(item_display_width(&deep, DEFAULT_GUTTER_COLS), item_display_width(&shallow, DEFAULT_GUTTER_COLS));
     }
 
     #[test]
     fn test_directory_width_uses_basename() {
         // "path/to/mydir/" as Directory — display should be "mydir/" (6 chars).
         let deep = make_path("path/to/mydir/", SuggestionKind::Directory, None);
-        // GUTTER_COLS(4) + "mydir/"(6) + trailing(1) = 11
+        // DEFAULT_GUTTER_COLS(4) + "mydir/"(6) + trailing(1) = 11
         assert_eq!(
-            item_display_width(&deep),
-            GUTTER_COLS + 6 + TRAILING_PAD_COLS
+            item_display_width(&deep, DEFAULT_GUTTER_COLS),
+            DEFAULT_GUTTER_COLS + 6 + TRAILING_PAD_COLS
         );
     }
 
     #[test]
     fn test_filepath_no_slash_unchanged() {
         let s = make_path("Cargo.toml", SuggestionKind::FilePath, None);
-        // GUTTER_COLS(4) + "Cargo.toml"(10) + trailing(1) = 15
-        assert_eq!(item_display_width(&s), GUTTER_COLS + 10 + TRAILING_PAD_COLS);
+        // DEFAULT_GUTTER_COLS(4) + "Cargo.toml"(10) + trailing(1) = 15
+        assert_eq!(item_display_width(&s, DEFAULT_GUTTER_COLS), DEFAULT_GUTTER_COLS + 10 + TRAILING_PAD_COLS);
     }
 
     // --- Bug B5: non-ASCII char counting ---
@@ -319,18 +341,18 @@ mod tests {
     fn test_non_ascii_text_width() {
         // 3 CJK characters = 6 terminal columns (2 each via unicode-width)
         let s = make("\u{65E5}\u{672C}\u{8A9E}", None);
-        // GUTTER_COLS(4) + text(6 cols) + trailing(1) = 11
-        assert_eq!(item_display_width(&s), GUTTER_COLS + 6 + TRAILING_PAD_COLS);
+        // DEFAULT_GUTTER_COLS(4) + text(6 cols) + trailing(1) = 11
+        assert_eq!(item_display_width(&s, DEFAULT_GUTTER_COLS), DEFAULT_GUTTER_COLS + 6 + TRAILING_PAD_COLS);
     }
 
     #[test]
     fn test_non_ascii_description_width() {
         // 3 accented chars = 3 terminal columns (1 each, not fullwidth)
         let s = make("cmd", Some("\u{00E9}\u{00E8}\u{00EA}"));
-        // GUTTER_COLS(4) + "cmd"(3) + gap(2) + desc(3 cols) + trailing(1) = 13
+        // DEFAULT_GUTTER_COLS(4) + "cmd"(3) + gap(2) + desc(3 cols) + trailing(1) = 13
         assert_eq!(
-            item_display_width(&s),
-            GUTTER_COLS + 3 + DESC_GAP_COLS + 3 + TRAILING_PAD_COLS
+            item_display_width(&s, DEFAULT_GUTTER_COLS),
+            DEFAULT_GUTTER_COLS + 3 + DESC_GAP_COLS + 3 + TRAILING_PAD_COLS
         );
     }
 
@@ -351,6 +373,8 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             true,
+            DEFAULT_GUTTER_COLS,
+            false,
         );
         // Popup suppressed: zero-size layout prevents off-screen rendering
         assert_eq!(layout.width, 0);
@@ -372,6 +396,8 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             true,
+            DEFAULT_GUTTER_COLS,
+            false,
         );
         assert_eq!(layout.width, 0);
         assert_eq!(layout.height, 0);
@@ -392,6 +418,8 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             true,
+            DEFAULT_GUTTER_COLS,
+            false,
         );
         assert!(layout.width > 0);
         assert!(layout.height > 0);
@@ -406,17 +434,17 @@ mod tests {
             SuggestionKind::FilePath,
             None,
         );
-        // GUTTER_COLS(4) + basename(12 cols) + trailing(1) = 17
-        assert_eq!(item_display_width(&s), GUTTER_COLS + 12 + TRAILING_PAD_COLS);
+        // DEFAULT_GUTTER_COLS(4) + basename(12 cols) + trailing(1) = 17
+        assert_eq!(item_display_width(&s, DEFAULT_GUTTER_COLS), DEFAULT_GUTTER_COLS + 12 + TRAILING_PAD_COLS);
     }
 
     #[test]
     fn test_gutter_cols_accounts_for_nerd_font_width() {
-        // GUTTER_COLS must be 4 to account for Nerd Font PUA icons rendering
+        // DEFAULT_GUTTER_COLS must be 4 to account for Nerd Font PUA icons rendering
         // as 2 columns: space(1) + icon(2) + space(1) = 4
-        assert_eq!(GUTTER_COLS, 4);
+        assert_eq!(DEFAULT_GUTTER_COLS, 4);
         // Simple command: gutter(4) + "ls"(2) + trailing(1) = 7
         let s = make("ls", None);
-        assert_eq!(item_display_width(&s), GUTTER_COLS + 2 + TRAILING_PAD_COLS);
+        assert_eq!(item_display_width(&s, DEFAULT_GUTTER_COLS), DEFAULT_GUTTER_COLS + 2 + TRAILING_PAD_COLS);
     }
 }

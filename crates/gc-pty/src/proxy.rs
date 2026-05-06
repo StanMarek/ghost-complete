@@ -196,6 +196,9 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         borders: config.popup.borders,
         spinner: config.popup.spinner,
         show_provider_errors: config.popup.show_provider_errors,
+        gutter_padding: config.popup.gutter_padding,
+        fixed_width: config.popup.fixed_width,
+        truncation_indicator: config.popup.truncation_indicator.clone(),
     };
 
     // Initialize suggestion handler with config

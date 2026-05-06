@@ -264,6 +264,17 @@ fn commit_toml_update(app: &mut App, field_key: String, new_toml: String) {
                 );
                 return;
             }
+            if normalized.popup.gutter_padding != new_config.popup.gutter_padding {
+                set_error(
+                    app,
+                    &field_key,
+                    format!(
+                        "value {} out of range: would be clamped to {}",
+                        new_config.popup.gutter_padding, normalized.popup.gutter_padding
+                    ),
+                );
+                return;
+            }
 
             app.raw_toml = new_toml;
             app.config = new_config;
