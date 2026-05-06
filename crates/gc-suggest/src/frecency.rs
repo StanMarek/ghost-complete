@@ -560,6 +560,36 @@ impl FrecencyDb {
         }
     }
 
+    /// Record many keys under a single lock acquisition. Intentionally
+    /// skips the per-record `SAVE_EVERY` snapshot trigger — callers are
+    /// expected to call [`Self::flush`] at the end. Used by the bulk
+    /// `import-history` path; the per-keystroke runtime path stays on
+    /// [`Self::record`] so its incremental persistence is preserved.
+    pub fn record_many<S, I>(&self, keys: I)
+    where
+        S: AsRef<str>,
+        I: IntoIterator<Item = S>,
+    {
+        let now = now_secs();
+        let mut inner = self.lock_inner();
+        let mut count: u32 = 0;
+        for key in keys {
+            let entry =
+                inner
+                    .entries
+                    .entry(key.as_ref().to_string())
+                    .or_insert(FrecencyEntry {
+                        stored_score: 0.0,
+                        reference_secs: now,
+                    });
+            let actual = entry.actual_score(now);
+            entry.stored_score = (actual + 1.0).min(MAX_STORED_SCORE);
+            entry.reference_secs = now;
+            count = count.saturating_add(1);
+        }
+        inner.dirty_count = inner.dirty_count.saturating_add(count);
+    }
+
     /// Flush any unsaved records to disk. Call on proxy shutdown.
     pub fn flush(&self) {
         let snapshot = {
