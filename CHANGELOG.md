@@ -7,60 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-05-06
+
 ### Added
 
-- **Opt-in TTL/LRU eviction for parsed completion specs.** The
-  `[suggest.spec_cache]` config section accepts `idle_ttl_secs`,
-  `sweep_interval_secs`, `keep_warm`, and `max_resident_mb`. Eviction is
-  disabled by default (`idle_ttl_secs = 0`), preserving the lazy-loading
-  layer's "parse once, hold forever" behavior for users who do not opt in.
-- **Spec cache status and doctor diagnostics.** `ghost-complete status
-  --json` bumps `schema_version` from `1.3` to `1.5` and adds a top-level
-  `specs` block exposing `registered`, `addressable_aliases`, and a
-  `spec_cache` policy reflection (`enabled`, `idle_ttl_secs`,
-  `sweep_interval_secs`, `keep_warm`, `max_resident_mb`). The `specs`
-  block is corpus-structural and policy-level only — it does not claim
-  to reflect the running daemon's live parse state, since `status` runs
-  in its own short-lived process. `ghost-complete doctor` warns when a
-  `keep_warm` entry does not match a registered spec alias and when
-  estimated resident heap exceeds 90% of `max_resident_mb`.
-
-### Changed
-
-- **Spec lookups return owned specs.** `SpecStore::get` and
-  `SpecEntry::spec` now return `Option<Arc<CompletionSpec>>` instead of
-  `Option<&CompletionSpec>`. The parsed slot can now transition between
-  `Loaded` and `Evicted`; callers keep a cloned `Arc` so their resolved
-  spec remains valid across cache mutations.
-- **Runtime no longer materialises embedded specs to disk.** Previous
-  versions wrote `~/.cache/ghost-complete/embedded-specs/` on first run
-  after a binary upgrade (~25 MB write, sentinel-versioned). The runtime
-  now consumes the embedded corpus in-memory via
-  `SpecStore::load_with_embedded` — same precedence semantics, no disk
-  I/O, no version sentinel to keep in sync. `ghost-complete install` and
-  `ghost-complete uninstall` now remove the legacy cache directory if an
-  earlier binary left it behind.
-- **`status` now reports lazy parse errors.** A spec that fails to parse
-  no longer crashes loading — it stays registered and surfaces through
-  `SpecEntry::load_error()`. `ghost-complete status` walks the entries
-  after force-loading and lists each error inline. `validate-specs`
-  continues to parse configured spec directories directly through its
-  separate validator.
+- Add spec_cache section to config editor (#112).
+- Add opt-in spec cache eviction for better memory usage (#110).
 
 ### Fixed
 
-- **Lazy spec loading drops idle memory from ~330 MB to ~5 MB.** Pre-fix the
-  spec loader eagerly parsed every embedded spec into `Arc<CompletionSpec>`
-  at startup. The AWS spec alone (~36 MB minified, 17 K subcommands, 116 K
-  descriptions) ballooned the daemon's physical footprint to 333 MB on
-  first load. The loader now defers `serde_json::from_str` to the first
-  `SpecEntry::spec()` call: each entry holds its source as either a
-  filesystem `PathBuf` or an `&'static str` slice into the embedded
-  corpus, and a `RwLock<ParsedSlot>` holds the lazy parse result.
-  Failures are sticky and surface via `SpecEntry::load_error`.
-  Benchmarks: `load_with_embedded` ~183 µs, warm `SpecStore::get` stays
-  under the 50 ns hot-path budget, and first-touch parse of the AWS spec
-  is ~150 ms (paid only when the user actually types `aws `).
+- Lazy spec loading drops idle memory from 333MB to ~2MB (#109).
+
+### Changed
+
+- Add local build makefile.
 
 ## [0.12.3] - 2026-05-05
 
@@ -888,6 +848,7 @@ silently changed behaviour.
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.13.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.13.0
 [0.12.3]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.12.3
 [0.12.2]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.12.2
 [0.12.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.12.1
