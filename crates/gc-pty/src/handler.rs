@@ -13,7 +13,7 @@ use gc_overlay::{
     PopupTheme,
 };
 use gc_parser::TerminalParser;
-use gc_suggest::{Suggestion, SuggestionEngine};
+use gc_suggest::{SpecCacheSweep, Suggestion, SuggestionEngine};
 use gc_terminal::TerminalProfile;
 use tokio::sync::{mpsc, Notify};
 
@@ -370,6 +370,15 @@ impl InputHandler {
 
     pub fn feedback_tick_notify(&self) -> Arc<Notify> {
         Arc::clone(&self.feedback_tick_notify)
+    }
+
+    /// Spawn the cache-eviction sweep using the provided config. Returns
+    /// `None` when eviction is disabled.
+    pub fn spawn_spec_cache_sweep(
+        &self,
+        cfg: gc_config::SpecCacheConfig,
+    ) -> Option<SpecCacheSweep> {
+        self.engine.spawn_spec_cache_sweep(cfg)
     }
 
     pub fn with_popup_config(mut self, max_visible: usize) -> Self {
