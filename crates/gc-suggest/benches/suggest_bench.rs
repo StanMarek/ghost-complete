@@ -322,9 +322,8 @@ fn memory_benchmarks(c: &mut Criterion) {
 ///   pay when they first type `aws ` — it's ~exactly the work the eager
 ///   loader was doing for *every* spec at startup pre-fix.
 /// - `warm_get_git` measures the steady-state lookup cost after the
-///   `OnceLock` is populated. This is what users pay on every subsequent
-///   lookup of the same spec — should be ~5-10 ns (HashMap lookup +
-///   OnceLock read + borrow).
+///   `ParsedSlot` is populated. This is what users pay on every subsequent
+///   lookup of the same spec.
 fn lazy_load_benchmarks(c: &mut Criterion) {
     let mut group = c.benchmark_group("lazy_load");
 
@@ -362,7 +361,7 @@ fn lazy_load_benchmarks(c: &mut Criterion) {
     });
 
     // Warm path: build the store once outside the timed loop and time
-    // only the lookup. The OnceLock is populated by the first iter, every
+    // only the lookup. The ParsedSlot is populated by the first iter, every
     // subsequent iter takes the fast path.
     let warm_result =
         SpecStore::load_with_embedded(&[]).expect("embedded corpus must load for warm bench");
@@ -373,6 +372,81 @@ fn lazy_load_benchmarks(c: &mut Criterion) {
         b.iter(|| {
             let spec = warm_store.get("git").expect("git spec must resolve");
             std::hint::black_box(spec);
+        });
+    });
+
+    // After v0.12.5 the warm path goes through RwLock<ParsedSlot> + an
+    // AtomicU64 timestamp bump. This pins the new eviction-aware hot path.
+    group.bench_function("warm_get_git_under_eviction_path", |b| {
+        let result = SpecStore::load_with_embedded(&[]).expect("embedded corpus must load");
+        let store = result.store;
+        let _ = store.get("git"); // prime
+        b.iter(|| {
+            let spec = store.get("git").expect("git spec must resolve");
+            std::hint::black_box(spec);
+        });
+    });
+
+    group.bench_function("evict_then_get_aws", |b| {
+        b.iter_custom(|iters| {
+            let mut total = std::time::Duration::ZERO;
+            let result = SpecStore::load_with_embedded(&[]).expect("embedded corpus must load");
+            let store = result.store;
+            for _ in 0..iters {
+                let _ = store.get("aws"); // ensure Loaded
+                let entry = store
+                    .entries()
+                    .iter()
+                    .find(|e| e.id == "aws")
+                    .unwrap()
+                    .clone();
+                entry.set_last_accessed_for_test(
+                    std::time::SystemTime::now() - std::time::Duration::from_secs(3600),
+                );
+                let _ = store.evict_idle(
+                    std::time::Duration::from_secs(60),
+                    None,
+                    &std::collections::HashSet::new(),
+                );
+                let start = std::time::Instant::now();
+                let spec = store
+                    .get("aws")
+                    .expect("aws must re-resolve after eviction");
+                total += start.elapsed();
+                std::hint::black_box(spec);
+            }
+            total
+        });
+    });
+
+    group.bench_function("evict_idle_700_specs_no_op", |b| {
+        let result = SpecStore::load_with_embedded(&[]).expect("embedded corpus must load");
+        let store = result.store;
+        // Force every entry through Loaded; bump timestamps to "just now".
+        for (id, _) in store.iter() {
+            let _ = id;
+        }
+        let keep_warm = std::collections::HashSet::new();
+        b.iter(|| {
+            let report = store.evict_idle(std::time::Duration::from_secs(3600), None, &keep_warm);
+            std::hint::black_box(report);
+        });
+    });
+
+    group.bench_function("evict_idle_700_specs_evict_all", |b| {
+        // Re-build per iter so each iter starts from "everything Loaded".
+        b.iter_custom(|iters| {
+            let mut total = std::time::Duration::ZERO;
+            for _ in 0..iters {
+                let result = SpecStore::load_with_embedded(&[]).expect("embedded corpus must load");
+                let store = result.store;
+                for (_, _) in store.iter() {} // force-load all
+                let keep_warm = std::collections::HashSet::new();
+                let start = std::time::Instant::now();
+                let _ = store.evict_idle(std::time::Duration::ZERO, None, &keep_warm);
+                total += start.elapsed();
+            }
+            total
         });
     });
 
