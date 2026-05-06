@@ -42,6 +42,9 @@ ratatui = { version = "0.30", default-features = false, features = ["crossterm"]
 toml_edit = "0.22"
 toml = "0.8"
 
+[profile.release]
+strip = "symbols"
+
 # The profile that 'dist' will build with
 [profile.dist]
 inherits = "release"
