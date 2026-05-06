@@ -136,7 +136,11 @@ impl HistoryProvider {
         }
     }
 
-    fn read_history_from(path: &Path, max_entries: usize) -> Result<Vec<String>> {
+    /// Read and parse `path` (zsh extended or plain history format) into
+    /// its deduplicated command list, oldest-to-newest. Capped at
+    /// `max_entries`. Used by the runtime [`HistoryProvider`] and by
+    /// `ghost-complete import-history`.
+    pub fn read_history_from(path: &Path, max_entries: usize) -> Result<Vec<String>> {
         let raw = read_tail(path)?;
         // Strict per-line UTF-8: any line that isn't valid UTF-8 is dropped
         // with a debug log instead of being silently corrupted by U+FFFD

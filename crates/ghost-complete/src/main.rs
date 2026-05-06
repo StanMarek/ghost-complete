@@ -1,5 +1,6 @@
 mod config_cmd;
 mod doctor;
+mod import_history;
 mod install;
 mod sanitize;
 mod status;
@@ -22,7 +23,7 @@ use tracing_subscriber::EnvFilter;
         ")"
     ),
     about = "Terminal-native autocomplete engine",
-    after_help = "COMMANDS:\n  install          Install shell integration (zsh)\n  uninstall        Remove shell integration\n  validate-specs   Validate completion spec files\n  status           Show loaded specs and JS compatibility\n  config           Show resolved configuration\n  config edit      Open interactive config editor\n  doctor           Run health checks\n\nSHELL SUPPORT:\n  zsh   Full support (auto-installed into ~/.zshrc)"
+    after_help = "COMMANDS:\n  install          Install shell integration (zsh)\n  uninstall        Remove shell integration\n  validate-specs   Validate completion spec files\n  status           Show loaded specs and JS compatibility\n  config           Show resolved configuration\n  config edit      Open interactive config editor\n  doctor           Run health checks\n  import-history   Seed frecency scores from $HISTFILE / ~/.zsh_history\n\nSHELL SUPPORT:\n  zsh   Full support (auto-installed into ~/.zshrc)"
 )]
 struct Cli {
     /// Path to config file
@@ -123,6 +124,36 @@ fn parse_baseline_flag(shell_args: &[String]) -> Result<Option<std::path::PathBu
     Ok(out)
 }
 
+/// Generic counterpart to [`parse_baseline_flag`]: extract a `--<name> VALUE`
+/// or `--<name>=VALUE` flag from `args`. Returns the last occurrence so
+/// `--from a --from b` resolves to `b`. Errors on a bare `--<name>` with
+/// no value or one followed by another flag.
+fn parse_value_flag(args: &[String], name: &str) -> Result<Option<String>> {
+    let with_eq = format!("{name}=");
+    let mut out: Option<String> = None;
+    let mut i = 0;
+    while i < args.len() {
+        let a = &args[i];
+        if a == name {
+            match args.get(i + 1) {
+                Some(v) if !v.starts_with('-') => {
+                    out = Some(v.clone());
+                    i += 2;
+                    continue;
+                }
+                _ => anyhow::bail!("{name} requires a value"),
+            }
+        } else if let Some(rest) = a.strip_prefix(&with_eq) {
+            if rest.is_empty() {
+                anyhow::bail!("{name} requires a value");
+            }
+            out = Some(rest.to_string());
+        }
+        i += 1;
+    }
+    Ok(out)
+}
+
 fn init_tracing(level: &str, log_file: Option<&str>) -> Result<()> {
     // Prefer `RUST_LOG` (standard ecosystem env var) when set; fall back to
     // the `--log-level` flag value otherwise. This matches how every other
@@ -197,6 +228,20 @@ fn main() -> Result<()> {
         Some("doctor") => {
             init_tracing(&cli.log_level, cli.log_file.as_deref())?;
             return doctor::run_doctor(cli.config.as_deref());
+        }
+        Some("import-history") => {
+            init_tracing(&cli.log_level, cli.log_file.as_deref())?;
+            let dry_run = cli.shell_args.iter().any(|s| s == "--dry-run");
+            let path_override = parse_value_flag(&cli.shell_args, "--from")?;
+            let max_entries = parse_value_flag(&cli.shell_args, "--max")?
+                .map(|s| s.parse::<usize>())
+                .transpose()
+                .context("--max requires a non-negative integer")?;
+            return import_history::run_import_history(
+                path_override.as_deref(),
+                max_entries,
+                dry_run,
+            );
         }
         _ => {}
     }
