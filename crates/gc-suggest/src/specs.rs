@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
@@ -755,6 +755,17 @@ impl SpecEntry {
         UNIX_EPOCH + Duration::from_nanos(nanos)
     }
 
+    /// Test-only helper. Force-set `last_accessed_nanos` to a specific
+    /// `SystemTime`. Production code uses `bump_last_accessed` exclusively.
+    #[doc(hidden)]
+    pub fn set_last_accessed_for_test(&self, ts: SystemTime) {
+        let nanos = ts
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos() as u64;
+        self.last_accessed_nanos.store(nanos, Ordering::Relaxed);
+    }
+
     /// Lazily parse and return the spec. Returns `None` if parsing failed.
     pub fn spec(&self) -> Option<Arc<CompletionSpec>> {
         self.parsed_result_arc().ok()
@@ -784,6 +795,13 @@ impl SpecEntry {
     pub fn is_parsed(&self) -> bool {
         let guard = self.parsed.read().unwrap_or_else(|p| p.into_inner());
         !matches!(&*guard, ParsedSlot::Empty)
+    }
+
+    /// True iff any of the entry's registered aliases is in `keep_warm`.
+    /// Aliases come from `SpecEntry.aliases` (filename stem +
+    /// `CompletionSpec.name` when distinct). Shell aliases are NOT walked.
+    pub(crate) fn has_warm_alias(&self, keep_warm: &HashSet<String>) -> bool {
+        self.aliases.iter().any(|a| keep_warm.contains(a))
     }
 
     pub fn location(&self) -> SpecLocation {
@@ -816,6 +834,11 @@ fn parse_entry_source(source: &SpecSource) -> Result<Arc<CompletionSpec>, String
         tracing::warn!("{}: {w}", spec.name);
     }
     Ok(Arc::new(spec))
+}
+
+fn entry_is_idle_at(entry: &SpecEntry, now: SystemTime, threshold: Duration) -> bool {
+    let last = entry.last_accessed();
+    now.duration_since(last).unwrap_or_default() >= threshold
 }
 
 /// One alias collision detected during loading. `winner` and `loser`
@@ -889,6 +912,8 @@ pub struct SpecStore {
     entries: Vec<Arc<SpecEntry>>,
     by_alias: AliasIndex,
     conflicts: Vec<AliasConflict>,
+    /// Last completed sweep report. `None` until first sweep runs.
+    last_sweep: RwLock<Option<SweepReport>>,
 }
 
 pub struct SpecLoadResult {
@@ -898,6 +923,34 @@ pub struct SpecLoadResult {
     /// [`SpecStore::force_load_errors`] or [`SpecEntry::load_error`] after a
     /// lookup/force-load touches the entry.
     pub directory_errors: Vec<String>,
+}
+
+/// Sweep statistics returned to the caller of [`SpecStore::evict_idle`].
+#[derive(Debug, Clone, Default)]
+pub struct EvictionReport {
+    /// Entries transitioned from `Loaded` to `Evicted` because their
+    /// last-access timestamp exceeded the TTL.
+    pub evicted_idle_count: usize,
+    /// Additional entries evicted by the LRU backstop after Phase 1.
+    pub evicted_backstop_count: usize,
+    /// Entries that were eligible for eviction (idle past TTL) but were
+    /// pinned by a `keep_warm` alias match.
+    pub kept_warm_count: usize,
+    /// `Loaded` entries remaining after the sweep.
+    pub parsed_count_after: usize,
+    /// Estimated resident heap remaining after the sweep, in bytes.
+    pub estimated_resident_bytes_after: u64,
+}
+
+/// Persisted sweep report, surfaced to `ghost-complete status`.
+#[derive(Debug, Clone)]
+pub struct SweepReport {
+    pub timestamp: SystemTime,
+    pub evicted_idle_count: usize,
+    pub evicted_backstop_count: usize,
+    pub kept_warm_count: usize,
+    pub parsed_count_after: usize,
+    pub estimated_resident_bytes_after: u64,
 }
 
 impl SpecStore {
@@ -940,6 +993,7 @@ impl SpecStore {
                 entries,
                 by_alias,
                 conflicts,
+                last_sweep: RwLock::new(None),
             },
             directory_errors,
         })
@@ -1008,9 +1062,122 @@ impl SpecStore {
                 entries,
                 by_alias,
                 conflicts,
+                last_sweep: RwLock::new(None),
             },
             directory_errors,
         })
+    }
+
+    /// Last completed sweep report, or `None` until the first sweep.
+    pub fn last_sweep(&self) -> Option<SweepReport> {
+        self.last_sweep
+            .read()
+            .unwrap_or_else(|p| p.into_inner())
+            .clone()
+    }
+
+    /// Number of entries currently in `ParsedSlot::Loaded`.
+    pub fn parsed_count(&self) -> usize {
+        self.entries
+            .iter()
+            .filter(|e| {
+                let guard = e.parsed.read().unwrap_or_else(|p| p.into_inner());
+                guard.is_loaded()
+            })
+            .count()
+    }
+
+    /// Sum of [`estimated_heap_bytes`] over every currently-loaded entry.
+    /// Approximate per the existing `estimated_heap_bytes` docstring.
+    pub fn estimated_resident_bytes(&self) -> u64 {
+        self.entries
+            .iter()
+            .map(|e| {
+                let guard = e.parsed.read().unwrap_or_else(|p| p.into_inner());
+                match &*guard {
+                    ParsedSlot::Loaded(arc) => estimated_heap_bytes(arc.as_ref()) as u64,
+                    _ => 0,
+                }
+            })
+            .sum()
+    }
+
+    /// Run a cache-eviction sweep. Phase 1 evicts entries idle past the
+    /// `idle_threshold`; Phase 2 (LRU backstop) evicts more entries
+    /// oldest-access-first if the resident heap exceeds `max_resident_bytes`.
+    /// `keep_warm` aliases are exempt from both phases.
+    pub fn evict_idle(
+        &self,
+        idle_threshold: Duration,
+        max_resident_bytes: Option<u64>,
+        keep_warm: &HashSet<String>,
+    ) -> EvictionReport {
+        self.evict_idle_at(SystemTime::now(), idle_threshold, max_resident_bytes, keep_warm)
+    }
+
+    /// Internal helper that takes an explicit `now` for deterministic tests.
+    /// Public for integration-test access; production callers use
+    /// [`Self::evict_idle`].
+    #[doc(hidden)]
+    pub fn evict_idle_at(
+        &self,
+        now: SystemTime,
+        idle_threshold: Duration,
+        _max_resident_bytes: Option<u64>,
+        keep_warm: &HashSet<String>,
+    ) -> EvictionReport {
+        let mut evicted_idle = 0usize;
+        let mut kept_warm = 0usize;
+
+        // Phase 1: TTL eviction.
+        for entry in &self.entries {
+            if entry.has_warm_alias(keep_warm) {
+                if entry_is_idle_at(entry, now, idle_threshold) {
+                    let guard = entry.parsed.read().unwrap_or_else(|p| p.into_inner());
+                    if guard.is_loaded() {
+                        kept_warm += 1;
+                    }
+                }
+                continue;
+            }
+            if !entry_is_idle_at(entry, now, idle_threshold) {
+                continue;
+            }
+            let mut guard = entry.parsed.write().unwrap_or_else(|p| p.into_inner());
+            if !guard.is_loaded() {
+                continue;
+            }
+            // Re-check under the lock — a reader may have bumped the
+            // timestamp between our peek and the write-lock acquisition.
+            if !entry_is_idle_at(entry, now, idle_threshold) {
+                continue;
+            }
+            *guard = ParsedSlot::Evicted;
+            evicted_idle += 1;
+        }
+
+        // Phase 2: backstop. Implemented in Task 8.
+        let evicted_backstop = 0usize;
+
+        let parsed_count = self.parsed_count();
+        let resident = self.estimated_resident_bytes();
+        let report = SweepReport {
+            timestamp: now,
+            evicted_idle_count: evicted_idle,
+            evicted_backstop_count: evicted_backstop,
+            kept_warm_count: kept_warm,
+            parsed_count_after: parsed_count,
+            estimated_resident_bytes_after: resident,
+        };
+        *self.last_sweep.write().unwrap_or_else(|p| p.into_inner()) = Some(report.clone());
+
+        EvictionReport {
+            evicted_idle_count: evicted_idle,
+            evicted_backstop_count: evicted_backstop,
+            kept_warm_count: kept_warm,
+            parsed_count_after: parsed_count,
+            estimated_resident_bytes_after: resident,
+        }
     }
 
     /// Resolve a command alias (filename stem or non-conflicting
