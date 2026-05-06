@@ -16,15 +16,13 @@ use anyhow::{Context, Result};
 use std::path::PathBuf;
 
 use gc_suggest::frecency::{frecency_key, FrecencyDb};
-use gc_suggest::history::HistoryProvider;
+use gc_suggest::history::{HistoryProvider, DEFAULT_MAX_HISTORY_ENTRIES};
 use gc_suggest::types::SuggestionKind;
 
-const PIPELINE_SEPARATORS: &[&str] = &["|", "&&", "||", ";"];
-
-/// Mirror of `gc_suggest::history::DEFAULT_MAX_HISTORY_ENTRIES` (which is
-/// `pub(crate)` over there). Keeping a local constant avoids broadening
-/// the gc-suggest API surface for a one-off importer cap default.
-const DEFAULT_MAX_HISTORY_ENTRIES: usize = 10_000;
+// `||` and `&&` precede `|` so a literal `||` is split as one boundary
+// rather than two empty `|` splits (which the empty-segment filter would
+// then silently swallow).
+const PIPELINE_SEPARATORS: &[&str] = &["||", "&&", "|", ";"];
 
 pub fn run_import_history(
     path_override: Option<&str>,
@@ -40,31 +38,38 @@ pub fn run_import_history(
     println!("  Found {} unique entries.", entries.len());
 
     let recordings = build_recordings(&entries);
+    let cmd_count = recordings
+        .iter()
+        .filter(|r| r.kind == SuggestionKind::Command)
+        .count();
+    let sub_count = recordings.len() - cmd_count;
     println!(
         "  Generated {} frecency records ({} commands, {} subcommands).",
         recordings.len(),
-        recordings
-            .iter()
-            .filter(|r| r.kind == SuggestionKind::Command)
-            .count(),
-        recordings
-            .iter()
-            .filter(|r| r.kind == SuggestionKind::Subcommand)
-            .count(),
+        cmd_count,
+        sub_count,
     );
 
     if dry_run {
         println!("\n[dry-run] Skipping write. First 10 records:");
         for r in recordings.iter().take(10) {
-            println!("  {r}");
+            match r.kind {
+                SuggestionKind::Command => println!("  cmd  {}", r.text),
+                SuggestionKind::Subcommand => {
+                    println!("  sub  {} {}", r.command.as_deref().unwrap_or("?"), r.text)
+                }
+                _ => println!("  {}  {}", r.kind.key_tag(), r.text),
+            }
         }
         return Ok(());
     }
 
     let db = FrecencyDb::load();
-    for r in &recordings {
-        db.record(&frecency_key(r.command.as_deref(), r.kind, &r.text));
-    }
+    db.record_many(
+        recordings
+            .iter()
+            .map(|r| frecency_key(r.command.as_deref(), r.kind, &r.text)),
+    );
     db.flush();
 
     println!(
@@ -84,16 +89,6 @@ struct Recording {
     text: String,
 }
 
-impl std::fmt::Display for Recording {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match (&self.command, self.kind) {
-            (None, SuggestionKind::Command) => write!(f, "cmd  {}", self.text),
-            (Some(c), SuggestionKind::Subcommand) => write!(f, "sub  {} {}", c, self.text),
-            _ => write!(f, "{:?} {:?} {}", self.command, self.kind, self.text),
-        }
-    }
-}
-
 fn build_recordings(entries: &[String]) -> Vec<Recording> {
     let mut out = Vec::new();
     for line in entries {
@@ -105,15 +100,17 @@ fn build_recordings(entries: &[String]) -> Vec<Recording> {
             if !is_plausible_command(cmd) {
                 continue;
             }
+            let cmd_owned = cmd.to_string();
+            let next = tokens.next();
             out.push(Recording {
                 command: None,
                 kind: SuggestionKind::Command,
-                text: cmd.to_string(),
+                text: cmd_owned.clone(),
             });
-            if let Some(sub) = tokens.find(|t| !t.is_empty()) {
+            if let Some(sub) = next {
                 if is_plausible_subcommand(sub) {
                     out.push(Recording {
-                        command: Some(cmd.to_string()),
+                        command: Some(cmd_owned),
                         kind: SuggestionKind::Subcommand,
                         text: sub.to_string(),
                     });

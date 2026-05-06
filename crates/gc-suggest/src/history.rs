@@ -10,7 +10,7 @@ use gc_buffer::CommandContext;
 use crate::provider::Provider;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
-pub(crate) const DEFAULT_MAX_HISTORY_ENTRIES: usize = 10_000;
+pub const DEFAULT_MAX_HISTORY_ENTRIES: usize = 10_000;
 
 /// Above this file size, [`read_tail`] reads only the last ~2 MiB rather
 /// than slurping the whole file. 2 MiB is roughly 20–30k history entries on

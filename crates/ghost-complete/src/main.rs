@@ -91,43 +91,19 @@ where
 }
 
 /// Parse `--baseline <path>` (or `--baseline=PATH`) out of the trailing
-/// arg list `shell_args`. Accepts the GNU-style `--baseline=` form as a
-/// convenience alias.
-///
-/// A bare `--baseline` with no following value — or a `--baseline` whose
-/// next token starts with `-` (another flag) — is a user error, not a
-/// silent fallback to the embedded baseline. The latter behaviour would
-/// mask typos like `ghost-complete status --baseline --json`.
+/// arg list `shell_args`. A bare `--baseline` with no following value —
+/// or a `--baseline` whose next token starts with `-` — is a user
+/// error, not a silent fallback to the embedded baseline; the latter
+/// would mask typos like `ghost-complete status --baseline --json`.
 fn parse_baseline_flag(shell_args: &[String]) -> Result<Option<std::path::PathBuf>> {
-    let mut out: Option<std::path::PathBuf> = None;
-    let mut i = 0;
-    while i < shell_args.len() {
-        let a = &shell_args[i];
-        if a == "--baseline" {
-            let next = shell_args.get(i + 1);
-            match next {
-                Some(v) if !v.starts_with('-') => {
-                    out = Some(std::path::PathBuf::from(v));
-                    i += 2;
-                    continue;
-                }
-                _ => anyhow::bail!("--baseline requires a path argument"),
-            }
-        } else if let Some(rest) = a.strip_prefix("--baseline=") {
-            if rest.is_empty() {
-                anyhow::bail!("--baseline requires a path argument");
-            }
-            out = Some(std::path::PathBuf::from(rest));
-        }
-        i += 1;
-    }
-    Ok(out)
+    parse_value_flag(shell_args, "--baseline")
+        .map_err(|_| anyhow::anyhow!("--baseline requires a path argument"))
+        .map(|opt| opt.map(std::path::PathBuf::from))
 }
 
-/// Generic counterpart to [`parse_baseline_flag`]: extract a `--<name> VALUE`
-/// or `--<name>=VALUE` flag from `args`. Returns the last occurrence so
-/// `--from a --from b` resolves to `b`. Errors on a bare `--<name>` with
-/// no value or one followed by another flag.
+/// Extract a `--<name> VALUE` or `--<name>=VALUE` flag from `args`.
+/// Returns the last occurrence so `--from a --from b` resolves to `b`.
+/// Errors on a bare `--<name>` with no value or one followed by another flag.
 fn parse_value_flag(args: &[String], name: &str) -> Result<Option<String>> {
     let with_eq = format!("{name}=");
     let mut out: Option<String> = None;
