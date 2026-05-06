@@ -1,6 +1,8 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, OnceLock};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, OnceLock, RwLock};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
@@ -555,6 +557,34 @@ pub enum SpecSource {
     Embedded(&'static str),
 }
 
+/// Mutable parse state for a [`SpecEntry`]. Encodes the four states a
+/// lazy-parsed spec can be in:
+///
+/// * `Empty` — registered, never accessed. Zero heap.
+/// * `Loaded(Arc)` — parsed and resident. The Arc is shared with any
+///   reader that resolved this entry (via `spec`, `spec_arc`,
+///   `spec_result`, or the `SpecStore::get*` lookups); eviction drops
+///   the slot's strong-ref but readers' clones survive.
+/// * `Evicted` — was `Loaded`, then a TTL/backstop sweep took the write
+///   lock and released the Arc. Next access re-parses.
+/// * `Failed(error)` — parse failed; sticky, never retried, never evicted.
+///   Sweep skips this variant.
+#[derive(Debug)]
+pub(crate) enum ParsedSlot {
+    Empty,
+    Loaded(Arc<CompletionSpec>),
+    Evicted,
+    Failed(String),
+}
+
+impl ParsedSlot {
+    /// True when the slot holds a parsed `Arc`. Used by the sweep task
+    /// to filter eligible entries.
+    pub(crate) fn is_loaded(&self) -> bool {
+        matches!(self, ParsedSlot::Loaded(_))
+    }
+}
+
 /// Explicit source location for a registered spec entry.
 ///
 /// Filesystem specs have a real path. Embedded specs are in-memory slices
@@ -641,9 +671,16 @@ pub struct SpecEntry {
     /// registration. Stored separately so diagnostics stay lazy: the error is
     /// copied into `parsed` only when the entry is first touched.
     shallow_parse_error: Option<String>,
-    /// Lazy parse target. `Ok(Arc<CompletionSpec>)` on success;
-    /// `Err(error_message)` on parse failure (sticky — never retried).
-    parsed: OnceLock<Result<Arc<CompletionSpec>, String>>,
+    /// Mutable parse slot. See [`ParsedSlot`] for state semantics.
+    parsed: RwLock<ParsedSlot>,
+    /// Last access as a relaxed-ordering Unix-epoch nanosecond. Bumped on
+    /// every successful read (any of `spec`, `spec_arc`, `spec_result`, or
+    /// `SpecStore::get`). Backed by a monotonic clock on macOS (captured
+    /// against a Unix-epoch base at startup) and `CLOCK_REALTIME` on other
+    /// Unix-like systems. Eviction comparisons mask backward jumps via
+    /// `duration_since(...).unwrap_or_default()`. Used by the sweep task
+    /// to identify TTL-eligible entries.
+    last_accessed_nanos: AtomicU64,
 }
 
 impl SpecEntry {
@@ -654,62 +691,120 @@ impl SpecEntry {
         }
     }
 
-    fn parsed_result(&self) -> std::result::Result<&Arc<CompletionSpec>, &str> {
-        self.parsed
-            .get_or_init(|| {
-                let parsed = if let Some(err) = &self.shallow_parse_error {
-                    Err(err.clone())
-                } else {
-                    parse_entry_source(&self.source)
-                };
-                if let Err(err) = &parsed {
-                    tracing::warn!(
-                        spec_id = %self.id,
-                        source = %self.source_label(),
-                        error = %err,
-                        "spec lazy load failed"
-                    );
+    /// Lazy-parse the entry and return an owned `Arc<CompletionSpec>` clone.
+    /// Errors are sticky — a parse failure is recorded once and never
+    /// retried. Eviction (`ParsedSlot::Evicted`) does not affect
+    /// stickiness; only successful loads can be evicted.
+    fn parsed_result_arc(&self) -> std::result::Result<Arc<CompletionSpec>, String> {
+        // Fast path: read lock. Uncontended in steady state.
+        {
+            let guard = self.parsed.read().unwrap_or_else(|p| p.into_inner());
+            match &*guard {
+                ParsedSlot::Loaded(arc) => {
+                    self.bump_last_accessed();
+                    return Ok(Arc::clone(arc));
                 }
-                parsed
-            })
-            .as_ref()
-            .map_err(String::as_str)
+                ParsedSlot::Failed(err) => return Err(err.clone()),
+                ParsedSlot::Empty | ParsedSlot::Evicted => {}
+            }
+        }
+
+        // Slow path: write lock. Re-check (another writer may have
+        // filled the slot between our drop and re-acquire).
+        let mut guard = self.parsed.write().unwrap_or_else(|p| p.into_inner());
+        match &*guard {
+            ParsedSlot::Loaded(arc) => {
+                self.bump_last_accessed();
+                return Ok(Arc::clone(arc));
+            }
+            ParsedSlot::Failed(err) => return Err(err.clone()),
+            ParsedSlot::Empty | ParsedSlot::Evicted => {}
+        }
+        let parsed = if let Some(err) = &self.shallow_parse_error {
+            Err(err.clone())
+        } else {
+            parse_entry_source(&self.source)
+        };
+        match parsed {
+            Ok(arc) => {
+                *guard = ParsedSlot::Loaded(Arc::clone(&arc));
+                self.bump_last_accessed();
+                Ok(arc)
+            }
+            Err(err) => {
+                tracing::warn!(
+                    spec_id = %self.id,
+                    source = %self.source_label(),
+                    error = %err,
+                    "spec lazy load failed"
+                );
+                let cloned = err.clone();
+                *guard = ParsedSlot::Failed(err);
+                Err(cloned)
+            }
+        }
     }
 
-    /// Lazily parse and return the spec. Returns `None` if parsing
-    /// failed (the failure is recorded once and never retried — call
-    /// [`Self::load_error`] for diagnostics).
-    pub fn spec(&self) -> Option<&CompletionSpec> {
-        self.parsed_result().ok().map(|arc| arc.as_ref())
+    fn bump_last_accessed(&self) {
+        self.last_accessed_nanos
+            .store(now_unix_nanos(), Ordering::Relaxed);
     }
 
-    /// Like [`Self::spec`] but returns an owned clone of the cached
-    /// `Arc`. Use when the caller needs to hold the spec across a
-    /// boundary that requires `'static` lifetime; prefer [`Self::spec`]
-    /// otherwise.
+    /// Last access timestamp as `SystemTime`. Returns `UNIX_EPOCH` when
+    /// the entry has never been accessed.
+    pub fn last_accessed(&self) -> SystemTime {
+        let nanos = self.last_accessed_nanos.load(Ordering::Relaxed);
+        UNIX_EPOCH + Duration::from_nanos(nanos)
+    }
+
+    /// Test-only helper. Force-set `last_accessed_nanos` to a specific
+    /// `SystemTime`. Production code uses `bump_last_accessed` exclusively.
+    #[doc(hidden)]
+    pub fn set_last_accessed_for_test(&self, ts: SystemTime) {
+        let nanos = ts.duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos() as u64;
+        self.last_accessed_nanos.store(nanos, Ordering::Relaxed);
+    }
+
+    /// Lazily parse and return the spec. Returns `None` if parsing failed.
+    pub fn spec(&self) -> Option<Arc<CompletionSpec>> {
+        self.parsed_result_arc().ok()
+    }
+
+    /// Equivalent to [`Self::spec`]; retained for API stability with
+    /// pre-eviction callers.
     pub fn spec_arc(&self) -> Option<Arc<CompletionSpec>> {
-        self.parsed_result().ok().cloned()
+        self.parsed_result_arc().ok()
     }
 
-    /// Like [`Self::spec`] but preserves the lazy parse error instead of
-    /// collapsing it into `None`.
-    pub fn spec_result(&self) -> std::result::Result<&CompletionSpec, &str> {
-        self.parsed_result().map(|arc| arc.as_ref())
+    /// Like [`Self::spec`] but preserves the lazy parse error.
+    pub fn spec_result(&self) -> std::result::Result<Arc<CompletionSpec>, String> {
+        self.parsed_result_arc()
     }
 
-    /// Returns the parse error message if the lazy load failed.
-    /// Returns `None` if the spec has not yet been touched OR loaded
-    /// successfully — disambiguate via [`Self::is_parsed`].
-    pub fn load_error(&self) -> Option<&str> {
-        self.parsed
-            .get()
-            .and_then(|r| r.as_ref().err())
-            .map(String::as_str)
+    /// Returns the parse error message if the lazy load failed. Returns
+    /// `None` for Empty, Loaded, or Evicted slots — disambiguate via
+    /// [`Self::is_parsed`] (Empty vs. parsed) and [`Self::spec`]
+    /// (Loaded/Evicted vs. Failed).
+    pub fn load_error(&self) -> Option<String> {
+        let guard = self.parsed.read().unwrap_or_else(|p| p.into_inner());
+        match &*guard {
+            ParsedSlot::Failed(err) => Some(err.clone()),
+            _ => None,
+        }
     }
 
-    /// True iff this entry has been touched (lazy parse attempted).
+    /// True iff this entry has been touched (parse attempted), regardless
+    /// of outcome or current cache residence.
     pub fn is_parsed(&self) -> bool {
-        self.parsed.get().is_some()
+        let guard = self.parsed.read().unwrap_or_else(|p| p.into_inner());
+        !matches!(&*guard, ParsedSlot::Empty)
+    }
+
+    /// True iff any of the entry's registered aliases is in `keep_warm`.
+    /// Aliases come from `SpecEntry.aliases` (filename stem +
+    /// `CompletionSpec.name` when distinct). Shell aliases are NOT walked.
+    pub(crate) fn has_warm_alias(&self, keep_warm: &HashSet<String>) -> bool {
+        self.aliases.iter().any(|a| keep_warm.contains(a))
     }
 
     pub fn location(&self) -> SpecLocation {
@@ -727,7 +822,7 @@ impl SpecEntry {
 
 /// Parse the JSON behind a [`SpecSource`] into an `Arc<CompletionSpec>`.
 /// Wraps existing parse + sanitize machinery; returns the error as a
-/// `String` so the failure is `Send + Sync` and storable in `OnceLock`.
+/// `String` so the failure is `Send + Sync` and storable in the parse slot.
 fn parse_entry_source(source: &SpecSource) -> Result<Arc<CompletionSpec>, String> {
     let contents: std::borrow::Cow<'_, str> = match source {
         SpecSource::Filesystem(path) => std::borrow::Cow::Owned(
@@ -742,6 +837,75 @@ fn parse_entry_source(source: &SpecSource) -> Result<Arc<CompletionSpec>, String
         tracing::warn!("{}: {w}", spec.name);
     }
     Ok(Arc::new(spec))
+}
+
+fn entry_is_idle_at(entry: &SpecEntry, now: SystemTime, threshold: Duration) -> bool {
+    let last = entry.last_accessed();
+    now.duration_since(last).unwrap_or_default() >= threshold
+}
+
+#[cfg(target_os = "macos")]
+fn now_unix_nanos() -> u64 {
+    static BASE_UNIX_NANOS: OnceLock<u64> = OnceLock::new();
+
+    let mono = monotonic_nanos();
+    let base = *BASE_UNIX_NANOS.get_or_init(|| system_time_unix_nanos().saturating_sub(mono));
+    base.saturating_add(mono)
+}
+
+#[cfg(target_os = "macos")]
+#[allow(deprecated)]
+fn monotonic_nanos() -> u64 {
+    // SAFETY: mach_absolute_time is thread-safe and takes no pointers.
+    let ticks = unsafe { libc::mach_absolute_time() };
+    let (numer, denom) = mach_timebase();
+    ((ticks as u128).saturating_mul(numer as u128) / denom as u128).min(u64::MAX as u128) as u64
+}
+
+#[cfg(target_os = "macos")]
+#[allow(deprecated)]
+fn mach_timebase() -> (u64, u64) {
+    static TIMEBASE: OnceLock<(u64, u64)> = OnceLock::new();
+    *TIMEBASE.get_or_init(|| {
+        let mut info = std::mem::MaybeUninit::<libc::mach_timebase_info>::uninit();
+        // SAFETY: info points to valid, writable storage for libc to initialize.
+        let rc = unsafe { libc::mach_timebase_info(info.as_mut_ptr()) };
+        if rc == 0 {
+            // SAFETY: mach_timebase_info succeeded and initialized info.
+            let info = unsafe { info.assume_init() };
+            (u64::from(info.numer), u64::from(info.denom.max(1)))
+        } else {
+            (1, 1)
+        }
+    })
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn now_unix_nanos() -> u64 {
+    let mut ts = std::mem::MaybeUninit::<libc::timespec>::uninit();
+    // SAFETY: ts points to valid, writable storage for libc to initialize.
+    let rc = unsafe { libc::clock_gettime(libc::CLOCK_REALTIME, ts.as_mut_ptr()) };
+    if rc == 0 {
+        // SAFETY: clock_gettime succeeded and initialized ts.
+        let ts = unsafe { ts.assume_init() };
+        (ts.tv_sec as u64)
+            .saturating_mul(1_000_000_000)
+            .saturating_add(ts.tv_nsec as u64)
+    } else {
+        system_time_unix_nanos()
+    }
+}
+
+#[cfg(not(unix))]
+fn now_unix_nanos() -> u64 {
+    system_time_unix_nanos()
+}
+
+fn system_time_unix_nanos() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos() as u64
 }
 
 /// One alias collision detected during loading. `winner` and `loser`
@@ -815,6 +979,14 @@ pub struct SpecStore {
     entries: Vec<Arc<SpecEntry>>,
     by_alias: AliasIndex,
     conflicts: Vec<AliasConflict>,
+    /// Last completed sweep report. `None` until first sweep runs.
+    last_sweep: RwLock<Option<SweepReport>>,
+    /// One-shot warn-once guard for the lifetime of this `SpecStore`. The
+    /// first sweep that finds the resident cap unreachable logs a warning
+    /// and flips this flag; subsequent sweeps stay silent. Intentionally
+    /// not reset: the goal is diagnostic signal without per-tick log spam,
+    /// and `keep_warm` reconfiguration ships through a daemon restart.
+    backstop_cap_warned: AtomicBool,
 }
 
 pub struct SpecLoadResult {
@@ -824,6 +996,122 @@ pub struct SpecLoadResult {
     /// [`SpecStore::force_load_errors`] or [`SpecEntry::load_error`] after a
     /// lookup/force-load touches the entry.
     pub directory_errors: Vec<String>,
+}
+
+/// Sweep statistics returned to the caller of [`SpecStore::evict_idle`].
+#[derive(Debug, Clone, Default)]
+pub struct EvictionReport {
+    /// Entries transitioned from `Loaded` to `Evicted` because their
+    /// last-access timestamp exceeded the TTL.
+    pub evicted_idle_count: usize,
+    /// Additional entries evicted by the LRU backstop after Phase 1.
+    pub evicted_backstop_count: usize,
+    /// Entries that were eligible for eviction (idle past TTL) but were
+    /// pinned by a `keep_warm` alias match.
+    pub kept_warm_count: usize,
+    /// `Loaded` entries remaining after the sweep.
+    pub parsed_count_after: usize,
+    /// Estimated resident heap remaining after the sweep, in bytes.
+    pub estimated_resident_bytes_after: u64,
+}
+
+/// Persisted snapshot of the most recent eviction sweep.
+///
+/// Available via [`SpecStore::last_sweep`] for diagnostic callers; not
+/// currently rendered by any user-facing CLI. The 1.5 status schema
+/// design intentionally omits `last_sweep` from `ghost-complete status
+/// --json` because the transient store built by the status binary never
+/// reflects the running daemon's eviction state. Today the field is read
+/// mainly by the eviction tests; future in-process tooling may surface
+/// it.
+#[derive(Debug, Clone)]
+pub struct SweepReport {
+    pub timestamp: SystemTime,
+    pub evicted_idle_count: usize,
+    pub evicted_backstop_count: usize,
+    pub kept_warm_count: usize,
+    pub parsed_count_after: usize,
+    pub estimated_resident_bytes_after: u64,
+}
+
+/// RAII guard for the cache-eviction sweep task. Cancellation fires on
+/// drop; the spawned task ends at its next select! arm.
+pub struct SpecCacheSweep {
+    shutdown_tx: tokio::sync::watch::Sender<()>,
+}
+
+impl Drop for SpecCacheSweep {
+    fn drop(&mut self) {
+        // Best-effort cancel signal. If the receiver is already gone
+        // (task ended on its own), send returns Err — ignored.
+        let _ = self.shutdown_tx.send(());
+        // Do NOT block-on the join handle here: if drop runs on the same
+        // tokio runtime as the task, that deadlocks. The cancel signal
+        // makes the task end at its next iteration; the runtime reaps it.
+    }
+}
+
+/// Spawn a background sweep that periodically calls
+/// [`SpecStore::evict_idle`] using the policy in `cfg`. Returns the RAII
+/// guard the caller must keep alive for the duration of the engine.
+///
+/// Returns `None` when `cfg.idle_ttl_secs == 0` — eviction is opt-in;
+/// disabled is a no-op.
+pub fn spawn_spec_cache_sweep(
+    spec_store: Arc<SpecStore>,
+    cfg: gc_config::SpecCacheConfig,
+) -> Option<SpecCacheSweep> {
+    if !cfg.enabled() {
+        return None;
+    }
+    let (tx, mut rx) = tokio::sync::watch::channel(());
+    let interval_secs = cfg.sweep_interval_secs.max(1);
+    let idle_ttl = Duration::from_secs(cfg.idle_ttl_secs);
+    let max_bytes = cfg.max_resident_bytes();
+    let keep_warm: HashSet<String> = cfg.keep_warm.iter().cloned().collect();
+
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(interval_secs));
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        // Skip the first immediate tick; the first sweep should fire after
+        // one full interval, not at startup.
+        interval.tick().await;
+
+        loop {
+            tokio::select! {
+                _ = rx.changed() => break,
+                _ = interval.tick() => {
+                    let report = spec_store.evict_idle(idle_ttl, max_bytes, &keep_warm);
+                    if report.evicted_idle_count > 0 || report.evicted_backstop_count > 0 {
+                        tracing::debug!(
+                            evicted_idle = report.evicted_idle_count,
+                            evicted_backstop = report.evicted_backstop_count,
+                            kept_warm = report.kept_warm_count,
+                            parsed = report.parsed_count_after,
+                            bytes = report.estimated_resident_bytes_after,
+                            "spec_cache sweep"
+                        );
+                    }
+                }
+            }
+        }
+    });
+
+    Some(SpecCacheSweep { shutdown_tx: tx })
+}
+
+/// Test-only spawn entry. Identical to [`spawn_spec_cache_sweep`] but
+/// returns the guard unconditionally so tests can verify cancel behaviour
+/// without hitting the `enabled()` short-circuit.
+#[doc(hidden)]
+pub fn spawn_spec_cache_sweep_for_test(
+    spec_store: Arc<SpecStore>,
+    mut cfg: gc_config::SpecCacheConfig,
+) -> SpecCacheSweep {
+    if cfg.idle_ttl_secs == 0 {
+        cfg.idle_ttl_secs = 1;
+    }
+    spawn_spec_cache_sweep(spec_store, cfg).expect("test helper guarantees enabled() returns true")
 }
 
 impl SpecStore {
@@ -866,6 +1154,8 @@ impl SpecStore {
                 entries,
                 by_alias,
                 conflicts,
+                last_sweep: RwLock::new(None),
+                backstop_cap_warned: AtomicBool::new(false),
             },
             directory_errors,
         })
@@ -934,9 +1224,176 @@ impl SpecStore {
                 entries,
                 by_alias,
                 conflicts,
+                last_sweep: RwLock::new(None),
+                backstop_cap_warned: AtomicBool::new(false),
             },
             directory_errors,
         })
+    }
+
+    /// Last completed sweep report, or `None` until the first sweep.
+    pub fn last_sweep(&self) -> Option<SweepReport> {
+        self.last_sweep
+            .read()
+            .unwrap_or_else(|p| p.into_inner())
+            .clone()
+    }
+
+    /// Number of entries currently in `ParsedSlot::Loaded`.
+    pub fn parsed_count(&self) -> usize {
+        self.entries
+            .iter()
+            .filter(|e| {
+                let guard = e.parsed.read().unwrap_or_else(|p| p.into_inner());
+                guard.is_loaded()
+            })
+            .count()
+    }
+
+    /// Sum of [`estimated_heap_bytes`] over every currently-loaded entry.
+    /// Approximate per the existing `estimated_heap_bytes` docstring.
+    pub fn estimated_resident_bytes(&self) -> u64 {
+        self.entries
+            .iter()
+            .map(|e| {
+                let guard = e.parsed.read().unwrap_or_else(|p| p.into_inner());
+                match &*guard {
+                    ParsedSlot::Loaded(arc) => estimated_heap_bytes(arc.as_ref()) as u64,
+                    _ => 0,
+                }
+            })
+            .sum()
+    }
+
+    /// Run a cache-eviction sweep. Phase 1 evicts entries idle past the
+    /// `idle_threshold`; Phase 2 (LRU backstop) evicts more entries
+    /// oldest-access-first if the resident heap exceeds `max_resident_bytes`.
+    /// `keep_warm` aliases are exempt from both phases.
+    pub fn evict_idle(
+        &self,
+        idle_threshold: Duration,
+        max_resident_bytes: Option<u64>,
+        keep_warm: &HashSet<String>,
+    ) -> EvictionReport {
+        let now = UNIX_EPOCH + Duration::from_nanos(now_unix_nanos());
+        self.evict_idle_at(now, idle_threshold, max_resident_bytes, keep_warm)
+    }
+
+    /// Test-visible variant of `evict_idle` that takes an explicit `now` so
+    /// tests can drive eviction with a deterministic clock. Production
+    /// callers use [`Self::evict_idle`].
+    #[doc(hidden)]
+    pub fn evict_idle_at(
+        &self,
+        now: SystemTime,
+        idle_threshold: Duration,
+        max_resident_bytes: Option<u64>,
+        keep_warm: &HashSet<String>,
+    ) -> EvictionReport {
+        let mut evicted_idle = 0usize;
+        let mut kept_warm = 0usize;
+
+        // Phase 1: TTL eviction.
+        for entry in &self.entries {
+            if entry.has_warm_alias(keep_warm) {
+                if entry_is_idle_at(entry, now, idle_threshold) {
+                    let guard = entry.parsed.read().unwrap_or_else(|p| p.into_inner());
+                    if guard.is_loaded() {
+                        kept_warm += 1;
+                    }
+                }
+                continue;
+            }
+            if !entry_is_idle_at(entry, now, idle_threshold) {
+                continue;
+            }
+            let mut guard = entry.parsed.write().unwrap_or_else(|p| p.into_inner());
+            if !guard.is_loaded() {
+                continue;
+            }
+            // Re-check under the lock — a reader may have bumped the
+            // timestamp between our peek and the write-lock acquisition.
+            if !entry_is_idle_at(entry, now, idle_threshold) {
+                continue;
+            }
+            *guard = ParsedSlot::Evicted;
+            evicted_idle += 1;
+        }
+
+        // Phase 2: LRU backstop. Only when a cap is set AND we still exceed it.
+        let mut evicted_backstop = 0usize;
+        if let Some(cap) = max_resident_bytes {
+            let mut current = self.estimated_resident_bytes();
+            if current > cap {
+                // Snapshot eligible entries with their last_accessed
+                // timestamps. We sort outside any lock; per-entry write
+                // locks are taken when actually evicting.
+                let mut victims: Vec<(SystemTime, &Arc<SpecEntry>)> = self
+                    .entries
+                    .iter()
+                    .filter(|e| !e.has_warm_alias(keep_warm))
+                    .filter_map(|e| {
+                        let guard = e.parsed.read().unwrap_or_else(|p| p.into_inner());
+                        if guard.is_loaded() {
+                            Some((e.last_accessed(), e))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+                victims.sort_by_key(|(ts, _)| *ts); // ascending — oldest first
+
+                for (snapshot_ts, entry) in &victims {
+                    if current <= cap {
+                        break;
+                    }
+                    let mut guard = entry.parsed.write().unwrap_or_else(|p| p.into_inner());
+                    let freed = match &*guard {
+                        ParsedSlot::Loaded(arc) => estimated_heap_bytes(arc.as_ref()) as u64,
+                        _ => continue, // raced — no longer Loaded
+                    };
+                    // Re-check under the lock — a reader may have bumped the
+                    // timestamp between the snapshot and the write-lock
+                    // acquisition. Mirrors the Phase 1 guard so a just-warmed
+                    // entry isn't evicted on stale ordering.
+                    if entry.last_accessed() > *snapshot_ts {
+                        continue;
+                    }
+                    *guard = ParsedSlot::Evicted;
+                    current = current.saturating_sub(freed);
+                    evicted_backstop += 1;
+                }
+
+                if current > cap && !self.backstop_cap_warned.swap(true, Ordering::Relaxed) {
+                    tracing::warn!(
+                        resident_bytes = current,
+                        cap_bytes = cap,
+                        "spec_cache backstop unable to reach cap (likely keep_warm \
+                         pinned heap exceeds cap)"
+                    );
+                }
+            }
+        }
+
+        let parsed_count = self.parsed_count();
+        let resident = self.estimated_resident_bytes();
+        let report = SweepReport {
+            timestamp: now,
+            evicted_idle_count: evicted_idle,
+            evicted_backstop_count: evicted_backstop,
+            kept_warm_count: kept_warm,
+            parsed_count_after: parsed_count,
+            estimated_resident_bytes_after: resident,
+        };
+        *self.last_sweep.write().unwrap_or_else(|p| p.into_inner()) = Some(report.clone());
+
+        EvictionReport {
+            evicted_idle_count: evicted_idle,
+            evicted_backstop_count: evicted_backstop,
+            kept_warm_count: kept_warm,
+            parsed_count_after: parsed_count,
+            estimated_resident_bytes_after: resident,
+        }
     }
 
     /// Resolve a command alias (filename stem or non-conflicting
@@ -944,7 +1401,7 @@ impl SpecStore {
     /// no loaded spec advertises this alias OR when every candidate for
     /// that alias failed to parse. Use [`Self::get_result`] to distinguish
     /// unknown commands from parse failures.
-    pub fn get(&self, command: &str) -> Option<&CompletionSpec> {
+    pub fn get(&self, command: &str) -> Option<Arc<CompletionSpec>> {
         self.get_result(command).ok()
     }
 
@@ -955,7 +1412,7 @@ impl SpecStore {
     pub fn get_result(
         &self,
         command: &str,
-    ) -> std::result::Result<&CompletionSpec, SpecLookupError> {
+    ) -> std::result::Result<Arc<CompletionSpec>, SpecLookupError> {
         let Some(candidates) = self.by_alias.get(command) else {
             return Err(SpecLookupError::NoSuchSpec {
                 command: command.to_string(),
@@ -965,14 +1422,14 @@ impl SpecStore {
         let mut first_failure: Option<SpecLookupError> = None;
         for entry in candidates {
             match entry.spec_result() {
-                Ok(spec) => return Ok(spec),
+                Ok(arc) => return Ok(arc),
                 Err(err) => {
                     if first_failure.is_none() {
                         first_failure = Some(SpecLookupError::LoadFailed {
                             command: command.to_string(),
                             id: entry.id.clone(),
                             source: entry.location(),
-                            error: err.to_string(),
+                            error: err,
                         });
                     }
                 }
@@ -987,8 +1444,8 @@ impl SpecStore {
     }
 
     /// Force every entry through its lazy parse. Used by [`Self::iter`]
-    /// so diagnostic CLIs see fully-parsed specs. Idempotent — calls
-    /// after the first force-load are zero-cost OnceLock reads.
+    /// so diagnostic CLIs see fully-parsed specs. Idempotent while entries
+    /// remain loaded.
     fn force_load_all(&self) {
         for entry in &self.entries {
             let _ = entry.spec();
@@ -1007,7 +1464,7 @@ impl SpecStore {
                 entry.load_error().map(|error| SpecEntryLoadError {
                     id: entry.id.clone(),
                     source: entry.location(),
-                    error: error.to_string(),
+                    error,
                 })
             })
             .collect()
@@ -1046,7 +1503,7 @@ impl SpecStore {
     /// The first element is the canonical id (filename stem), NOT
     /// every alias — callers that want to enumerate aliases use
     /// [`SpecStore::entries`] directly.
-    pub fn iter(&self) -> impl Iterator<Item = (&str, &CompletionSpec)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&str, Arc<CompletionSpec>)> {
         self.resolved_entries()
             .filter_map(|e| e.spec().map(|s| (e.id.as_str(), s)))
     }
@@ -1385,7 +1842,8 @@ fn register_entries(
             aliases: vec![filename_stem.clone()],
             source,
             shallow_parse_error,
-            parsed: OnceLock::new(),
+            parsed: RwLock::new(ParsedSlot::Empty),
+            last_accessed_nanos: AtomicU64::new(0),
         });
         let idx = entries.len();
         entries.push(Arc::clone(&entry));
@@ -1453,10 +1911,13 @@ fn register_entries(
         }
 
         // Append the alias by rebuilding the Arc<SpecEntry>.
-        // SpecEntry's fields are not interior-mutable; the rebuild is
-        // confined to load time so the steady-state hot path never
-        // pays this cost. Critically, the OnceLock stays empty in the
-        // new entry — parsing is still deferred to first SpecEntry::spec().
+        // `aliases` is an owned `Vec<String>` with no interior mutability,
+        // so appending requires a fresh entry. Confined to load time so
+        // the steady-state hot path never pays this cost. Critically,
+        // the parse slot stays empty in the new entry — parsing is still
+        // deferred to first SpecEntry::spec(), and `last_accessed_nanos`
+        // resets to zero so its first parse stamps a fresh timestamp via
+        // `bump_last_accessed`.
         let prev = Arc::clone(&entries[idx]);
         let mut new_aliases = prev.aliases.clone();
         new_aliases.push(name.clone());
@@ -1467,7 +1928,8 @@ fn register_entries(
             aliases: new_aliases,
             source: prev.source.clone(),
             shallow_parse_error: prev.shallow_parse_error.clone(),
-            parsed: OnceLock::new(),
+            parsed: RwLock::new(ParsedSlot::Empty),
+            last_accessed_nanos: AtomicU64::new(0),
         };
         let new_arc = Arc::new(new_entry);
         replace_entry_arc(entries, by_alias, &prev, Arc::clone(&new_arc));
@@ -2297,6 +2759,68 @@ mod tests {
     }
 
     #[test]
+    fn parsed_slot_starts_empty_for_fresh_entry() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("foo.json"),
+            r#"{"name":"foo","subcommands":[],"options":[],"args":[]}"#,
+        )
+        .unwrap();
+        let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+        let entry = store.entries().iter().find(|e| e.id == "foo").unwrap();
+        assert!(!entry.is_parsed(), "fresh entry must be Empty (not parsed)");
+    }
+
+    #[test]
+    fn parsed_slot_loads_on_first_get_and_bumps_last_accessed() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("foo.json"),
+            r#"{"name":"foo","subcommands":[],"options":[],"args":[]}"#,
+        )
+        .unwrap();
+        let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+        let before = std::time::SystemTime::now();
+        let _ = store.get("foo");
+        let entry = store.entries().iter().find(|e| e.id == "foo").unwrap();
+        assert!(entry.is_parsed());
+        assert!(
+            entry.last_accessed() >= before,
+            "first get() must bump last_accessed"
+        );
+    }
+
+    #[test]
+    fn parsed_slot_failed_is_sticky_across_repeated_gets() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(dir.path().join("broken.json"), "{not valid json").unwrap();
+        let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+        assert!(store.get("broken").is_none());
+        let entry = store.entries().iter().find(|e| e.id == "broken").unwrap();
+        let first_err = entry.load_error().unwrap().to_string();
+        assert!(store.get("broken").is_none()); // does not retry
+        assert_eq!(entry.load_error().unwrap(), first_err);
+    }
+
+    #[test]
+    fn store_get_returns_arc_clone_independent_of_slot() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("foo.json"),
+            r#"{"name":"foo","subcommands":[],"options":[],"args":[]}"#,
+        )
+        .unwrap();
+        let store = SpecStore::load_from_dir(dir.path()).unwrap().store;
+        let arc1 = store.get("foo").expect("must resolve");
+        let arc2 = store.get("foo").expect("must resolve again");
+        assert!(
+            Arc::ptr_eq(&arc1, &arc2),
+            "two warm gets must return the same Arc identity"
+        );
+        assert_eq!(arc1.name, "foo");
+    }
+
+    #[test]
     fn test_curl_dash_o_resolve_spec_sets_wants_filepaths() {
         let spec_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs/curl.json");
         if !spec_path.exists() {
@@ -2675,7 +3199,7 @@ mod tests {
         // Force the lazy parse for every entry so failure modes surface
         // via SpecEntry::load_error.
         let _: Vec<_> = result.store.iter().collect();
-        let load_errors: Vec<(&str, &str)> = result
+        let load_errors: Vec<(&str, String)> = result
             .store
             .entries()
             .iter()
@@ -3410,8 +3934,8 @@ mod tests {
             .store
             .get("evil[2J")
             .expect("sanitized name should also resolve as alias");
-        assert!(std::ptr::eq(by_stem, by_alias));
-        let spec = by_stem;
+        assert!(Arc::ptr_eq(&by_stem, &by_alias));
+        let spec = by_stem.as_ref();
         assert!(
             !spec.name.contains('\x1b'),
             "name kept ESC: {:?}",
@@ -4224,7 +4748,10 @@ mod tests {
         const BUDGET_BYTES: usize = 128 * 1024 * 1024;
         let spec_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
         let store = SpecStore::load_from_dir(&spec_dir).unwrap().store;
-        let total: usize = store.iter().map(|(_, s)| estimated_heap_bytes(s)).sum();
+        let total: usize = store
+            .iter()
+            .map(|(_, s)| estimated_heap_bytes(s.as_ref()))
+            .sum();
         assert!(
             total < BUDGET_BYTES,
             "embedded specs heap {} bytes exceeds budget {} bytes — investigate before raising the limit",

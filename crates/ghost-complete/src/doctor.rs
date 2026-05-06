@@ -1,4 +1,5 @@
 use anyhow::Result;
+use std::collections::HashSet;
 use std::path::PathBuf;
 
 use gc_suggest::specs::{
@@ -371,7 +372,7 @@ fn check_corrections_for_store(store: &gc_suggest::SpecStore) -> CheckResult {
     let mut affected_specs: Vec<(&str, usize)> = store
         .iter()
         .filter_map(|(name, spec)| {
-            let n = count_corrected_generators_in_spec(spec);
+            let n = count_corrected_generators_in_spec(spec.as_ref());
             if n == 0 {
                 None
             } else {
@@ -537,6 +538,143 @@ fn check_js_runtime(config: &gc_config::GhostConfig) -> CheckResult {
     }
 }
 
+/// Warn when any `keep_warm` entry does not match a registered spec alias.
+/// Returns OK with an explanatory message when eviction is disabled.
+fn check_keep_warm_unmatched(
+    store: &gc_suggest::SpecStore,
+    cfg: &gc_config::SpecCacheConfig,
+) -> CheckResult {
+    if !cfg.enabled() {
+        return CheckResult::ok("spec_cache.keep_warm: eviction disabled");
+    }
+
+    let registered: HashSet<&str> = store
+        .entries()
+        .iter()
+        .flat_map(|e| e.aliases.iter().map(String::as_str))
+        .collect();
+    let unmatched: Vec<&str> = cfg
+        .keep_warm
+        .iter()
+        .filter(|name| !registered.contains(name.as_str()))
+        .map(String::as_str)
+        .collect();
+
+    if unmatched.is_empty() {
+        return CheckResult::ok("spec_cache.keep_warm: all entries match registered aliases");
+    }
+
+    let suggestions = unmatched
+        .iter()
+        .map(|name| {
+            nearest_alias(name, &registered)
+                .map(|near| format!("'{name}' -> did you mean '{near}'?"))
+                .unwrap_or_else(|| format!("'{name}' (no near match)"))
+        })
+        .collect::<Vec<_>>()
+        .join("; ");
+
+    CheckResult::warn(format!(
+        "spec_cache.keep_warm has {} unmatched alias(es): {suggestions}",
+        unmatched.len()
+    ))
+}
+
+fn nearest_alias(target: &str, registered: &HashSet<&str>) -> Option<String> {
+    registered
+        .iter()
+        .map(|alias| (*alias, levenshtein(target, alias)))
+        .filter(|(_, distance)| *distance <= 2)
+        .min_by(
+            |(left_alias, left_distance), (right_alias, right_distance)| {
+                left_distance
+                    .cmp(right_distance)
+                    .then_with(|| left_alias.cmp(right_alias))
+            },
+        )
+        .map(|(alias, _)| alias.to_string())
+}
+
+fn levenshtein(a: &str, b: &str) -> usize {
+    let a: Vec<char> = a.chars().collect();
+    let b: Vec<char> = b.chars().collect();
+    let m = a.len();
+    let n = b.len();
+
+    if m == 0 {
+        return n;
+    }
+    if n == 0 {
+        return m;
+    }
+
+    let mut prev: Vec<usize> = (0..=n).collect();
+    let mut curr = vec![0usize; n + 1];
+    for i in 1..=m {
+        curr[0] = i;
+        for j in 1..=n {
+            let cost = usize::from(a[i - 1] != b[j - 1]);
+            curr[j] = (prev[j] + 1).min(curr[j - 1] + 1).min(prev[j - 1] + cost);
+        }
+        std::mem::swap(&mut prev, &mut curr);
+    }
+    prev[n]
+}
+
+/// Warn when estimated resident heap exceeds 90% of `max_resident_mb`.
+fn check_resident_near_cap(
+    store: &gc_suggest::SpecStore,
+    cfg: &gc_config::SpecCacheConfig,
+) -> CheckResult {
+    if !cfg.enabled() {
+        return CheckResult::ok("spec_cache resident cap: eviction disabled");
+    }
+    let Some(cap) = cfg.max_resident_bytes() else {
+        return CheckResult::ok("spec_cache resident cap: no cap configured");
+    };
+    let resident = store.estimated_resident_bytes();
+    let threshold = cap.saturating_mul(9) / 10;
+    if resident > threshold {
+        CheckResult::warn(format!(
+            "spec_cache resident ~{} MB is >90% of cap ({} MB); consider raising \
+             max_resident_mb or shortening idle_ttl_secs",
+            resident / (1024 * 1024),
+            cfg.max_resident_mb,
+        ))
+    } else {
+        CheckResult::ok("spec_cache resident cap: below warning threshold")
+    }
+}
+
+fn check_spec_cache_for_store(
+    store: &gc_suggest::SpecStore,
+    cfg: &gc_config::SpecCacheConfig,
+) -> Vec<CheckResult> {
+    let mut results = vec![check_keep_warm_unmatched(store, cfg)];
+    if cfg.enabled() && cfg.max_resident_bytes().is_some() {
+        // Doctor is an explicit inspection command. Force-load resolved specs
+        // so resident-cap pressure reflects the parsed heap a warm runtime
+        // would actually hold.
+        let _ = store.iter().count();
+    }
+    results.push(check_resident_near_cap(store, cfg));
+    results
+}
+
+fn check_spec_cache(config: &gc_config::GhostConfig) -> Vec<CheckResult> {
+    match load_specs_for_config(config) {
+        Ok(result) => check_spec_cache_for_store(&result.store, &config.suggest.spec_cache),
+        Err(_) => vec![
+            CheckResult::skip(
+                "spec_cache.keep_warm — spec load failed (see Completion specs check)",
+            ),
+            CheckResult::skip(
+                "spec_cache.resident_cap — spec load failed (see Completion specs check)",
+            ),
+        ],
+    }
+}
+
 #[derive(Debug, Default)]
 struct RuntimeMetadataCounts {
     malformed: usize,
@@ -659,7 +797,7 @@ fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> C
     let mut affected: Vec<(&str, usize)> = store
         .iter()
         .filter_map(|(name, spec)| {
-            let n = count_missing_js_runtime_in_spec(spec);
+            let n = count_missing_js_runtime_in_spec(spec.as_ref());
             if n == 0 {
                 None
             } else {
@@ -670,7 +808,7 @@ fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> C
     let mut unproven: Vec<(&str, usize)> = store
         .iter()
         .filter_map(|(name, spec)| {
-            let n = count_unproven_js_runtime_in_spec(spec);
+            let n = count_unproven_js_runtime_in_spec(spec.as_ref());
             if n == 0 {
                 None
             } else {
@@ -839,6 +977,7 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
             results.push(check_alias_conflicts(cfg));
             results.push(check_js_runtime(cfg));
             results.push(check_embedded_runtime_metadata(cfg));
+            results.extend(check_spec_cache(cfg));
         }
         None => {
             results.push(CheckResult::skip(
@@ -847,6 +986,10 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
             results.push(CheckResult::skip("JS runtime — config invalid"));
             results.push(CheckResult::skip(
                 "Embedded specs — config invalid, cannot resolve spec dirs",
+            ));
+            results.push(CheckResult::skip("spec_cache.keep_warm — config invalid"));
+            results.push(CheckResult::skip(
+                "spec_cache.resident_cap — config invalid",
             ));
         }
     }
@@ -927,6 +1070,190 @@ mod tests {
         let result = check_terminal_profile(&profile, true);
         assert!(matches!(result.severity, Severity::Ok));
         assert!(result.message.contains("multi_terminal"));
+    }
+
+    #[test]
+    fn doctor_warns_when_keep_warm_entry_unmatched() {
+        let store = gc_suggest::SpecStore::load_with_embedded(&[])
+            .unwrap()
+            .store;
+        let cfg = gc_config::SpecCacheConfig {
+            idle_ttl_secs: 300,
+            keep_warm: vec!["giit".to_string()],
+            ..Default::default()
+        };
+
+        let result = check_keep_warm_unmatched(&store, &cfg);
+
+        assert!(matches!(result.severity, Severity::Warn));
+        assert!(result.message.contains("spec_cache.keep_warm"));
+        assert!(result.message.contains("giit"));
+        assert!(result.message.contains("did you mean 'git'"));
+    }
+
+    #[test]
+    fn doctor_keep_warm_unmatched_skips_disabled_eviction() {
+        let store = gc_suggest::SpecStore::load_with_embedded(&[])
+            .unwrap()
+            .store;
+        let cfg = gc_config::SpecCacheConfig {
+            idle_ttl_secs: 0,
+            keep_warm: vec!["nonexistent-spec".to_string()],
+            ..Default::default()
+        };
+
+        let result = check_keep_warm_unmatched(&store, &cfg);
+
+        assert!(matches!(result.severity, Severity::Ok));
+    }
+
+    #[test]
+    fn doctor_keep_warm_unmatched_ok_when_all_match() {
+        let store = gc_suggest::SpecStore::load_with_embedded(&[])
+            .unwrap()
+            .store;
+        let cfg = gc_config::SpecCacheConfig {
+            idle_ttl_secs: 300,
+            keep_warm: vec!["git".to_string()],
+            ..Default::default()
+        };
+
+        let result = check_keep_warm_unmatched(&store, &cfg);
+
+        assert!(matches!(result.severity, Severity::Ok));
+        assert!(result
+            .message
+            .contains("all entries match registered aliases"));
+    }
+
+    #[test]
+    fn doctor_warns_at_90pct_resident_cap() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let large_suggestion = "x".repeat(1_000_000);
+        let body = format!(
+            r#"{{
+                "name": "big",
+                "args": [{{
+                    "name": "target",
+                    "suggestions": ["{large_suggestion}"]
+                }}]
+            }}"#
+        );
+        std::fs::write(dir.path().join("big.json"), body).unwrap();
+        let store = gc_suggest::SpecStore::load_from_dir(dir.path())
+            .unwrap()
+            .store;
+        let _ = store.get("big");
+        let cfg = gc_config::SpecCacheConfig {
+            idle_ttl_secs: 300,
+            max_resident_mb: 1,
+            ..Default::default()
+        };
+
+        let result = check_resident_near_cap(&store, &cfg);
+
+        assert!(matches!(result.severity, Severity::Warn));
+        assert!(result.message.contains("spec_cache resident"));
+        assert!(result.message.contains(">90% of cap"));
+    }
+
+    /// OK branch: eviction is enabled and a cap is configured, but the
+    /// resident heap sits well below 90% of it. Pins the comparison so a
+    /// regression that flips `>` to `>=` or drops the threshold math would
+    /// fail loudly.
+    #[test]
+    fn doctor_resident_cap_ok_when_below_threshold() {
+        let store = gc_suggest::SpecStore::load_with_embedded(&[])
+            .unwrap()
+            .store;
+        // Force-load every entry so resident_bytes reflects the full
+        // parsed corpus (the same heap an uncapped daemon would hold).
+        let _ = store.iter().count();
+        let cfg = gc_config::SpecCacheConfig {
+            idle_ttl_secs: 300,
+            max_resident_mb: 1024,
+            ..Default::default()
+        };
+
+        let result = check_resident_near_cap(&store, &cfg);
+
+        assert!(
+            matches!(result.severity, Severity::Ok),
+            "resident heap below 90% of cap must be OK: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("below warning threshold"),
+            "OK message should name the threshold check: {}",
+            result.message
+        );
+    }
+
+    /// OK branch: eviction is enabled but no resident cap is configured
+    /// (`max_resident_mb = 0`). The check must short-circuit with an OK
+    /// result naming the missing cap, never compute a threshold against
+    /// an unset value.
+    #[test]
+    fn doctor_resident_cap_ok_when_no_cap_with_eviction_enabled() {
+        let store = gc_suggest::SpecStore::load_with_embedded(&[])
+            .unwrap()
+            .store;
+        let cfg = gc_config::SpecCacheConfig {
+            idle_ttl_secs: 300,
+            max_resident_mb: 0,
+            ..Default::default()
+        };
+
+        let result = check_resident_near_cap(&store, &cfg);
+
+        assert!(
+            matches!(result.severity, Severity::Ok),
+            "no-cap config must produce an OK result: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("no cap configured"),
+            "OK message should explain the unset cap: {}",
+            result.message
+        );
+    }
+
+    #[test]
+    fn doctor_spec_cache_check_force_loads_for_resident_cap() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let large_suggestion = "x".repeat(1_000_000);
+        let body = format!(
+            r#"{{
+                "name": "big",
+                "args": [{{
+                    "name": "target",
+                    "suggestions": ["{large_suggestion}"]
+                }}]
+            }}"#
+        );
+        std::fs::write(dir.path().join("big.json"), body).unwrap();
+        let store = gc_suggest::SpecStore::load_from_dir(dir.path())
+            .unwrap()
+            .store;
+        assert_eq!(
+            store.parsed_count(),
+            0,
+            "fixture should start lazy so this test covers doctor's force-load path"
+        );
+        let cfg = gc_config::SpecCacheConfig {
+            idle_ttl_secs: 300,
+            max_resident_mb: 1,
+            ..Default::default()
+        };
+
+        let results = check_spec_cache_for_store(&store, &cfg);
+
+        assert!(
+            matches!(results[1].severity, Severity::Warn),
+            "resident cap check should warn after doctor force-loads parsed specs: {}",
+            results[1].message
+        );
+        assert_eq!(store.parsed_count(), 1);
     }
 
     /// Pin the user-facing spec health check to the embedded fallback path.

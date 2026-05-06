@@ -65,6 +65,40 @@ generator_timeout_ms = 5000
 
 Shell history loads up to 10,000 entries.
 
+### `[suggest.spec_cache]`
+
+Cache eviction policy for parsed completion specs. Eviction is opt-in; the
+default (`idle_ttl_secs = 0`) preserves the lazy-loading layer's "parse
+once, hold forever" behavior.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `idle_ttl_secs` | integer | `0` | Seconds after last access before a successfully parsed spec is evicted. `0` disables eviction entirely. |
+| `sweep_interval_secs` | integer | `60` | How often the background sweep wakes to scan for idle entries. Ignored when `idle_ttl_secs = 0`. |
+| `keep_warm` | string[] | `[]` | Spec aliases that must never be evicted. Aliases match filename stems and `CompletionSpec.name` values, not shell aliases. |
+| `max_resident_mb` | integer | `0` | LRU backstop: after TTL eviction, if total estimated resident heap exceeds this cap, evict more entries oldest-access-first until under cap. `0` disables the backstop. |
+
+Recommended recipe:
+
+```toml
+[suggest.spec_cache]
+idle_ttl_secs = 300
+keep_warm = ["git", "cd", "ls", "cargo", "npm", "docker"]
+max_resident_mb = 100
+```
+
+Trade-off: enabling eviction means a re-parse cost on the next access of an
+evicted spec (~150 ms in the AWS worst case, <5 ms for most specs). Shell
+forwarding is unaffected; only the popup for that one keystroke is delayed.
+
+Enable this when daemon idle resident memory matters: long-running shells,
+modest-RAM machines, or multiple terminals. The default disables eviction
+because the lazy-loading layer already keeps idle daemon memory low until a
+heavy spec has been parsed.
+
+Hot reload is not supported. Restart the daemon after changing this
+section.
+
 ### `[suggest.providers]`
 
 Enable or disable individual suggestion providers.

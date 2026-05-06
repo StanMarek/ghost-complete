@@ -153,9 +153,9 @@ fn lazy_load_failure_is_sticky() {
     let first_error = broken.load_error().unwrap().to_string();
     write_spec(dir.path(), "broken.json", &minimal_spec("broken"));
 
-    // Second lookup must not retry — the OnceLock pinned the failure.
+    // Second lookup must not retry — the parse slot pinned the failure.
     assert!(store.get("broken").is_none());
-    assert_eq!(broken.load_error(), Some(first_error.as_str()));
+    assert_eq!(broken.load_error(), Some(first_error));
 
     // Healthy spec still works alongside the broken one.
     assert!(store.get("ok").is_some());

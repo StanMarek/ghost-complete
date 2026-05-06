@@ -285,6 +285,22 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         feedback_tick_loop(feedback_notify, handler_for_feedback).await;
     });
 
+    // Background sweep task for the spec cache. Held in scope for the
+    // duration of the proxy event loop; dropped when run_proxy returns,
+    // which cancels the task.
+    let _spec_cache_sweep = {
+        let h = match handler.lock() {
+            Ok(h) => h,
+            Err(e) => {
+                tracing::warn!("handler mutex poisoned during spec-cache sweep setup: {e}");
+                anyhow::bail!(
+                    "handler mutex poisoned during spec-cache sweep setup — cannot start proxy"
+                );
+            }
+        };
+        h.spawn_spec_cache_sweep(config.suggest.spec_cache.clone())
+    };
+
     // Channel to signal that one of the I/O tasks has finished
     let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<()>(1);
 

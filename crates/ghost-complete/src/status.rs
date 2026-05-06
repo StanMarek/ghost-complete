@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use gc_suggest::spec_dirs::{partition_spec_dirs, resolve_spec_dirs};
@@ -339,10 +340,16 @@ pub struct StatusOutcome {
     /// Surfaced so users can see at a glance whether their requires_js
     /// generators will run.
     pub js_runtime_enabled: bool,
+    /// Registered runtime entries, including lower-precedence fallback
+    /// candidates that remain available for lazy parse failover.
+    pub registered_specs: usize,
     /// File-level scan results — sourced from the JSON behind each resolved
     /// runtime `SpecEntry` so the raw generator counters follow completion
     /// lookup fallback behavior.
     pub file_scan: FileScan,
+    /// Effective spec-cache policy from the active config. Reflects the
+    /// user's TOML-declared policy, not the running daemon's runtime state.
+    pub spec_cache: gc_config::SpecCacheConfig,
 }
 
 /// Serialised view of a single [`AliasConflict`]. Distinct from the
@@ -484,9 +491,9 @@ fn scan_resolved_specs(
     }
 
     // resolved_entries() force-loads every registered candidate, so any
-    // per-entry lazy-parse failures are pinned in OnceLock by the time we
-    // call force_load_errors below.
-    let mut specs: Vec<(&str, &CompletionSpec, bool)> = Vec::new();
+    // per-entry lazy-parse failures are pinned in the parse slot by the time
+    // we call force_load_errors below.
+    let mut specs: Vec<(&str, Arc<CompletionSpec>, bool)> = Vec::new();
     for entry in store.resolved_entries() {
         let is_filesystem = matches!(&entry.source, SpecSource::Filesystem(_));
         if let Some(spec) = entry.spec() {
@@ -521,7 +528,7 @@ fn scan_resolved_specs(
         if is_filesystem {
             fs_specs += 1;
         }
-        let js_count = count_requires_js_generators(spec);
+        let js_count = count_requires_js_generators(spec.as_ref());
         if js_count > 0 {
             partially_functional += 1;
             js_commands.push(name.to_string());
@@ -571,6 +578,8 @@ fn scan_resolved_specs(
 
     let js_runtime_enabled = config.suggest.providers.js_runtime;
 
+    let registered_specs = store.len();
+
     Ok(StatusOutcome {
         fs_specs,
         embedded_count,
@@ -588,7 +597,9 @@ fn scan_resolved_specs(
         command_alias_conflicts,
         command_alias_conflict_details,
         js_runtime_enabled,
+        registered_specs,
         file_scan,
+        spec_cache: config.suggest.spec_cache.clone(),
     })
 }
 
@@ -1004,7 +1015,18 @@ fn run_status_inner_with_trend(
 ///       `command_alias_conflict_details` entries also include a
 ///       `disposition` field so consumers can distinguish rejected aliases
 ///       from fallback candidates.
-const STATUS_SCHEMA_VERSION: &str = "1.3";
+/// 1.5 — adds a top-level `specs` block with corpus-structural and
+///       policy-level fields: `registered`, `addressable_aliases`, and a
+///       `spec_cache` sub-block describing the user-declared eviction
+///       policy (`enabled`, `idle_ttl_secs`, `sweep_interval_secs`,
+///       `keep_warm`, `max_resident_mb`). Live runtime state (parse
+///       residency, byte estimates, last-sweep stats) is intentionally
+///       omitted: `ghost-complete status` runs in a one-shot process that
+///       builds its own transient `SpecStore`, so any per-process
+///       counters would describe the wrong store and mislead users into
+///       thinking eviction was broken even when the running proxy daemon
+///       had correctly evicted entries.
+const STATUS_SCHEMA_VERSION: &str = "1.5";
 
 /// The shape emitted by `ghost-complete status --json`. Defining this as a
 /// `#[derive(Serialize)]` struct rather than inline `json!` macros fails
@@ -1016,6 +1038,10 @@ const STATUS_SCHEMA_VERSION: &str = "1.3";
 #[derive(Debug, Serialize)]
 struct StatusReport {
     schema_version: &'static str,
+    /// Corpus-structural and policy-level spec-store status. This
+    /// complements the historical `spec_counts` coverage block without
+    /// changing that older schema.
+    specs: SpecsStatus,
     spec_counts: SpecCounts,
     /// Raw-JSON scan over resolved runtime sources. Counts generator
     /// occurrences while following lazy fallback and avoiding hidden
@@ -1113,6 +1139,58 @@ struct SupportedByKind {
     custom: usize,
 }
 
+/// Corpus-structural and policy-level spec-store status surfaced under
+/// `status --json`'s `specs` key.
+///
+/// All fields here are corpus-structural or policy-level — the count of
+/// registered entries, the alias index size, and the user-declared
+/// spec-cache policy. None of them claim to reflect the running proxy
+/// daemon's live parse state: this struct is built inside the one-shot
+/// `ghost-complete status` process, which loads its own transient
+/// `SpecStore`. Resident-state fields (parse residency, byte estimates,
+/// last-sweep stats) are intentionally absent — they would describe this
+/// short-lived process's own freshly-loaded store rather than the
+/// daemon's working set, and would mislead users about eviction
+/// behaviour.
+#[derive(Debug, Serialize)]
+struct SpecsStatus {
+    registered: usize,
+    addressable_aliases: usize,
+    spec_cache: SpecCacheStatus,
+}
+
+impl SpecsStatus {
+    fn from_outcome(outcome: &StatusOutcome) -> Self {
+        Self {
+            registered: outcome.registered_specs,
+            addressable_aliases: outcome.commands_addressable,
+            spec_cache: SpecCacheStatus::from_config(&outcome.spec_cache),
+        }
+    }
+}
+
+/// JSON block for the active spec-cache eviction policy.
+#[derive(Debug, Serialize)]
+struct SpecCacheStatus {
+    enabled: bool,
+    idle_ttl_secs: u64,
+    sweep_interval_secs: u64,
+    keep_warm: Vec<String>,
+    max_resident_mb: u64,
+}
+
+impl SpecCacheStatus {
+    fn from_config(cfg: &gc_config::SpecCacheConfig) -> Self {
+        Self {
+            enabled: cfg.enabled(),
+            idle_ttl_secs: cfg.idle_ttl_secs,
+            sweep_interval_secs: cfg.sweep_interval_secs,
+            keep_warm: cfg.keep_warm.clone(),
+            max_resident_mb: cfg.max_resident_mb,
+        }
+    }
+}
+
 #[derive(Debug, Serialize)]
 struct CoverageTrend {
     /// `null` on the bootstrap (single-row) case.
@@ -1186,6 +1264,7 @@ fn run_status_json(
     // text path emits so JSON consumers can surface them too.
     let payload = StatusReport {
         schema_version: STATUS_SCHEMA_VERSION,
+        specs: SpecsStatus::from_outcome(&outcome),
         spec_counts: SpecCounts {
             total: outcome.embedded_count,
             fully_functional: outcome.fully_functional,
@@ -1336,6 +1415,70 @@ mod tests {
         let p = tmp.path().join("coverage-baseline.json");
         std::fs::write(&p, body).unwrap();
         p
+    }
+
+    fn render_specs_status_for_test(
+        store: &gc_suggest::SpecStore,
+        cfg: &gc_config::SpecCacheConfig,
+    ) -> String {
+        let specs = SpecsStatus {
+            registered: store.len(),
+            addressable_aliases: store.aliases_count(),
+            spec_cache: SpecCacheStatus::from_config(cfg),
+        };
+
+        serde_json::to_string_pretty(&specs).unwrap()
+    }
+
+    #[test]
+    fn status_includes_spec_cache_block_with_defaults() {
+        let store = gc_suggest::SpecStore::load_with_embedded(&[])
+            .unwrap()
+            .store;
+        let cfg = gc_config::SpecCacheConfig::default();
+
+        let json = render_specs_status_for_test(&store, &cfg);
+
+        assert!(json.contains("\"spec_cache\""));
+        assert!(json.contains("\"enabled\": false"));
+        assert!(json.contains("\"idle_ttl_secs\": 0"));
+    }
+
+    /// `SpecCacheStatus::from_config` must surface every policy field as a
+    /// number / array / boolean when eviction is opted in. Pins the
+    /// `enabled = true` branch and the non-default values for
+    /// `idle_ttl_secs`, `sweep_interval_secs`, `keep_warm`, and
+    /// `max_resident_mb` so a regression that flips `enabled` for a
+    /// non-zero TTL or drops a policy field from the JSON would fail loudly.
+    #[test]
+    fn status_spec_cache_block_when_eviction_enabled() {
+        let store = gc_suggest::SpecStore::load_with_embedded(&[])
+            .unwrap()
+            .store;
+        let cfg = gc_config::SpecCacheConfig {
+            idle_ttl_secs: 300,
+            sweep_interval_secs: 60,
+            keep_warm: vec!["git".to_string()],
+            max_resident_mb: 100,
+        };
+
+        let json = render_specs_status_for_test(&store, &cfg);
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let block = &parsed["spec_cache"];
+
+        assert_eq!(block["enabled"], serde_json::Value::Bool(true));
+        assert_eq!(block["idle_ttl_secs"].as_u64().unwrap(), 300);
+        assert_eq!(block["sweep_interval_secs"].as_u64().unwrap(), 60);
+        assert_eq!(
+            block["keep_warm"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_str().unwrap())
+                .collect::<Vec<_>>(),
+            vec!["git"]
+        );
+        assert_eq!(block["max_resident_mb"].as_u64().unwrap(), 100);
     }
 
     #[test]
@@ -2048,11 +2191,40 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.3");
+        assert_eq!(parsed["schema_version"], "1.5");
         assert!(
             parsed["spec_counts"].is_object(),
             "spec_counts must be an object"
         );
+        assert!(parsed["specs"].is_object(), "specs must be an object");
+        assert!(parsed["specs"]["registered"].is_number());
+        assert!(parsed["specs"]["addressable_aliases"].is_number());
+        // 1.5 dropped `parsed_resident`, `estimated_resident_bytes`, and
+        // `last_sweep` from the `specs` block — those described the
+        // transient SpecStore the status command builds in its own
+        // process, not the running daemon. Guard the removal so a
+        // regression that re-adds them under `specs` would fail here.
+        assert!(
+            parsed["specs"].get("parsed_resident").is_none(),
+            "parsed_resident must not be present in 1.5"
+        );
+        assert!(
+            parsed["specs"].get("estimated_resident_bytes").is_none(),
+            "estimated_resident_bytes must not be present in 1.5"
+        );
+        assert!(
+            parsed["specs"].get("last_sweep").is_none(),
+            "last_sweep must not be present in 1.5"
+        );
+        assert!(
+            parsed["specs"]["spec_cache"].is_object(),
+            "spec_cache block must be present"
+        );
+        assert!(parsed["specs"]["spec_cache"]["enabled"].is_boolean());
+        assert!(parsed["specs"]["spec_cache"]["idle_ttl_secs"].is_number());
+        assert!(parsed["specs"]["spec_cache"]["sweep_interval_secs"].is_number());
+        assert!(parsed["specs"]["spec_cache"]["keep_warm"].is_array());
+        assert!(parsed["specs"]["spec_cache"]["max_resident_mb"].is_number());
         assert!(parsed["spec_counts"]["total"].is_number());
         assert!(parsed["spec_counts"]["fully_functional"].is_number());
         assert!(parsed["spec_counts"]["partially_functional"].is_number());
@@ -2205,7 +2377,7 @@ mod tests {
 
         // Current schema surfaces every command and generator counter as
         // a numeric value.
-        assert_eq!(parsed["schema_version"], "1.3");
+        assert_eq!(parsed["schema_version"], "1.5");
         let counts = &parsed["spec_counts"];
         assert_eq!(
             counts["commands_addressable"].as_u64().unwrap(),
@@ -2806,7 +2978,7 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.3");
+        assert_eq!(parsed["schema_version"], "1.5");
         let details = parsed["spec_counts"]["command_alias_conflict_details"]
             .as_array()
             .expect("command_alias_conflict_details must be an array");

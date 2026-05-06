@@ -89,13 +89,13 @@ fn resolution_benchmarks(c: &mut Criterion) {
     let git_spec = store.get("git").expect("git spec must exist");
     let shallow_ctx = make_ctx(Some("git"), vec!["checkout"], "", 2);
     group.bench_function("shallow", |b| {
-        b.iter(|| specs::resolve_spec(git_spec, &shallow_ctx));
+        b.iter(|| specs::resolve_spec(git_spec.as_ref(), &shallow_ctx));
     });
 
     let docker_spec = store.get("docker").expect("docker spec must exist");
     let deep_ctx = make_ctx(Some("docker"), vec!["compose", "up"], "--", 3);
     group.bench_function("deep", |b| {
-        b.iter(|| specs::resolve_spec(docker_spec, &deep_ctx));
+        b.iter(|| specs::resolve_spec(docker_spec.as_ref(), &deep_ctx));
     });
 
     // tar c --atime-preserve <TAB> — exercises the preceding_flag path with
@@ -115,7 +115,7 @@ fn resolution_benchmarks(c: &mut Criterion) {
         is_first_segment: true,
     };
     group.bench_function("with_static_suggestions_tar", |b| {
-        b.iter(|| specs::resolve_spec(tar_spec, &static_ctx));
+        b.iter(|| specs::resolve_spec(tar_spec.as_ref(), &static_ctx));
     });
 
     group.finish();
@@ -301,7 +301,7 @@ fn memory_benchmarks(c: &mut Criterion) {
         b.iter(|| {
             let total: usize = store
                 .iter()
-                .map(|(_, s)| specs::estimated_heap_bytes(s))
+                .map(|(_, s)| specs::estimated_heap_bytes(s.as_ref()))
                 .sum();
             std::hint::black_box(total)
         });
@@ -309,7 +309,7 @@ fn memory_benchmarks(c: &mut Criterion) {
     group.finish();
 }
 
-/// Lazy-loading benchmarks pinning the v0.12.4 contract:
+/// Lazy-loading benchmarks pinning the lazy-loading contract:
 ///
 /// - `load_with_embedded_no_parse` quantifies the cost of registering the
 ///   entire embedded corpus as `SpecSource::Embedded` entries without
@@ -322,9 +322,8 @@ fn memory_benchmarks(c: &mut Criterion) {
 ///   pay when they first type `aws ` — it's ~exactly the work the eager
 ///   loader was doing for *every* spec at startup pre-fix.
 /// - `warm_get_git` measures the steady-state lookup cost after the
-///   `OnceLock` is populated. This is what users pay on every subsequent
-///   lookup of the same spec — should be ~5-10 ns (HashMap lookup +
-///   OnceLock read + borrow).
+///   `ParsedSlot` is populated. This is what users pay on every subsequent
+///   lookup of the same spec.
 fn lazy_load_benchmarks(c: &mut Criterion) {
     let mut group = c.benchmark_group("lazy_load");
 
@@ -342,7 +341,7 @@ fn lazy_load_benchmarks(c: &mut Criterion) {
     // First-touch parse benchmarks: each iter() rebuilds the store so
     // every iteration measures the cost of registering + first-touching
     // a single spec from scratch. Without rebuilding we'd hit the
-    // OnceLock cache after iter #1 and report the warm-path latency.
+    // parse slot after iter #1 and report the warm-path latency.
     group.bench_function("first_get_git", |b| {
         b.iter(|| {
             let result = SpecStore::load_with_embedded(&[]).expect("embedded corpus must load");
@@ -362,7 +361,7 @@ fn lazy_load_benchmarks(c: &mut Criterion) {
     });
 
     // Warm path: build the store once outside the timed loop and time
-    // only the lookup. The OnceLock is populated by the first iter, every
+    // only the lookup. The ParsedSlot is populated by the first iter, every
     // subsequent iter takes the fast path.
     let warm_result =
         SpecStore::load_with_embedded(&[]).expect("embedded corpus must load for warm bench");
@@ -373,6 +372,69 @@ fn lazy_load_benchmarks(c: &mut Criterion) {
         b.iter(|| {
             let spec = warm_store.get("git").expect("git spec must resolve");
             std::hint::black_box(spec);
+        });
+    });
+
+    group.bench_function("evict_then_get_aws", |b| {
+        b.iter_custom(|iters| {
+            let mut total = std::time::Duration::ZERO;
+            let result = SpecStore::load_with_embedded(&[]).expect("embedded corpus must load");
+            let store = result.store;
+            for _ in 0..iters {
+                let _ = store.get("aws"); // ensure Loaded
+                let entry = store
+                    .entries()
+                    .iter()
+                    .find(|e| e.id == "aws")
+                    .unwrap()
+                    .clone();
+                entry.set_last_accessed_for_test(
+                    std::time::SystemTime::now() - std::time::Duration::from_secs(3600),
+                );
+                let _ = store.evict_idle(
+                    std::time::Duration::from_secs(60),
+                    None,
+                    &std::collections::HashSet::new(),
+                );
+                let start = std::time::Instant::now();
+                let spec = store
+                    .get("aws")
+                    .expect("aws must re-resolve after eviction");
+                total += start.elapsed();
+                std::hint::black_box(spec);
+            }
+            total
+        });
+    });
+
+    group.bench_function("evict_idle_700_specs_no_op", |b| {
+        let result = SpecStore::load_with_embedded(&[]).expect("embedded corpus must load");
+        let store = result.store;
+        // Force every entry through Loaded; bump timestamps to "just now".
+        for (id, _) in store.iter() {
+            let _ = id;
+        }
+        let keep_warm = std::collections::HashSet::new();
+        b.iter(|| {
+            let report = store.evict_idle(std::time::Duration::from_secs(3600), None, &keep_warm);
+            std::hint::black_box(report);
+        });
+    });
+
+    group.bench_function("evict_idle_700_specs_evict_all", |b| {
+        // Re-build per iter so each iter starts from "everything Loaded".
+        b.iter_custom(|iters| {
+            let mut total = std::time::Duration::ZERO;
+            for _ in 0..iters {
+                let result = SpecStore::load_with_embedded(&[]).expect("embedded corpus must load");
+                let store = result.store;
+                for (_, _) in store.iter() {} // force-load all
+                let keep_warm = std::collections::HashSet::new();
+                let start = std::time::Instant::now();
+                let _ = store.evict_idle(std::time::Duration::ZERO, None, &keep_warm);
+                total += start.elapsed();
+            }
+            total
         });
     });
 

@@ -35,9 +35,10 @@ pub use engine::{SuggestionEngine, SyncResult};
 pub use json_path::{JsonPath, JsonPathSegment};
 pub use pipeline::try_run_pipeline;
 pub use specs::{
-    check_json_depth, parse_spec_checked_and_sanitized, sanitize_spec_strings, AliasConflict,
-    AliasConflictDisposition, AliasConflictKind, AliasOwner, CompletionSpec, SpecEntry,
-    SpecEntryLoadError, SpecLoadResult, SpecLocation, SpecLookupError, SpecStore,
-    MAX_SPEC_JSON_DEPTH,
+    check_json_depth, parse_spec_checked_and_sanitized, sanitize_spec_strings,
+    spawn_spec_cache_sweep, spawn_spec_cache_sweep_for_test, AliasConflict,
+    AliasConflictDisposition, AliasConflictKind, AliasOwner, CompletionSpec, EvictionReport,
+    SpecCacheSweep, SpecEntry, SpecEntryLoadError, SpecLoadResult, SpecLocation, SpecLookupError,
+    SpecStore, SweepReport, MAX_SPEC_JSON_DEPTH,
 };
 pub use types::{Suggestion, SuggestionKind, SuggestionSource};

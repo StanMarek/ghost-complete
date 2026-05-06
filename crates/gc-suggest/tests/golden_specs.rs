@@ -304,7 +304,7 @@ fn load_aws_spec() -> gc_suggest::specs::CompletionSpec {
         .unwrap()
         .store
         .get("aws")
-        .cloned()
+        .map(|spec| spec.as_ref().clone())
         .expect("aws spec must be present in specs/ — restored in ux-8")
 }
 

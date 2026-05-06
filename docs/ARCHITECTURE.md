@@ -166,22 +166,21 @@ Script generator output passes through a transform pipeline (`split_lines`, `tri
 
 Generator results are cached in-memory with configurable TTL per-generator. `cache_by_directory` keys cache entries by CWD for commands whose output is directory-dependent. JS post-processed output uses a separate keyspace (`CacheKey::JsProcessed { source_hash }`) so two `js_runtime.source` bodies sharing the same script don't cross-contaminate.
 
-### Lazy Spec Loading (v0.12.4+)
+### Lazy Spec Loading
 
-Pre-v0.12.4, every embedded spec was parsed into `Arc<CompletionSpec>` at startup. The AWS spec alone (~36 MB minified, ~17 K subcommands, ~116 K descriptions) ballooned the daemon's physical footprint to ~333 MB on first load — most of which the user never touched. The fix decouples *registration* from *parsing*:
+Earlier revisions parsed every embedded spec into `Arc<CompletionSpec>` at startup. The AWS spec alone (~36 MB minified, ~17 K subcommands, ~116 K descriptions) ballooned the daemon's physical footprint to ~333 MB on first load — most of which the user never touched. The lazy-loading layer decouples *registration* from *parsing*:
 
 ```text
 SpecStore::load_with_embedded(&[]) ──► register every (filename, alias, &'static str)
                                        as SpecEntry { source: Embedded(json),
-                                                      parsed: OnceLock::new() }
+                                                      parsed: lazy slot }
                                        and add it to the alias index
                                        ─► ~183 µs, ~5 MB heap
 
 store.get("git") ──► first touch: try each registered candidate in
                      precedence order; serde_json::from_str(json) into
-                     Arc<CompletionSpec>, store in OnceLock
-                     ─► subsequent get("git") hits the OnceLock fast path
-                        (~11 ns: HashMap lookup + OnceLock read + borrow)
+                     Arc<CompletionSpec>, store in the parsed slot
+                     ─► subsequent get("git") hits the cached fast path
 ```
 
 Each `SpecEntry` holds:
@@ -189,14 +188,50 @@ Each `SpecEntry` holds:
 | Field | Purpose |
 |-------|---------|
 | `source: SpecSource` | `Filesystem(PathBuf)` for user specs, `Embedded(&'static str)` for the binary corpus. The lazy parse path reads from this without re-touching disk for embedded specs. |
-| `parsed: OnceLock<Result<Arc<CompletionSpec>, String>>` | First-touch parse result. The `Result` makes parse failures **sticky** — a malformed spec doesn't get re-parsed on every lookup. Surfaces via `SpecEntry::load_error()`. |
+| `parsed: RwLock<ParsedSlot>` | First-touch parse result. `Failed(String)` makes parse failures **sticky** — a malformed spec doesn't get re-parsed on every lookup. Surfaces via `SpecEntry::load_error()`. |
 | `aliases: Vec<String>` | Every command name that resolves to this entry: filename stem first, then a non-conflicting `CompletionSpec.name` alias when it differs from the stem. |
 
 Registration-time alias metadata is collected before a `SpecEntry` is stored. For the embedded corpus the build script emits an `EMBEDDED_SPEC_ALIASES` table; for filesystem specs the loader runs a shallow `serde_json::from_str::<SpecHeader>` (just `name`) at load time. That transient `name_alias` is folded into `SpecEntry.aliases`. Duplicate filenames remain registered as lower-precedence fallback candidates, so a malformed higher-precedence filesystem spec can fall through to the next filesystem copy and then to the embedded corpus.
 
 `SpecStore::iter()` force-loads every registered candidate and yields one tuple per resolved runtime spec — used by `ghost-complete status` to avoid double-counting hidden fallbacks while still surfacing load errors via `SpecStore::force_load_errors()`. `validate-specs` uses its separate validator and parses configured spec directories directly. `SpecStore::get()` only loads the requested candidate chain. The embedded corpus is registered with the lowest precedence, so a valid filesystem spec with the same name (e.g. user-edited `~/.config/ghost-complete/specs/git.json`) wins.
 
-The runtime no longer materialises the embedded corpus to `~/.cache/ghost-complete/embedded-specs/`. `ghost-complete install` and `uninstall` purge that legacy path if a pre-v0.12.4 binary left it behind.
+The runtime no longer materialises the embedded corpus to `~/.cache/ghost-complete/embedded-specs/`. `ghost-complete install` and `uninstall` purge that legacy path if an earlier binary left it behind.
+
+### Spec Cache Eviction
+
+The lazy-loading layer above parses each spec on first access and keeps it
+resident for the rest of the daemon lifetime. The opt-in eviction layer
+adds a sweep that releases the heap of specs that have been idle past a
+configurable TTL.
+
+The `SpecEntry::parsed` field is now `RwLock<ParsedSlot>` with four states:
+
+| State | Meaning |
+|-------|---------|
+| `Empty` | Registered, never accessed. Zero parsed heap. |
+| `Loaded(Arc<CompletionSpec>)` | Parsed and resident. Eligible for eviction. |
+| `Evicted` | Was `Loaded`, then a sweep released the cached `Arc`. Re-parses on next access. |
+| `Failed(String)` | Parse failed. Sticky: never evicted, never retried. |
+
+Each entry also carries an `AtomicU64 last_accessed_nanos`. Every
+successful `get()` bumps the timestamp; the sweep task takes write locks on
+entries whose timestamp is older than the TTL and replaces `Loaded(_)` with
+`Evicted`. Dropping the cache's `Arc` releases the heap; any caller still
+holding a clone keeps its copy alive.
+
+`SpecStore::get` returns `Option<Arc<CompletionSpec>>` (changed from
+`Option<&CompletionSpec>`). Callers own an `Arc` for as long as they need
+it, so the slot can mutate behind their back without invalidating the
+resolved spec.
+
+The sweep task is opt-in via `[suggest.spec_cache] idle_ttl_secs > 0`. With
+the default (`0`), no sweep is spawned and the engine keeps the lazy-loading
+layer's "parse once, hold forever" behavior. See `docs/CONFIGURATION.md` for
+the full config schema and a suggested starting recipe.
+
+Re-parse on a cold-cache hit blocks the popup for that one keystroke
+(~150 ms in the AWS worst case, <5 ms for most specs). Shell stdin
+forwarding is unaffected; it runs on a separate `spawn_blocking` thread.
 
 ## Popup Rendering
 

@@ -250,7 +250,7 @@ mod sync_result_tests {
 }
 
 pub struct SuggestionEngine {
-    spec_store: SpecStore,
+    spec_store: Arc<SpecStore>,
     filesystem_provider: FilesystemProvider,
     history_provider: HistoryProvider,
     commands_provider: CommandsProvider,
@@ -300,7 +300,7 @@ impl SuggestionEngine {
             );
         }
         Ok(Self {
-            spec_store: result.store,
+            spec_store: Arc::new(result.store),
             filesystem_provider: FilesystemProvider::new(),
             history_provider: HistoryProvider::load(DEFAULT_MAX_HISTORY_ENTRIES),
             commands_provider: CommandsProvider::from_path_env(),
@@ -354,7 +354,7 @@ impl SuggestionEngine {
         commands_provider: CommandsProvider,
     ) -> Self {
         Self {
-            spec_store,
+            spec_store: Arc::new(spec_store),
             filesystem_provider: FilesystemProvider::new(),
             history_provider,
             commands_provider,
@@ -378,6 +378,16 @@ impl SuggestionEngine {
     pub fn with_aliases(self, map: std::collections::HashMap<String, Vec<String>>) -> Self {
         self.alias_map.install(map);
         self
+    }
+
+    /// Spawn the cache-eviction sweep task using the provided config.
+    /// Returns `None` when eviction is disabled. The caller must keep
+    /// the returned guard alive for the lifetime of the engine.
+    pub fn spawn_spec_cache_sweep(
+        &self,
+        cfg: gc_config::SpecCacheConfig,
+    ) -> Option<crate::specs::SpecCacheSweep> {
+        crate::specs::spawn_spec_cache_sweep(Arc::clone(&self.spec_store), cfg)
     }
 
     #[doc(hidden)]
@@ -941,7 +951,7 @@ impl SuggestionEngine {
             return Ok(Vec::new());
         };
         let resolve_ctx = self.resolve_ctx_for_spec_walk(ctx);
-        let resolution = specs::resolve_spec(spec, resolve_ctx.as_ref());
+        let resolution = specs::resolve_spec(spec.as_ref(), resolve_ctx.as_ref());
         let spec_name = ctx.command.as_deref().unwrap_or("<unknown>");
         let generators =
             filter_supported_script_generators(spec_name, resolution.script_generators);
@@ -1038,7 +1048,7 @@ impl SuggestionEngine {
         if let Some(spec) = self.spec_for_ctx(ctx) {
             // Walk the alias target's spec subtree, not the literal alias name's.
             let resolve_ctx = self.resolve_ctx_for_spec_walk(ctx);
-            let resolution = specs::resolve_spec(spec, resolve_ctx.as_ref());
+            let resolution = specs::resolve_spec(spec.as_ref(), resolve_ctx.as_ref());
             candidates.extend(resolution.subcommands);
             candidates.extend(resolution.options);
         }
@@ -1140,7 +1150,7 @@ impl SuggestionEngine {
     /// Resolve the alias-aware spec for this command context, if any.
     /// Centralizes the alias lookup + spec_store probe so callers don't
     /// repeat it.
-    fn spec_for_ctx(&self, ctx: &CommandContext) -> Option<&specs::CompletionSpec> {
+    fn spec_for_ctx(&self, ctx: &CommandContext) -> Option<Arc<specs::CompletionSpec>> {
         if !self.providers_specs {
             return None;
         }
@@ -1184,7 +1194,7 @@ impl SuggestionEngine {
             preceding_flag_has_args,
             past_double_dash,
             static_suggestions,
-        } = specs::resolve_spec(spec, resolve_ctx.as_ref());
+        } = specs::resolve_spec(spec.as_ref(), resolve_ctx.as_ref());
 
         let git_generators = self.git_generators_from(&native_generators);
 
