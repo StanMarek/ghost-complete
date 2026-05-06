@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Lazy spec loading drops idle memory from ~330 MB to ~5 MB.** Pre-fix the
+  spec loader eagerly parsed every embedded spec into `Arc<CompletionSpec>`
+  at startup. The AWS spec alone (~36 MB minified, 17 K subcommands, 116 K
+  descriptions) ballooned the daemon's physical footprint to 333 MB on
+  first load. The loader now defers `serde_json::from_str` to the first
+  `SpecEntry::spec()` call: each entry holds its source as either a
+  filesystem `PathBuf` or an `&'static str` slice into the embedded
+  corpus, and a `OnceLock<Result<Arc<CompletionSpec>, String>>` pins the
+  parse result on first touch. Failures are sticky and surface via
+  `SpecEntry::load_error`. Benchmarks: `load_with_embedded` ~183 µs,
+  warm `SpecStore::get` ~11 ns, first-touch parse of the AWS spec
+  ~150 ms (paid only when the user actually types `aws `).
+
+### Changed
+
+- **Runtime no longer materialises embedded specs to disk.** Previous
+  versions wrote `~/.cache/ghost-complete/embedded-specs/` on first run
+  after a binary upgrade (~25 MB write, sentinel-versioned). v0.12.4
+  consumes the embedded corpus in-memory via `SpecStore::load_with_embedded`
+  — same precedence semantics, no disk I/O, no version sentinel to keep
+  in sync. `ghost-complete install` and `ghost-complete uninstall` now
+  remove the legacy cache directory if a pre-v0.12.4 binary left it
+  behind.
+- **`status` now reports lazy parse errors.** A spec that fails to parse
+  no longer crashes loading — it stays registered and surfaces through
+  `SpecEntry::load_error()`. `ghost-complete status` walks the entries
+  after force-loading and lists each error inline. `validate-specs`
+  continues to parse configured spec directories directly through its
+  separate validator.
+
 ## [0.12.3] - 2026-05-05
 
 ### Fixed

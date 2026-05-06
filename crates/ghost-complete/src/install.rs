@@ -2,16 +2,23 @@ use anyhow::{Context, Result};
 use std::fs;
 use std::io::Write as _;
 use std::os::unix::fs::OpenOptionsExt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::sanitize::{sanitize_for_terminal, sanitize_path};
 
-// `EMBEDDED_SPECS` was moved into `gc-suggest` so the runtime spec loader can
-// fall back to it when no on-disk spec dir is found. Install still needs to
-// write the same set to `~/.config/ghost-complete/specs`, so we re-export
-// from the canonical home; `status.rs` and the install tests reach it
-// through `crate::install::EMBEDDED_SPECS` exactly as before.
+// `EMBEDDED_SPECS` lives in `gc-suggest` because the spec loader consumes
+// the corpus in-memory (v0.12.4+). Install still writes the same set to
+// `~/.config/ghost-complete/specs`, so we re-export from the canonical
+// home; `status.rs` and the install tests reach it through
+// `crate::install::EMBEDDED_SPECS` exactly as before.
 pub(crate) use gc_suggest::EMBEDDED_SPECS;
+
+// Pre-v0.12.4 the runtime materialised the embedded corpus to
+// `~/.cache/ghost-complete/embedded-specs/` on first start. v0.12.4+ no
+// longer writes there — `purge_embedded_cache_if_present` removes the
+// orphan dir on (un)install so upgraders don't keep a 25 MB stale copy
+// around indefinitely.
+use gc_suggest::purge_embedded_cache_if_present;
 
 const ZSH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.zsh");
 const ZSH_INIT: &str = include_str!("../../../shell/init.zsh");
@@ -258,7 +265,81 @@ fn post_install_summary(config_dir: &Path, wrote_zshrc: bool) -> String {
     out
 }
 
+/// Print a one-line report describing what the legacy-cache purge did.
+/// Failure is non-fatal — the install workflow has already succeeded and a
+/// leftover cache dir is annoying, not broken. We surface the error on stderr
+/// so a sysadmin can investigate without blocking the user.
+fn cache_purge_skip_message(cache: &Path, action: &str) -> Option<String> {
+    let meta = fs::symlink_metadata(cache).ok()?;
+    let reason = if meta.file_type().is_symlink() {
+        "it is a symlink"
+    } else if !meta.is_dir() {
+        "it is not a directory"
+    } else {
+        return None;
+    };
+    Some(format!(
+        "  {action} orphan embedded-spec cache at {} because {reason}",
+        sanitize_path(cache)
+    ))
+}
+
+fn report_cache_purge_with(
+    cache_dir: impl FnOnce() -> Option<PathBuf>,
+    purge_cache: impl FnOnce() -> std::io::Result<Option<PathBuf>>,
+) {
+    let cache = cache_dir();
+    match purge_cache() {
+        Ok(Some(dir)) => {
+            println!(
+                "  Removed orphan embedded-spec cache at {} (no longer used in v0.12.4+)",
+                sanitize_path(&dir)
+            );
+        }
+        Ok(None) => {
+            if let Some(message) = cache
+                .as_deref()
+                .and_then(|cache| cache_purge_skip_message(cache, "Skipped"))
+            {
+                println!("{message}");
+            }
+        }
+        Err(e) => {
+            eprintln!("  \x1b[33mNote:\x1b[0m Could not purge orphan embedded-spec cache: {e}",);
+        }
+    }
+}
+
 fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()> {
+    install_to_with_cache_hooks(
+        zshrc_path,
+        config_dir,
+        dry_run,
+        gc_suggest::embedded::embedded_cache_dir,
+        purge_embedded_cache_if_present,
+    )
+}
+
+fn dry_run_cache_purge_message(cache: Option<PathBuf>) -> Option<String> {
+    let cache = cache?;
+    if let Some(message) = cache_purge_skip_message(&cache, "Would skip") {
+        return Some(message);
+    }
+    cache.is_dir().then(|| {
+        format!(
+            "  Would remove orphan embedded-spec cache at {}",
+            sanitize_path(&cache)
+        )
+    })
+}
+
+fn install_to_with_cache_hooks(
+    zshrc_path: &Path,
+    config_dir: &Path,
+    dry_run: bool,
+    cache_dir: impl FnOnce() -> Option<PathBuf>,
+    purge_cache: impl FnOnce() -> std::io::Result<Option<PathBuf>>,
+) -> Result<()> {
     // 1. Write zsh shell scripts
     let shell_dir = config_dir.join("shell");
     let init_path = shell_dir.join("init.zsh");
@@ -284,6 +365,9 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
         } else {
             println!("  Config already exists at {}", sanitize_path(&config_path));
         }
+        if let Some(message) = dry_run_cache_purge_message(cache_dir()) {
+            println!("{message}");
+        }
         println!("  Would update {}\n", sanitize_path(zshrc_path));
         println!("  \x1b[36m\u{2139}\x1b[0m  The following would be added to your shell config:\n");
         print_shell_blocks(&init_path, &script_path);
@@ -303,6 +387,12 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
 
     // 1b. Copy completion specs
     copy_specs(config_dir)?;
+
+    // 1b.1 Purge the legacy ~/.cache/ghost-complete/embedded-specs/ dir
+    // if a pre-v0.12.4 binary materialised it. The runtime no longer
+    // touches that path; leaving the 25 MB on disk indefinitely is
+    // wasteful but not dangerous, so we never fail the install over it.
+    report_cache_purge_with(cache_dir, purge_cache);
 
     // 1c. Write default config.toml if one doesn't exist (never clobber).
     // Uses create_new(true) so the existence check and file creation are
@@ -424,6 +514,20 @@ fn install_to(zshrc_path: &Path, config_dir: &Path, dry_run: bool) -> Result<()>
 }
 
 fn uninstall_from(zshrc_path: &Path, config_dir: &Path) -> Result<()> {
+    uninstall_from_with_cache_purge(
+        zshrc_path,
+        config_dir,
+        gc_suggest::embedded::embedded_cache_dir,
+        purge_embedded_cache_if_present,
+    )
+}
+
+fn uninstall_from_with_cache_purge(
+    zshrc_path: &Path,
+    config_dir: &Path,
+    cache_dir: impl FnOnce() -> Option<PathBuf>,
+    purge_cache: impl FnOnce() -> std::io::Result<Option<PathBuf>>,
+) -> Result<()> {
     // 1. Strip managed blocks from .zshrc
     if zshrc_path.exists() {
         let content = fs::read_to_string(zshrc_path)
@@ -472,6 +576,12 @@ fn uninstall_from(zshrc_path: &Path, config_dir: &Path) -> Result<()> {
     if shell_dir.exists() {
         let _ = fs::remove_dir(&shell_dir); // only succeeds if empty
     }
+
+    // 3b. Purge the legacy ~/.cache/ghost-complete/embedded-specs/ dir
+    // if a pre-v0.12.4 binary materialised it. Same rationale as
+    // install: the runtime hasn't touched it since v0.12.4 and leaving
+    // 25 MB on disk after uninstall is rude.
+    report_cache_purge_with(cache_dir, purge_cache);
 
     // 4. Note about retained files
     let specs_dir = config_dir.join("specs");
@@ -955,6 +1065,30 @@ mod tests {
     }
 
     #[test]
+    fn test_uninstall_purges_legacy_embedded_cache() {
+        let dir = TempDir::new().unwrap();
+        let zshrc = dir.path().join(".zshrc");
+        let config = dir.path().join("config");
+        let legacy_cache = dir.path().join("legacy-embedded-specs");
+        fs::write(&zshrc, "export FOO=bar\n").unwrap();
+        fs::create_dir_all(&legacy_cache).unwrap();
+        fs::write(legacy_cache.join("canary.json"), "{}").unwrap();
+
+        uninstall_from_with_cache_purge(
+            &zshrc,
+            &config,
+            || Some(legacy_cache.clone()),
+            || gc_suggest::embedded::purge_embedded_cache_at(&legacy_cache),
+        )
+        .unwrap();
+
+        assert!(
+            !legacy_cache.exists(),
+            "uninstall must purge the legacy embedded cache"
+        );
+    }
+
+    #[test]
     fn test_install_creates_backup() {
         let dir = TempDir::new().unwrap();
         let zshrc = dir.path().join(".zshrc");
@@ -1093,6 +1227,86 @@ mod tests {
         // Nothing should have been created
         assert!(!zshrc.exists());
         assert!(!config.exists());
+    }
+
+    #[test]
+    fn test_install_purges_legacy_embedded_cache() {
+        let dir = TempDir::new().unwrap();
+        let zshrc = dir.path().join(".zshrc");
+        let config = dir.path().join("config");
+        let legacy_cache = dir.path().join("legacy-embedded-specs");
+        fs::create_dir_all(&legacy_cache).unwrap();
+        fs::write(legacy_cache.join("canary.json"), "{}").unwrap();
+
+        install_to_with_cache_hooks(
+            &zshrc,
+            &config,
+            false,
+            || Some(legacy_cache.clone()),
+            || gc_suggest::embedded::purge_embedded_cache_at(&legacy_cache),
+        )
+        .unwrap();
+
+        assert!(
+            !legacy_cache.exists(),
+            "non-dry-run install must purge the legacy embedded cache"
+        );
+    }
+
+    #[test]
+    fn test_install_dry_run_reports_legacy_cache_without_purging() {
+        let dir = TempDir::new().unwrap();
+        let zshrc = dir.path().join(".zshrc");
+        let config = dir.path().join("config");
+        let legacy_cache = dir.path().join("legacy-embedded-specs");
+        fs::create_dir_all(&legacy_cache).unwrap();
+        let canary = legacy_cache.join("canary.json");
+        fs::write(&canary, "{}").unwrap();
+
+        let message = dry_run_cache_purge_message(Some(legacy_cache.clone()))
+            .expect("dry-run should report an existing legacy cache directory");
+        assert!(message.contains("Would remove orphan embedded-spec cache"));
+        assert!(message.contains(&legacy_cache.display().to_string()));
+
+        install_to_with_cache_hooks(
+            &zshrc,
+            &config,
+            true,
+            || Some(legacy_cache.clone()),
+            || panic!("dry-run install must not purge the legacy embedded cache"),
+        )
+        .unwrap();
+
+        assert!(
+            canary.exists(),
+            "dry-run install must leave the cache intact"
+        );
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_install_dry_run_reports_symlink_cache_without_purging() {
+        let dir = TempDir::new().unwrap();
+        let real_cache = dir.path().join("real-embedded-specs");
+        fs::create_dir_all(&real_cache).unwrap();
+        let canary = real_cache.join("canary.json");
+        fs::write(&canary, "{}").unwrap();
+
+        let legacy_cache = dir.path().join("legacy-embedded-specs");
+        std::os::unix::fs::symlink(&real_cache, &legacy_cache).unwrap();
+
+        let message = dry_run_cache_purge_message(Some(legacy_cache.clone()))
+            .expect("dry-run should report a symlink legacy cache path");
+        assert!(message.contains("Would skip orphan embedded-spec cache"));
+        assert!(message.contains("because it is a symlink"));
+        assert!(message.contains(&legacy_cache.display().to_string()));
+
+        assert!(
+            canary.exists(),
+            "dry-run must not remove the symlink target"
+        );
+        let after = fs::symlink_metadata(&legacy_cache).unwrap();
+        assert!(after.file_type().is_symlink());
     }
 
     #[test]

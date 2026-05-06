@@ -279,12 +279,24 @@ pub struct SuggestionEngine {
 
 impl SuggestionEngine {
     pub fn new(spec_dirs: &[PathBuf]) -> Result<Self> {
-        let result = SpecStore::load_from_dirs(spec_dirs)?;
-        if !result.errors.is_empty() {
+        Self::new_with_embedded(spec_dirs, spec_dirs.is_empty())
+    }
+
+    /// Construct an engine with explicit control over embedded spec fallback.
+    ///
+    /// `include_embedded = false` preserves `paths.spec_dirs` as an exact
+    /// override. `true` is the auto-detected/fallback runtime path.
+    pub fn new_with_embedded(spec_dirs: &[PathBuf], include_embedded: bool) -> Result<Self> {
+        let result = if include_embedded {
+            SpecStore::load_with_embedded(spec_dirs)?
+        } else {
+            SpecStore::load_from_dirs(spec_dirs)?
+        };
+        if !result.directory_errors.is_empty() {
             tracing::warn!(
-                "{} spec(s) failed to load (run `ghost-complete validate-specs` for details): {}",
-                result.errors.len(),
-                result.errors.join(", ")
+                "{} spec dir(s) failed to scan (run `ghost-complete validate-specs` for details): {}",
+                result.directory_errors.len(),
+                result.directory_errors.join(", ")
             );
         }
         Ok(Self {
@@ -1772,6 +1784,63 @@ mod tests {
             quote_state: QuoteState::None,
             is_first_segment: true,
         }
+    }
+
+    #[test]
+    fn direct_non_empty_spec_dirs_do_not_register_embedded_specs() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("only-custom.json"),
+            r#"{"name":"only-custom","subcommands":[{"name":"local-only"}]}"#,
+        )
+        .unwrap();
+
+        let engine = SuggestionEngine::new(&[dir.path().to_path_buf()]).unwrap();
+
+        assert!(engine.spec_store.get("only-custom").is_some());
+        assert!(
+            engine.spec_store.get("git").is_none(),
+            "direct non-empty spec dirs must not be supplemented by embedded-only commands"
+        );
+    }
+
+    #[test]
+    fn explicit_embedded_constructor_can_supplement_non_empty_dirs() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            dir.path().join("only-custom.json"),
+            r#"{"name":"only-custom","subcommands":[{"name":"local-only"}]}"#,
+        )
+        .unwrap();
+
+        let engine =
+            SuggestionEngine::new_with_embedded(&[dir.path().to_path_buf()], true).unwrap();
+
+        assert!(engine.spec_store.get("only-custom").is_some());
+        assert!(
+            engine.spec_store.get("git").is_some(),
+            "explicit embedded policy should supplement runtime dirs with embedded specs"
+        );
+    }
+
+    #[test]
+    fn constructor_registers_embedded_specs_without_parsing_them() {
+        let engine = SuggestionEngine::new(&[]).unwrap();
+
+        assert!(
+            !engine.spec_store.is_empty(),
+            "embedded corpus must be registered by the daemon constructor"
+        );
+        let parsed_count = engine
+            .spec_store
+            .entries()
+            .iter()
+            .filter(|entry| entry.is_parsed())
+            .count();
+        assert_eq!(
+            parsed_count, 0,
+            "daemon constructor must not force-parse embedded specs"
+        );
     }
 
     #[test]

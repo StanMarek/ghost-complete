@@ -10,7 +10,8 @@ use tokio::sync::{mpsc, Notify};
 use gc_config::GhostConfig;
 
 use gc_overlay::{parse_style, PopupTheme};
-use gc_suggest::spec_dirs::resolve_spec_dirs;
+use gc_suggest::spec_dirs::{resolve_spec_dirs_with_provenance, SpecDirResolution};
+use gc_terminal::TerminalProfile;
 
 use crate::config_watch::spawn_config_watcher;
 use crate::handler::{InputHandler, Keybindings, OverlayWriteTicket, TriggerPrepared};
@@ -38,6 +39,28 @@ impl RawModeGuard {
 impl Drop for RawModeGuard {
     fn drop(&mut self) {
         let _ = crossterm::terminal::disable_raw_mode();
+    }
+}
+
+fn input_handler_for_resolution(
+    resolution: &SpecDirResolution,
+    terminal_profile: TerminalProfile,
+) -> Result<InputHandler> {
+    match InputHandler::new_with_embedded(
+        &resolution.dirs,
+        terminal_profile.clone(),
+        resolution.include_embedded,
+    ) {
+        Ok(handler) => Ok(handler),
+        Err(e) => {
+            tracing::warn!("failed to init suggestion engine: {}, trying fallback", e);
+            InputHandler::new_with_embedded(
+                &[std::path::PathBuf::from(".")],
+                terminal_profile,
+                true,
+            )
+            .context("fallback handler also failed — cannot start proxy")
+        }
     }
 }
 
@@ -143,8 +166,9 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     let (cols, rows) = crossterm::terminal::size().unwrap_or((80, 24));
     let parser = Arc::new(Mutex::new(TerminalParser::new(rows, cols)));
 
-    // Resolve spec directories from config
-    let spec_dirs = resolve_spec_dirs(&config.paths.spec_dirs);
+    // Resolve spec directories from config, preserving whether runtime should
+    // supplement them with embedded specs.
+    let spec_dir_resolution = resolve_spec_dirs_with_provenance(&config.paths.spec_dirs);
 
     // Resolve keybindings from config (fail fast on invalid key names)
     let keybindings = Keybindings::from_config(&config.keybindings)?;
@@ -175,16 +199,9 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     };
 
     // Initialize suggestion handler with config
-    let handler = Arc::new(Mutex::new({
-        let h = match InputHandler::new(&spec_dirs, terminal_profile.clone()) {
-            Ok(h) => h,
-            Err(e) => {
-                tracing::warn!("failed to init suggestion engine: {}, trying fallback", e);
-                InputHandler::new(&[std::path::PathBuf::from(".")], terminal_profile)
-                    .context("fallback handler also failed — cannot start proxy")?
-            }
-        };
-        h.with_keybindings(keybindings)
+    let handler = Arc::new(Mutex::new(
+        input_handler_for_resolution(&spec_dir_resolution, terminal_profile)?
+            .with_keybindings(keybindings)
             .with_theme(theme)
             .with_popup_config(config.popup.max_visible)
             .with_feedback_dismiss_ms(config.popup.feedback_dismiss_ms)
@@ -200,8 +217,8 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 config.suggest.providers.git,
                 config.suggest.providers.js_runtime,
                 config.suggest.generator_timeout_ms,
-            )
-    }));
+            ),
+    ));
 
     // Config hot-reload: watch config.toml for changes
     let config_watcher_handle = if let Some(config_dir) = gc_config::config_dir() {
@@ -1709,6 +1726,77 @@ mod tests {
         parser
     }
 
+    fn write_custom_only_spec(dir: &std::path::Path) {
+        std::fs::write(
+            dir.join("custom-only.json"),
+            r#"{"name":"custom-only","subcommands":[{"name":"local"}]}"#,
+        )
+        .unwrap();
+    }
+
+    fn proxy_resolution_test_handler(resolution: &SpecDirResolution) -> InputHandler {
+        input_handler_for_resolution(resolution, TerminalProfile::for_ghostty())
+            .expect("handler")
+            .with_suggest_config(20, false, 0, false, true, false, false, 100)
+    }
+
+    fn trigger_texts(handler: &mut InputHandler, buffer: &str) -> Vec<String> {
+        let parser = parser_with_buffer(buffer);
+        let mut stdout = Vec::new();
+        handler.trigger(&parser, &mut stdout);
+        handler
+            .current_suggestions()
+            .iter()
+            .map(|suggestion| suggestion.text.clone())
+            .collect()
+    }
+
+    #[test]
+    fn input_handler_resolution_includes_embedded_specs_when_requested() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let _enter = runtime.enter();
+        let specs_dir = tempfile::TempDir::new().unwrap();
+        write_custom_only_spec(specs_dir.path());
+        let resolution = SpecDirResolution {
+            dirs: vec![specs_dir.path().to_path_buf()],
+            include_embedded: true,
+        };
+        let mut handler = proxy_resolution_test_handler(&resolution);
+
+        let texts = trigger_texts(&mut handler, "git ");
+
+        assert!(
+            texts.iter().any(|text| text == "checkout"),
+            "embedded git subcommands should be available with include_embedded=true: {texts:?}"
+        );
+    }
+
+    #[test]
+    fn input_handler_resolution_excludes_embedded_specs_when_not_requested() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let _enter = runtime.enter();
+        let specs_dir = tempfile::TempDir::new().unwrap();
+        write_custom_only_spec(specs_dir.path());
+        let resolution = SpecDirResolution {
+            dirs: vec![specs_dir.path().to_path_buf()],
+            include_embedded: false,
+        };
+        let mut handler = proxy_resolution_test_handler(&resolution);
+
+        let texts = trigger_texts(&mut handler, "git ");
+
+        assert!(
+            !texts.iter().any(|text| text == "checkout"),
+            "embedded git subcommands should not be available with include_embedded=false: {texts:?}"
+        );
+    }
+
     #[test]
     fn dispatch_with_ours_at_head_syncs() {
         let mut p = make_state(24, 80);
@@ -1806,8 +1894,20 @@ mod tests {
         assert_eq!(outcome, OverlayWriteOutcome::Stale);
     }
 
+    // The trigger() / handle_terminal_output() paths spawn a tokio task
+    // for async generator dispatch when the engine resolves a known
+    // command. Now that SuggestionEngine::new loads the embedded corpus
+    // (so `git ` resolves), these tests need a runtime in scope to host
+    // the spawn. The previous SpecStore::load_from_dirs(&[]) flow
+    // produced an empty store, so dispatch never fired and a runtime
+    // was unnecessary.
     #[test]
     fn write_overlay_if_current_discards_owned_state_on_stale_write() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let _enter = runtime.enter();
         let handler = Arc::new(Mutex::new(
             InputHandler::new(&[], gc_terminal::TerminalProfile::for_ghostty()).expect("handler"),
         ));
@@ -1838,6 +1938,11 @@ mod tests {
 
     #[test]
     fn write_overlay_if_current_preserves_newer_overlay_after_stale_render_race() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let _enter = runtime.enter();
         let handler = Arc::new(Mutex::new(
             InputHandler::new(&[], gc_terminal::TerminalProfile::for_ghostty()).expect("handler"),
         ));
@@ -1880,6 +1985,11 @@ mod tests {
 
     #[test]
     fn write_overlay_if_current_lets_shell_cleanup_supersede_stale_teardown_cleanup() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let _enter = runtime.enter();
         let handler = Arc::new(Mutex::new(
             InputHandler::new(&[], gc_terminal::TerminalProfile::for_ghostty()).expect("handler"),
         ));

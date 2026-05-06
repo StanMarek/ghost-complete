@@ -30,13 +30,14 @@ pub mod ssh;
 pub mod transform;
 pub mod types;
 
-pub use embedded::EMBEDDED_SPECS;
+pub use embedded::{purge_embedded_cache_if_present, EMBEDDED_SPECS};
 pub use engine::{SuggestionEngine, SyncResult};
 pub use json_path::{JsonPath, JsonPathSegment};
 pub use pipeline::try_run_pipeline;
 pub use specs::{
     check_json_depth, parse_spec_checked_and_sanitized, sanitize_spec_strings, AliasConflict,
-    AliasConflictKind, AliasOwner, CompletionSpec, SpecEntry, SpecLoadResult, SpecStore,
+    AliasConflictDisposition, AliasConflictKind, AliasOwner, CompletionSpec, SpecEntry,
+    SpecEntryLoadError, SpecLoadResult, SpecLocation, SpecLookupError, SpecStore,
     MAX_SPEC_JSON_DEPTH,
 };
 pub use types::{Suggestion, SuggestionKind, SuggestionSource};
