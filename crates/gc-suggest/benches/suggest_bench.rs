@@ -89,13 +89,13 @@ fn resolution_benchmarks(c: &mut Criterion) {
     let git_spec = store.get("git").expect("git spec must exist");
     let shallow_ctx = make_ctx(Some("git"), vec!["checkout"], "", 2);
     group.bench_function("shallow", |b| {
-        b.iter(|| specs::resolve_spec(git_spec, &shallow_ctx));
+        b.iter(|| specs::resolve_spec(git_spec.as_ref(), &shallow_ctx));
     });
 
     let docker_spec = store.get("docker").expect("docker spec must exist");
     let deep_ctx = make_ctx(Some("docker"), vec!["compose", "up"], "--", 3);
     group.bench_function("deep", |b| {
-        b.iter(|| specs::resolve_spec(docker_spec, &deep_ctx));
+        b.iter(|| specs::resolve_spec(docker_spec.as_ref(), &deep_ctx));
     });
 
     // tar c --atime-preserve <TAB> — exercises the preceding_flag path with
@@ -115,7 +115,7 @@ fn resolution_benchmarks(c: &mut Criterion) {
         is_first_segment: true,
     };
     group.bench_function("with_static_suggestions_tar", |b| {
-        b.iter(|| specs::resolve_spec(tar_spec, &static_ctx));
+        b.iter(|| specs::resolve_spec(tar_spec.as_ref(), &static_ctx));
     });
 
     group.finish();
