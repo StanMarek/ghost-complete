@@ -539,7 +539,7 @@ fn check_js_runtime(config: &gc_config::GhostConfig) -> CheckResult {
 }
 
 /// Warn when any `keep_warm` entry does not match a registered spec alias.
-/// Skipped when eviction is disabled because the field is then unused.
+/// Returns OK with an explanatory message when eviction is disabled.
 fn check_keep_warm_unmatched(
     store: &gc_suggest::SpecStore,
     cfg: &gc_config::SpecCacheConfig,

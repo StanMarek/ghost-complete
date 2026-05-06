@@ -1038,8 +1038,9 @@ const STATUS_SCHEMA_VERSION: &str = "1.5";
 #[derive(Debug, Serialize)]
 struct StatusReport {
     schema_version: &'static str,
-    /// Runtime spec-store status. This complements the historical
-    /// `spec_counts` coverage block without changing that older schema.
+    /// Corpus-structural and policy-level spec-store status. This
+    /// complements the historical `spec_counts` coverage block without
+    /// changing that older schema.
     specs: SpecsStatus,
     spec_counts: SpecCounts,
     /// Raw-JSON scan over resolved runtime sources. Counts generator
@@ -1138,7 +1139,8 @@ struct SupportedByKind {
     custom: usize,
 }
 
-/// Runtime spec-store status surfaced under `status --json`'s `specs` key.
+/// Corpus-structural and policy-level spec-store status surfaced under
+/// `status --json`'s `specs` key.
 ///
 /// All fields here are corpus-structural or policy-level — the count of
 /// registered entries, the alias index size, and the user-declared

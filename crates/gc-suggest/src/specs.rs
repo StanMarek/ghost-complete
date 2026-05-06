@@ -1018,11 +1018,12 @@ pub struct EvictionReport {
 /// Persisted snapshot of the most recent eviction sweep.
 ///
 /// Available via [`SpecStore::last_sweep`] for diagnostic callers; not
-/// currently rendered by any user-facing CLI. The status schema 1.5
-/// removed the `last_sweep` field from `ghost-complete status --json`
-/// because the transient store built by the status binary never reflected
-/// the running daemon's eviction state. Today the field is read mainly
-/// by the eviction tests; future in-process tooling may surface it.
+/// currently rendered by any user-facing CLI. The 1.5 status schema
+/// design intentionally omits `last_sweep` from `ghost-complete status
+/// --json` because the transient store built by the status binary never
+/// reflects the running daemon's eviction state. Today the field is read
+/// mainly by the eviction tests; future in-process tooling may surface
+/// it.
 #[derive(Debug, Clone)]
 pub struct SweepReport {
     pub timestamp: SystemTime,
@@ -1915,7 +1916,8 @@ fn register_entries(
         // the steady-state hot path never pays this cost. Critically,
         // the parse slot stays empty in the new entry — parsing is still
         // deferred to first SpecEntry::spec(), and `last_accessed_nanos`
-        // resets to zero so the new entry starts unmarked for eviction.
+        // resets to zero so its first parse stamps a fresh timestamp via
+        // `bump_last_accessed`.
         let prev = Arc::clone(&entries[idx]);
         let mut new_aliases = prev.aliases.clone();
         new_aliases.push(name.clone());
