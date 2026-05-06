@@ -232,11 +232,13 @@ impl Default for SpecCacheConfig {
 
 impl SpecCacheConfig {
     /// Convert `max_resident_mb` to a byte cap. `None` when disabled.
+    /// Saturates at `u64::MAX` for pathological user input instead of
+    /// wrapping to a too-small cap.
     pub fn max_resident_bytes(&self) -> Option<u64> {
         if self.max_resident_mb == 0 {
             None
         } else {
-            Some(self.max_resident_mb * 1024 * 1024)
+            Some(self.max_resident_mb.saturating_mul(1024 * 1024))
         }
     }
 
@@ -755,6 +757,15 @@ max_visible = 5
             ..Default::default()
         };
         assert_eq!(config.max_resident_bytes(), Some(100 * 1024 * 1024));
+    }
+
+    #[test]
+    fn spec_cache_config_max_resident_bytes_saturates_on_overflow() {
+        let config = SpecCacheConfig {
+            max_resident_mb: u64::MAX,
+            ..Default::default()
+        };
+        assert_eq!(config.max_resident_bytes(), Some(u64::MAX));
     }
 
     #[test]
