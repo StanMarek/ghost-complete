@@ -120,7 +120,7 @@ fn fixture_engine() -> SuggestionEngine {
 }
 
 fn engine_with_js_disabled() -> SuggestionEngine {
-    make_engine().with_suggest_config(50, true, 5, true, true, true, false)
+    make_engine().with_suggest_config(50, true, 5, true, true, true, false, false)
 }
 
 /// Convenience: build a `post_process` generator wrapping a fixed `script`

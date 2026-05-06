@@ -164,6 +164,12 @@ pub struct SuggestConfig {
     /// stalled generator does not keep the loading indicator spinning
     /// indefinitely. Default: 5000 ms.
     pub generator_timeout_ms: u64,
+    /// When `true`, spec-declared flags are emitted only after the user
+    /// types `-` (the `Context::FlagPrefix` arm). In `Context::SpecArg`
+    /// the `options` candidates are suppressed, leaving subcommands,
+    /// argument values, and filesystem results to dominate the popup
+    /// until the user explicitly asks for flags. Default: `true`.
+    pub flags_require_dash: bool,
     pub providers: ProvidersConfig,
     pub spec_cache: SpecCacheConfig,
 }
@@ -174,6 +180,7 @@ impl Default for SuggestConfig {
             max_results: 50,
             max_history_results: 5,
             generator_timeout_ms: 5000,
+            flags_require_dash: true,
             providers: ProvidersConfig::default(),
             spec_cache: SpecCacheConfig::default(),
         }

@@ -524,7 +524,7 @@ async fn custom_unsupported_host_api_logs_diagnostic() {
 async fn custom_kill_switch_disables_dispatch() {
     let source = "async () => [{ name: 'should-not-run' }]";
     let gen = custom_generator(source);
-    let engine = make_engine().with_suggest_config(50, true, 5, true, true, true, false);
+    let engine = make_engine().with_suggest_config(50, true, 5, true, true, true, false, false);
     let ctx = make_ctx("phase5-test", Vec::new(), "");
     let results = engine
         .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
