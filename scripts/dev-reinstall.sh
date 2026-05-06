@@ -4,7 +4,11 @@
 # Steps:
 #   1. ghost-complete uninstall   (remove shell integration block from ~/.zshrc)
 #   2. cargo uninstall ghost-complete   (drop the cargo-managed binary)
-#   3. cargo install --path crates/ghost-complete --locked
+#   3. cargo install --path crates/ghost-complete --locked --force
+#      (--force handles the case where step 2 was a no-op because the
+#      installed binary was placed by some other path — e.g. a manual
+#      `cp` into $CARGO_HOME/bin — and cargo therefore has no record
+#      of it to uninstall.)
 #   4. ghost-complete install   (re-write shell integration)
 #   5. ghost-complete config edit   (open the TUI editor)
 #
@@ -38,7 +42,7 @@ step "Uninstalling cargo binary"
 cargo uninstall ghost-complete 2>/dev/null || warn "cargo had no ghost-complete to uninstall; continuing"
 
 step "Building and installing from $(pwd)"
-if ! cargo install --path crates/ghost-complete --locked; then
+if ! cargo install --path crates/ghost-complete --locked --force; then
     printf '\n\033[1;31m[fail]\033[0m cargo install failed; aborting before shell-integration step.\n' >&2
     exit 1
 fi
