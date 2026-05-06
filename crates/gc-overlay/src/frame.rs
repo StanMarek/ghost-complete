@@ -15,7 +15,7 @@
 
 use gc_suggest::Suggestion;
 
-use crate::layout::{DESC_GAP_COLS, GUTTER_COLS, TRAILING_PAD_COLS};
+use crate::layout::{DEFAULT_GUTTER_COLS as GUTTER_COLS, DESC_GAP_COLS, TRAILING_PAD_COLS};
 use crate::render::{kind_icon, sanitize_display_text, translate_match_indices};
 use crate::types::{OverlayState, PopupLayout};
 use crate::util::display_text;

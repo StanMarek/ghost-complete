@@ -24,6 +24,16 @@ pub struct PopupTheme {
     pub borders: bool,
     pub spinner: bool,
     pub show_provider_errors: bool,
+    /// Trailing spaces emitted after the kind icon. Total gutter width is
+    /// `1 + 2 + gutter_padding` columns (leading space + 2-col Nerd Font
+    /// icon + padding). Default `1` preserves historical `" K "` rendering.
+    pub gutter_padding: u8,
+    /// When `true`, layout always uses `max_width`; when `false`, width fits
+    /// the longest visible suggestion within `[min_width, max_width]`.
+    pub fixed_width: bool,
+    /// Appended to suggestion text or description when it would overflow the
+    /// row. Empty disables the indicator (silent truncation).
+    pub truncation_indicator: String,
 }
 
 impl Default for PopupTheme {
@@ -43,7 +53,45 @@ impl Default for PopupTheme {
             borders: false,
             spinner: true,
             show_provider_errors: false,
+            gutter_padding: 1,
+            fixed_width: false,
+            truncation_indicator: String::new(),
         }
+    }
+}
+
+impl PopupTheme {
+    /// Total gutter width in display columns: leading space + 2-col icon
+    /// + trailing padding. The icon column count assumes Nerd Font PUA
+    /// codepoints; matches the reasoning behind the historical `GUTTER_COLS`
+    /// constant in `layout.rs`.
+    pub fn gutter_cols(&self) -> usize {
+        layout::ICON_BASE_COLS + self.gutter_padding as usize
+    }
+
+    /// Display-column width of the configured truncation indicator. Returns
+    /// `0` when the indicator is empty (silent truncation).
+    pub fn truncation_indicator_cols(&self) -> usize {
+        display_cols(&self.truncation_indicator)
+    }
+}
+
+/// Decide whether a row needs to append the truncation indicator and the
+/// remaining body budget. `total_cols_fn` is only invoked when the indicator
+/// is non-empty and fits — keeping the default config (empty indicator) free
+/// of the per-row width scan over `text`.
+fn truncation_budget(
+    total_cols_fn: impl FnOnce() -> usize,
+    max_cols: usize,
+    indicator_cols: usize,
+) -> (usize, bool) {
+    if indicator_cols == 0 || indicator_cols >= max_cols {
+        return (max_cols, false);
+    }
+    if total_cols_fn() > max_cols {
+        (max_cols - indicator_cols, true)
+    } else {
+        (max_cols, false)
     }
 }
 
@@ -329,6 +377,8 @@ pub fn render_popup(
         min_width,
         max_width,
         theme.borders,
+        theme.gutter_cols(),
+        theme.fixed_width,
     );
 
     if layout.height == 0 {
@@ -556,7 +606,16 @@ fn render_feedback_only_popup(
 ) -> PopupLayout {
     let border_pad: u16 = if theme.borders { 2 } else { 0 };
     let effective_max_w = max_width.min(screen_cols).max(min_width);
-    let width = min_width.min(effective_max_w);
+    // Honor `fixed_width` here too: without this, the popup would render at
+    // `min_width` for the Loading/Empty/Error indicator and then jump to
+    // `max_width` the moment results merge in via `render_popup`. Users who
+    // opt into fixed_width are doing so for visual stability — that goal
+    // requires the same width across both code paths.
+    let width = if theme.fixed_width {
+        effective_max_w
+    } else {
+        min_width.min(effective_max_w)
+    };
     let base_height = 1 + border_pad;
     // Mirror the discard logic in `render_popup`: when prior_deficit >=
     // cursor_row the cached value is stale and would pin the indicator at
@@ -816,9 +875,10 @@ pub(crate) fn kind_icon(kind: SuggestionKind) -> char {
 
 /// Write the leading gutter (`" K "`) for a suggestion row. Always occupies
 /// `layout::GUTTER_COLS` display columns.
-fn write_gutter(buf: &mut Vec<u8>, kind: SuggestionKind) {
+fn write_gutter(buf: &mut Vec<u8>, kind: SuggestionKind, theme: &PopupTheme) {
     let kind_char = kind_icon(kind);
-    let _ = write!(buf, " {kind_char} ");
+    let _ = write!(buf, " {kind_char}");
+    write_padding(buf, theme.gutter_padding as usize);
 }
 
 /// Re-enable the row's base text style after an `ansi::reset` inside
@@ -917,11 +977,22 @@ fn write_highlighted_text(
     is_selected: bool,
     theme: &PopupTheme,
 ) -> usize {
+    // If the full text overflows the budget AND the configured truncation
+    // indicator fits, reserve indicator columns up front and emit the
+    // indicator after the truncated body. Empty indicator preserves the
+    // historical silent-truncation behavior.
+    let indicator_cols = theme.truncation_indicator_cols();
+    let (body_budget, will_truncate_with_indicator) = truncation_budget(
+        || display_cols(display_text),
+        max_text_chars,
+        indicator_cols,
+    );
+
     let mut in_highlight = false;
     let mut cols_written: usize = 0;
     for (char_idx, ch) in display_text.chars().enumerate() {
         let ch_width = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
-        if cols_written + ch_width > max_text_chars {
+        if cols_written + ch_width > body_budget {
             break;
         }
         let should_highlight = !theme.match_highlight_on.is_empty()
@@ -942,6 +1013,10 @@ fn write_highlighted_text(
     if in_highlight {
         ansi::reset(buf);
         restore_base_style(buf, is_selected, theme);
+    }
+    if will_truncate_with_indicator {
+        let _ = write!(buf, "{}", theme.truncation_indicator);
+        cols_written += indicator_cols;
     }
     cols_written
 }
@@ -977,18 +1052,18 @@ fn write_description(
         ansi::reset(buf);
         buf.extend_from_slice(&theme.description_on);
     }
-    // Truncate description by display columns, not char count
-    let mut desc_cols: usize = 0;
-    let mut truncated = String::new();
-    for ch in desc.chars() {
-        let w = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
-        if desc_cols + w > max_desc_cols {
-            break;
-        }
-        truncated.push(ch);
-        desc_cols += w;
-    }
+    // Truncate description by display columns, not char count. If truncation
+    // is needed and the configured indicator fits, reserve room for it and
+    // append after the truncated body.
+    let indicator_cols = theme.truncation_indicator_cols();
+    let (body_budget, will_truncate_with_indicator) =
+        truncation_budget(|| display_cols(&desc), max_desc_cols, indicator_cols);
+    let (truncated, mut desc_cols) = truncate_to_display_cols(&desc, body_budget);
     let _ = write!(buf, "{truncated}");
+    if will_truncate_with_indicator {
+        let _ = write!(buf, "{}", theme.truncation_indicator);
+        desc_cols += indicator_cols;
+    }
     if !is_selected {
         ansi::reset(buf);
         if !theme.item_text_on.is_empty() {
@@ -1010,10 +1085,11 @@ fn format_item(
     is_selected: bool,
     theme: &PopupTheme,
 ) {
-    write_gutter(buf, s.kind);
+    write_gutter(buf, s.kind, theme);
 
+    let gutter_cols = theme.gutter_cols();
     let total_width = width as usize;
-    let max_text_chars = total_width.saturating_sub(crate::layout::GUTTER_COLS);
+    let max_text_chars = total_width.saturating_sub(gutter_cols);
 
     // For filesystem entries, show just the last path component (the user
     // already typed the prefix, so repeating it wastes popup space).
@@ -1041,7 +1117,7 @@ fn format_item(
         theme,
     );
 
-    let gutter_text_len = crate::layout::GUTTER_COLS + cols_written;
+    let gutter_text_len = gutter_cols + cols_written;
     write_description(
         buf,
         s.description.as_deref(),
@@ -2569,6 +2645,67 @@ mod tests {
     }
 
     #[test]
+    fn test_feedback_only_popup_honors_fixed_width() {
+        // Regression: when a user opts into popup.fixed_width, the
+        // feedback-only path used to render at min_width, causing the popup
+        // to "jump" from min_width to max_width the moment results arrived.
+        // Both paths must use max_width when fixed_width is true.
+        let theme = PopupTheme {
+            fixed_width: true,
+            ..PopupTheme::default()
+        };
+        let state = OverlayState::new();
+
+        let mut feedback_buf = Vec::new();
+        let feedback_layout = render_popup(
+            &mut feedback_buf,
+            &[],
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &theme,
+            0,
+            FeedbackKind::Empty,
+            &ghostty_profile(),
+        );
+
+        let suggestions = make_suggestions();
+        let mut results_buf = Vec::new();
+        let results_layout = render_popup(
+            &mut results_buf,
+            &suggestions,
+            &state,
+            5,
+            0,
+            24,
+            80,
+            DEFAULT_MAX_VISIBLE,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            &theme,
+            0,
+            FeedbackKind::None,
+            &ghostty_profile(),
+        );
+
+        assert_eq!(
+            feedback_layout.width, results_layout.width,
+            "fixed_width must produce identical widths for feedback-only and \
+             results popups; got feedback={} results={}",
+            feedback_layout.width, results_layout.width,
+        );
+        assert_eq!(
+            feedback_layout.width, DEFAULT_MAX_POPUP_WIDTH,
+            "fixed_width should pin to max_width"
+        );
+    }
+
+    #[test]
     fn test_feedback_empty_and_error_labels() {
         let mut empty_buf = Vec::new();
         let state = OverlayState::new();
@@ -2807,6 +2944,8 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             false, // no borders
+            layout::DEFAULT_GUTTER_COLS,
+            false,
         );
         let bordered = layout::compute_layout(
             &suggestions,
@@ -2819,6 +2958,8 @@ mod tests {
             DEFAULT_MIN_POPUP_WIDTH,
             DEFAULT_MAX_POPUP_WIDTH,
             true,
+            layout::DEFAULT_GUTTER_COLS,
+            false,
         );
         assert_eq!(
             bordered.width - layout.width,

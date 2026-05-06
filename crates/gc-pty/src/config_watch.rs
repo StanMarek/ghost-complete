@@ -149,12 +149,7 @@ pub fn spawn_config_watcher(
                 }
             };
 
-            let theme = match build_popup_theme(
-                &resolved_theme,
-                config.popup.borders,
-                config.popup.spinner,
-                config.popup.show_provider_errors,
-            ) {
+            let theme = match build_popup_theme(&resolved_theme, &config.popup) {
                 Ok(t) => t,
                 Err(e) => {
                     tracing::warn!("config reload failed (theme styles): {e}");
@@ -210,9 +205,7 @@ pub fn spawn_config_watcher(
 /// with user overrides), parsing each style string.
 fn build_popup_theme(
     resolved: &gc_config::ResolvedTheme,
-    borders: bool,
-    spinner: bool,
-    show_provider_errors: bool,
+    popup: &gc_config::PopupConfig,
 ) -> Result<PopupTheme> {
     Ok(PopupTheme {
         selected_on: parse_style(&resolved.selected)
@@ -233,9 +226,12 @@ fn build_popup_theme(
             .map_err(|e| anyhow::anyhow!("invalid theme.scrollbar: {e}"))?,
         border_on: parse_style(&resolved.border)
             .map_err(|e| anyhow::anyhow!("invalid theme.border: {e}"))?,
-        borders,
-        spinner,
-        show_provider_errors,
+        borders: popup.borders,
+        spinner: popup.spinner,
+        show_provider_errors: popup.show_provider_errors,
+        gutter_padding: popup.gutter_padding,
+        fixed_width: popup.fixed_width,
+        truncation_indicator: popup.truncation_indicator.clone(),
     })
 }
 
@@ -256,7 +252,13 @@ mod tests {
             feedback_empty: "dim".into(),
             feedback_error: "dim fg:#f38ba8".into(),
         };
-        let result = build_popup_theme(&resolved, true, true, false);
+        let popup = gc_config::PopupConfig {
+            borders: true,
+            spinner: true,
+            show_provider_errors: false,
+            ..gc_config::PopupConfig::default()
+        };
+        let result = build_popup_theme(&resolved, &popup);
         assert!(result.is_ok());
         assert!(result.unwrap().borders);
     }

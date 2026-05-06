@@ -3804,6 +3804,9 @@ mod tests {
             borders: true,
             spinner: true,
             show_provider_errors: false,
+            gutter_padding: 1,
+            fixed_width: false,
+            truncation_indicator: String::new(),
         };
 
         handler.update_config(

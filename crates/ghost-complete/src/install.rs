@@ -38,6 +38,9 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # feedback_dismiss_ms = 1200  # Empty/error feedback auto-dismiss delay; 0 disables
 # spinner = true  # Animate async Loading feedback in wide popups
 # show_provider_errors = false  # Set true to show provider names in error feedback
+# gutter_padding = 1  # Trailing spaces between the kind icon and suggestion text (0–8)
+# fixed_width = false  # When true, popup always renders at max width (60 cols) instead of fitting content
+# truncation_indicator = \"\"  # Appended to clipped text/description; e.g. \"…\" (1 col) or \"...\" (3 cols)
 
 # [suggest]
 # max_results = 50
