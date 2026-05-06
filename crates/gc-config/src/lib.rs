@@ -150,6 +150,7 @@ pub struct SuggestConfig {
     /// indefinitely. Default: 5000 ms.
     pub generator_timeout_ms: u64,
     pub providers: ProvidersConfig,
+    pub spec_cache: SpecCacheConfig,
 }
 
 impl Default for SuggestConfig {
@@ -159,6 +160,7 @@ impl Default for SuggestConfig {
             max_history_results: 5,
             generator_timeout_ms: 5000,
             providers: ProvidersConfig::default(),
+            spec_cache: SpecCacheConfig::default(),
         }
     }
 }
@@ -192,6 +194,55 @@ impl Default for ProvidersConfig {
             git: true,
             js_runtime: true,
         }
+    }
+}
+
+/// Cache eviction policy for parsed completion specs. Eviction is opt-in:
+/// `idle_ttl_secs = 0` (default) preserves the v0.12.4 "parse once, hold
+/// forever" contract.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SpecCacheConfig {
+    /// Seconds after last access before a successfully-parsed spec is
+    /// evicted from the in-memory cache. `0` (default) disables eviction.
+    pub idle_ttl_secs: u64,
+    /// How often the background sweep wakes to scan for idle entries.
+    /// Default 60s. Ignored when `idle_ttl_secs == 0`.
+    pub sweep_interval_secs: u64,
+    /// Spec aliases (filename stems or `CompletionSpec.name` values) that
+    /// must never be evicted. Shell aliases are NOT walked; pin specs by
+    /// their registered name. Default empty.
+    pub keep_warm: Vec<String>,
+    /// LRU backstop: after TTL eviction, if total estimated resident heap
+    /// exceeds this cap, evict more entries oldest-access-first until under
+    /// cap. `keep_warm` entries are exempt. `0` (default) disables.
+    pub max_resident_mb: u64,
+}
+
+impl Default for SpecCacheConfig {
+    fn default() -> Self {
+        Self {
+            idle_ttl_secs: 0,
+            sweep_interval_secs: 60,
+            keep_warm: Vec::new(),
+            max_resident_mb: 0,
+        }
+    }
+}
+
+impl SpecCacheConfig {
+    /// Convert `max_resident_mb` to a byte cap. `None` when disabled.
+    pub fn max_resident_bytes(&self) -> Option<u64> {
+        if self.max_resident_mb == 0 {
+            None
+        } else {
+            Some(self.max_resident_mb * 1024 * 1024)
+        }
+    }
+
+    /// True when eviction is enabled (`idle_ttl_secs > 0`).
+    pub fn enabled(&self) -> bool {
+        self.idle_ttl_secs > 0
     }
 }
 
@@ -663,6 +714,47 @@ max_visible = 5
         // Everything else should be default
         assert_eq!(config.trigger.auto_chars, vec![' ', '/', '-', '.']);
         assert_eq!(config.suggest.max_results, 50);
+    }
+
+    #[test]
+    fn spec_cache_config_defaults() {
+        let config = SpecCacheConfig::default();
+        assert_eq!(config.idle_ttl_secs, 0, "eviction must be opt-in (TTL=0)");
+        assert_eq!(config.sweep_interval_secs, 60);
+        assert!(config.keep_warm.is_empty());
+        assert_eq!(config.max_resident_mb, 0);
+        assert_eq!(config.max_resident_bytes(), None);
+    }
+
+    #[test]
+    fn spec_cache_config_max_resident_bytes_translates_mb() {
+        let config = SpecCacheConfig {
+            max_resident_mb: 100,
+            ..Default::default()
+        };
+        assert_eq!(config.max_resident_bytes(), Some(100 * 1024 * 1024));
+    }
+
+    #[test]
+    fn suggest_config_includes_spec_cache_with_defaults() {
+        let config = SuggestConfig::default();
+        assert_eq!(config.spec_cache.idle_ttl_secs, 0);
+    }
+
+    #[test]
+    fn spec_cache_deserializes_from_toml() {
+        let toml = r#"
+[suggest.spec_cache]
+idle_ttl_secs = 300
+sweep_interval_secs = 30
+keep_warm = ["git", "cd"]
+max_resident_mb = 100
+"#;
+        let parsed: GhostConfig = toml::from_str(toml).unwrap();
+        assert_eq!(parsed.suggest.spec_cache.idle_ttl_secs, 300);
+        assert_eq!(parsed.suggest.spec_cache.sweep_interval_secs, 30);
+        assert_eq!(parsed.suggest.spec_cache.keep_warm, vec!["git", "cd"]);
+        assert_eq!(parsed.suggest.spec_cache.max_resident_mb, 100);
     }
 
     #[test]
