@@ -1015,20 +1015,17 @@ fn run_status_inner_with_trend(
 ///       `command_alias_conflict_details` entries also include a
 ///       `disposition` field so consumers can distinguish rejected aliases
 ///       from fallback candidates.
-/// 1.4 — added a top-level `specs` block with resident spec-cache counters
-///       and policy/sweep visibility: `parsed_resident`,
-///       `estimated_resident_bytes`, `spec_cache`, and `last_sweep`.
-/// 1.5 — removes `parsed_resident`, `estimated_resident_bytes`, and
-///       `last_sweep` from the `specs` block. Those fields described the
-///       transient SpecStore that `ghost-complete status` builds in its own
-///       process, not the running proxy daemon — so they always reported
-///       the post-`force_load_all` corpus and `last_sweep: null`,
-///       misleading users into thinking eviction was broken even when the
-///       daemon had correctly evicted entries. The remaining `specs` fields
-///       (`registered`, `addressable_aliases`, `spec_cache`) are
-///       purely structural / policy-level and do not depend on daemon
-///       runtime state. This is a breaking removal — JSON consumers that
-///       relied on those keys must be updated.
+/// 1.5 — adds a top-level `specs` block with corpus-structural and
+///       policy-level fields: `registered`, `addressable_aliases`, and a
+///       `spec_cache` sub-block describing the user-declared eviction
+///       policy (`enabled`, `idle_ttl_secs`, `sweep_interval_secs`,
+///       `keep_warm`, `max_resident_mb`). Live runtime state (parse
+///       residency, byte estimates, last-sweep stats) is intentionally
+///       omitted: `ghost-complete status` runs in a one-shot process that
+///       builds its own transient `SpecStore`, so any per-process
+///       counters would describe the wrong store and mislead users into
+///       thinking eviction was broken even when the running proxy daemon
+///       had correctly evicted entries.
 const STATUS_SCHEMA_VERSION: &str = "1.5";
 
 /// The shape emitted by `ghost-complete status --json`. Defining this as a
@@ -1148,10 +1145,11 @@ struct SupportedByKind {
 /// spec-cache policy. None of them claim to reflect the running proxy
 /// daemon's live parse state: this struct is built inside the one-shot
 /// `ghost-complete status` process, which loads its own transient
-/// `SpecStore`. Schema 1.4 surfaced `parsed_resident`,
-/// `estimated_resident_bytes`, and `last_sweep` here too, but those values
-/// described the status process's own freshly-loaded store rather than the
-/// daemon's working set, so they were dropped in 1.5.
+/// `SpecStore`. Resident-state fields (parse residency, byte estimates,
+/// last-sweep stats) are intentionally absent — they would describe this
+/// short-lived process's own freshly-loaded store rather than the
+/// daemon's working set, and would mislead users about eviction
+/// behaviour.
 #[derive(Debug, Serialize)]
 struct SpecsStatus {
     registered: usize,

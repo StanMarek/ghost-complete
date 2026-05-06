@@ -375,18 +375,6 @@ fn lazy_load_benchmarks(c: &mut Criterion) {
         });
     });
 
-    // With opt-in eviction, the warm path goes through RwLock<ParsedSlot> +
-    // an AtomicU64 timestamp bump. This pins the new eviction-aware hot path.
-    group.bench_function("warm_get_git_under_eviction_path", |b| {
-        let result = SpecStore::load_with_embedded(&[]).expect("embedded corpus must load");
-        let store = result.store;
-        let _ = store.get("git"); // prime
-        b.iter(|| {
-            let spec = store.get("git").expect("git spec must resolve");
-            std::hint::black_box(spec);
-        });
-    });
-
     group.bench_function("evict_then_get_aws", |b| {
         b.iter_custom(|iters| {
             let mut total = std::time::Duration::ZERO;
