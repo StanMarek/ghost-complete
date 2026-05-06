@@ -137,6 +137,64 @@ jobs:
         run: node --test apply.test.mjs
         working-directory: tools/spec-priority-audit
 
+  corpus-hash-gate:
+    name: Corpus hash determinism (fig-converter)
+    needs: [check]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            fig_converter:
+              - 'tools/fig-converter/**'
+      - name: Set up Node
+        if: steps.filter.outputs.fig_converter == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+      - name: Install fig-converter dependencies
+        if: steps.filter.outputs.fig_converter == 'true'
+        run: npm ci
+        working-directory: tools/fig-converter
+      # Run on a representative subset on PRs: the full corpus runs to
+      # several minutes per pass and we'd be running it twice. The 3-spec
+      # determinism unit test (src/determinism.test.js, 5 runs each)
+      # covers correctness; this gate exercises the same path across a
+      # cross-section of generator shapes (git native generators, docker
+      # transform generators, kubectl static spec, brew script generator,
+      # cargo native rewrite). Master pushes get the full corpus below.
+      - name: Determinism check (PR subset)
+        if: steps.filter.outputs.fig_converter == 'true'
+        run: node tools/fig-converter/scripts/check-corpus-hash.mjs --specs git,docker,kubectl,brew,cargo,make,npm,ls
+      - name: Determinism unit tests
+        if: steps.filter.outputs.fig_converter == 'true'
+        run: node --test src/determinism.test.js
+        working-directory: tools/fig-converter
+
+  corpus-hash-gate-master:
+    name: Corpus hash determinism (full corpus)
+    # Full converter twice across all 709 specs is expensive (several
+    # minutes per run). We restrict the full check to master pushes so
+    # PRs stay snappy — the PR job above runs a representative subset
+    # paired with the 3-spec/5-run unit test for correctness.
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+    needs: [check]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+      - name: Install fig-converter dependencies
+        run: npm ci
+        working-directory: tools/fig-converter
+      - name: Determinism check (full corpus)
+        run: node tools/fig-converter/scripts/check-corpus-hash.mjs
+
   coverage-baseline-drift:
     name: Coverage baseline drift
     # Informational, non-blocking gate. Only runs on main/master branches
