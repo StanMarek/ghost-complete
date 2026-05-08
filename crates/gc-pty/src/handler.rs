@@ -591,9 +591,9 @@ impl InputHandler {
         self
     }
 
-    /// Set popup min/max width bounds (display columns). Both values are
-    /// passed verbatim to [`gc_overlay::render_popup`]; further clamping
-    /// against the live `screen_cols` happens inside `compute_layout`.
+    /// Set popup min/max width bounds (display columns). Stored on the
+    /// handler and read on every render; further clamping against the live
+    /// `screen_cols` happens inside `compute_layout`.
     pub fn with_popup_widths(mut self, min_width: u16, max_width: u16) -> Self {
         self.min_popup_width = min_width;
         self.max_popup_width = max_width;
@@ -601,8 +601,9 @@ impl InputHandler {
     }
 
     /// Configure the adjacent description box. `mode` toggles the feature;
-    /// `max_width`, `lines`, and `debounce_ms` are passed through clamped at
-    /// load time by `gc_config::GhostConfig::normalize`.
+    /// `max_width`, `lines`, and `debounce_ms` are stored verbatim — callers
+    /// must pass values already clamped at config load time by
+    /// `gc_config::GhostConfig::normalize`.
     pub fn with_description_box(
         mut self,
         mode: DescriptionBoxMode,
@@ -4545,6 +4546,64 @@ mod tests {
         assert_eq!(handler.detail_box_debounce_ms, 0);
     }
 
+    /// Side→Side reloads (e.g. shrinking `detail_box_max_width` or
+    /// `detail_box_lines`) must NOT stage a detail-box cleanup. Only the
+    /// Side→Off transition tears down the existing rectangle; otherwise the
+    /// next render naturally redraws the box at its new size and any old
+    /// stray cells get overwritten there. This test guards that the
+    /// non-cleanup branch in `update_config` stays put.
+    #[test]
+    fn test_update_config_side_to_side_with_new_size_does_not_stage_cleanup() {
+        let mut handler = make_selected_handler(command_suggestion(
+            "checkout",
+            Some("long description already visible in the detail box"),
+        ))
+        .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.last_detail_layout = Some(DetailLayout {
+            start_row: 5,
+            start_col: 24,
+            width: 30,
+            height: 3,
+            position: gc_overlay::DetailPosition::SideRight,
+        });
+
+        let cleanup = handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/'],
+            10,
+            1200,
+            true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Side,
+            30,
+            3,
+            0,
+        );
+
+        assert!(
+            cleanup.is_empty(),
+            "Side→Side reload must not emit any cleanup bytes: {:?}",
+            String::from_utf8_lossy(&cleanup)
+        );
+        assert!(
+            handler.last_detail_layout.is_some(),
+            "Side→Side must keep the committed detail layout — no clear is needed",
+        );
+        let ticket = handler.overlay_write_ticket();
+        assert!(
+            ticket.cleanup_token.is_none(),
+            "Side→Side must not stage an overlay cleanup token",
+        );
+
+        // Field updates still landed.
+        assert_eq!(handler.detail_box_mode, DescriptionBoxMode::Side);
+        assert_eq!(handler.detail_box_max_width, 30);
+        assert_eq!(handler.detail_box_lines, 3);
+        assert_eq!(handler.detail_box_debounce_ms, 0);
+    }
+
     #[test]
     fn test_update_config_clears_visible_detail_box_when_disabled() {
         let mut handler = make_selected_handler(command_suggestion(
@@ -6729,6 +6788,46 @@ mod tests {
         assert_eq!(
             cursor_moves, 3,
             "two disjoint covers on one row should leave three slivers (3 moves)",
+        );
+    }
+
+    /// Guards the zero-size early-return at the top of
+    /// `clear_detail_box_uncovered_by`. A regression that flips the `||` to
+    /// `&&` would let a zero-width layout slip through to the row loop and
+    /// emit a save/restore-cursor pair (\x1b7\x1b8) for nothing — a low-grade
+    /// scrollback corruption risk.
+    #[test]
+    fn test_clear_detail_box_uncovered_by_zero_width_layout_emits_nothing() {
+        let layout = DetailLayout {
+            start_row: 5,
+            start_col: 10,
+            width: 0,
+            height: 3,
+            position: gc_overlay::DetailPosition::SideRight,
+        };
+        let mut buf = Vec::new();
+        clear_detail_box_uncovered_by(&mut buf, &layout, &[]);
+        assert!(
+            buf.is_empty(),
+            "zero-width layout must short-circuit before emitting save/restore cursor: {buf:?}"
+        );
+    }
+
+    /// Sibling guard for the zero-height arm of the same early-return.
+    #[test]
+    fn test_clear_detail_box_uncovered_by_zero_height_layout_emits_nothing() {
+        let layout = DetailLayout {
+            start_row: 5,
+            start_col: 10,
+            width: 4,
+            height: 0,
+            position: gc_overlay::DetailPosition::SideRight,
+        };
+        let mut buf = Vec::new();
+        clear_detail_box_uncovered_by(&mut buf, &layout, &[]);
+        assert!(
+            buf.is_empty(),
+            "zero-height layout must short-circuit before emitting save/restore cursor: {buf:?}"
         );
     }
 

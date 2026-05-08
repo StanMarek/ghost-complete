@@ -1428,6 +1428,17 @@ description_box = "side"
     }
 
     #[test]
+    fn test_description_box_max_width_zero_clamps_to_floor() {
+        // Pin the documented contract: 0 must clamp up to DESC_BOX_MAX_WIDTH_FLOOR (20),
+        // not pass through. Guards against a regression that swapped `<` for
+        // `> 0 && <`, which would let zero leak through and render a degenerate box.
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\ndescription_box_max_width = 0").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.description_box_max_width, 20);
+    }
+
+    #[test]
     fn test_description_box_max_width_clamps_ceiling() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\ndescription_box_max_width = 9999").unwrap();

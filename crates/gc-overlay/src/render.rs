@@ -1364,6 +1364,39 @@ mod tests {
     }
 
     #[test]
+    fn test_format_item_short_description_no_ellipsis() {
+        // 30-col row: max_desc_cols = 30 - GUTTER(4) - "cmd"(3) - GAP(2) - PAD(1) = 20.
+        // 5-char description fits cleanly, must render verbatim with no ellipsis.
+        let mut buf = Vec::new();
+        let s = make("cmd", Some("short"), SuggestionKind::Command);
+        format_item(&mut buf, &s, 30, false, &bordered_theme());
+        let output = String::from_utf8_lossy(&buf);
+        let printable = printable_output(&output);
+        let ellipsis_count = printable.chars().filter(|ch| *ch == '\u{2026}').count();
+        assert_eq!(
+            ellipsis_count, 0,
+            "fitting description must not get an ellipsis: {printable}"
+        );
+    }
+
+    #[test]
+    fn test_format_item_exact_fit_description_no_ellipsis() {
+        // 30-col row with text "cmd": max_desc_cols = 20. A 20-char description
+        // fits exactly and must render without an ellipsis.
+        let mut buf = Vec::new();
+        let exact = "a".repeat(20);
+        let s = make("cmd", Some(&exact), SuggestionKind::Command);
+        format_item(&mut buf, &s, 30, false, &bordered_theme());
+        let output = String::from_utf8_lossy(&buf);
+        let printable = printable_output(&output);
+        let ellipsis_count = printable.chars().filter(|ch| *ch == '\u{2026}').count();
+        assert_eq!(
+            ellipsis_count, 0,
+            "exact-fit description must not get an ellipsis: {printable}"
+        );
+    }
+
+    #[test]
     fn test_format_item_truncates_description() {
         let mut buf = Vec::new();
         let long_desc = "a".repeat(200);

@@ -2,7 +2,8 @@
 //!
 //! Renders a multi-line wrapped description for the currently-selected
 //! suggestion next to (or below) the main popup. Geometry adapts to terminal
-//! width and falls back through a side → below → hide cascade.
+//! width and falls back through a side-right → side-left → below → hide
+//! cascade.
 //!
 //! Detail bytes are appended to the same render buffer as the main popup, so
 //! pre-render-buffer terminals receive one coalesced flush. On terminals using
@@ -43,13 +44,13 @@ enum InlineDescriptionFit {
 /// Used by the proxy as a gate for the optional adjacent description box:
 /// when the inline description fits cleanly, there is no useful information
 /// for the side box to add, so we skip rendering it. Mirrors the
-/// scrollbar/budget computation in `render::render_popup` (the gate uses
-/// `effective_max.max(1)` defensively for the small-screen branch where
-/// `render_popup` would early-return), so it cannot disagree with the inline
-/// truncation logic.
+/// scrollbar/budget computation in `render::render_popup`, with
+/// `effective_max.max(1)` applied unconditionally so a `max_visible == 0`
+/// config still resolves a sensible scrollbar predicate.
 ///
-/// Returns `false` when the suggestion has no description, the description
-/// is empty, or the popup is zero-sized (no inline truncation can happen).
+/// Returns `false` when the description fits within the inline budget, when
+/// the suggestion has no description, when the description is empty, or
+/// when the popup width is zero (no inline truncation can happen).
 pub fn description_overflows_main_popup(
     suggestion: &Suggestion,
     popup_layout: &PopupLayout,
@@ -158,7 +159,8 @@ pub struct DetailLayout {
     pub position: DetailPosition,
 }
 
-/// Compute the detail-box layout as a side → below → None cascade.
+/// Compute the detail-box layout as a side-right → side-left → below → None
+/// cascade.
 ///
 /// Returns `None` when:
 /// - `main` is zero-sized (popup suppressed)
@@ -723,6 +725,29 @@ mod tests {
         assert_eq!(det.unwrap().position, DetailPosition::Below);
     }
 
+    #[test]
+    fn detail_below_returns_none_when_avail_cols_clamps_width_below_min_useful_width() {
+        // Side-right and side-left both fail; tier 3 below has avail_cols too
+        // small for MIN_USEFUL_WIDTH so the function must return None.
+        // main_end_col = 30+20 = 50; cols_to_right = 35-50 sat 0 → no side-right.
+        // main.start_col = 30, not > MIN_USEFUL_WIDTH (30) → no side-left.
+        // avail_cols = 35-30 = 5; width = max(20,30).min(60).min(5) = 5 < 30 → None.
+        let main = layout(0, 30, 20, 5);
+        assert!(compute_detail_layout(&main, 24, 35, 60, 3, false).is_none());
+    }
+
+    #[test]
+    fn detail_zero_max_width_returns_none() {
+        let main = layout(0, 0, 60, 10);
+        assert!(compute_detail_layout(&main, 24, 200, 0, 5, false).is_none());
+    }
+
+    #[test]
+    fn detail_zero_max_width_with_borders_returns_none() {
+        let main = layout(0, 0, 60, 10);
+        assert!(compute_detail_layout(&main, 24, 200, 0, 5, true).is_none());
+    }
+
     // --- wrap_description ---
 
     #[test]
@@ -903,6 +928,25 @@ mod tests {
         assert!(
             !buf.windows(5).any(|w| w == b"\x1b[31m"),
             "rendered output contains foreground-color set sequence",
+        );
+    }
+
+    #[test]
+    fn render_detail_box_emits_save_restore_cursor_pair() {
+        let layout = DetailLayout {
+            start_row: 2,
+            start_col: 4,
+            width: 10,
+            height: 5,
+            position: DetailPosition::SideRight,
+        };
+        let mut buf = Vec::new();
+        render_detail_box(&mut buf, &layout, "hi", &PopupTheme::default());
+        assert!(buf.starts_with(b"\x1b7"), "should start with DECSC");
+        assert!(buf.ends_with(b"\x1b8"), "should end with DECRC");
+        assert!(
+            buf.len() > 4,
+            "buffer must contain content between save/restore wrappers"
         );
     }
 

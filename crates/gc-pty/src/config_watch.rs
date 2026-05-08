@@ -1,7 +1,8 @@
 //! Config hot-reload via filesystem watching.
 //!
 //! Watches `config.toml` for modifications and live-updates the handler's
-//! theme, keybindings, trigger chars, and popup dimensions without restarting.
+//! theme, keybindings, trigger chars, popup dimensions, and description-box
+//! settings without restarting.
 
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
