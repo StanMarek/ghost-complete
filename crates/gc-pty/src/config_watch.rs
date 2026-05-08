@@ -187,6 +187,12 @@ pub fn spawn_config_watcher(
                     config.popup.max_visible,
                     config.popup.feedback_dismiss_ms,
                     config.trigger.auto_trigger,
+                    config.popup.min_width,
+                    config.popup.max_width,
+                    config.popup.description_box,
+                    config.popup.description_box_max_width,
+                    config.popup.description_box_lines,
+                    config.popup.description_box_debounce_ms,
                 )
             };
             if !cleanup.is_empty() {

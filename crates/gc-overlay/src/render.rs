@@ -7,7 +7,7 @@ use gc_terminal::TerminalProfile;
 use crate::ansi;
 use crate::layout;
 use crate::types::{OverlayState, PopupLayout};
-use crate::util::display_text;
+use crate::util::{display_text, truncate_with_ellipsis};
 
 /// Precomputed ANSI sequences for popup styling.
 /// Keeps gc-overlay independent of gc-config.
@@ -977,17 +977,10 @@ fn write_description(
         ansi::reset(buf);
         buf.extend_from_slice(&theme.description_on);
     }
-    // Truncate description by display columns, not char count
-    let mut desc_cols: usize = 0;
-    let mut truncated = String::new();
-    for ch in desc.chars() {
-        let w = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
-        if desc_cols + w > max_desc_cols {
-            break;
-        }
-        truncated.push(ch);
-        desc_cols += w;
-    }
+    // Truncate description by display columns, not char count. Appends a
+    // single-column ellipsis (`…`) when the description didn't fit so users
+    // can tell the text was cut.
+    let (truncated, desc_cols) = truncate_with_ellipsis(&desc, max_desc_cols);
     let _ = write!(buf, "{truncated}");
     if !is_selected {
         ansi::reset(buf);

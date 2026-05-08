@@ -109,6 +109,32 @@ pub struct PopupConfig {
     /// later). Clamped to `[0, 300]` during normalization. Default: 80 ms,
     /// chosen to stay below the human perception threshold for "instant".
     pub render_block_ms: u16,
+    /// Minimum popup width in display columns. Clamped to `[10, max_width]`
+    /// during normalization. Default 20.
+    pub min_width: u16,
+    /// Maximum popup width in display columns. Clamped to `[min_width, 500]`
+    /// (or to `screen_cols` at render time, whichever is smaller).
+    /// Increase this on wide terminals to give descriptions more room before
+    /// the truncation ellipsis kicks in. Default 60.
+    pub max_width: u16,
+    /// Description box mode (Phase 2). When `"side"`, an adjacent box is
+    /// rendered next to the main popup with the selected suggestion's full
+    /// description, wrapped to multiple lines. `"off"` keeps the legacy
+    /// inline-truncated behavior. Default `"off"`.
+    pub description_box: DescriptionBoxMode,
+    /// Maximum width (display columns) for the description box. Clamped to
+    /// `[20, 200]` during normalization. The actual rendered width is
+    /// `min(this, remaining columns next to main popup)`. Default 60.
+    pub description_box_max_width: u16,
+    /// Maximum number of wrapped lines in the description box. Long
+    /// descriptions are hard-truncated with an ellipsis on the final line.
+    /// Clamped to `[1, 20]`. Default 5.
+    pub description_box_lines: u16,
+    /// Debounce window (ms) for description-box updates on selection change.
+    /// Holding arrow keys causes the box to update at most once per window,
+    /// avoiding flicker. `0` disables debounce. Clamped to `[0, 500]`.
+    /// Default 80, matching `render_block_ms`.
+    pub description_box_debounce_ms: u16,
 }
 
 impl Default for PopupConfig {
@@ -120,8 +146,26 @@ impl Default for PopupConfig {
             spinner: true,
             show_provider_errors: false,
             render_block_ms: 80,
+            min_width: 20,
+            max_width: 60,
+            description_box: DescriptionBoxMode::Off,
+            description_box_max_width: 60,
+            description_box_lines: 5,
+            description_box_debounce_ms: 80,
         }
     }
+}
+
+/// Behavior for the optional adjacent description box.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum DescriptionBoxMode {
+    /// Legacy inline-truncated description in the main popup row only.
+    #[default]
+    Off,
+    /// Adjacent box rendered to the side of (or below) the main popup, with
+    /// wrapped multi-line description for the selected suggestion.
+    Side,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -501,6 +545,12 @@ const MAX_RESULTS_UPPER: usize = 10_000;
 const MAX_RESULTS_DEFAULT: usize = 50;
 const RENDER_BLOCK_MS_UPPER: u16 = 300;
 const FEEDBACK_DISMISS_MS_UPPER: u16 = 10_000;
+const POPUP_MIN_WIDTH_FLOOR: u16 = 10;
+const POPUP_MAX_WIDTH_CEILING: u16 = 500;
+const DESC_BOX_MAX_WIDTH_FLOOR: u16 = 20;
+const DESC_BOX_MAX_WIDTH_CEILING: u16 = 200;
+const DESC_BOX_LINES_CEILING: u16 = 20;
+const DESC_BOX_DEBOUNCE_CEILING: u16 = 500;
 
 impl GhostConfig {
     /// Clamp config values to sane bounds, logging warnings when clamping.
@@ -556,6 +606,72 @@ impl GhostConfig {
                 FEEDBACK_DISMISS_MS_UPPER,
             );
             self.popup.feedback_dismiss_ms = FEEDBACK_DISMISS_MS_UPPER;
+        }
+        // Popup width sanity. min_width is clamped first so the max_width
+        // clamp can rely on a valid lower bound.
+        if self.popup.min_width < POPUP_MIN_WIDTH_FLOOR {
+            tracing::warn!(
+                "popup.min_width={} below floor {}, clamping",
+                self.popup.min_width,
+                POPUP_MIN_WIDTH_FLOOR,
+            );
+            self.popup.min_width = POPUP_MIN_WIDTH_FLOOR;
+        }
+        if self.popup.max_width > POPUP_MAX_WIDTH_CEILING {
+            tracing::warn!(
+                "popup.max_width={} exceeds ceiling {}, clamping",
+                self.popup.max_width,
+                POPUP_MAX_WIDTH_CEILING,
+            );
+            self.popup.max_width = POPUP_MAX_WIDTH_CEILING;
+        }
+        if self.popup.max_width < self.popup.min_width {
+            tracing::warn!(
+                "popup.max_width={} < popup.min_width={}, raising max to min",
+                self.popup.max_width,
+                self.popup.min_width,
+            );
+            self.popup.max_width = self.popup.min_width;
+        }
+        // Description box knobs.
+        if self.popup.description_box_max_width < DESC_BOX_MAX_WIDTH_FLOOR {
+            tracing::warn!(
+                "popup.description_box_max_width={} below floor {}, clamping",
+                self.popup.description_box_max_width,
+                DESC_BOX_MAX_WIDTH_FLOOR,
+            );
+            self.popup.description_box_max_width = DESC_BOX_MAX_WIDTH_FLOOR;
+        }
+        if self.popup.description_box_max_width > DESC_BOX_MAX_WIDTH_CEILING {
+            tracing::warn!(
+                "popup.description_box_max_width={} exceeds ceiling {}, clamping",
+                self.popup.description_box_max_width,
+                DESC_BOX_MAX_WIDTH_CEILING,
+            );
+            self.popup.description_box_max_width = DESC_BOX_MAX_WIDTH_CEILING;
+        }
+        if self.popup.description_box_lines == 0 {
+            tracing::warn!(
+                "popup.description_box_lines=0 is invalid (would render an empty box), \
+                 clamping to default 5",
+            );
+            self.popup.description_box_lines = 5;
+        }
+        if self.popup.description_box_lines > DESC_BOX_LINES_CEILING {
+            tracing::warn!(
+                "popup.description_box_lines={} exceeds ceiling {}, clamping",
+                self.popup.description_box_lines,
+                DESC_BOX_LINES_CEILING,
+            );
+            self.popup.description_box_lines = DESC_BOX_LINES_CEILING;
+        }
+        if self.popup.description_box_debounce_ms > DESC_BOX_DEBOUNCE_CEILING {
+            tracing::warn!(
+                "popup.description_box_debounce_ms={} exceeds ceiling {}, clamping",
+                self.popup.description_box_debounce_ms,
+                DESC_BOX_DEBOUNCE_CEILING,
+            );
+            self.popup.description_box_debounce_ms = DESC_BOX_DEBOUNCE_CEILING;
         }
         // Spec cache sanity. Only apply when eviction is enabled —
         // a config with idle_ttl_secs=0 means the user opted out and
@@ -1144,7 +1260,7 @@ history = false
     }
 
     #[test]
-    fn test_removed_popup_fields_ignored() {
+    fn test_popup_width_fields_parse() {
         let toml_str = r#"
 [popup]
 max_visible = 10
@@ -1153,6 +1269,99 @@ max_width = 80
 "#;
         let config: GhostConfig = toml::from_str(toml_str).unwrap();
         assert_eq!(config.popup.max_visible, 10);
+        assert_eq!(config.popup.min_width, 25);
+        assert_eq!(config.popup.max_width, 80);
+    }
+
+    #[test]
+    fn test_popup_width_defaults() {
+        let cfg = PopupConfig::default();
+        assert_eq!(cfg.min_width, 20);
+        assert_eq!(cfg.max_width, 60);
+    }
+
+    #[test]
+    fn test_popup_max_width_clamps_ceiling() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\nmax_width = 1000").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.max_width, 500);
+    }
+
+    #[test]
+    fn test_popup_min_width_clamps_floor() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\nmin_width = 1").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.min_width, 10);
+    }
+
+    #[test]
+    fn test_popup_max_below_min_raised_to_min() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\nmin_width = 50\nmax_width = 30").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.min_width, 50);
+        assert_eq!(config.popup.max_width, 50);
+    }
+
+    #[test]
+    fn test_description_box_defaults_off() {
+        let cfg = PopupConfig::default();
+        assert_eq!(cfg.description_box, DescriptionBoxMode::Off);
+        assert_eq!(cfg.description_box_max_width, 60);
+        assert_eq!(cfg.description_box_lines, 5);
+        assert_eq!(cfg.description_box_debounce_ms, 80);
+    }
+
+    #[test]
+    fn test_description_box_mode_parses_lowercase() {
+        let toml_str = r#"
+[popup]
+description_box = "side"
+"#;
+        let config: GhostConfig = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.popup.description_box, DescriptionBoxMode::Side);
+    }
+
+    #[test]
+    fn test_description_box_lines_zero_clamps_to_default() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\ndescription_box_lines = 0").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.description_box_lines, 5);
+    }
+
+    #[test]
+    fn test_description_box_lines_clamps_ceiling() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\ndescription_box_lines = 999").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.description_box_lines, 20);
+    }
+
+    #[test]
+    fn test_description_box_max_width_clamps_floor() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\ndescription_box_max_width = 5").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.description_box_max_width, 20);
+    }
+
+    #[test]
+    fn test_description_box_max_width_clamps_ceiling() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\ndescription_box_max_width = 9999").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.description_box_max_width, 200);
+    }
+
+    #[test]
+    fn test_description_box_debounce_ms_clamps_ceiling() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\ndescription_box_debounce_ms = 9999").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.description_box_debounce_ms, 500);
     }
 
     #[test]

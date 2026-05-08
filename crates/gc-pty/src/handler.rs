@@ -2,15 +2,17 @@ use std::collections::HashSet;
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 
 use gc_buffer::{byte_to_char_offset, char_to_byte_offset, parse_command_context};
+use gc_config::DescriptionBoxMode;
 use gc_overlay::types::{
     OverlayState, PopupLayout, DEFAULT_MAX_POPUP_WIDTH, DEFAULT_MAX_VISIBLE,
     DEFAULT_MIN_POPUP_WIDTH,
 };
 use gc_overlay::{
-    clear_popup, popup_additional_scroll_deficit, render_indicator_row, render_popup, FeedbackKind,
-    PopupTheme,
+    clear_detail_box, clear_popup, compute_detail_layout, popup_additional_scroll_deficit,
+    render_detail_box, render_indicator_row, render_popup, DetailLayout, FeedbackKind, PopupTheme,
 };
 use gc_parser::TerminalParser;
 use gc_suggest::{SpecCacheSweep, Suggestion, SuggestionEngine};
@@ -299,6 +301,40 @@ pub struct InputHandler {
     /// painting sync-only results. 0 disables bounded blocking (paint immediately).
     /// Set from `config.popup.render_block_ms` during the builder phase.
     render_block_ms: u64,
+    /// Lower bound for popup width (display columns). Set from
+    /// `config.popup.min_width`. Defaults to [`DEFAULT_MIN_POPUP_WIDTH`].
+    min_popup_width: u16,
+    /// Upper bound for popup width (display columns). Set from
+    /// `config.popup.max_width`. Defaults to [`DEFAULT_MAX_POPUP_WIDTH`].
+    max_popup_width: u16,
+    /// Adjacent description-box mode (off / side). When `Side` an extra
+    /// box is rendered next to the main popup with the selected suggestion's
+    /// full wrapped description.
+    detail_box_mode: DescriptionBoxMode,
+    /// Maximum width (display columns) reserved for the detail box.
+    detail_box_max_width: u16,
+    /// Maximum number of wrapped lines in the detail box.
+    detail_box_lines: u16,
+    /// Debounce window (ms) for detail-box updates on selection change.
+    detail_box_debounce_ms: u64,
+    /// Layout of the most recently rendered detail box. Cleared in lockstep
+    /// with [`Self::last_layout`] so cleanup never leaves ghost characters.
+    last_detail_layout: Option<DetailLayout>,
+    /// Selected index whose description is currently displayed in the
+    /// detail box. Diverges from `overlay.selected` during the debounce
+    /// window; reconciled when the debounce timer fires or on the next
+    /// render past `detail_box_debounce_ms`.
+    displayed_detail_idx: Option<usize>,
+    /// Wall-clock timestamp of the most recently observed selection change.
+    /// Used together with `detail_box_debounce_ms` to coalesce rapid arrow
+    /// navigation into a single detail-box repaint.
+    last_selection_change_at: Option<Instant>,
+    /// Notify fired by a spawned timer when the detail-box debounce window
+    /// has elapsed; the proxy listens to trigger a re-render.
+    detail_redraw_notify: Arc<Notify>,
+    /// Set to `true` while a debounce timer is in flight so we don't spawn
+    /// duplicates while the user is hammering arrow keys.
+    detail_debounce_pending: bool,
     /// Wrapping epoch stamp for overlay-owned bytes. Proxy tasks stamp render
     /// buffers with this value and drop them if shell output advances it before
     /// the buffer reaches stdout.
@@ -356,6 +392,17 @@ impl InputHandler {
             buffer_generation: 0,
             spawned_generation: 0,
             render_block_ms: 80,
+            min_popup_width: DEFAULT_MIN_POPUP_WIDTH,
+            max_popup_width: DEFAULT_MAX_POPUP_WIDTH,
+            detail_box_mode: DescriptionBoxMode::Off,
+            detail_box_max_width: 60,
+            detail_box_lines: 5,
+            detail_box_debounce_ms: 80,
+            last_detail_layout: None,
+            displayed_detail_idx: None,
+            last_selection_change_at: None,
+            detail_redraw_notify: Arc::new(Notify::new()),
+            detail_debounce_pending: false,
             output_epoch: 0,
             overlay_render_generation: 0,
             pending_overlay_render: None,
@@ -397,6 +444,38 @@ impl InputHandler {
     pub fn with_render_block_ms(mut self, ms: u64) -> Self {
         self.render_block_ms = ms;
         self
+    }
+
+    /// Set popup min/max width bounds (display columns). Both values are
+    /// passed verbatim to [`gc_overlay::render_popup`]; further clamping
+    /// against the live `screen_cols` happens inside `compute_layout`.
+    pub fn with_popup_widths(mut self, min_width: u16, max_width: u16) -> Self {
+        self.min_popup_width = min_width;
+        self.max_popup_width = max_width;
+        self
+    }
+
+    /// Configure the adjacent description box. `mode` toggles the feature;
+    /// `max_width`, `lines`, and `debounce_ms` are passed through clamped at
+    /// load time by `gc_config::GhostConfig::normalize`.
+    pub fn with_description_box(
+        mut self,
+        mode: DescriptionBoxMode,
+        max_width: u16,
+        lines: u16,
+        debounce_ms: u16,
+    ) -> Self {
+        self.detail_box_mode = mode;
+        self.detail_box_max_width = max_width;
+        self.detail_box_lines = lines;
+        self.detail_box_debounce_ms = debounce_ms as u64;
+        self
+    }
+
+    /// Notify fired when the detail-box debounce window expires; the proxy
+    /// listens and triggers a re-render.
+    pub fn detail_redraw_notify(&self) -> Arc<Notify> {
+        Arc::clone(&self.detail_redraw_notify)
     }
 
     pub fn with_trigger_chars(mut self, chars: &[char]) -> Self {
@@ -482,6 +561,7 @@ impl InputHandler {
     /// Update runtime-configurable fields without restarting the proxy.
     /// Called by the config file watcher when config.toml changes on disk.
     /// Returns cleanup bytes to write to stdout (e.g. popup clear on auto_trigger toggle).
+    #[allow(clippy::too_many_arguments)]
     pub fn update_config(
         &mut self,
         theme: PopupTheme,
@@ -490,6 +570,12 @@ impl InputHandler {
         max_visible: usize,
         feedback_dismiss_ms: u16,
         auto_trigger: bool,
+        min_popup_width: u16,
+        max_popup_width: u16,
+        detail_box_mode: DescriptionBoxMode,
+        detail_box_max_width: u16,
+        detail_box_lines: u16,
+        detail_box_debounce_ms: u16,
     ) -> Vec<u8> {
         let mut cleanup = Vec::new();
 
@@ -499,15 +585,24 @@ impl InputHandler {
         // debounce timer set trigger_requested but trigger() hasn't fired yet).
         if self.auto_trigger && !auto_trigger {
             if self.visible {
+                let detail_layout = self.last_detail_layout.take();
                 if let Some(layout) = self.last_layout.clone() {
                     self.bump_output_epoch();
                     clear_popup(&mut cleanup, &layout, &self.terminal_profile);
+                    if let Some(ref det) = detail_layout {
+                        clear_detail_box(&mut cleanup, det);
+                    }
+                } else if let Some(det) = detail_layout {
+                    self.bump_output_epoch();
+                    clear_detail_box(&mut cleanup, &det);
                 }
                 self.visible = false;
                 self.suggestions.clear();
                 self.overlay.reset();
                 self.last_layout = None;
                 self.pending_overlay_render = None;
+                self.displayed_detail_idx = None;
+                self.last_selection_change_at = None;
             }
             if let Some(handle) = self.dynamic_task.take() {
                 handle.abort();
@@ -526,6 +621,20 @@ impl InputHandler {
         self.max_visible = max_visible;
         self.feedback_dismiss_ms = feedback_dismiss_ms;
         self.auto_trigger = auto_trigger;
+        self.min_popup_width = min_popup_width;
+        self.max_popup_width = max_popup_width;
+        // Disabling the detail box mid-session: clear any visible box on
+        // the next render by invalidating displayed_detail_idx so the
+        // render path enters its clear-only branch.
+        if self.detail_box_mode != DescriptionBoxMode::Off
+            && detail_box_mode == DescriptionBoxMode::Off
+        {
+            self.displayed_detail_idx = None;
+        }
+        self.detail_box_mode = detail_box_mode;
+        self.detail_box_max_width = detail_box_max_width;
+        self.detail_box_lines = detail_box_lines;
+        self.detail_box_debounce_ms = detail_box_debounce_ms as u64;
 
         cleanup
     }
@@ -619,6 +728,7 @@ impl InputHandler {
                 .is_some()
             {
                 self.last_layout = None;
+                self.last_detail_layout = None;
             }
         }
     }
@@ -657,6 +767,9 @@ impl InputHandler {
         self.suggestions.clear();
         self.overlay.reset();
         self.last_layout = None;
+        self.last_detail_layout = None;
+        self.displayed_detail_idx = None;
+        self.last_selection_change_at = None;
         self.debounce_suppressed = false;
         if let Some(handle) = self.dynamic_task.take() {
             handle.abort();
@@ -1879,7 +1992,7 @@ impl InputHandler {
             screen_rows,
             screen_cols,
             self.max_visible,
-            DEFAULT_MIN_POPUP_WIDTH,
+            self.min_popup_width,
             &self.theme,
             self.overlay_scroll_deficit,
             &feedback,
@@ -1894,6 +2007,11 @@ impl InputHandler {
                 clear_popup(&mut buf, layout, &self.terminal_profile);
             }
         }
+        // Clear the previous detail box in lockstep so it can't survive a
+        // popup repaint as a ghost rectangle.
+        if let Some(ref det) = self.last_detail_layout {
+            clear_detail_box(&mut buf, det);
+        }
 
         let layout = render_popup(
             &mut buf,
@@ -1904,13 +2022,20 @@ impl InputHandler {
             screen_rows,
             screen_cols,
             self.max_visible,
-            DEFAULT_MIN_POPUP_WIDTH,
-            DEFAULT_MAX_POPUP_WIDTH,
+            self.min_popup_width,
+            self.max_popup_width,
             &self.theme,
             self.overlay_scroll_deficit,
             feedback,
             &self.terminal_profile,
         );
+
+        // Detail-box pass: only renders when the feature is on, the main
+        // popup is non-empty, and there's a selected suggestion with a
+        // description.
+        let new_detail_layout =
+            self.maybe_render_detail(&mut buf, &layout, screen_rows, screen_cols);
+
         let _ = stdout.write_all(&buf);
         let _ = stdout.flush();
         self.overlay_render_generation = self.overlay_render_generation.wrapping_add(1);
@@ -1919,6 +2044,166 @@ impl InputHandler {
             token: OverlayRenderToken(self.overlay_render_generation),
             layout,
         });
+        self.last_detail_layout = new_detail_layout;
+    }
+
+    /// Render the adjacent description box if enabled, layout-fitting, and
+    /// the selection has settled past the debounce window. Returns the
+    /// new `last_detail_layout` value.
+    ///
+    /// Within the debounce window, `displayed_detail_idx` is held fixed so
+    /// rapid arrow navigation doesn't visually thrash the box; a one-shot
+    /// timer is spawned to fire `detail_redraw_notify` after the window
+    /// elapses, prompting the proxy to re-render.
+    fn maybe_render_detail(
+        &mut self,
+        buf: &mut Vec<u8>,
+        main_layout: &PopupLayout,
+        screen_rows: u16,
+        screen_cols: u16,
+    ) -> Option<DetailLayout> {
+        if self.detail_box_mode == DescriptionBoxMode::Off {
+            self.displayed_detail_idx = None;
+            return None;
+        }
+        if main_layout.height == 0 || self.suggestions.is_empty() {
+            self.displayed_detail_idx = None;
+            return None;
+        }
+        let Some(selected) = self.overlay.selected else {
+            self.displayed_detail_idx = None;
+            return None;
+        };
+
+        // Track selection changes for debounce purposes.
+        let selection_changed = self.displayed_detail_idx != Some(selected);
+        let now = Instant::now();
+        if selection_changed && self.last_selection_change_at.is_none() {
+            self.last_selection_change_at = Some(now);
+        }
+
+        // Resolve which suggestion's description the box should display.
+        let target_idx = if selection_changed && self.detail_box_debounce_ms > 0 {
+            let elapsed = self
+                .last_selection_change_at
+                .map(|t| now.saturating_duration_since(t).as_millis() as u64)
+                .unwrap_or(u64::MAX);
+            if elapsed < self.detail_box_debounce_ms {
+                // Still within the debounce window — keep showing the prior
+                // detail (or skip rendering on the very first paint when no
+                // prior idx exists). Schedule a wake-up so the next render
+                // happens after the window expires.
+                self.schedule_detail_debounce_wakeup(self.detail_box_debounce_ms - elapsed);
+                self.displayed_detail_idx
+            } else {
+                self.last_selection_change_at = None;
+                Some(selected)
+            }
+        } else {
+            self.last_selection_change_at = None;
+            Some(selected)
+        };
+
+        let idx = target_idx?;
+        let suggestion = self.suggestions.get(idx)?;
+        let desc = suggestion.description.as_deref()?;
+        if desc.is_empty() {
+            return None;
+        }
+
+        let layout = compute_detail_layout(
+            main_layout,
+            screen_rows,
+            screen_cols,
+            self.detail_box_max_width,
+            self.detail_box_lines,
+            self.theme.borders,
+        )?;
+
+        render_detail_box(buf, &layout, desc, &self.theme);
+        self.displayed_detail_idx = Some(idx);
+        Some(layout)
+    }
+
+    /// Spawn a one-shot tokio task that fires `detail_redraw_notify` after
+    /// `delay_ms`. Idempotent — multiple in-flight timers are guarded by
+    /// `detail_debounce_pending`. Silently no-ops outside an async runtime
+    /// (used in unit tests).
+    fn schedule_detail_debounce_wakeup(&mut self, delay_ms: u64) {
+        if self.detail_debounce_pending {
+            return;
+        }
+        let Ok(handle) = tokio::runtime::Handle::try_current() else {
+            return;
+        };
+        self.detail_debounce_pending = true;
+        let notify = Arc::clone(&self.detail_redraw_notify);
+        handle.spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(delay_ms.max(1))).await;
+            notify.notify_one();
+        });
+    }
+
+    /// Called by the proxy from the detail-redraw loop. Resets the in-flight
+    /// debounce flag so a subsequent selection change will spawn a fresh
+    /// timer.
+    pub fn clear_detail_debounce_pending(&mut self) {
+        self.detail_debounce_pending = false;
+    }
+
+    /// Re-render into `buf` in response to a detail-debounce wake-up. No-op
+    /// when no popup is currently visible (the wake-up could correspond to a
+    /// since-dismissed popup).
+    pub fn render_for_detail_redraw(
+        &mut self,
+        parser: &Arc<Mutex<TerminalParser>>,
+        buf: &mut Vec<u8>,
+    ) {
+        if !self.visible || self.suggestions.is_empty() {
+            return;
+        }
+        if self.detail_box_mode == DescriptionBoxMode::Off {
+            return;
+        }
+        // Only re-render if the displayed detail idx actually trails the
+        // current selection — avoids needless repaints when the user
+        // navigated and stopped within the same item.
+        if self.displayed_detail_idx == self.overlay.selected {
+            return;
+        }
+        let (cursor_row, cursor_col, screen_rows, screen_cols) = match parser.lock() {
+            Ok(p) => {
+                let state = p.state();
+                let (cr, cc) = state.cursor_position();
+                let (sr, sc) = state.screen_dimensions();
+                (cr, cc, sr, sc)
+            }
+            Err(e) => {
+                tracing::warn!("parser mutex poisoned in detail redraw: {e}");
+                return;
+            }
+        };
+        // Collect render bytes via the standard pipeline. We intentionally
+        // route through the same render_at the main loop uses so the
+        // generation/cleanup token bookkeeping stays consistent.
+        struct BufWriter<'a>(&'a mut Vec<u8>);
+        impl<'a> Write for BufWriter<'a> {
+            fn write(&mut self, b: &[u8]) -> std::io::Result<usize> {
+                self.0.extend_from_slice(b);
+                Ok(b.len())
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        let mut writer = BufWriter(buf);
+        self.render_at(
+            &mut writer,
+            cursor_row,
+            cursor_col,
+            screen_rows,
+            screen_cols,
+        );
     }
 
     fn current_feedback_kind(&self) -> FeedbackKind {
@@ -2088,16 +2373,29 @@ impl InputHandler {
     }
 
     fn teardown_popup(&mut self, stdout: &mut dyn Write, preserve_trigger_request: bool) {
+        let detail_layout = self.last_detail_layout.take();
         if let Some(layout) = self.last_layout.clone() {
             let mut buf = Vec::new();
             self.bump_output_epoch();
             clear_popup(&mut buf, &layout, &self.terminal_profile);
+            if let Some(ref det) = detail_layout {
+                clear_detail_box(&mut buf, det);
+            }
             let _ = stdout.write_all(&buf);
             let _ = stdout.flush();
             self.overlay_cleanup_generation = self.overlay_cleanup_generation.wrapping_add(1);
             self.pending_overlay_cleanup = Some(PendingOverlayCleanup {
                 token: OverlayCleanupToken(self.overlay_cleanup_generation),
             });
+        } else if let Some(det) = detail_layout {
+            // Defensive: detail layout exists without a main popup layout
+            // (shouldn't happen, but clean it up if it does).
+            let mut buf = Vec::new();
+            self.bump_output_epoch();
+            clear_detail_box(&mut buf, &det);
+            let _ = stdout.write_all(&buf);
+            let _ = stdout.flush();
+            self.pending_overlay_cleanup = None;
         } else {
             self.pending_overlay_cleanup = None;
         }
@@ -2105,6 +2403,8 @@ impl InputHandler {
         self.visible = false;
         self.suggestions.clear();
         self.overlay.reset();
+        self.displayed_detail_idx = None;
+        self.last_selection_change_at = None;
         if !preserve_trigger_request {
             self.trigger_requested = false;
         }
@@ -3000,6 +3300,17 @@ mod tests {
             buffer_generation: 0,
             spawned_generation: 0,
             render_block_ms: 0,
+            min_popup_width: DEFAULT_MIN_POPUP_WIDTH,
+            max_popup_width: DEFAULT_MAX_POPUP_WIDTH,
+            detail_box_mode: DescriptionBoxMode::Off,
+            detail_box_max_width: 60,
+            detail_box_lines: 5,
+            detail_box_debounce_ms: 80,
+            last_detail_layout: None,
+            displayed_detail_idx: None,
+            last_selection_change_at: None,
+            detail_redraw_notify: Arc::new(Notify::new()),
+            detail_debounce_pending: false,
             output_epoch: 0,
             overlay_render_generation: 0,
             pending_overlay_render: None,
@@ -3813,6 +4124,12 @@ mod tests {
             15,
             1200,
             true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
         );
 
         assert_eq!(handler.theme.selected_on, vec![0x1B, b'[', b'1', b'm']);
@@ -3839,6 +4156,12 @@ mod tests {
             10,
             1200,
             true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
         );
 
         assert_eq!(handler.keybindings, new_kb);
@@ -3855,6 +4178,12 @@ mod tests {
             20,
             1200,
             true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
         );
 
         assert_eq!(handler.max_visible, 20);
@@ -3871,6 +4200,12 @@ mod tests {
             10,
             1200,
             true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
         );
 
         assert_eq!(handler.trigger_chars, vec!['@', '#', '!']);
@@ -3923,6 +4258,12 @@ mod tests {
             10,
             1200,
             false,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
         );
 
         assert!(!handler.auto_trigger_enabled());
@@ -3945,6 +4286,12 @@ mod tests {
             10,
             1200,
             false,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
         );
 
         assert!(!handler.visible);
@@ -3973,6 +4320,12 @@ mod tests {
             10,
             1200,
             false,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
         );
 
         assert!(
@@ -4002,6 +4355,12 @@ mod tests {
             10,
             1200,
             true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
         );
 
         assert!(handler.visible);

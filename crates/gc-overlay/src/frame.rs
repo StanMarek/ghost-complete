@@ -18,7 +18,7 @@ use gc_suggest::Suggestion;
 use crate::layout::{DESC_GAP_COLS, GUTTER_COLS, TRAILING_PAD_COLS};
 use crate::render::{kind_icon, sanitize_display_text, translate_match_indices};
 use crate::types::{OverlayState, PopupLayout};
-use crate::util::display_text;
+use crate::util::{display_text, truncate_with_ellipsis};
 
 /// Abstract style role applied to a text span.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -185,17 +185,8 @@ pub fn build_content_row(
             style: SpanStyle::Plain,
         });
 
-        // Truncate description by display columns
-        let mut desc_cols: usize = 0;
-        let mut truncated = String::new();
-        for ch in desc_sanitized.chars() {
-            let w = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
-            if desc_cols + w > max_desc_cols {
-                break;
-            }
-            truncated.push(ch);
-            desc_cols += w;
-        }
+        // Truncate description by display columns; appends `…` on truncation.
+        let (truncated, desc_cols) = truncate_with_ellipsis(&desc_sanitized, max_desc_cols);
 
         let desc_style = if is_selected {
             SpanStyle::Plain

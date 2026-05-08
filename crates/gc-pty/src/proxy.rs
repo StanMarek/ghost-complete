@@ -204,6 +204,13 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             .with_keybindings(keybindings)
             .with_theme(theme)
             .with_popup_config(config.popup.max_visible)
+            .with_popup_widths(config.popup.min_width, config.popup.max_width)
+            .with_description_box(
+                config.popup.description_box,
+                config.popup.description_box_max_width,
+                config.popup.description_box_lines,
+                config.popup.description_box_debounce_ms,
+            )
             .with_feedback_dismiss_ms(config.popup.feedback_dismiss_ms)
             .with_trigger_chars(&config.trigger.auto_chars)
             .with_auto_trigger(config.trigger.auto_trigger)
@@ -283,6 +290,27 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     let handler_for_feedback = Arc::clone(&handler);
     let feedback_handle = tokio::spawn(async move {
         feedback_tick_loop(feedback_notify, handler_for_feedback).await;
+    });
+
+    // Detail-box debounce loop: re-renders the popup after the
+    // description-box debounce window expires so the box catches up to a
+    // settled selection.
+    let detail_notify = {
+        let h = match handler.lock() {
+            Ok(h) => h,
+            Err(e) => {
+                tracing::warn!("handler mutex poisoned during detail-redraw setup: {e}");
+                anyhow::bail!(
+                    "handler mutex poisoned during detail-redraw setup — cannot start proxy"
+                );
+            }
+        };
+        h.detail_redraw_notify()
+    };
+    let handler_for_detail = Arc::clone(&handler);
+    let parser_for_detail = Arc::clone(&parser);
+    let detail_handle = tokio::spawn(async move {
+        detail_redraw_loop(detail_notify, handler_for_detail, parser_for_detail).await;
     });
 
     // Background sweep task for the spec cache. Held in scope for the
@@ -881,6 +909,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     stdout_handle.abort();
     merge_handle.abort();
     feedback_handle.abort();
+    detail_handle.abort();
     if let Some(h) = debounce_handle {
         h.abort();
     }
@@ -1352,6 +1381,45 @@ async fn dynamic_merge_loop(
         if !render_buf.is_empty() {
             if let Err(e) = write_overlay_if_current(&handler, render_ticket, &render_buf) {
                 tracing::debug!("dynamic merge overlay write/flush failed: {e}");
+                break;
+            }
+        }
+    }
+}
+
+/// Background loop that wakes when the detail-box debounce window expires
+/// and re-renders the popup so the box catches up to the settled selection.
+///
+/// Mirrors `dynamic_merge_loop`/`feedback_tick_loop`: notify-driven, locks
+/// the handler briefly to render into a buffer, then writes through the
+/// overlay-ownership ticket so a stale render is dropped instead of
+/// overwriting fresh output.
+async fn detail_redraw_loop(
+    notify: Arc<Notify>,
+    handler: Arc<Mutex<InputHandler>>,
+    parser: Arc<Mutex<TerminalParser>>,
+) {
+    loop {
+        notify.notified().await;
+        let mut buf: Vec<u8> = Vec::new();
+        let render_ticket = {
+            let mut h = match handler.lock() {
+                Ok(h) => h,
+                Err(e) => {
+                    tracing::warn!("detail redraw skipped (handler lock poisoned): {e}");
+                    continue;
+                }
+            };
+            h.clear_detail_debounce_pending();
+            // Only re-render when a popup is actually visible. The notify
+            // could fire for a debounce timer that started on a now-dismissed
+            // popup; render_for_detail_redraw is a no-op in that case.
+            h.render_for_detail_redraw(&parser, &mut buf);
+            h.overlay_write_ticket()
+        };
+        if !buf.is_empty() {
+            if let Err(e) = write_overlay_if_current(&handler, render_ticket, &buf) {
+                tracing::debug!("detail redraw overlay write/flush failed: {e}");
                 break;
             }
         }

@@ -5,12 +5,17 @@
 //! the cursor without destroying scrollback content.
 
 pub mod ansi;
+pub mod detail;
 pub mod frame;
 pub(crate) mod layout;
 mod render;
 pub mod types;
 pub(crate) mod util;
 
+pub use detail::{
+    clear_detail_box, compute_detail_layout, render_detail_box, wrap_description, DetailLayout,
+    DetailPosition,
+};
 pub use frame::{ContentRow, PopupFrame, PopupRow, ScrollbarCell, SpanStyle, StyledSpan};
 pub use render::{
     clear_popup, parse_style, popup_additional_scroll_deficit, render_indicator_row, render_popup,
