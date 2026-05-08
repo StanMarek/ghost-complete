@@ -6,7 +6,22 @@
 use std::path::PathBuf;
 
 use anyhow::{bail, Context, Result};
-use serde::{Deserialize, Serialize};
+use serde::{de, Deserialize, Deserializer, Serialize};
+
+fn deserialize_saturating_u16<'de, D>(deserializer: D) -> std::result::Result<u16, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = i64::deserialize(deserializer)?;
+    if value < 0 {
+        return Err(de::Error::invalid_value(
+            de::Unexpected::Signed(value),
+            &"a nonnegative integer",
+        ));
+    }
+
+    Ok(value.min(i64::from(u16::MAX)) as u16)
+}
 
 /// Returns `~/.config/ghost-complete`, ignoring macOS `~/Library/Application Support/`.
 pub fn config_dir() -> Option<PathBuf> {
@@ -98,6 +113,7 @@ pub struct PopupConfig {
     pub max_visible: usize,
     pub borders: bool,
     /// Empty/Error feedback dismiss delay (ms); 0 disables. Clamped to [0, 10000]. Default 1200.
+    #[serde(deserialize_with = "deserialize_saturating_u16")]
     pub feedback_dismiss_ms: u16,
     /// Animate Loading feedback with a spinner; narrow popups fall back to ellipsis. Default true.
     pub spinner: bool,
@@ -108,14 +124,17 @@ pub struct PopupConfig {
     /// to `0` to disable blocking entirely (paint immediately, merge async
     /// later). Clamped to `[0, 300]` during normalization. Default: 80 ms,
     /// chosen to stay below the human perception threshold for "instant".
+    #[serde(deserialize_with = "deserialize_saturating_u16")]
     pub render_block_ms: u16,
     /// Minimum popup width in display columns. Clamped to `[10, 500]`
     /// during normalization. Default 20.
+    #[serde(deserialize_with = "deserialize_saturating_u16")]
     pub min_width: u16,
     /// Maximum popup width in display columns. Clamped to `[min_width, 500]`
     /// (or to `screen_cols` at render time, whichever is smaller).
     /// Increase this on wide terminals to give descriptions more room before
     /// the truncation ellipsis kicks in. Default 60.
+    #[serde(deserialize_with = "deserialize_saturating_u16")]
     pub max_width: u16,
     /// Description box mode (Phase 2). When `"side"`, an adjacent box is
     /// rendered next to the main popup with the selected suggestion's full
@@ -125,15 +144,18 @@ pub struct PopupConfig {
     /// Maximum width (display columns) for the description box. Clamped to
     /// `[20, 200]` during normalization. The actual rendered width is
     /// `min(this, remaining columns next to main popup)`. Default 60.
+    #[serde(deserialize_with = "deserialize_saturating_u16")]
     pub description_box_max_width: u16,
     /// Maximum number of wrapped lines in the description box. Long
     /// descriptions are hard-truncated with an ellipsis on the final line.
-    /// Clamped to `[1, 20]`. Default 5.
+    /// `0` resets to default 5; values above 20 clamp to 20. Default 5.
+    #[serde(deserialize_with = "deserialize_saturating_u16")]
     pub description_box_lines: u16,
     /// Debounce window (ms) for description-box updates on selection change.
     /// Holding arrow keys causes the box to update at most once per window,
     /// avoiding flicker. `0` disables debounce. Clamped to `[0, 500]`.
     /// Default 80, matching `render_block_ms`.
+    #[serde(deserialize_with = "deserialize_saturating_u16")]
     pub description_box_debounce_ms: u16,
 }
 
@@ -1297,6 +1319,14 @@ max_width = 80
     }
 
     #[test]
+    fn test_popup_max_width_above_u16_still_clamps_ceiling() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\nmax_width = 100000").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.max_width, 500);
+    }
+
+    #[test]
     fn test_popup_min_width_clamps_floor() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\nmin_width = 1").unwrap();
@@ -1308,6 +1338,15 @@ max_width = 80
     fn test_popup_min_width_clamps_ceiling() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\nmin_width = 600").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.min_width, 500);
+        assert_eq!(config.popup.max_width, 500);
+    }
+
+    #[test]
+    fn test_popup_min_width_above_u16_still_clamps_ceiling() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\nmin_width = 100000").unwrap();
         let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
         assert_eq!(config.popup.min_width, 500);
         assert_eq!(config.popup.max_width, 500);
@@ -1358,6 +1397,14 @@ description_box = "side"
     }
 
     #[test]
+    fn test_description_box_lines_above_u16_still_clamps_ceiling() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\ndescription_box_lines = 100000").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.description_box_lines, 20);
+    }
+
+    #[test]
     fn test_description_box_max_width_clamps_floor() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\ndescription_box_max_width = 5").unwrap();
@@ -1374,9 +1421,25 @@ description_box = "side"
     }
 
     #[test]
+    fn test_description_box_max_width_above_u16_still_clamps_ceiling() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\ndescription_box_max_width = 100000").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.description_box_max_width, 200);
+    }
+
+    #[test]
     fn test_description_box_debounce_ms_clamps_ceiling() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\ndescription_box_debounce_ms = 9999").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.description_box_debounce_ms, 500);
+    }
+
+    #[test]
+    fn test_description_box_debounce_ms_above_u16_still_clamps_ceiling() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\ndescription_box_debounce_ms = 100000").unwrap();
         let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
         assert_eq!(config.popup.description_box_debounce_ms, 500);
     }

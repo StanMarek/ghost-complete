@@ -5,11 +5,13 @@
 //! 40+30 split; geometry adapts to terminal width and falls back through a
 //! side → below → hide cascade.
 //!
-//! The detail box is rendered in the same sync window as the main popup —
-//! callers should wrap both `clear_popup`/`render_popup` and the matching
-//! `clear_detail_box`/`render_detail_box` calls inside their existing
-//! `begin_sync`/`end_sync` boundary (or single PreRenderBuffer flush) so
-//! atomicity holds.
+//! Detail bytes are appended to the same render buffer as the main popup, so
+//! pre-render-buffer terminals receive one coalesced flush. On terminals using
+//! DECSET 2026 synchronized rendering, `clear_popup`/`render_popup` currently
+//! own their sync frames; `clear_detail_box`/`render_detail_box` emit no sync
+//! markers of their own. Callers should keep detail clear/render calls in the
+//! same buffer flush as popup updates, or add an explicit outer sync frame if
+//! both surfaces need to share one synchronized-rendering window.
 
 use std::io::Write;
 

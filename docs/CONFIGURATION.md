@@ -38,7 +38,7 @@ Controls the popup appearance.
 | `max_width` | integer | `60` | Upper bound for popup width in display columns. Clamped to `[min_width, 500]` and additionally to the live `screen_cols` at render time. Bump this on wide terminals to give descriptions more room before the truncation ellipsis (`…`) kicks in. |
 | `description_box` | string | `"off"` | Adjacent description box mode. `"off"` keeps the legacy inline-truncated behavior. `"side"` renders a wrapped multi-line box next to the main popup for the selected suggestion when the inline description would be hidden or truncated. The box is capped by `description_box_lines` and available rows; short descriptions that already fit don't trigger it. Falls back to a stacked-below box when there's no horizontal room, and to inline truncation when neither fits. |
 | `description_box_max_width` | integer | `60` | Maximum width (display columns) for the description box. Clamped to `[20, 200]`. The actual rendered width adapts to the columns remaining beside the main popup. |
-| `description_box_lines` | integer | `5` | Maximum wrapped lines in the description box. Long descriptions are hard-truncated with an ellipsis on the final line. Clamped to `[1, 20]`. |
+| `description_box_lines` | integer | `5` | Maximum wrapped lines in the description box. Long descriptions are hard-truncated with an ellipsis on the final line. `0` resets to default `5`; values above `20` are clamped to `20`. |
 | `description_box_debounce_ms` | integer | `80` | Debounce window (ms) for description-box updates on selection change. Holding arrow keys causes the box to update at most once per window, avoiding flicker. Set to `0` to disable debounce. Clamped to `[0, 500]`. |
 
 ```toml
