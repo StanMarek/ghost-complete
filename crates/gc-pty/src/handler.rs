@@ -432,8 +432,9 @@ pub struct InputHandler {
     detail_box_lines: u16,
     /// Debounce window (ms) for detail-box updates on selection change.
     detail_box_debounce_ms: u64,
-    /// Layout of the most recently rendered detail box. Cleared in lockstep
-    /// with [`Self::last_layout`] so cleanup never leaves ghost characters.
+    /// Layout of the most recently rendered detail box. Cleared with popup
+    /// teardown or by detail-only cleanup when the description box is disabled;
+    /// write acknowledgement controls when the committed layout is released.
     last_detail_layout: Option<DetailLayout>,
     /// Selected index whose description is currently displayed in the
     /// detail box. Diverges from `overlay.selected` during the detail update
@@ -954,6 +955,35 @@ impl InputHandler {
     #[doc(hidden)]
     pub fn set_visible(&mut self, visible: bool) {
         self.visible = visible;
+    }
+
+    #[cfg(test)]
+    pub(crate) fn test_with_visible_suggestions(
+        mut self,
+        suggestions: Vec<Suggestion>,
+        selected: usize,
+    ) -> Self {
+        self.suggestions = suggestions;
+        self.visible = true;
+        self.overlay.selected = Some(selected);
+        self.last_layout = Some(PopupLayout {
+            start_row: 5,
+            start_col: 0,
+            width: 20,
+            height: 1,
+            scroll_deficit: 0,
+        });
+        self
+    }
+
+    #[cfg(test)]
+    pub(crate) fn displayed_detail_idx_for_test(&self) -> Option<usize> {
+        self.displayed_detail_idx
+    }
+
+    #[cfg(test)]
+    pub(crate) fn detail_debounce_pending_for_test(&self) -> bool {
+        self.detail_debounce_pending
     }
 
     /// Prime `dynamic_ctx` to the "no context" state that matches an empty
@@ -2208,9 +2238,10 @@ impl InputHandler {
         });
     }
 
-    /// Render the adjacent description box if enabled, layout-fitting, and
-    /// the selection is outside the detail update window. Returns the new
-    /// `last_detail_layout` value.
+    /// Render the adjacent description box when enabled and layout-fitting.
+    /// While the debounce window is active, this may keep rendering the
+    /// previously displayed suggestion's detail instead of the current
+    /// selection. Returns the new `last_detail_layout` value.
     ///
     /// Within the throttle window, `displayed_detail_idx` is held fixed so
     /// rapid arrow navigation doesn't visually thrash the box; a one-shot

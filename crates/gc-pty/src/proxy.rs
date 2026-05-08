@@ -1181,6 +1181,18 @@ pub(crate) fn write_overlay_if_current(
     ticket: OverlayWriteTicket,
     render_buf: &[u8],
 ) -> std::io::Result<OverlayWriteOutcome> {
+    write_overlay_if_current_using(handler, ticket, render_buf, |buf| {
+        let mut stdout = std::io::stdout().lock();
+        stdout.write_all(buf).and_then(|()| stdout.flush())
+    })
+}
+
+fn write_overlay_if_current_using(
+    handler: &Arc<Mutex<InputHandler>>,
+    ticket: OverlayWriteTicket,
+    render_buf: &[u8],
+    write_render_buf: impl FnOnce(&[u8]) -> std::io::Result<()>,
+) -> std::io::Result<OverlayWriteOutcome> {
     if render_buf.is_empty() {
         return Ok(OverlayWriteOutcome::Empty);
     }
@@ -1204,10 +1216,7 @@ pub(crate) fn write_overlay_if_current(
         return Ok(OverlayWriteOutcome::Stale);
     }
 
-    let mut stdout = std::io::stdout().lock();
-    let write_result = stdout.write_all(render_buf).and_then(|()| stdout.flush());
-
-    match write_result {
+    match write_render_buf(render_buf) {
         Ok(()) => {
             h.commit_overlay_write(ticket);
             drop(h);
@@ -1401,29 +1410,49 @@ async fn detail_redraw_loop(
 ) {
     loop {
         notify.notified().await;
-        let mut buf: Vec<u8> = Vec::new();
-        let render_ticket = {
-            let mut h = match handler.lock() {
-                Ok(h) => h,
-                Err(e) => {
-                    tracing::warn!("detail redraw skipped (handler lock poisoned): {e}");
-                    continue;
-                }
-            };
-            h.clear_detail_debounce_pending();
-            // Only re-render when a popup is actually visible. The notify
-            // could fire for a debounce timer that started on a now-dismissed
-            // popup; render_for_detail_redraw is a no-op in that case.
-            h.render_for_detail_redraw(&parser, &mut buf);
-            h.overlay_write_ticket()
-        };
-        if !buf.is_empty() {
-            if let Err(e) = write_overlay_if_current(&handler, render_ticket, &buf) {
-                tracing::debug!("detail redraw overlay write/flush failed: {e}");
-                break;
-            }
+        if let Err(e) = detail_redraw_iteration(&handler, &parser, |buf| {
+            let mut stdout = std::io::stdout().lock();
+            stdout.write_all(buf).and_then(|()| stdout.flush())
+        }) {
+            tracing::debug!("detail redraw overlay write/flush failed: {e}");
+            break;
         }
     }
+}
+
+fn detail_redraw_iteration(
+    handler: &Arc<Mutex<InputHandler>>,
+    parser: &Arc<Mutex<TerminalParser>>,
+    write_render_buf: impl FnOnce(&[u8]) -> std::io::Result<()>,
+) -> std::io::Result<OverlayWriteOutcome> {
+    let mut buf: Vec<u8> = Vec::new();
+    let render_ticket = {
+        let mut h = match handler.lock() {
+            Ok(h) => h,
+            Err(e) => {
+                tracing::warn!("detail redraw skipped (handler lock poisoned): {e}");
+                return Ok(OverlayWriteOutcome::Empty);
+            }
+        };
+        h.clear_detail_debounce_pending();
+        // Only re-render when a popup is actually visible. The notify could
+        // fire for a debounce timer that started on a now-dismissed popup;
+        // render_for_detail_redraw is a no-op in that case.
+        h.render_for_detail_redraw(parser, &mut buf);
+        h.overlay_write_ticket()
+    };
+    write_overlay_if_current_using(handler, render_ticket, &buf, write_render_buf)
+}
+
+#[cfg(test)]
+fn detail_redraw_iteration_to_writer(
+    handler: &Arc<Mutex<InputHandler>>,
+    parser: &Arc<Mutex<TerminalParser>>,
+    writer: &mut dyn Write,
+) -> std::io::Result<OverlayWriteOutcome> {
+    detail_redraw_iteration(handler, parser, |buf| {
+        writer.write_all(buf).and_then(|()| writer.flush())
+    })
 }
 
 async fn feedback_tick_loop(notify: Arc<Notify>, handler: Arc<Mutex<InputHandler>>) {
@@ -1509,6 +1538,8 @@ fn dispatch_cpr_response(state: &mut gc_parser::TerminalState, row: u16, col: u1
 mod tests {
     use super::*;
     use crate::input::KeyEvent;
+    use gc_config::DescriptionBoxMode;
+    use gc_suggest::{Suggestion, SuggestionKind, SuggestionSource};
     use gc_terminal::Terminal;
 
     #[test]
@@ -1803,11 +1834,29 @@ mod tests {
     }
 
     fn parser_with_buffer(buffer: &str) -> Arc<Mutex<TerminalParser>> {
-        let parser = Arc::new(Mutex::new(TerminalParser::new(24, 80)));
+        parser_with_buffer_and_size(buffer, 24, 80)
+    }
+
+    fn parser_with_buffer_and_size(
+        buffer: &str,
+        rows: u16,
+        cols: u16,
+    ) -> Arc<Mutex<TerminalParser>> {
+        let parser = Arc::new(Mutex::new(TerminalParser::new(rows, cols)));
         let cursor = buffer.chars().count();
         let osc = format!("\x1b]7770;{cursor};{buffer}\x07");
         parser.lock().unwrap().process_bytes(osc.as_bytes());
         parser
+    }
+
+    fn detail_suggestion(text: &str, description: &str) -> Suggestion {
+        Suggestion {
+            text: text.to_string(),
+            description: Some(description.to_string()),
+            kind: SuggestionKind::Command,
+            source: SuggestionSource::Spec,
+            ..Default::default()
+        }
     }
 
     fn write_custom_only_spec(dir: &std::path::Path) {
@@ -2129,6 +2178,90 @@ mod tests {
         assert!(
             !handler.lock().expect("handler").has_overlay_ownership(),
             "shell-output cleanup should have superseded the stale teardown cleanup"
+        );
+    }
+
+    #[tokio::test]
+    async fn detail_redraw_iteration_clears_pending_and_commits_settled_detail() {
+        let handler = InputHandler::new_with_embedded(
+            &[std::path::PathBuf::from(".")],
+            TerminalProfile::for_ghostty(),
+            false,
+        )
+        .expect("handler")
+        .with_popup_widths(20, 40)
+        .with_description_box(DescriptionBoxMode::Side, 60, 5, 5)
+        .test_with_visible_suggestions(
+            vec![
+                detail_suggestion(
+                    "alpha",
+                    "ALPHADETAIL alpha beta gamma delta epsilon zeta eta theta iota ALPHADONE",
+                ),
+                detail_suggestion(
+                    "bravo",
+                    "BRAVODETAIL alpha beta gamma delta epsilon zeta eta theta iota BRAVODONE",
+                ),
+            ],
+            0,
+        );
+        let handler = Arc::new(Mutex::new(handler));
+        let parser = parser_with_buffer_and_size("detail-redraw-test ", 24, 120);
+
+        {
+            let mut h = handler.lock().expect("handler");
+            let mut first = Vec::new();
+            h.render_for_detail_redraw(&parser, &mut first);
+            let first_output = String::from_utf8_lossy(&first);
+            assert!(
+                first_output.contains("ALPHADETAIL"),
+                "setup should render the initial detail: {first_output:?}"
+            );
+            let ticket = h.overlay_write_ticket();
+            h.commit_overlay_write(ticket);
+            assert_eq!(h.displayed_detail_idx_for_test(), Some(0));
+        }
+
+        let notify = handler.lock().expect("handler").detail_redraw_notify();
+        let notified = notify.notified();
+        {
+            let mut h = handler.lock().expect("handler");
+            let mut immediate = Vec::new();
+            let forward = h.process_key(&KeyEvent::ArrowDown, &parser, &mut immediate);
+            assert!(forward.is_empty());
+            let immediate_output = String::from_utf8_lossy(&immediate);
+            assert!(
+                immediate_output.contains("ALPHADETAIL"),
+                "in-window render should keep showing the previous detail: {immediate_output:?}"
+            );
+            assert!(
+                !immediate_output.contains("BRAVODONE"),
+                "in-window render must not show the settled detail yet: {immediate_output:?}"
+            );
+            assert!(h.detail_debounce_pending_for_test());
+            let ticket = h.overlay_write_ticket();
+            h.commit_overlay_write(ticket);
+        }
+
+        tokio::time::timeout(std::time::Duration::from_millis(200), notified)
+            .await
+            .expect("detail debounce timer should notify the proxy loop");
+
+        let mut written = Vec::new();
+        let outcome = detail_redraw_iteration_to_writer(&handler, &parser, &mut written)
+            .expect("detail redraw write should succeed");
+        let written_output = String::from_utf8_lossy(&written);
+        assert_eq!(outcome, OverlayWriteOutcome::Written);
+        assert!(
+            written_output.contains("BRAVODONE"),
+            "proxy redraw iteration should write the settled detail: {written_output:?}"
+        );
+
+        let h = handler.lock().expect("handler");
+        assert!(!h.detail_debounce_pending_for_test());
+        assert_eq!(h.displayed_detail_idx_for_test(), Some(1));
+        assert!(
+            h.overlay_write_ticket().render_token.is_none(),
+            "overlay render token should be committed by the redraw write"
         );
     }
 
