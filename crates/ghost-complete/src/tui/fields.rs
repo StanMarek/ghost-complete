@@ -153,7 +153,7 @@ pub fn all_fields() -> Vec<FieldMeta> {
             field_type: FieldType::Enum(&["off", "side"]),
             default: "off",
             reload: ReloadBehavior::Live,
-            help: "Adjacent description box mode: 'off' = inline truncation only, 'side' = wrapped multi-line box next to the popup",
+            help: "Adjacent description box: 'off' = inline truncation only, 'side' = wrapped box beside or below the popup when the inline description is truncated",
         },
         FieldMeta {
             section: "popup",

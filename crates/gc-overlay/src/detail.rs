@@ -22,15 +22,22 @@ use crate::render::{sanitize_display_text, PopupTheme};
 use crate::types::PopupLayout;
 use crate::util::{display_text, TRUNCATION_ELLIPSIS};
 
-/// Minimum useful detail-box content width. Narrower boxes are too cramped to
-/// be worth the screen real estate; geometry falls through to the next tier
-/// of the side/below/hide cascade.
+/// Minimum available space used to choose useful detail-box placement tiers.
+/// The final layout width can still be clamped by `max_width` or screen edges.
 pub const MIN_USEFUL_WIDTH: u16 = 30;
 
-/// Returns `true` when the suggestion's description would be truncated in
-/// its inline row given the supplied popup geometry — i.e. the description
-/// can't fit alongside the suggestion text within the main popup's
-/// per-row description budget.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum InlineDescriptionFit {
+    Missing,
+    HiddenNoRoom,
+    Fits,
+    Truncated,
+}
+
+/// Returns `true` when the suggestion's description would be omitted or
+/// truncated in its inline row given the supplied popup geometry — i.e. the
+/// description can't fit alongside the suggestion text within the main
+/// popup's per-row description budget.
 ///
 /// Used by the proxy as a gate for the optional adjacent description box:
 /// when the inline description fits cleanly, there is no useful information
@@ -50,14 +57,36 @@ pub fn description_overflows_main_popup(
     borders: bool,
     screen_rows: u16,
 ) -> bool {
+    matches!(
+        inline_description_fit(
+            suggestion,
+            popup_layout,
+            total_suggestions,
+            max_visible,
+            borders,
+            screen_rows
+        ),
+        InlineDescriptionFit::HiddenNoRoom | InlineDescriptionFit::Truncated
+    )
+}
+
+fn inline_description_fit(
+    suggestion: &Suggestion,
+    popup_layout: &PopupLayout,
+    total_suggestions: usize,
+    max_visible: usize,
+    borders: bool,
+    screen_rows: u16,
+) -> InlineDescriptionFit {
     let Some(desc) = suggestion.description.as_deref() else {
-        return false;
+        return InlineDescriptionFit::Missing;
     };
+    let desc = sanitize_display_text(desc);
     if desc.is_empty() {
-        return false;
+        return InlineDescriptionFit::Missing;
     }
     if popup_layout.width == 0 {
-        return false;
+        return InlineDescriptionFit::Missing;
     }
     let border_pad: u16 = if borders { 2 } else { 0 };
     // Match `render::render_popup`'s `effective_max` formula exactly: the
@@ -91,8 +120,16 @@ pub fn description_overflows_main_popup(
         .saturating_sub(gutter_text_len)
         .saturating_sub(DESC_GAP_COLS)
         .saturating_sub(TRAILING_PAD_COLS);
-    let desc_cols = UnicodeWidthStr::width(desc);
-    desc_cols > max_desc_cols
+    if max_desc_cols <= 2 {
+        return InlineDescriptionFit::HiddenNoRoom;
+    }
+
+    let desc_cols = UnicodeWidthStr::width(desc.as_str());
+    if desc_cols > max_desc_cols {
+        InlineDescriptionFit::Truncated
+    } else {
+        InlineDescriptionFit::Fits
+    }
 }
 
 /// Where the detail box landed relative to the main popup.
@@ -137,10 +174,10 @@ pub fn compute_detail_layout(
         return None;
     }
     let border_pad: u16 = if borders { 2 } else { 0 };
-    let needed_height = lines + border_pad;
-    if needed_height == 0 {
-        return None;
-    }
+    let needed_height = match lines.checked_add(border_pad) {
+        Some(height) if height > border_pad => height,
+        _ => return None,
+    };
 
     // --- Tier 1: side-right ---
     let main_end_col = main.start_col.saturating_add(main.width);
@@ -259,7 +296,7 @@ pub fn wrap_description(text: &str, max_width: usize, max_lines: usize) -> Vec<S
                 let w = UnicodeWidthChar::width(ch).unwrap_or(0);
                 if current_cols + w > max_width {
                     if current.is_empty() {
-                        // Single zero/over-wide char — drop and continue so
+                        // Single over-wide char: drop the rest of this word so
                         // we don't infinite-loop on pathological data.
                         break;
                     }
@@ -511,6 +548,16 @@ mod tests {
     }
 
     #[test]
+    fn overflow_check_tiny_inline_budget_needs_detail_box() {
+        // Matches render::write_description: max_desc_cols <= 2 suppresses
+        // inline descriptions entirely, so even a two-column description needs
+        // the side/below detail box to remain visible.
+        let s = make_suggestion("cmd", Some("ok"));
+        let pl = layout(0, 0, 12, 10);
+        assert!(description_overflows_main_popup(&s, &pl, 1, 10, false, 24));
+    }
+
+    #[test]
     fn overflow_check_borders_reduce_budget() {
         // 30-col popup, text="cmd" (3), description="0123456789012345678901234"
         // Without borders: budget = 30-4-3-2-1 = 20. desc=25 → overflow.
@@ -612,9 +659,15 @@ mod tests {
     }
 
     #[test]
+    fn detail_rejects_line_count_overflow_with_borders() {
+        let main = layout(0, 0, 60, 10);
+        assert!(compute_detail_layout(&main, 24, 200, 60, u16::MAX, true).is_none());
+    }
+
+    #[test]
     fn detail_below_requires_min_useful_width() {
-        // Main popup of width 20, narrow terminal → "below" position with main
-        // width 20 < MIN_USEFUL_WIDTH 30 should fall through to None.
+        // Main popup width 20 is too narrow for side placement, but below can
+        // expand to MIN_USEFUL_WIDTH and fit.
         let main = layout(0, 0, 20, 5);
         // screen_cols = 50: cols_to_right = 50-20-1=29 < 30 (no side-right);
         // start_col=0, no side-left; below width = max(20, 30)=30 fits.

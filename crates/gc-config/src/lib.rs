@@ -109,7 +109,7 @@ pub struct PopupConfig {
     /// later). Clamped to `[0, 300]` during normalization. Default: 80 ms,
     /// chosen to stay below the human perception threshold for "instant".
     pub render_block_ms: u16,
-    /// Minimum popup width in display columns. Clamped to `[10, max_width]`
+    /// Minimum popup width in display columns. Clamped to `[10, 500]`
     /// during normalization. Default 20.
     pub min_width: u16,
     /// Maximum popup width in display columns. Clamped to `[min_width, 500]`
@@ -616,6 +616,14 @@ impl GhostConfig {
                 POPUP_MIN_WIDTH_FLOOR,
             );
             self.popup.min_width = POPUP_MIN_WIDTH_FLOOR;
+        }
+        if self.popup.min_width > POPUP_MAX_WIDTH_CEILING {
+            tracing::warn!(
+                "popup.min_width={} exceeds ceiling {}, clamping",
+                self.popup.min_width,
+                POPUP_MAX_WIDTH_CEILING,
+            );
+            self.popup.min_width = POPUP_MAX_WIDTH_CEILING;
         }
         if self.popup.max_width > POPUP_MAX_WIDTH_CEILING {
             tracing::warn!(
@@ -1294,6 +1302,15 @@ max_width = 80
         writeln!(tmp, "[popup]\nmin_width = 1").unwrap();
         let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
         assert_eq!(config.popup.min_width, 10);
+    }
+
+    #[test]
+    fn test_popup_min_width_clamps_ceiling() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        writeln!(tmp, "[popup]\nmin_width = 600").unwrap();
+        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        assert_eq!(config.popup.min_width, 500);
+        assert_eq!(config.popup.max_width, 500);
     }
 
     #[test]

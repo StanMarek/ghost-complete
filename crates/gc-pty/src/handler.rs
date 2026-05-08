@@ -322,13 +322,14 @@ pub struct InputHandler {
     /// with [`Self::last_layout`] so cleanup never leaves ghost characters.
     last_detail_layout: Option<DetailLayout>,
     /// Selected index whose description is currently displayed in the
-    /// detail box. Diverges from `overlay.selected` during the debounce
-    /// window; reconciled when the debounce timer fires or on the next
-    /// render past `detail_box_debounce_ms`.
+    /// detail box. Diverges from `overlay.selected` during the detail update
+    /// window; reconciled when the timer fires or on the next render past
+    /// `detail_box_debounce_ms`.
     displayed_detail_idx: Option<usize>,
-    /// Wall-clock timestamp of the most recently observed selection change.
-    /// Used together with `detail_box_debounce_ms` to coalesce rapid arrow
-    /// navigation into a single detail-box repaint.
+    /// Wall-clock timestamp of the first selection change in the current
+    /// detail update window. Used together with `detail_box_debounce_ms` to
+    /// throttle rapid arrow navigation into at most one detail repaint per
+    /// window.
     last_selection_change_at: Option<Instant>,
     /// Notify fired by a spawned timer when the detail-box debounce window
     /// has elapsed; the proxy listens to trigger a re-render.
@@ -624,13 +625,16 @@ impl InputHandler {
         self.auto_trigger = auto_trigger;
         self.min_popup_width = min_popup_width;
         self.max_popup_width = max_popup_width;
-        // Disabling the detail box mid-session: clear any visible box on
-        // the next render by invalidating displayed_detail_idx so the
-        // render path enters its clear-only branch.
         if self.detail_box_mode != DescriptionBoxMode::Off
             && detail_box_mode == DescriptionBoxMode::Off
         {
+            if let Some(det) = self.last_detail_layout.take() {
+                self.bump_output_epoch();
+                clear_detail_box(&mut cleanup, &det);
+            }
             self.displayed_detail_idx = None;
+            self.last_selection_change_at = None;
+            self.detail_debounce_pending = false;
         }
         self.detail_box_mode = detail_box_mode;
         self.detail_box_max_width = detail_box_max_width;
@@ -2003,15 +2007,16 @@ impl InputHandler {
             && !matches!(&feedback, FeedbackKind::None)
             && self.overlay_scroll_deficit > 0;
 
-        if additional_scroll == 0 && !feedback_only_repaint_after_scroll {
+        let can_clear_old = additional_scroll == 0 && !feedback_only_repaint_after_scroll;
+        if can_clear_old {
             if let Some(ref layout) = self.last_layout {
                 clear_popup(&mut buf, layout, &self.terminal_profile);
             }
-        }
-        // Clear the previous detail box in lockstep so it can't survive a
-        // popup repaint as a ghost rectangle.
-        if let Some(ref det) = self.last_detail_layout {
-            clear_detail_box(&mut buf, det);
+            // Clear the previous detail box in lockstep so it can't survive a
+            // popup repaint as a ghost rectangle.
+            if let Some(ref det) = self.last_detail_layout {
+                clear_detail_box(&mut buf, det);
+            }
         }
 
         let layout = render_popup(
@@ -2049,10 +2054,10 @@ impl InputHandler {
     }
 
     /// Render the adjacent description box if enabled, layout-fitting, and
-    /// the selection has settled past the debounce window. Returns the
-    /// new `last_detail_layout` value.
+    /// the selection is outside the detail update window. Returns the new
+    /// `last_detail_layout` value.
     ///
-    /// Within the debounce window, `displayed_detail_idx` is held fixed so
+    /// Within the throttle window, `displayed_detail_idx` is held fixed so
     /// rapid arrow navigation doesn't visually thrash the box; a one-shot
     /// timer is spawned to fire `detail_redraw_notify` after the window
     /// elapses, prompting the proxy to re-render.
@@ -2076,7 +2081,7 @@ impl InputHandler {
             return None;
         };
 
-        // Track selection changes for debounce purposes.
+        // Track selection changes for the detail-update throttle window.
         let selection_changed = self.displayed_detail_idx != Some(selected);
         let now = Instant::now();
         if selection_changed && self.last_selection_change_at.is_none() {
@@ -2106,9 +2111,23 @@ impl InputHandler {
         };
 
         let idx = target_idx?;
-        let suggestion = self.suggestions.get(idx)?;
-        let desc = suggestion.description.as_deref()?;
+        let target_is_current_selection = idx == selected;
+        let Some(suggestion) = self.suggestions.get(idx) else {
+            if target_is_current_selection {
+                self.displayed_detail_idx = Some(idx);
+            }
+            return None;
+        };
+        let Some(desc) = suggestion.description.as_deref() else {
+            if target_is_current_selection {
+                self.displayed_detail_idx = Some(idx);
+            }
+            return None;
+        };
         if desc.is_empty() {
+            if target_is_current_selection {
+                self.displayed_detail_idx = Some(idx);
+            }
             return None;
         }
 
@@ -2128,14 +2147,19 @@ impl InputHandler {
             return None;
         }
 
-        let layout = compute_detail_layout(
+        let Some(layout) = compute_detail_layout(
             main_layout,
             screen_rows,
             screen_cols,
             self.detail_box_max_width,
             self.detail_box_lines,
             self.theme.borders,
-        )?;
+        ) else {
+            if target_is_current_selection {
+                self.displayed_detail_idx = Some(idx);
+            }
+            return None;
+        };
 
         render_detail_box(buf, &layout, desc, &self.theme);
         self.displayed_detail_idx = Some(idx);
@@ -3362,6 +3386,16 @@ mod tests {
             .collect()
     }
 
+    fn command_suggestion(text: &str, description: Option<&str>) -> Suggestion {
+        Suggestion {
+            text: text.to_string(),
+            description: description.map(str::to_string),
+            kind: SuggestionKind::Command,
+            source: SuggestionSource::Spec,
+            ..Default::default()
+        }
+    }
+
     /// Test builder: visible handler with a single selected suggestion.
     fn make_selected_handler(suggestion: Suggestion) -> InputHandler {
         let mut h = make_visible_handler(vec![suggestion]);
@@ -4228,6 +4262,79 @@ mod tests {
         assert_eq!(handler.trigger_chars, vec!['@', '#', '!']);
     }
 
+    #[test]
+    fn test_update_config_changes_popup_and_detail_knobs() {
+        let mut handler = make_handler();
+
+        handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/'],
+            12,
+            1200,
+            true,
+            35,
+            120,
+            DescriptionBoxMode::Side,
+            90,
+            7,
+            0,
+        );
+
+        assert_eq!(handler.min_popup_width, 35);
+        assert_eq!(handler.max_popup_width, 120);
+        assert_eq!(handler.detail_box_mode, DescriptionBoxMode::Side);
+        assert_eq!(handler.detail_box_max_width, 90);
+        assert_eq!(handler.detail_box_lines, 7);
+        assert_eq!(handler.detail_box_debounce_ms, 0);
+    }
+
+    #[test]
+    fn test_update_config_clears_visible_detail_box_when_disabled() {
+        let mut handler = make_selected_handler(command_suggestion(
+            "checkout",
+            Some("long description already visible in the detail box"),
+        ))
+        .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.last_detail_layout = Some(DetailLayout {
+            start_row: 5,
+            start_col: 24,
+            width: 30,
+            height: 3,
+            position: gc_overlay::DetailPosition::SideRight,
+        });
+        handler.displayed_detail_idx = Some(0);
+        handler.last_selection_change_at = Some(Instant::now());
+        handler.detail_debounce_pending = true;
+        let before_epoch = handler.output_epoch();
+
+        let cleanup = handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/'],
+            10,
+            1200,
+            true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
+        );
+
+        let output = String::from_utf8_lossy(&cleanup);
+        assert!(
+            output.contains("\x1b[6;25H"),
+            "disabling the detail box must clear its old rectangle: {output:?}"
+        );
+        assert!(handler.last_detail_layout.is_none());
+        assert_eq!(handler.displayed_detail_idx, None);
+        assert_eq!(handler.last_selection_change_at, None);
+        assert!(!handler.detail_debounce_pending);
+        assert!(handler.output_epoch() > before_epoch);
+    }
+
     // --- auto_trigger tests ---
 
     #[test]
@@ -4551,6 +4658,157 @@ mod tests {
             output.contains("\x1b[24;1H"),
             "new render should still scroll from the bottom row: {output:?}"
         );
+    }
+
+    #[test]
+    fn test_render_at_skips_old_detail_clear_when_new_render_scrolls() {
+        let mut handler = make_visible_handler(numbered_suggestions(8));
+        handler.overlay_scroll_deficit = 4;
+        handler.last_layout = Some(PopupLayout {
+            start_row: 19,
+            start_col: 70,
+            width: 10,
+            height: 2,
+            scroll_deficit: 4,
+        });
+        handler.last_detail_layout = Some(DetailLayout {
+            start_row: 19,
+            start_col: 30,
+            width: 10,
+            height: 2,
+            position: gc_overlay::DetailPosition::SideLeft,
+        });
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 22, 0, 24, 80);
+
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            !output.contains("\x1b[20;31H"),
+            "stale clear at old detail coordinates must be skipped before viewport scroll: {output:?}"
+        );
+        assert!(
+            output.contains("\x1b[24;1H"),
+            "new render should still scroll from the bottom row: {output:?}"
+        );
+    }
+
+    #[test]
+    fn test_render_at_renders_side_description_box_for_long_description() {
+        let description = "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu";
+        let mut handler = make_selected_handler(command_suggestion("checkout", Some(description)))
+            .with_popup_widths(20, 40)
+            .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 5, 0, 24, 120);
+
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains("lambda mu"),
+            "long description should be emitted in the detail box: {output:?}"
+        );
+        let layout = handler
+            .last_detail_layout
+            .as_ref()
+            .expect("detail layout should be retained");
+        assert_eq!(layout.position, gc_overlay::DetailPosition::SideRight);
+    }
+
+    #[test]
+    fn test_render_at_description_box_off_skips_detail_box() {
+        let description = "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu";
+        let mut handler = make_selected_handler(command_suggestion("checkout", Some(description)))
+            .with_popup_widths(20, 40)
+            .with_description_box(DescriptionBoxMode::Off, 60, 5, 0);
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 5, 0, 24, 120);
+
+        assert!(handler.last_detail_layout.is_none());
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            !output.contains("lambda mu"),
+            "off mode must not emit detail-only wrapped text: {output:?}"
+        );
+    }
+
+    #[test]
+    fn test_render_at_skips_detail_box_when_inline_description_fits() {
+        let mut handler = make_selected_handler(command_suggestion("checkout", Some("short")))
+            .with_popup_widths(20, 80)
+            .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 5, 0, 24, 120);
+
+        assert!(handler.last_detail_layout.is_none());
+        assert_eq!(handler.displayed_detail_idx, Some(0));
+    }
+
+    #[test]
+    fn test_render_at_clears_previous_detail_when_selection_no_longer_needs_box() {
+        let mut handler = make_selected_handler(command_suggestion("checkout", Some("short")))
+            .with_popup_widths(20, 80)
+            .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.last_detail_layout = Some(DetailLayout {
+            start_row: 5,
+            start_col: 50,
+            width: 20,
+            height: 2,
+            position: gc_overlay::DetailPosition::SideRight,
+        });
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 5, 0, 24, 120);
+
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains("\x1b[6;51H"),
+            "old detail layout should be cleared when no new detail is needed: {output:?}"
+        );
+        assert!(handler.last_detail_layout.is_none());
+    }
+
+    #[test]
+    fn test_settled_selection_without_description_does_not_repaint_old_detail() {
+        let old_desc = format!("{}UNIQUEDETAILMARKER", "alpha ".repeat(20));
+        let mut handler = make_visible_handler(vec![
+            command_suggestion("old", Some(&old_desc)),
+            command_suggestion("new", None),
+        ])
+        .with_popup_widths(20, 40)
+        .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.overlay.selected = Some(0);
+
+        let mut first = Vec::new();
+        handler.render_at(&mut first, 5, 0, 24, 120);
+        assert!(
+            String::from_utf8_lossy(&first).contains("UNIQUEDETAILMARKER"),
+            "setup must render the first item's detail text"
+        );
+        assert_eq!(handler.displayed_detail_idx, Some(0));
+
+        handler.detail_box_debounce_ms = 80;
+        handler.overlay.selected = Some(1);
+        handler.last_selection_change_at =
+            Some(Instant::now() - std::time::Duration::from_millis(100));
+        let mut settled = Vec::new();
+        handler.render_at(&mut settled, 5, 0, 24, 120);
+        assert!(
+            !String::from_utf8_lossy(&settled).contains("UNIQUEDETAILMARKER"),
+            "settled no-description selection must not render old detail text"
+        );
+
+        let mut repaint = Vec::new();
+        handler.render_at(&mut repaint, 5, 0, 24, 120);
+
+        let output = String::from_utf8_lossy(&repaint);
+        assert!(
+            !output.contains("UNIQUEDETAILMARKER"),
+            "later repaint must not debounce back to the previous detail text: {output:?}"
+        );
+        assert_eq!(handler.displayed_detail_idx, Some(1));
     }
 
     #[test]
