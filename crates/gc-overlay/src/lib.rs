@@ -13,8 +13,8 @@ pub mod types;
 pub(crate) mod util;
 
 pub use detail::{
-    clear_detail_box, compute_detail_layout, render_detail_box, wrap_description, DetailLayout,
-    DetailPosition,
+    clear_detail_box, compute_detail_layout, description_overflows_main_popup, render_detail_box,
+    wrap_description, DetailLayout, DetailPosition,
 };
 pub use frame::{ContentRow, PopupFrame, PopupRow, ScrollbarCell, SpanStyle, StyledSpan};
 pub use render::{

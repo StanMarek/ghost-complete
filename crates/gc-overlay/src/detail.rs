@@ -13,17 +13,68 @@
 
 use std::io::Write;
 
+use gc_suggest::Suggestion;
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 use crate::ansi;
+use crate::layout::{DESC_GAP_COLS, GUTTER_COLS, TRAILING_PAD_COLS};
 use crate::render::{sanitize_display_text, PopupTheme};
 use crate::types::PopupLayout;
-use crate::util::TRUNCATION_ELLIPSIS;
+use crate::util::{display_text, TRUNCATION_ELLIPSIS};
 
 /// Minimum useful detail-box content width. Narrower boxes are too cramped to
 /// be worth the screen real estate; geometry falls through to the next tier
 /// of the side/below/hide cascade.
 pub const MIN_USEFUL_WIDTH: u16 = 30;
+
+/// Returns `true` when the suggestion's description would be truncated in
+/// its inline row given the supplied popup geometry — i.e. the description
+/// can't fit alongside the suggestion text within the main popup's
+/// per-row description budget.
+///
+/// Used by the proxy as a gate for the optional adjacent description box:
+/// when the inline description fits cleanly, there is no useful information
+/// for the side box to add, so we skip rendering it. Mirrors the budget
+/// computation in `render::write_description` exactly so the gate cannot
+/// disagree with the inline truncation logic.
+///
+/// Returns `false` when the suggestion has no description, the description
+/// is empty, or the popup is zero-sized (no inline truncation can happen).
+pub fn description_overflows_main_popup(
+    suggestion: &Suggestion,
+    popup_layout: &PopupLayout,
+    total_suggestions: usize,
+    max_visible: usize,
+    borders: bool,
+) -> bool {
+    let Some(desc) = suggestion.description.as_deref() else {
+        return false;
+    };
+    if desc.is_empty() {
+        return false;
+    }
+    if popup_layout.width == 0 {
+        return false;
+    }
+    let border_pad = if borders { 2 } else { 0 };
+    let total_width = popup_layout.width as usize;
+    let content_width = total_width.saturating_sub(border_pad);
+    let needs_scrollbar = total_suggestions > max_visible.max(1);
+    let item_width = if needs_scrollbar {
+        content_width.saturating_sub(1)
+    } else {
+        content_width
+    };
+    let (dt, _) = display_text(suggestion);
+    let text_cols = UnicodeWidthStr::width(dt);
+    let gutter_text_len = GUTTER_COLS + text_cols;
+    let max_desc_cols = item_width
+        .saturating_sub(gutter_text_len)
+        .saturating_sub(DESC_GAP_COLS)
+        .saturating_sub(TRAILING_PAD_COLS);
+    let desc_cols = UnicodeWidthStr::width(desc);
+    desc_cols > max_desc_cols
+}
 
 /// Where the detail box landed relative to the main popup.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -349,6 +400,99 @@ mod tests {
             height,
             scroll_deficit: 0,
         }
+    }
+
+    fn make_suggestion(text: &str, desc: Option<&str>) -> Suggestion {
+        Suggestion {
+            text: text.to_string(),
+            description: desc.map(String::from),
+            ..Default::default()
+        }
+    }
+
+    // --- description_overflows_main_popup ---
+
+    #[test]
+    fn overflow_check_short_description_fits() {
+        // 60-col popup, "git" (3 chars) + 2-col gap + "current branch" (14) + 1-col pad + 4-col gutter = 24 cols.
+        // Plenty of room — no overflow.
+        let s = make_suggestion("git", Some("current branch"));
+        let pl = layout(0, 0, 60, 10);
+        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false));
+    }
+
+    #[test]
+    fn overflow_check_long_description_truncates() {
+        // Tight 30-col popup with a long description — must overflow.
+        let s = make_suggestion(
+            "checkout",
+            Some("Switch branches or restore working tree files with this very long description"),
+        );
+        let pl = layout(0, 0, 30, 10);
+        assert!(description_overflows_main_popup(&s, &pl, 1, 10, false));
+    }
+
+    #[test]
+    fn overflow_check_no_description_returns_false() {
+        let s = make_suggestion("git", None);
+        let pl = layout(0, 0, 60, 10);
+        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false));
+    }
+
+    #[test]
+    fn overflow_check_empty_description_returns_false() {
+        let s = make_suggestion("git", Some(""));
+        let pl = layout(0, 0, 60, 10);
+        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false));
+    }
+
+    #[test]
+    fn overflow_check_zero_width_popup_returns_false() {
+        let s = make_suggestion("git", Some("anything"));
+        let pl = layout(0, 0, 0, 0);
+        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false));
+    }
+
+    #[test]
+    fn overflow_check_scrollbar_eats_one_column() {
+        // 30-col popup, 8-char text, 14-char description: gutter(4) + text(8) +
+        // gap(2) + desc(14) + pad(1) = 29. Fits without scrollbar (item_width=30).
+        // With scrollbar, item_width=29, budget for desc = 29-4-8-2-1 = 14. Still fits.
+        // Bump to 15-char description: 15 > 14 → overflows only with scrollbar.
+        let s = make_suggestion("checkout", Some("123456789012345"));
+        let pl = layout(0, 0, 30, 10);
+        // Without scrollbar (1 suggestion): budget = 30-4-8-2-1 = 15, desc=15 → no overflow.
+        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false));
+        // With scrollbar (more suggestions than max_visible): budget = 14, desc=15 → overflow.
+        assert!(description_overflows_main_popup(&s, &pl, 20, 10, false));
+    }
+
+    #[test]
+    fn overflow_check_borders_reduce_budget() {
+        // 30-col popup, text="cmd" (3), description="0123456789012345678901234"
+        // Without borders: budget = 30-4-3-2-1 = 20. desc=25 → overflow.
+        // Already overflows without borders, so use a tighter case:
+        // text="cmd" (3), description has 22 chars. Budget no borders = 20, desc=22 → overflow.
+        // Border-pad adds 2 (1 each side) so budget = 28-4-3-2-1 = 18 → overflow even more. Both true.
+        // Try description that ONLY overflows with borders:
+        // text="cmd"(3), description=20 chars. No borders: budget=20, desc=20 → no overflow.
+        // Borders: budget = (30-2)-4-3-2-1 = 18, desc=20 → overflow.
+        let s = make_suggestion("cmd", Some("12345678901234567890"));
+        let pl = layout(0, 0, 30, 10);
+        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false));
+        assert!(description_overflows_main_popup(&s, &pl, 1, 10, true));
+    }
+
+    #[test]
+    fn overflow_check_cjk_description_width() {
+        // 4 CJK chars = 8 cols. Tight popup forces overflow.
+        let s = make_suggestion("cmd", Some("\u{65E5}\u{672C}\u{8A9E}\u{6F22}"));
+        let pl = layout(0, 0, 18, 10);
+        // budget = 18-4-3-2-1 = 8, desc cols = 8 → exact fit, no overflow.
+        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false));
+        // Trim popup by 1 col → budget = 7, desc = 8 → overflow.
+        let pl2 = layout(0, 0, 17, 10);
+        assert!(description_overflows_main_popup(&s, &pl2, 1, 10, false));
     }
 
     // --- compute_detail_layout cascade ---

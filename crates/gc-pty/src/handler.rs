@@ -11,8 +11,9 @@ use gc_overlay::types::{
     DEFAULT_MIN_POPUP_WIDTH,
 };
 use gc_overlay::{
-    clear_detail_box, clear_popup, compute_detail_layout, popup_additional_scroll_deficit,
-    render_detail_box, render_indicator_row, render_popup, DetailLayout, FeedbackKind, PopupTheme,
+    clear_detail_box, clear_popup, compute_detail_layout, description_overflows_main_popup,
+    popup_additional_scroll_deficit, render_detail_box, render_indicator_row, render_popup,
+    DetailLayout, FeedbackKind, PopupTheme,
 };
 use gc_parser::TerminalParser;
 use gc_suggest::{SpecCacheSweep, Suggestion, SuggestionEngine};
@@ -2108,6 +2109,21 @@ impl InputHandler {
         let suggestion = self.suggestions.get(idx)?;
         let desc = suggestion.description.as_deref()?;
         if desc.is_empty() {
+            return None;
+        }
+
+        // Skip the detail box when the inline description already fits in
+        // the main popup row — no truncation, no information to add. Saves
+        // screen real estate for short descriptions like git's "branch" /
+        // "current branch" labels (issue #116 follow-up).
+        if !description_overflows_main_popup(
+            suggestion,
+            main_layout,
+            self.suggestions.len(),
+            self.max_visible,
+            self.theme.borders,
+        ) {
+            self.displayed_detail_idx = Some(idx);
             return None;
         }
 

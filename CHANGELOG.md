@@ -18,8 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so users can tell the description was cut off rather than guessing.
 - New adjacent description box (#116). Set `[popup] description_box = "side"`
   to render a multi-line wrapped description for the selected suggestion next
-  to the main popup. Falls back to a stacked-below box when there's no
-  horizontal room, and to inline truncation when neither fits. Width
+  to the main popup. The box only appears when the inline description would
+  be truncated — short descriptions that already fit in the popup row don't
+  trigger an empty side box. Falls back to a stacked-below box when there's
+  no horizontal room, and to inline truncation when neither fits. Width
   (`description_box_max_width`), line cap (`description_box_lines`), and
   selection-change debounce (`description_box_debounce_ms`) are all
   configurable. Default mode is `off` for opt-in v1 rollout.
