@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-05-08
+
+### Added
+
+- Prioritize current git branch (#117).
+
 ## [0.13.0] - 2026-05-06
 
 ### Added
@@ -848,6 +854,7 @@ silently changed behaviour.
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.14.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.14.0
 [0.13.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.13.0
 [0.12.3]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.12.3
 [0.12.2]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.12.2
