@@ -727,9 +727,16 @@ mod tests {
 
     #[test]
     fn wrap_handles_cjk_width() {
-        // 4 CJK chars = 8 cols; budget = 6 → two lines of 3 chars each
-        // (because 3 chars × 2 cols = 6 fits exactly).
+        // 4 CJK chars = 8 cols; budget = 6, so the first line holds
+        // 3 chars and the second line holds the remaining char.
         let lines = wrap_description("\u{65E5}\u{672C}\u{8A9E}\u{6F22}", 6, 5);
+        assert_eq!(
+            lines,
+            vec![
+                "\u{65E5}\u{672C}\u{8A9E}".to_string(),
+                "\u{6F22}".to_string(),
+            ]
+        );
         assert_eq!(lines.len(), 2);
         for line in &lines {
             assert!(UnicodeWidthStr::width(line.as_str()) <= 6);

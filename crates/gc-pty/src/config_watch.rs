@@ -3,7 +3,6 @@
 //! Watches `config.toml` for modifications and live-updates the handler's
 //! theme, keybindings, trigger chars, and popup dimensions without restarting.
 
-use std::io::Write;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -172,7 +171,7 @@ pub fn spawn_config_watcher(
             };
 
             // Apply to handler
-            let cleanup = {
+            let (cleanup, cleanup_ticket) = {
                 let mut h = match handler.lock() {
                     Ok(h) => h,
                     Err(e) => {
@@ -180,7 +179,7 @@ pub fn spawn_config_watcher(
                         continue;
                     }
                 };
-                h.update_config(
+                let cleanup = h.update_config(
                     theme,
                     keybindings,
                     &config.trigger.auto_chars,
@@ -193,12 +192,15 @@ pub fn spawn_config_watcher(
                     config.popup.description_box_max_width,
                     config.popup.description_box_lines,
                     config.popup.description_box_debounce_ms,
-                )
+                );
+                (cleanup, h.overlay_write_ticket())
             };
             if !cleanup.is_empty() {
-                let mut stdout = std::io::stdout().lock();
-                let _ = stdout.write_all(&cleanup);
-                let _ = stdout.flush();
+                if let Err(e) =
+                    crate::proxy::write_overlay_if_current(&handler, cleanup_ticket, &cleanup)
+                {
+                    tracing::debug!("config reload cleanup write/flush failed: {e}");
+                }
             }
 
             tracing::info!("config reloaded successfully");

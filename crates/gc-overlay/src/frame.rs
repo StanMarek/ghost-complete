@@ -588,6 +588,44 @@ mod tests {
     }
 
     #[test]
+    fn content_row_truncates_description_with_ellipsis() {
+        let long_desc = "a".repeat(200);
+        let s = make("cmd", Some(&long_desc), SuggestionKind::Command);
+        let item_width: u16 = 30;
+        let row = build_content_row(&s, item_width, false, ScrollbarCell::None);
+
+        let full_text: String = row.spans.iter().map(|span| span.text.as_str()).collect();
+        let full_width = unicode_width::UnicodeWidthStr::width(full_text.as_str());
+        let ellipsis_count = full_text.chars().filter(|ch| *ch == '\u{2026}').count();
+        let desc_span = row
+            .spans
+            .iter()
+            .find(|span| span.style == SpanStyle::Description)
+            .expect("truncated row should include a description span");
+
+        assert_eq!(
+            ellipsis_count, 1,
+            "truncated description should contain one ellipsis: {full_text}"
+        );
+        assert!(
+            desc_span.text.ends_with('\u{2026}'),
+            "description span should end with ellipsis: {desc_span:?}"
+        );
+        assert!(
+            full_width <= item_width as usize,
+            "row width ({full_width}) must not exceed budget ({item_width}): {full_text}"
+        );
+
+        for span in &row.spans {
+            let span_width = unicode_width::UnicodeWidthStr::width(span.text.as_str());
+            assert!(
+                span_width <= item_width as usize,
+                "span width ({span_width}) must not exceed row budget ({item_width}): {span:?}"
+            );
+        }
+    }
+
+    #[test]
     fn content_row_scrollbar_cell() {
         let s = make("item", None, SuggestionKind::Command);
         let row = build_content_row(&s, 20, false, ScrollbarCell::Thumb);

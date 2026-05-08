@@ -34,9 +34,9 @@ Controls the popup appearance.
 | `feedback_dismiss_ms` | integer | `1200` | Milliseconds to keep Empty/Error feedback visible. Set to `0` to disable auto-dismiss. Values above `10000` are clamped. |
 | `spinner` | bool | `true` | Animate Loading feedback when the popup is wide enough |
 | `show_provider_errors` | bool | `false` | Show provider names in error feedback. Disabled by default for shared-screen privacy. |
-| `min_width` | integer | `20` | Lower bound for popup width in display columns. Clamped to `[10, max_width]`. |
+| `min_width` | integer | `20` | Lower bound for popup width in display columns. Clamped to `[10, 500]`. If `max_width` is lower after normalization, `max_width` is raised to `min_width`. |
 | `max_width` | integer | `60` | Upper bound for popup width in display columns. Clamped to `[min_width, 500]` and additionally to the live `screen_cols` at render time. Bump this on wide terminals to give descriptions more room before the truncation ellipsis (`…`) kicks in. |
-| `description_box` | string | `"off"` | Adjacent description box mode. `"off"` keeps the legacy inline-truncated behavior. `"side"` renders a wrapped multi-line box next to the main popup with the selected suggestion's full description **only when the inline description is being truncated** — short descriptions that already fit don't trigger the box. Falls back to a stacked-below box when there's no horizontal room, and to inline truncation when neither fits. |
+| `description_box` | string | `"off"` | Adjacent description box mode. `"off"` keeps the legacy inline-truncated behavior. `"side"` renders a wrapped multi-line box next to the main popup for the selected suggestion when the inline description would be hidden or truncated. The box is capped by `description_box_lines` and available rows; short descriptions that already fit don't trigger it. Falls back to a stacked-below box when there's no horizontal room, and to inline truncation when neither fits. |
 | `description_box_max_width` | integer | `60` | Maximum width (display columns) for the description box. Clamped to `[20, 200]`. The actual rendered width adapts to the columns remaining beside the main popup. |
 | `description_box_lines` | integer | `5` | Maximum wrapped lines in the description box. Long descriptions are hard-truncated with an ellipsis on the final line. Clamped to `[1, 20]`. |
 | `description_box_debounce_ms` | integer | `80` | Debounce window (ms) for description-box updates on selection change. Holding arrow keys causes the box to update at most once per window, avoiding flicker. Set to `0` to disable debounce. Clamped to `[0, 500]`. |
@@ -56,7 +56,7 @@ description_box_lines = 5
 description_box_debounce_ms = 80
 ```
 
-Popup width is content-driven (sized to the longest visible suggestion) and clamped to `[min_width, max_width]`. Descriptions that don't fit are truncated with a single-column ellipsis (`…`). Set `description_box = "side"` to surface the full description in an adjacent multi-line box without permanently widening the main popup.
+Popup width is content-driven (sized to the longest visible suggestion) and clamped to `[min_width, max_width]`. Descriptions that don't fit are truncated with a single-column ellipsis (`…`). Set `description_box = "side"` to surface a wrapped description when the inline description would be hidden or truncated. The box is capped by `description_box_lines` and available rows without permanently widening the main popup.
 
 ### `[suggest]`
 

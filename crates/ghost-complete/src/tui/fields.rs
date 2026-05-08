@@ -137,7 +137,7 @@ pub fn all_fields() -> Vec<FieldMeta> {
             field_type: FieldType::Usize,
             default: "20",
             reload: ReloadBehavior::Live,
-            help: "Minimum popup width in display columns (10-max_width)",
+            help: "Minimum popup width in display columns. Clamped to [10, 500]; if max_width is lower after normalization, it is raised to min_width.",
         },
         FieldMeta {
             section: "popup",
@@ -153,7 +153,7 @@ pub fn all_fields() -> Vec<FieldMeta> {
             field_type: FieldType::Enum(&["off", "side"]),
             default: "off",
             reload: ReloadBehavior::Live,
-            help: "Adjacent description box: 'off' = inline truncation only, 'side' = wrapped box beside or below the popup when the inline description is truncated",
+            help: "Adjacent description box: 'off' = inline truncation only, 'side' = wrapped box beside or below the popup when the inline description would be hidden or truncated; capped by description_box_lines and available rows",
         },
         FieldMeta {
             section: "popup",

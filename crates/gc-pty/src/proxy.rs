@@ -1156,7 +1156,7 @@ impl PendingTrigger {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum OverlayWriteOutcome {
+pub(crate) enum OverlayWriteOutcome {
     Empty,
     Written,
     Stale,
@@ -1176,7 +1176,7 @@ fn write_pty_or_shutdown(
         })
 }
 
-fn write_overlay_if_current(
+pub(crate) fn write_overlay_if_current(
     handler: &Arc<Mutex<InputHandler>>,
     ticket: OverlayWriteTicket,
     render_buf: &[u8],
