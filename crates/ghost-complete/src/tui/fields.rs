@@ -131,6 +131,54 @@ pub fn all_fields() -> Vec<FieldMeta> {
             reload: ReloadBehavior::Live,
             help: "Show provider names in error feedback",
         },
+        FieldMeta {
+            section: "popup",
+            key: "min_width",
+            field_type: FieldType::Usize,
+            default: "20",
+            reload: ReloadBehavior::Live,
+            help: "Minimum popup width in display columns. Clamped to [10, 500]; if max_width is lower after normalization, it is raised to min_width.",
+        },
+        FieldMeta {
+            section: "popup",
+            key: "max_width",
+            field_type: FieldType::Usize,
+            default: "60",
+            reload: ReloadBehavior::Live,
+            help: "Maximum popup width in display columns (min_width-500). Wider popups give descriptions more room before the ellipsis kicks in.",
+        },
+        FieldMeta {
+            section: "popup",
+            key: "description_box",
+            field_type: FieldType::Enum(&["off", "side"]),
+            default: "off",
+            reload: ReloadBehavior::Live,
+            help: "Adjacent description box: 'off' = inline truncation only, 'side' = wrapped box beside or below the popup when the inline description would be hidden or truncated; capped by description_box_lines and available rows",
+        },
+        FieldMeta {
+            section: "popup",
+            key: "description_box_max_width",
+            field_type: FieldType::Usize,
+            default: "60",
+            reload: ReloadBehavior::Live,
+            help: "Maximum width (cols) for the description box (20-200)",
+        },
+        FieldMeta {
+            section: "popup",
+            key: "description_box_lines",
+            field_type: FieldType::Usize,
+            default: "5",
+            reload: ReloadBehavior::Live,
+            help: "Maximum wrapped lines in the description box (1-20)",
+        },
+        FieldMeta {
+            section: "popup",
+            key: "description_box_debounce_ms",
+            field_type: FieldType::U64,
+            default: "80",
+            reload: ReloadBehavior::Live,
+            help: "Debounce window (ms) for description-box updates on selection change (0-500)",
+        },
         // suggest
         FieldMeta {
             section: "suggest",
@@ -416,6 +464,29 @@ mod tests {
             assert!(
                 keys.contains(&expected),
                 "suggest.spec_cache.{expected} missing from config editor"
+            );
+        }
+    }
+
+    #[test]
+    fn popup_section_exposes_description_box_fields() {
+        let fields = all_fields();
+        let keys: Vec<&str> = fields
+            .iter()
+            .filter(|f| f.section == "popup")
+            .map(|f| f.key)
+            .collect();
+        for expected in [
+            "min_width",
+            "max_width",
+            "description_box",
+            "description_box_max_width",
+            "description_box_lines",
+            "description_box_debounce_ms",
+        ] {
+            assert!(
+                keys.contains(&expected),
+                "popup.{expected} missing from config editor"
             );
         }
     }

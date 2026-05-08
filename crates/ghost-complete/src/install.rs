@@ -38,6 +38,12 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # feedback_dismiss_ms = 1200  # Empty/error feedback auto-dismiss delay; 0 disables
 # spinner = true  # Animate async Loading feedback in wide popups
 # show_provider_errors = false  # Set true to show provider names in error feedback
+# min_width = 20  # Lower bound for popup width; clamped to [10, 500]
+# max_width = 60  # Upper bound for popup width; clamped to [min_width, 500]
+# description_box = \"off\"  # \"off\" for inline descriptions, \"side\" for wrapped adjacent box
+# description_box_max_width = 60  # Max description-box width; clamped to [20, 200]
+# description_box_lines = 5  # Max wrapped description lines; 0 resets to 5, above 20 clamps to 20
+# description_box_debounce_ms = 80  # Description-box selection debounce; 0 disables
 
 # [suggest]
 # max_results = 50
@@ -1146,6 +1152,12 @@ mod tests {
         assert!(content.contains("[trigger]"));
         assert!(content.contains("[popup]"));
         assert!(content.contains("[theme]"));
+        assert!(content.contains("# min_width = 20"));
+        assert!(content.contains("# max_width = 60"));
+        assert!(content.contains("# description_box = \"off\""));
+        assert!(content.contains("# description_box_max_width = 60"));
+        assert!(content.contains("# description_box_lines = 5"));
+        assert!(content.contains("# description_box_debounce_ms = 80"));
         // Should parse as valid TOML config (all theme fields are commented out)
         let parsed: gc_config::GhostConfig = toml::from_str(&content).unwrap();
         assert_eq!(parsed.keybindings.accept, "tab");

@@ -18,7 +18,7 @@ use gc_suggest::Suggestion;
 use crate::layout::{DESC_GAP_COLS, GUTTER_COLS, TRAILING_PAD_COLS};
 use crate::render::{kind_icon, sanitize_display_text, translate_match_indices};
 use crate::types::{OverlayState, PopupLayout};
-use crate::util::display_text;
+use crate::util::{display_text, truncate_with_ellipsis};
 
 /// Abstract style role applied to a text span.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -185,17 +185,8 @@ pub fn build_content_row(
             style: SpanStyle::Plain,
         });
 
-        // Truncate description by display columns
-        let mut desc_cols: usize = 0;
-        let mut truncated = String::new();
-        for ch in desc_sanitized.chars() {
-            let w = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
-            if desc_cols + w > max_desc_cols {
-                break;
-            }
-            truncated.push(ch);
-            desc_cols += w;
-        }
+        // Truncate description by display columns; appends `…` on truncation.
+        let (truncated, desc_cols) = truncate_with_ellipsis(&desc_sanitized, max_desc_cols);
 
         let desc_style = if is_selected {
             SpanStyle::Plain
@@ -594,6 +585,44 @@ mod tests {
             .iter()
             .any(|sp| sp.style == SpanStyle::Description);
         assert!(!has_desc, "too narrow for description");
+    }
+
+    #[test]
+    fn content_row_truncates_description_with_ellipsis() {
+        let long_desc = "a".repeat(200);
+        let s = make("cmd", Some(&long_desc), SuggestionKind::Command);
+        let item_width: u16 = 30;
+        let row = build_content_row(&s, item_width, false, ScrollbarCell::None);
+
+        let full_text: String = row.spans.iter().map(|span| span.text.as_str()).collect();
+        let full_width = unicode_width::UnicodeWidthStr::width(full_text.as_str());
+        let ellipsis_count = full_text.chars().filter(|ch| *ch == '\u{2026}').count();
+        let desc_span = row
+            .spans
+            .iter()
+            .find(|span| span.style == SpanStyle::Description)
+            .expect("truncated row should include a description span");
+
+        assert_eq!(
+            ellipsis_count, 1,
+            "truncated description should contain one ellipsis: {full_text}"
+        );
+        assert!(
+            desc_span.text.ends_with('\u{2026}'),
+            "description span should end with ellipsis: {desc_span:?}"
+        );
+        assert!(
+            full_width <= item_width as usize,
+            "row width ({full_width}) must not exceed budget ({item_width}): {full_text}"
+        );
+
+        for span in &row.spans {
+            let span_width = unicode_width::UnicodeWidthStr::width(span.text.as_str());
+            assert!(
+                span_width <= item_width as usize,
+                "span width ({span_width}) must not exceed row budget ({item_width}): {span:?}"
+            );
+        }
     }
 
     #[test]
