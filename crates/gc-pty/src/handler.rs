@@ -193,10 +193,48 @@ struct PendingOverlayRender {
     detail_layout: Option<DetailLayout>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CleanupScope {
+    /// Cleanup bytes clear both the main popup and the detail box.
+    MainAndDetail,
+    /// Cleanup bytes clear only the detail box; the main popup layout
+    /// remains committed (e.g. runtime description-box disable).
+    DetailOnly,
+}
+
+/// Runtime state for the detail-box debounce window, grouped so the
+/// invariants ("clearing one of these fields without the others can leave a
+/// stale displayed index resolving to a now-mismatched suggestion") are
+/// reset together via `DetailDebounceState::reset`.
+#[derive(Debug, Default)]
+struct DetailDebounceState {
+    /// Selected index whose description is currently displayed in the
+    /// detail box. Diverges from `overlay.selected` during the debounce
+    /// window; reconciled when the timer fires or on the next render past
+    /// `detail_box_debounce_ms`.
+    displayed_idx: Option<usize>,
+    /// Monotonic timestamp of the first selection change in the current
+    /// detail update window. Used together with `detail_box_debounce_ms` to
+    /// throttle rapid arrow navigation into at most one detail repaint per
+    /// window.
+    last_change_at: Option<Instant>,
+    /// Set to `true` while a debounce timer is in flight so we don't spawn
+    /// duplicates while the user is hammering arrow keys.
+    pending: bool,
+}
+
+impl DetailDebounceState {
+    fn reset(&mut self) {
+        self.displayed_idx = None;
+        self.last_change_at = None;
+        self.pending = false;
+    }
+}
+
 #[derive(Debug, Clone)]
 struct PendingOverlayCleanup {
     token: OverlayCleanupToken,
-    clear_main: bool,
+    scope: CleanupScope,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -436,22 +474,14 @@ pub struct InputHandler {
     /// teardown or by detail-only cleanup when the description box is disabled;
     /// write acknowledgement controls when the committed layout is released.
     last_detail_layout: Option<DetailLayout>,
-    /// Selected index whose description is currently displayed in the
-    /// detail box. Diverges from `overlay.selected` during the detail update
-    /// window; reconciled when the timer fires or on the next render past
-    /// `detail_box_debounce_ms`.
-    displayed_detail_idx: Option<usize>,
-    /// Wall-clock timestamp of the first selection change in the current
-    /// detail update window. Used together with `detail_box_debounce_ms` to
-    /// throttle rapid arrow navigation into at most one detail repaint per
-    /// window.
-    last_selection_change_at: Option<Instant>,
     /// Notify fired by a spawned timer when the detail-box debounce window
     /// has elapsed; the proxy listens to trigger a re-render.
     detail_redraw_notify: Arc<Notify>,
-    /// Set to `true` while a debounce timer is in flight so we don't spawn
-    /// duplicates while the user is hammering arrow keys.
-    detail_debounce_pending: bool,
+    /// Detail-box debounce runtime state. Grouped so the three correlated
+    /// fields reset together via `DetailDebounceState::reset` — clearing one
+    /// without the others can leave a stale `displayed_idx` pointing at a
+    /// reranked suggestion.
+    detail_debounce: DetailDebounceState,
     /// Wrapping epoch stamp for overlay-owned bytes. Proxy tasks stamp render
     /// buffers with this value and drop them if shell output advances it before
     /// the buffer reaches stdout.
@@ -516,10 +546,8 @@ impl InputHandler {
             detail_box_lines: 5,
             detail_box_debounce_ms: 80,
             last_detail_layout: None,
-            displayed_detail_idx: None,
-            last_selection_change_at: None,
             detail_redraw_notify: Arc::new(Notify::new()),
-            detail_debounce_pending: false,
+            detail_debounce: DetailDebounceState::default(),
             output_epoch: 0,
             overlay_render_generation: 0,
             pending_overlay_render: None,
@@ -616,9 +644,7 @@ impl InputHandler {
     }
 
     fn reset_detail_debounce_state(&mut self) {
-        self.displayed_detail_idx = None;
-        self.last_selection_change_at = None;
-        self.detail_debounce_pending = false;
+        self.detail_debounce.reset();
     }
 
     fn replace_suggestions_and_reset_overlay(&mut self, suggestions: Vec<Suggestion>) {
@@ -627,12 +653,12 @@ impl InputHandler {
         self.reset_detail_debounce_state();
     }
 
-    fn stage_overlay_cleanup(&mut self, clear_main: bool) {
+    fn stage_overlay_cleanup(&mut self, scope: CleanupScope) {
         self.overlay_cleanup_generation = self.overlay_cleanup_generation.wrapping_add(1);
         self.pending_overlay_render = None;
         self.pending_overlay_cleanup = Some(PendingOverlayCleanup {
             token: OverlayCleanupToken(self.overlay_cleanup_generation),
-            clear_main,
+            scope,
         });
     }
 
@@ -698,7 +724,9 @@ impl InputHandler {
 
     /// Update runtime-configurable fields without restarting the proxy.
     /// Called by the config file watcher when config.toml changes on disk.
-    /// Returns cleanup bytes to write to stdout (e.g. popup clear on auto_trigger toggle).
+    /// Returns cleanup bytes to write to stdout (e.g. popup clear on
+    /// auto_trigger toggle, or detail-box clear when description_box is
+    /// disabled at runtime).
     #[allow(clippy::too_many_arguments)]
     pub fn update_config(
         &mut self,
@@ -716,8 +744,7 @@ impl InputHandler {
         detail_box_debounce_ms: u16,
     ) -> Vec<u8> {
         let mut cleanup = Vec::new();
-        let mut cleanup_staged = false;
-        let mut cleanup_clears_main = false;
+        let mut cleanup_scope: Option<CleanupScope> = None;
         let mut detail_cleanup_staged = false;
 
         // If auto_trigger is being disabled, tear down all pending state —
@@ -733,13 +760,11 @@ impl InputHandler {
                         clear_detail_box(&mut cleanup, det);
                         detail_cleanup_staged = true;
                     }
-                    cleanup_staged = true;
-                    cleanup_clears_main = true;
+                    cleanup_scope = Some(CleanupScope::MainAndDetail);
                 } else if let Some(det) = self.last_detail_layout.clone() {
                     self.bump_output_epoch();
                     clear_detail_box(&mut cleanup, &det);
-                    cleanup_staged = true;
-                    cleanup_clears_main = true;
+                    cleanup_scope = Some(CleanupScope::MainAndDetail);
                     detail_cleanup_staged = true;
                 }
                 self.visible = false;
@@ -773,13 +798,13 @@ impl InputHandler {
                 if let Some(det) = self.last_detail_layout.clone() {
                     self.bump_output_epoch();
                     clear_detail_box(&mut cleanup, &det);
-                    cleanup_staged = true;
+                    cleanup_scope.get_or_insert(CleanupScope::DetailOnly);
                 }
             }
             self.reset_detail_debounce_state();
         }
-        if cleanup_staged {
-            self.stage_overlay_cleanup(cleanup_clears_main);
+        if let Some(scope) = cleanup_scope {
+            self.stage_overlay_cleanup(scope);
         }
         self.detail_box_mode = detail_box_mode;
         self.detail_box_max_width = detail_box_max_width;
@@ -877,7 +902,7 @@ impl InputHandler {
                 .pending_overlay_cleanup
                 .take_if(|pending| pending.token == token)
             {
-                if pending.clear_main {
+                if matches!(pending.scope, CleanupScope::MainAndDetail) {
                     self.last_layout = None;
                 }
                 self.last_detail_layout = None;
@@ -978,12 +1003,12 @@ impl InputHandler {
 
     #[cfg(test)]
     pub(crate) fn displayed_detail_idx_for_test(&self) -> Option<usize> {
-        self.displayed_detail_idx
+        self.detail_debounce.displayed_idx
     }
 
     #[cfg(test)]
     pub(crate) fn detail_debounce_pending_for_test(&self) -> bool {
-        self.detail_debounce_pending
+        self.detail_debounce.pending
     }
 
     /// Prime `dynamic_ctx` to the "no context" state that matches an empty
@@ -2111,6 +2136,12 @@ impl InputHandler {
             } else {
                 gc_suggest::fuzzy::rank(&current_word, merged, self.max_visible * 5)
             };
+            // The rerank above reorders self.suggestions in place, so any
+            // displayed_detail_idx captured pre-rerank now points at a
+            // different suggestion. Clear the debounce state so a stale
+            // index can't paint a mismatched description while the window
+            // is still active.
+            self.reset_detail_debounce_state();
 
             if self.suggestions.is_empty() {
                 self.dismiss(stdout);
@@ -2255,32 +2286,33 @@ impl InputHandler {
         screen_cols: u16,
     ) -> Option<DetailLayout> {
         if self.detail_box_mode == DescriptionBoxMode::Off {
-            self.displayed_detail_idx = None;
+            self.detail_debounce.displayed_idx = None;
             return None;
         }
         if main_layout.height == 0 || self.suggestions.is_empty() {
-            self.displayed_detail_idx = None;
+            self.detail_debounce.displayed_idx = None;
             return None;
         }
         let Some(selected) = self.overlay.selected else {
-            self.displayed_detail_idx = None;
+            self.detail_debounce.displayed_idx = None;
             return None;
         };
 
         // Track selection changes for the detail-update throttle window.
-        let selection_changed = self.displayed_detail_idx != Some(selected);
+        let selection_changed = self.detail_debounce.displayed_idx != Some(selected);
         let now = Instant::now();
-        if selection_changed && self.last_selection_change_at.is_none() {
-            self.last_selection_change_at = Some(now);
+        if selection_changed && self.detail_debounce.last_change_at.is_none() {
+            self.detail_debounce.last_change_at = Some(now);
         }
 
         // Resolve which suggestion's description the box should display.
         let should_debounce = selection_changed
-            && self.displayed_detail_idx.is_some()
+            && self.detail_debounce.displayed_idx.is_some()
             && self.detail_box_debounce_ms > 0;
         let target_idx = if should_debounce {
             let elapsed = self
-                .last_selection_change_at
+                .detail_debounce
+                .last_change_at
                 .map(|t| now.saturating_duration_since(t).as_millis() as u64)
                 .unwrap_or(u64::MAX);
             if elapsed < self.detail_box_debounce_ms {
@@ -2289,13 +2321,13 @@ impl InputHandler {
                 // prior idx exists). Schedule a wake-up so the next render
                 // happens after the window expires.
                 self.schedule_detail_debounce_wakeup(self.detail_box_debounce_ms - elapsed);
-                self.displayed_detail_idx
+                self.detail_debounce.displayed_idx
             } else {
-                self.last_selection_change_at = None;
+                self.detail_debounce.last_change_at = None;
                 Some(selected)
             }
         } else {
-            self.last_selection_change_at = None;
+            self.detail_debounce.last_change_at = None;
             Some(selected)
         };
 
@@ -2303,19 +2335,19 @@ impl InputHandler {
         let target_is_current_selection = idx == selected;
         let Some(suggestion) = self.suggestions.get(idx) else {
             if target_is_current_selection {
-                self.displayed_detail_idx = Some(idx);
+                self.detail_debounce.displayed_idx = Some(idx);
             }
             return None;
         };
         let Some(desc) = suggestion.description.as_deref() else {
             if target_is_current_selection {
-                self.displayed_detail_idx = Some(idx);
+                self.detail_debounce.displayed_idx = Some(idx);
             }
             return None;
         };
         if desc.is_empty() {
             if target_is_current_selection {
-                self.displayed_detail_idx = Some(idx);
+                self.detail_debounce.displayed_idx = Some(idx);
             }
             return None;
         }
@@ -2323,7 +2355,7 @@ impl InputHandler {
         // Skip the detail box when the inline description already fits in
         // the main popup row — no truncation, no information to add. Saves
         // screen real estate for short descriptions like git's "branch" /
-        // "current branch" labels (issue #116 follow-up).
+        // "current branch" labels.
         if !description_overflows_main_popup(
             suggestion,
             main_layout,
@@ -2332,7 +2364,7 @@ impl InputHandler {
             self.theme.borders,
             screen_rows,
         ) {
-            self.displayed_detail_idx = Some(idx);
+            self.detail_debounce.displayed_idx = Some(idx);
             return None;
         }
 
@@ -2345,28 +2377,28 @@ impl InputHandler {
             self.theme.borders,
         ) else {
             if target_is_current_selection {
-                self.displayed_detail_idx = Some(idx);
+                self.detail_debounce.displayed_idx = Some(idx);
             }
             return None;
         };
 
         render_detail_box(buf, &layout, desc, &self.theme);
-        self.displayed_detail_idx = Some(idx);
+        self.detail_debounce.displayed_idx = Some(idx);
         Some(layout)
     }
 
     /// Spawn a one-shot tokio task that fires `detail_redraw_notify` after
     /// `delay_ms`. Idempotent — multiple in-flight timers are guarded by
-    /// `detail_debounce_pending`. Silently no-ops outside an async runtime
+    /// `detail_debounce.pending`. Silently no-ops outside an async runtime
     /// (used in unit tests).
     fn schedule_detail_debounce_wakeup(&mut self, delay_ms: u64) {
-        if self.detail_debounce_pending {
+        if self.detail_debounce.pending {
             return;
         }
         let Ok(handle) = tokio::runtime::Handle::try_current() else {
             return;
         };
-        self.detail_debounce_pending = true;
+        self.detail_debounce.pending = true;
         let notify = Arc::clone(&self.detail_redraw_notify);
         handle.spawn(async move {
             tokio::time::sleep(std::time::Duration::from_millis(delay_ms.max(1))).await;
@@ -2378,7 +2410,7 @@ impl InputHandler {
     /// debounce flag so a subsequent selection change will spawn a fresh
     /// timer.
     pub fn clear_detail_debounce_pending(&mut self) {
-        self.detail_debounce_pending = false;
+        self.detail_debounce.pending = false;
     }
 
     /// Re-render into `buf` in response to a detail-debounce wake-up. No-op
@@ -2398,7 +2430,7 @@ impl InputHandler {
         // Only re-render if the displayed detail idx actually trails the
         // current selection — avoids needless repaints when the user
         // navigated and stopped within the same item.
-        if self.displayed_detail_idx == self.overlay.selected {
+        if self.detail_debounce.displayed_idx == self.overlay.selected {
             return;
         }
         let (cursor_row, cursor_col, screen_rows, screen_cols) = match parser.lock() {
@@ -2613,7 +2645,7 @@ impl InputHandler {
             }
             let _ = stdout.write_all(&buf);
             let _ = stdout.flush();
-            self.stage_overlay_cleanup(true);
+            self.stage_overlay_cleanup(CleanupScope::MainAndDetail);
         } else if let Some(det) = detail_layout {
             // Defensive: detail layout exists without a main popup layout
             // (shouldn't happen, but clean it up if it does).
@@ -2622,7 +2654,7 @@ impl InputHandler {
             clear_detail_box(&mut buf, &det);
             let _ = stdout.write_all(&buf);
             let _ = stdout.flush();
-            self.stage_overlay_cleanup(true);
+            self.stage_overlay_cleanup(CleanupScope::MainAndDetail);
         } else {
             self.pending_overlay_cleanup = None;
         }
@@ -3569,10 +3601,8 @@ mod tests {
             detail_box_lines: 5,
             detail_box_debounce_ms: 80,
             last_detail_layout: None,
-            displayed_detail_idx: None,
-            last_selection_change_at: None,
             detail_redraw_notify: Arc::new(Notify::new()),
-            detail_debounce_pending: false,
+            detail_debounce: DetailDebounceState::default(),
             output_epoch: 0,
             overlay_render_generation: 0,
             pending_overlay_render: None,
@@ -4524,9 +4554,9 @@ mod tests {
             height: 3,
             position: gc_overlay::DetailPosition::SideRight,
         });
-        handler.displayed_detail_idx = Some(0);
-        handler.last_selection_change_at = Some(Instant::now());
-        handler.detail_debounce_pending = true;
+        handler.detail_debounce.displayed_idx = Some(0);
+        handler.detail_debounce.last_change_at = Some(Instant::now());
+        handler.detail_debounce.pending = true;
         let before_epoch = handler.output_epoch();
 
         let cleanup = handler.update_config(
@@ -4551,9 +4581,9 @@ mod tests {
         );
         handler.commit_overlay_write(handler.overlay_write_ticket());
         assert!(handler.last_detail_layout.is_none());
-        assert_eq!(handler.displayed_detail_idx, None);
-        assert_eq!(handler.last_selection_change_at, None);
-        assert!(!handler.detail_debounce_pending);
+        assert_eq!(handler.detail_debounce.displayed_idx, None);
+        assert_eq!(handler.detail_debounce.last_change_at, None);
+        assert!(!handler.detail_debounce.pending);
         assert!(handler.output_epoch() > before_epoch);
     }
 
@@ -4571,9 +4601,9 @@ mod tests {
             height: 3,
             position: gc_overlay::DetailPosition::SideRight,
         });
-        handler.displayed_detail_idx = Some(0);
-        handler.last_selection_change_at = Some(Instant::now());
-        handler.detail_debounce_pending = true;
+        handler.detail_debounce.displayed_idx = Some(0);
+        handler.detail_debounce.last_change_at = Some(Instant::now());
+        handler.detail_debounce.pending = true;
 
         let cleanup = handler.update_config(
             PopupTheme::default(),
@@ -4599,9 +4629,9 @@ mod tests {
             handler.last_detail_layout.is_some(),
             "detail layout ownership must remain committed until cleanup bytes are written"
         );
-        assert_eq!(handler.displayed_detail_idx, None);
-        assert_eq!(handler.last_selection_change_at, None);
-        assert!(!handler.detail_debounce_pending);
+        assert_eq!(handler.detail_debounce.displayed_idx, None);
+        assert_eq!(handler.detail_debounce.last_change_at, None);
+        assert!(!handler.detail_debounce.pending);
 
         let ticket = handler.overlay_write_ticket();
         assert!(
@@ -5113,7 +5143,7 @@ mod tests {
             first_output.contains("ALPHADETAIL"),
             "setup should render suggestion 0 detail: {first_output:?}"
         );
-        assert_eq!(handler.displayed_detail_idx, Some(0));
+        assert_eq!(handler.detail_debounce.displayed_idx, Some(0));
 
         handler.overlay.selected = Some(1);
         let mut immediate = Vec::new();
@@ -5128,12 +5158,12 @@ mod tests {
             "in-window render must not emit the new detail yet: {immediate_output:?}"
         );
         assert!(
-            handler.detail_debounce_pending,
+            handler.detail_debounce.pending,
             "in-window render should schedule a detail redraw wakeup"
         );
         handler.commit_overlay_write(handler.overlay_write_ticket());
 
-        handler.last_selection_change_at =
+        handler.detail_debounce.last_change_at =
             Some(Instant::now() - std::time::Duration::from_millis(250));
         handler.clear_detail_debounce_pending();
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 120)));
@@ -5150,7 +5180,7 @@ mod tests {
             redraw_output.contains("BRAVOTAIL"),
             "detail redraw should emit the settled selection detail: {redraw_output:?}"
         );
-        assert_eq!(handler.displayed_detail_idx, Some(1));
+        assert_eq!(handler.detail_debounce.displayed_idx, Some(1));
     }
 
     #[tokio::test]
@@ -5168,7 +5198,7 @@ mod tests {
         let mut first = Vec::new();
         handler.render_at(&mut first, 5, 0, 24, 120);
         handler.commit_overlay_write(handler.overlay_write_ticket());
-        assert_eq!(handler.displayed_detail_idx, Some(0));
+        assert_eq!(handler.detail_debounce.displayed_idx, Some(0));
 
         let notify = handler.detail_redraw_notify();
         let notified = notify.notified();
@@ -5177,7 +5207,7 @@ mod tests {
         handler.render_at(&mut immediate, 5, 0, 24, 120);
         handler.commit_overlay_write(handler.overlay_write_ticket());
         assert!(
-            handler.detail_debounce_pending,
+            handler.detail_debounce.pending,
             "selection-change render should arm the debounce wakeup"
         );
 
@@ -5200,7 +5230,7 @@ mod tests {
             redraw_output.contains("BRAVODONE"),
             "debounce wakeup redraw should emit the settled selection detail: {redraw_output:?}"
         );
-        assert_eq!(handler.displayed_detail_idx, Some(1));
+        assert_eq!(handler.detail_debounce.displayed_idx, Some(1));
     }
 
     #[test]
@@ -5239,7 +5269,7 @@ mod tests {
             "debounce disabled must not keep rendering item 0 detail: {second_output:?}"
         );
         assert!(
-            !handler.detail_debounce_pending,
+            !handler.detail_debounce.pending,
             "debounce disabled must not arm a debounce wakeup"
         );
     }
@@ -5272,7 +5302,7 @@ mod tests {
         handler.render_at(&mut buf, 5, 0, 24, 120);
 
         assert!(handler.last_detail_layout.is_none());
-        assert_eq!(handler.displayed_detail_idx, Some(0));
+        assert_eq!(handler.detail_debounce.displayed_idx, Some(0));
     }
 
     #[test]
@@ -5317,11 +5347,11 @@ mod tests {
             String::from_utf8_lossy(&first).contains("UNIQUEDETAILMARKER"),
             "setup must render the first item's detail text"
         );
-        assert_eq!(handler.displayed_detail_idx, Some(0));
+        assert_eq!(handler.detail_debounce.displayed_idx, Some(0));
 
         handler.detail_box_debounce_ms = 80;
         handler.overlay.selected = Some(1);
-        handler.last_selection_change_at =
+        handler.detail_debounce.last_change_at =
             Some(Instant::now() - std::time::Duration::from_millis(100));
         let mut settled = Vec::new();
         handler.render_at(&mut settled, 5, 0, 24, 120);
@@ -5338,7 +5368,7 @@ mod tests {
             !output.contains("UNIQUEDETAILMARKER"),
             "later repaint must not debounce back to the previous detail text: {output:?}"
         );
-        assert_eq!(handler.displayed_detail_idx, Some(1));
+        assert_eq!(handler.detail_debounce.displayed_idx, Some(1));
     }
 
     #[test]
@@ -5524,9 +5554,9 @@ mod tests {
     fn test_apply_block_result_replacement_resets_detail_debounce_state() {
         let mut handler = make_handler().with_description_box(DescriptionBoxMode::Side, 60, 5, 200);
         handler.visible = true;
-        handler.displayed_detail_idx = Some(1);
-        handler.last_selection_change_at = Some(Instant::now());
-        handler.detail_debounce_pending = true;
+        handler.detail_debounce.displayed_idx = Some(1);
+        handler.detail_debounce.last_change_at = Some(Instant::now());
+        handler.detail_debounce.pending = true;
         handler.prime_dynamic_ctx_for_buffer("git checkout main", 17);
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 120)));
         {
@@ -5558,10 +5588,10 @@ mod tests {
             "main",
         );
 
-        assert_eq!(handler.displayed_detail_idx, None);
-        assert_eq!(handler.last_selection_change_at, None);
+        assert_eq!(handler.detail_debounce.displayed_idx, None);
+        assert_eq!(handler.detail_debounce.last_change_at, None);
         assert!(
-            !handler.detail_debounce_pending,
+            !handler.detail_debounce.pending,
             "replacing the result set must not keep an old detail redraw timer armed"
         );
     }
@@ -6417,5 +6447,272 @@ mod tests {
             }
             other => panic!("expected PartialError, got {other:?}"),
         }
+    }
+
+    fn detail_layout_at(start_row: u16, start_col: u16, width: u16, height: u16) -> DetailLayout {
+        DetailLayout {
+            start_row,
+            start_col,
+            width,
+            height,
+            position: gc_overlay::DetailPosition::SideRight,
+        }
+    }
+
+    fn count_cursor_moves(buf: &[u8]) -> usize {
+        let mut count = 0;
+        let mut i = 0;
+        while i + 1 < buf.len() {
+            if buf[i] == 0x1b && buf[i + 1] == b'[' {
+                let mut j = i + 2;
+                while j < buf.len() && buf[j] != b'H' && buf[j] != b'l' && buf[j] != b'h' {
+                    j += 1;
+                }
+                if j < buf.len() && buf[j] == b'H' {
+                    count += 1;
+                }
+                i = j + 1;
+            } else {
+                i += 1;
+            }
+        }
+        count
+    }
+
+    #[test]
+    fn test_clear_detail_box_uncovered_by_no_covers_clears_full_rect() {
+        let layout = detail_layout_at(5, 10, 4, 3);
+        let mut buf = Vec::new();
+        clear_detail_box_uncovered_by(&mut buf, &layout, &[]);
+
+        assert!(buf.starts_with(b"\x1b7"), "must save cursor at start");
+        assert!(buf.ends_with(b"\x1b8"), "must restore cursor at end");
+
+        let space_count = buf.iter().filter(|&&b| b == b' ').count();
+        assert_eq!(
+            space_count,
+            (layout.width as usize) * (layout.height as usize),
+            "no covers should fully wipe the rect with width*height spaces",
+        );
+    }
+
+    #[test]
+    fn test_clear_detail_box_uncovered_by_full_cover_emits_no_spaces() {
+        let layout = detail_layout_at(5, 10, 4, 3);
+        let cover = OverlayRect {
+            start_row: 4,
+            start_col: 8,
+            width: 12,
+            height: 5,
+        };
+        let mut buf = Vec::new();
+        clear_detail_box_uncovered_by(&mut buf, &layout, &[cover]);
+
+        assert!(buf.starts_with(b"\x1b7"));
+        assert!(buf.ends_with(b"\x1b8"));
+        let space_count = buf.iter().filter(|&&b| b == b' ').count();
+        assert_eq!(
+            space_count, 0,
+            "cover that fully contains the layout should leave no spans to clear",
+        );
+    }
+
+    #[test]
+    fn test_clear_detail_box_uncovered_by_split_into_left_right_slivers() {
+        let layout = detail_layout_at(5, 10, 10, 2);
+        let cover = OverlayRect {
+            start_row: 5,
+            start_col: 13,
+            width: 4,
+            height: 2,
+        };
+        let mut buf = Vec::new();
+        clear_detail_box_uncovered_by(&mut buf, &layout, &[cover]);
+
+        assert!(buf.starts_with(b"\x1b7"));
+        assert!(buf.ends_with(b"\x1b8"));
+        let cursor_moves = count_cursor_moves(&buf);
+        assert_eq!(
+            cursor_moves, 4,
+            "splitting each row into two slivers should emit 2 moves * 2 rows = 4 moves",
+        );
+        let space_count = buf.iter().filter(|&&b| b == b' ').count();
+        let expected_per_row = (layout.width - cover.width) as usize;
+        assert_eq!(
+            space_count,
+            expected_per_row * layout.height as usize,
+            "surviving widths per row must sum to (layout.width - cover.width)",
+        );
+    }
+
+    #[test]
+    fn test_clear_detail_box_uncovered_by_multiple_covers_disjoint() {
+        let layout = detail_layout_at(5, 10, 14, 1);
+        let cover_a = OverlayRect {
+            start_row: 5,
+            start_col: 13,
+            width: 3,
+            height: 1,
+        };
+        let cover_b = OverlayRect {
+            start_row: 5,
+            start_col: 19,
+            width: 2,
+            height: 1,
+        };
+        let mut buf = Vec::new();
+        clear_detail_box_uncovered_by(&mut buf, &layout, &[cover_a, cover_b]);
+
+        assert!(buf.starts_with(b"\x1b7"));
+        assert!(buf.ends_with(b"\x1b8"));
+        let cursor_moves = count_cursor_moves(&buf);
+        assert_eq!(
+            cursor_moves, 3,
+            "two disjoint covers on one row should leave three slivers (3 moves)",
+        );
+    }
+
+    #[test]
+    fn test_detail_layout_after_scroll_zero_size_returns_none() {
+        let layout = DetailLayout {
+            start_row: 5,
+            start_col: 10,
+            width: 0,
+            height: 0,
+            position: gc_overlay::DetailPosition::SideRight,
+        };
+        assert!(detail_layout_after_scroll(&layout, 1).is_none());
+    }
+
+    #[test]
+    fn test_detail_layout_after_scroll_zero_scroll_clones() {
+        let layout = detail_layout_at(5, 10, 12, 4);
+        let result = detail_layout_after_scroll(&layout, 0).expect("zero scroll must clone");
+        assert_eq!(result.start_row, layout.start_row);
+        assert_eq!(result.start_col, layout.start_col);
+        assert_eq!(result.width, layout.width);
+        assert_eq!(result.height, layout.height);
+    }
+
+    #[test]
+    fn test_detail_layout_after_scroll_fully_consumed_returns_none() {
+        let layout = detail_layout_at(5, 10, 12, 3);
+        assert!(
+            detail_layout_after_scroll(&layout, 10).is_none(),
+            "scroll that meets or exceeds end_row must drop the layout",
+        );
+    }
+
+    #[test]
+    fn test_detail_layout_after_scroll_partial_clip_adjusts_height() {
+        let layout = detail_layout_at(2, 10, 12, 5);
+        let result = detail_layout_after_scroll(&layout, 4).expect("partial clip must keep layout");
+        assert_eq!(result.start_row, 0);
+        assert_eq!(result.height, 3);
+    }
+
+    #[test]
+    fn test_detail_layout_after_scroll_scroll_below_start_row_no_clip() {
+        let layout = detail_layout_at(5, 10, 12, 3);
+        let result =
+            detail_layout_after_scroll(&layout, 2).expect("scroll above start must keep layout");
+        assert_eq!(result.start_row, 3);
+        assert_eq!(result.height, 3);
+    }
+
+    #[test]
+    fn test_render_for_detail_redraw_noop_when_invisible() {
+        let mut handler = make_handler().with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.render_for_detail_redraw(&parser, &mut buf);
+        assert!(buf.is_empty(), "no-op when handler is not visible");
+    }
+
+    #[test]
+    fn test_render_for_detail_redraw_noop_when_mode_off() {
+        let mut handler = make_visible_handler(vec![command_suggestion(
+            "alpha",
+            Some("ALPHADESC alpha beta gamma delta epsilon"),
+        )]);
+        handler.overlay.selected = Some(0);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.render_for_detail_redraw(&parser, &mut buf);
+        assert!(buf.is_empty(), "no-op when description_box mode is Off");
+    }
+
+    #[test]
+    fn test_render_for_detail_redraw_noop_when_selection_unchanged() {
+        let mut handler = make_visible_handler(vec![command_suggestion(
+            "alpha",
+            Some("ALPHADESC alpha beta gamma delta epsilon"),
+        )])
+        .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.overlay.selected = Some(0);
+        handler.detail_debounce.displayed_idx = Some(0);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.render_for_detail_redraw(&parser, &mut buf);
+        assert!(
+            buf.is_empty(),
+            "no-op when displayed idx already matches selected"
+        );
+    }
+
+    #[test]
+    fn test_update_config_disable_auto_trigger_clears_orphaned_detail_layout() {
+        let mut handler = make_visible_handler(vec![command_suggestion(
+            "alpha",
+            Some("ALPHADESC alpha beta gamma delta epsilon zeta eta"),
+        )])
+        .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.overlay.selected = Some(0);
+        handler.last_detail_layout = Some(DetailLayout {
+            start_row: 7,
+            start_col: 30,
+            width: 25,
+            height: 4,
+            position: gc_overlay::DetailPosition::SideRight,
+        });
+        handler.last_layout = None;
+
+        let cleanup = handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/', '-', '.'],
+            10,
+            1200,
+            false,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Side,
+            60,
+            5,
+            80,
+        );
+
+        let output = String::from_utf8_lossy(&cleanup);
+        assert!(
+            output.contains("\x1b[8;31H"),
+            "cleanup must move to detail layout's start_row+1, start_col+1: {output:?}",
+        );
+        let space_count = cleanup.iter().filter(|&&b| b == b' ').count();
+        assert!(
+            space_count >= 25,
+            "cleanup must include at least width spaces per detail row: got {space_count}",
+        );
+
+        let ticket = handler.overlay_write_ticket();
+        assert!(
+            ticket.cleanup_token.is_some(),
+            "orphaned detail cleanup must be staged through the overlay write token",
+        );
+        handler.commit_overlay_write(ticket);
+        assert!(
+            handler.last_detail_layout.is_none(),
+            "detail layout must be released after the cleanup write is acknowledged",
+        );
     }
 }

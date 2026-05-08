@@ -151,6 +151,11 @@ pub struct DetailLayout {
     pub start_col: u16,
     pub width: u16,
     pub height: u16,
+    /// Derived metadata recording which cascade tier produced this layout.
+    /// Set only by `compute_detail_layout`; struct-literal construction by
+    /// callers must keep this consistent with the chosen `start_row`/
+    /// `start_col` (e.g. `SideRight` implies `start_col >= main.start_col +
+    /// main.width`).
     pub position: DetailPosition,
 }
 
@@ -247,9 +252,9 @@ pub fn compute_detail_layout(
 /// `max_lines` lines. Long descriptions are truncated with a single-column
 /// ellipsis (`…`) on the final line.
 ///
-/// Whitespace runs collapse to single spaces (the source corpus has no
-/// embedded newlines per the description-data analysis on issue #116). A
-/// word longer than `max_width` is hard-broken char-by-char.
+/// Whitespace runs collapse to single spaces (spec descriptions in the
+/// embedded corpus have no embedded newlines). A word longer than
+/// `max_width` is hard-broken char-by-char.
 pub fn wrap_description(text: &str, max_width: usize, max_lines: usize) -> Vec<String> {
     if max_width == 0 || max_lines == 0 || text.trim().is_empty() {
         return Vec::new();
@@ -831,5 +836,54 @@ mod tests {
         let s = String::from_utf8(buf).unwrap();
         assert!(s.contains('╭'), "missing top-left corner");
         assert!(s.contains('╯'), "missing bottom-right corner");
+    }
+
+    #[test]
+    fn render_detail_box_sanitizes_ansi_escapes() {
+        let layout = DetailLayout {
+            start_row: 0,
+            start_col: 0,
+            width: 30,
+            height: 10,
+            position: DetailPosition::SideRight,
+        };
+        let mut buf = Vec::new();
+        render_detail_box(
+            &mut buf,
+            &layout,
+            "\x1b[2Jhello\x1b[31mworld",
+            &PopupTheme::default(),
+        );
+        assert!(
+            !buf.windows(4).any(|w| w == b"\x1b[2J"),
+            "rendered output contains erase-display sequence",
+        );
+        assert!(
+            !buf.windows(5).any(|w| w == b"\x1b[31m"),
+            "rendered output contains foreground-color set sequence",
+        );
+    }
+
+    #[test]
+    fn detail_layout_with_borders_includes_border_pad() {
+        let main = layout(0, 0, 60, 10);
+        let det = compute_detail_layout(&main, 24, 200, 60, 5, true).unwrap();
+        assert_eq!(det.position, DetailPosition::SideRight);
+        assert_eq!(det.height, 7);
+        assert!(det.height.saturating_sub(2) > 0);
+    }
+
+    #[test]
+    fn wrap_description_handles_zero_width_combining_marks() {
+        let lines = wrap_description("a\u{0301} b\u{0301} c\u{0301}", 5, 5);
+        assert!(!lines.is_empty(), "expected wrapped output");
+        for line in &lines {
+            assert!(
+                UnicodeWidthStr::width(line.as_str()) <= 5,
+                "line {line:?} exceeds 5 cols",
+            );
+        }
+        let joined: String = lines.join(" ");
+        assert!(joined.contains('\u{0301}'), "combining marks dropped");
     }
 }

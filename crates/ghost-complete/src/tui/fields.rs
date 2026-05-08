@@ -467,4 +467,27 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn popup_section_exposes_description_box_fields() {
+        let fields = all_fields();
+        let keys: Vec<&str> = fields
+            .iter()
+            .filter(|f| f.section == "popup")
+            .map(|f| f.key)
+            .collect();
+        for expected in [
+            "min_width",
+            "max_width",
+            "description_box",
+            "description_box_max_width",
+            "description_box_lines",
+            "description_box_debounce_ms",
+        ] {
+            assert!(
+                keys.contains(&expected),
+                "popup.{expected} missing from config editor"
+            );
+        }
+    }
 }
