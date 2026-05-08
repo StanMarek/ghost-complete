@@ -35,8 +35,10 @@ pub const MIN_USEFUL_WIDTH: u16 = 30;
 /// Used by the proxy as a gate for the optional adjacent description box:
 /// when the inline description fits cleanly, there is no useful information
 /// for the side box to add, so we skip rendering it. Mirrors the budget
-/// computation in `render::write_description` exactly so the gate cannot
-/// disagree with the inline truncation logic.
+/// computation in `render::write_description` exactly — including the
+/// scrollbar-presence check, which depends on `effective_max = min(
+/// max_visible, screen_rows - 1 - border_pad)`, not on `max_visible`
+/// alone — so the gate cannot disagree with the inline truncation logic.
 ///
 /// Returns `false` when the suggestion has no description, the description
 /// is empty, or the popup is zero-sized (no inline truncation can happen).
@@ -46,6 +48,7 @@ pub fn description_overflows_main_popup(
     total_suggestions: usize,
     max_visible: usize,
     borders: bool,
+    screen_rows: u16,
 ) -> bool {
     let Some(desc) = suggestion.description.as_deref() else {
         return false;
@@ -56,10 +59,26 @@ pub fn description_overflows_main_popup(
     if popup_layout.width == 0 {
         return false;
     }
-    let border_pad = if borders { 2 } else { 0 };
+    let border_pad: u16 = if borders { 2 } else { 0 };
+    // Match `render::render_popup`'s `effective_max` formula exactly: the
+    // popup viewport is capped by both the user's `max_visible` knob and
+    // the screen height minus the prompt row and any border padding. On a
+    // tight screen the screen-height term dominates and the scrollbar
+    // appears at a smaller suggestion count than `max_visible` alone would
+    // suggest.
+    let min_screen = 1 + border_pad;
+    let effective_max = if screen_rows > min_screen {
+        max_visible.min(screen_rows.saturating_sub(min_screen) as usize)
+    } else {
+        // Tiny screen: render_popup suppresses the popup entirely (zero
+        // height). We're past that branch (popup_layout.width > 0 here),
+        // but treat as worst-case "no scrollbar" since there's nothing
+        // sensible to compare against.
+        max_visible
+    };
     let total_width = popup_layout.width as usize;
-    let content_width = total_width.saturating_sub(border_pad);
-    let needs_scrollbar = total_suggestions > max_visible.max(1);
+    let content_width = total_width.saturating_sub(border_pad as usize);
+    let needs_scrollbar = total_suggestions > effective_max.max(1);
     let item_width = if needs_scrollbar {
         content_width.saturating_sub(1)
     } else {
@@ -418,7 +437,7 @@ mod tests {
         // Plenty of room — no overflow.
         let s = make_suggestion("git", Some("current branch"));
         let pl = layout(0, 0, 60, 10);
-        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false));
+        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false, 24));
     }
 
     #[test]
@@ -429,28 +448,28 @@ mod tests {
             Some("Switch branches or restore working tree files with this very long description"),
         );
         let pl = layout(0, 0, 30, 10);
-        assert!(description_overflows_main_popup(&s, &pl, 1, 10, false));
+        assert!(description_overflows_main_popup(&s, &pl, 1, 10, false, 24));
     }
 
     #[test]
     fn overflow_check_no_description_returns_false() {
         let s = make_suggestion("git", None);
         let pl = layout(0, 0, 60, 10);
-        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false));
+        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false, 24));
     }
 
     #[test]
     fn overflow_check_empty_description_returns_false() {
         let s = make_suggestion("git", Some(""));
         let pl = layout(0, 0, 60, 10);
-        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false));
+        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false, 24));
     }
 
     #[test]
     fn overflow_check_zero_width_popup_returns_false() {
         let s = make_suggestion("git", Some("anything"));
         let pl = layout(0, 0, 0, 0);
-        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false));
+        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false, 24));
     }
 
     #[test]
@@ -462,9 +481,33 @@ mod tests {
         let s = make_suggestion("checkout", Some("123456789012345"));
         let pl = layout(0, 0, 30, 10);
         // Without scrollbar (1 suggestion): budget = 30-4-8-2-1 = 15, desc=15 → no overflow.
-        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false));
+        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false, 24));
         // With scrollbar (more suggestions than max_visible): budget = 14, desc=15 → overflow.
-        assert!(description_overflows_main_popup(&s, &pl, 20, 10, false));
+        assert!(description_overflows_main_popup(&s, &pl, 20, 10, false, 24));
+    }
+
+    #[test]
+    fn overflow_check_tight_screen_triggers_scrollbar_below_max_visible() {
+        // Regression: render::render_popup uses effective_max = min(max_visible,
+        // screen_rows - 1 - border_pad). On a tight screen the screen-height
+        // term dominates and the scrollbar appears even when total_suggestions
+        // <= max_visible. The overflow check must mirror that formula or it
+        // silently suppresses detail boxes the user actually needs.
+        //
+        // Setup: 30-col popup, text="checkout"(8), desc=15 chars.
+        //   - Without scrollbar: budget = 30-4-8-2-1 = 15, desc=15 → fits.
+        //   - With scrollbar: budget = 14, desc=15 → overflows.
+        // total=10, max_visible=20, screen_rows=8, borders=false:
+        //   - effective_max = min(20, 8-1) = 7 → 10 > 7 → scrollbar present.
+        //   - Naive heuristic (max_visible alone): 10 > 20 = false → wrong!
+        let s = make_suggestion("checkout", Some("123456789012345"));
+        let pl = layout(0, 0, 30, 10);
+        assert!(description_overflows_main_popup(&s, &pl, 10, 20, false, 8));
+        // Sanity check: same suggestion count + max_visible on a tall screen
+        // does NOT trigger the scrollbar — so the gate correctly says "fits".
+        assert!(!description_overflows_main_popup(
+            &s, &pl, 10, 20, false, 100
+        ));
     }
 
     #[test]
@@ -479,8 +522,8 @@ mod tests {
         // Borders: budget = (30-2)-4-3-2-1 = 18, desc=20 → overflow.
         let s = make_suggestion("cmd", Some("12345678901234567890"));
         let pl = layout(0, 0, 30, 10);
-        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false));
-        assert!(description_overflows_main_popup(&s, &pl, 1, 10, true));
+        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false, 24));
+        assert!(description_overflows_main_popup(&s, &pl, 1, 10, true, 24));
     }
 
     #[test]
@@ -489,10 +532,10 @@ mod tests {
         let s = make_suggestion("cmd", Some("\u{65E5}\u{672C}\u{8A9E}\u{6F22}"));
         let pl = layout(0, 0, 18, 10);
         // budget = 18-4-3-2-1 = 8, desc cols = 8 → exact fit, no overflow.
-        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false));
+        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false, 24));
         // Trim popup by 1 col → budget = 7, desc = 8 → overflow.
         let pl2 = layout(0, 0, 17, 10);
-        assert!(description_overflows_main_popup(&s, &pl2, 1, 10, false));
+        assert!(description_overflows_main_popup(&s, &pl2, 1, 10, false, 24));
     }
 
     // --- compute_detail_layout cascade ---

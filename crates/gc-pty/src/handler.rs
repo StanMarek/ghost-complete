@@ -2122,6 +2122,7 @@ impl InputHandler {
             self.suggestions.len(),
             self.max_visible,
             self.theme.borders,
+            screen_rows,
         ) {
             self.displayed_detail_idx = Some(idx);
             return None;
