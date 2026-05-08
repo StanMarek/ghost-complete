@@ -2265,6 +2265,63 @@ mod tests {
         );
     }
 
+    /// Spurious-notify path: a detail-debounce timer fires for a popup that
+    /// was dismissed before the wakeup arrived. `clear_detail_debounce_pending()`
+    /// MUST be called before `render_for_detail_redraw()` — otherwise the
+    /// pending flag would stay stuck `true` and silently break ALL future
+    /// debounce wakeups for the rest of the session. Verifies the call
+    /// order by exercising the dismissed-popup branch end-to-end.
+    #[tokio::test]
+    async fn detail_redraw_iteration_clears_pending_and_returns_empty_when_popup_dismissed() {
+        let handler = InputHandler::new_with_embedded(
+            &[std::path::PathBuf::from(".")],
+            TerminalProfile::for_ghostty(),
+            false,
+        )
+        .expect("handler")
+        .with_popup_widths(20, 40)
+        .with_description_box(DescriptionBoxMode::Side, 60, 5, 0)
+        .test_with_visible_suggestions(
+            vec![detail_suggestion(
+                "alpha",
+                "ALPHADETAIL alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu",
+            )],
+            0,
+        );
+        let handler = Arc::new(Mutex::new(handler));
+        let parser = parser_with_buffer_and_size("dismiss-test ", 24, 120);
+
+        // Simulate: a debounce timer was scheduled, then the popup was
+        // dismissed (e.g. user pressed Escape) before the wakeup fired.
+        {
+            let mut h = handler.lock().expect("handler");
+            h.set_detail_debounce_pending_for_test(true);
+            h.set_visible(false);
+            assert!(h.detail_debounce_pending_for_test());
+        }
+
+        let mut written = Vec::new();
+        let outcome = detail_redraw_iteration_to_writer(&handler, &parser, &mut written)
+            .expect("detail redraw write should succeed even when popup was dismissed");
+
+        assert_eq!(
+            outcome,
+            OverlayWriteOutcome::Empty,
+            "render_for_detail_redraw must produce no bytes when popup is dismissed"
+        );
+        assert!(
+            written.is_empty(),
+            "no overlay bytes should reach the writer for a dismissed popup, got {written:?}"
+        );
+        let h = handler.lock().expect("handler");
+        assert!(
+            !h.detail_debounce_pending_for_test(),
+            "clear_detail_debounce_pending must run unconditionally so the next \
+             debounce wakeup can re-arm — pending flag stuck true after a dismiss \
+             would freeze ALL subsequent debounce timers"
+        );
+    }
+
     struct SpawnedTestChild {
         child: Box<dyn portable_pty::Child + Send + Sync>,
         // Held so the slave side of the PTY stays open — dropping the master

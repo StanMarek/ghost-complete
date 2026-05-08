@@ -1011,6 +1011,11 @@ impl InputHandler {
         self.detail_debounce.pending
     }
 
+    #[cfg(test)]
+    pub(crate) fn set_detail_debounce_pending_for_test(&mut self, pending: bool) {
+        self.detail_debounce.pending = pending;
+    }
+
     /// Prime `dynamic_ctx` to the "no context" state that matches an empty
     /// buffer, bypassing `spawn_generators`.
     #[doc(hidden)]
@@ -5073,6 +5078,161 @@ mod tests {
         assert!(handler.last_detail_layout.is_none());
     }
 
+    /// Cover guard: when `render_at` triggers a viewport scroll AND the
+    /// new selection produces a fresh detail layout, the
+    /// `clear_detail_box_uncovered_by` pass that erases the *scrolled* old
+    /// detail rectangle must spare the freshly-painted new detail. A
+    /// regression that drops the conditional `covers.push(new_detail)` would
+    /// emit space-fills inside the new detail's columns and visibly clobber
+    /// the just-painted box during the same render frame.
+    #[test]
+    fn test_render_at_scroll_clears_old_detail_but_preserves_new_detail() {
+        // Eight suggestions, the first two carrying long descriptions that
+        // both overflow the 40-col popup. Eight items beats the available
+        // 5 rows below the prior cursor, so the render forces a viewport
+        // scroll — the precondition for the cover branch under test.
+        let long_desc_a = "MARKER_ALPHA alpha beta gamma delta epsilon zeta eta theta iota kappa \
+                           lambda mu nu xi omicron pi rho sigma tau";
+        let long_desc_b = "MARKER_BRAVO alpha beta gamma delta epsilon zeta eta theta iota kappa \
+                           lambda mu nu xi omicron pi rho sigma tau";
+        let mut suggestions = numbered_suggestions(8);
+        suggestions[0] = command_suggestion("checkout", Some(long_desc_a));
+        suggestions[1] = command_suggestion("commit", Some(long_desc_b));
+        let mut handler = make_visible_handler(suggestions)
+            .with_popup_widths(20, 40)
+            .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.overlay.selected = Some(0);
+        handler.overlay_scroll_deficit = 4;
+        // Place the prior popup + detail near the bottom so the new render
+        // forces a scroll. The old detail spans a wide column range so the
+        // shifted clear will straddle the new detail's columns.
+        handler.last_layout = Some(PopupLayout {
+            start_row: 22,
+            start_col: 70,
+            width: 40,
+            height: 2,
+            scroll_deficit: 4,
+        });
+        let old_detail = DetailLayout {
+            start_row: 22,
+            start_col: 10,
+            width: 60,
+            height: 2,
+            position: gc_overlay::DetailPosition::SideLeft,
+        };
+        handler.last_detail_layout = Some(old_detail.clone());
+
+        let additional_scroll = popup_additional_scroll_deficit(
+            &handler.suggestions,
+            22,
+            24,
+            120,
+            handler.max_visible,
+            handler.min_popup_width,
+            &handler.theme,
+            handler.overlay_scroll_deficit,
+            &handler.current_feedback_kind(),
+        );
+        assert!(
+            additional_scroll > 0,
+            "setup must force a scrolling repaint so the cover branch runs"
+        );
+        let shifted_row = old_detail.start_row - additional_scroll;
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 22, 0, 24, 120);
+
+        let output = String::from_utf8_lossy(&buf);
+        // (1) Pre-scroll old detail coordinates must not be cleared.
+        assert!(
+            !output.contains("\x1b[23;11H"),
+            "pre-scroll detail coordinates must remain untouched: {output:?}"
+        );
+        // (2) The new detail content (marker word) must be emitted.
+        assert!(
+            output.contains("MARKER_ALPHA"),
+            "new selection's detail must render before the clear-pass spares it: {output:?}"
+        );
+
+        // Commit the staged write so `last_detail_layout` reflects the
+        // freshly-painted new detail rectangle.
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+        let new_detail = handler
+            .last_detail_layout
+            .as_ref()
+            .expect("new selection's detail layout must be retained")
+            .clone();
+
+        // The clear pass for the scrolled old detail is the LAST
+        // save/restore-cursor block in the buffer (DECSAVE `\x1b7` …
+        // DECRESTORE `\x1b8`). Slice it out so the assertions below see
+        // only the clear-pass cursor moves, not the new detail's PAINT
+        // moves which target the same row.
+        let clear_block_start = output
+            .rfind("\u{1b}7")
+            .expect("buffer must contain a save_cursor at the start of the clear pass");
+        let clear_block_end = output[clear_block_start..]
+            .find("\u{1b}8")
+            .map(|rel| clear_block_start + rel)
+            .expect("clear pass must end with a restore_cursor");
+        let clear_block = &output[clear_block_start..clear_block_end];
+
+        // (3) The shifted old-detail row IS cleared in at least one column
+        // outside both the new popup and the new detail. Locate cursor
+        // moves on the shifted row inside the clear block.
+        let new_detail_end_col = new_detail.start_col.saturating_add(new_detail.width);
+        let shifted_prefix = format!("\x1b[{};", shifted_row + 1);
+        let mut shifted_clears: Vec<u16> = Vec::new();
+        let mut search_from = 0usize;
+        while let Some(idx) = clear_block[search_from..].find(&shifted_prefix) {
+            let abs_idx = search_from + idx;
+            let col_start = abs_idx + shifted_prefix.len();
+            let col_end_off = clear_block[col_start..].find('H');
+            if let Some(rel_end) = col_end_off {
+                if let Ok(col_one_idx) = clear_block[col_start..col_start + rel_end].parse::<u16>()
+                {
+                    if col_one_idx > 0 {
+                        shifted_clears.push(col_one_idx - 1);
+                    }
+                }
+                search_from = col_start + rel_end + 1;
+            } else {
+                break;
+            }
+        }
+        assert!(
+            !shifted_clears.is_empty(),
+            "expected at least one cursor-move on shifted row {shifted_row} (1-indexed \
+             {}) inside the clear pass: {clear_block:?}",
+            shifted_row + 1
+        );
+        assert!(
+            shifted_clears
+                .iter()
+                .any(|&c| c < new_detail.start_col || c >= new_detail_end_col),
+            "shifted old-detail row must be cleared in at least one column outside \
+             the new detail's range [{}, {}); cursor moves seen at cols (0-indexed) \
+             {:?}: {clear_block:?}",
+            new_detail.start_col,
+            new_detail_end_col,
+            shifted_clears
+        );
+
+        // (4) The clear pass must not emit any cursor move INSIDE the new
+        // detail's column range on the shifted old-detail row — that is the
+        // exact regression the cover branch protects against.
+        for &col in &shifted_clears {
+            assert!(
+                col < new_detail.start_col || col >= new_detail_end_col,
+                "clear pass must not move cursor inside the new detail column range \
+                 [{}, {}); found cursor move at 0-indexed col {col} on shifted row \
+                 {shifted_row}: {clear_block:?}",
+                new_detail.start_col,
+                new_detail_end_col
+            );
+        }
+    }
+
     #[test]
     fn test_render_at_renders_side_description_box_for_long_description() {
         let description = "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu";
@@ -6607,6 +6767,19 @@ mod tests {
     fn test_detail_layout_after_scroll_partial_clip_adjusts_height() {
         let layout = detail_layout_at(2, 10, 12, 5);
         let result = detail_layout_after_scroll(&layout, 4).expect("partial clip must keep layout");
+        assert_eq!(result.start_row, 0);
+        assert_eq!(result.height, 3);
+    }
+
+    /// Boundary: layout starts at row 0, so `clipped_rows = scroll - 0 = scroll`
+    /// directly, with no `saturating_sub` underflow involved. Guards the
+    /// branch where the layout is anchored at the top of the screen and a
+    /// partial scroll trims it from above.
+    #[test]
+    fn test_detail_layout_after_scroll_layout_at_origin_clips_full_scroll() {
+        let layout = detail_layout_at(0, 0, 10, 5);
+        let result = detail_layout_after_scroll(&layout, 2)
+            .expect("partial clip at origin must keep layout");
         assert_eq!(result.start_row, 0);
         assert_eq!(result.height, 3);
     }

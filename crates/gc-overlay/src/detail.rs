@@ -1,9 +1,8 @@
 //! Adjacent description box rendering.
 //!
 //! Renders a multi-line wrapped description for the currently-selected
-//! suggestion next to (or below) the main popup. Inspired by inshellisense's
-//! 40+30 split; geometry adapts to terminal width and falls back through a
-//! side → below → hide cascade.
+//! suggestion next to (or below) the main popup. Geometry adapts to terminal
+//! width and falls back through a side → below → hide cascade.
 //!
 //! Detail bytes are appended to the same render buffer as the main popup, so
 //! pre-render-buffer terminals receive one coalesced flush. On terminals using
@@ -43,11 +42,11 @@ enum InlineDescriptionFit {
 ///
 /// Used by the proxy as a gate for the optional adjacent description box:
 /// when the inline description fits cleanly, there is no useful information
-/// for the side box to add, so we skip rendering it. Mirrors the budget
-/// computation in `render::write_description` exactly — including the
-/// scrollbar-presence check, which depends on `effective_max = min(
-/// max_visible, screen_rows - 1 - border_pad)`, not on `max_visible`
-/// alone — so the gate cannot disagree with the inline truncation logic.
+/// for the side box to add, so we skip rendering it. Mirrors the
+/// scrollbar/budget computation in `render::render_popup` (the gate uses
+/// `effective_max.max(1)` defensively for the small-screen branch where
+/// `render_popup` would early-return), so it cannot disagree with the inline
+/// truncation logic.
 ///
 /// Returns `false` when the suggestion has no description, the description
 /// is empty, or the popup is zero-sized (no inline truncation can happen).
@@ -165,10 +164,11 @@ pub struct DetailLayout {
 /// - `main` is zero-sized (popup suppressed)
 /// - No tier of the cascade has room
 /// - `lines == 0`
+/// - `max_width == 0`
 ///
 /// Border padding is included in the returned `width` and `height`. The
-/// detail box uses borders independently from the main popup; both cases
-/// use the same `borders` flag for visual consistency.
+/// detail box honors the same `borders` flag as the main popup so the two
+/// surfaces stay visually consistent.
 pub fn compute_detail_layout(
     main: &PopupLayout,
     screen_rows: u16,
@@ -517,6 +517,13 @@ mod tests {
     }
 
     #[test]
+    fn overflow_check_pure_ansi_description_treated_as_missing() {
+        let s = make_suggestion("git", Some("\x1b[2J\x1b[31m\x1b[H"));
+        let pl = layout(0, 0, 60, 10);
+        assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false, 24));
+    }
+
+    #[test]
     fn overflow_check_scrollbar_eats_one_column() {
         // 30-col popup, 8-char text, 14-char description: gutter(4) + text(8) +
         // gap(2) + desc(14) + pad(1) = 29. Fits without scrollbar (item_width=30).
@@ -566,14 +573,9 @@ mod tests {
 
     #[test]
     fn overflow_check_borders_reduce_budget() {
-        // 30-col popup, text="cmd" (3), description="0123456789012345678901234"
-        // Without borders: budget = 30-4-3-2-1 = 20. desc=25 → overflow.
-        // Already overflows without borders, so use a tighter case:
-        // text="cmd" (3), description has 22 chars. Budget no borders = 20, desc=22 → overflow.
-        // Border-pad adds 2 (1 each side) so budget = 28-4-3-2-1 = 18 → overflow even more. Both true.
-        // Try description that ONLY overflows with borders:
-        // text="cmd"(3), description=20 chars. No borders: budget=20, desc=20 → no overflow.
-        // Borders: budget = (30-2)-4-3-2-1 = 18, desc=20 → overflow.
+        // 30-col popup, text="cmd"(3), description=20 chars.
+        // No borders: budget = 30-4-3-2-1 = 20, desc=20 → fits.
+        // Borders: budget = (30-2)-4-3-2-1 = 18, desc=20 → overflows.
         let s = make_suggestion("cmd", Some("12345678901234567890"));
         let pl = layout(0, 0, 30, 10);
         assert!(!description_overflows_main_popup(&s, &pl, 1, 10, false, 24));
@@ -610,11 +612,12 @@ mod tests {
         // Main popup pinned to the right edge: very little room to the right,
         // plenty to the left.
         let main = layout(5, 60, 20, 10);
-        // screen_cols = 80, main_end_col = 80, cols_to_right = -1 (saturated to 0)
+        // screen_cols = 80, main_end_col = 80, cols_to_right = 80.saturating_sub(80).saturating_sub(1) = 0
         let det = compute_detail_layout(&main, 24, 80, 60, 5, false).unwrap();
         assert_eq!(det.position, DetailPosition::SideLeft);
-        // 60 cols available to the left, capped at max_width (60). Box ends at
-        // main.start_col - 1 = 59, box of width 59 starts at col 0.
+        // 59 cols available to the left after reserving the 1-col gap; box
+        // width = min(59, max_width=60) = 59, so the box of width 59 starts
+        // at col 0 and ends at col 58 (inclusive).
         assert!(det.start_col + det.width < main.start_col);
     }
 
@@ -672,6 +675,43 @@ mod tests {
     }
 
     #[test]
+    fn detail_side_left_clamps_width_to_max_width() {
+        // Main pinned to right edge so side-right tier fails (cols_to_right=0).
+        // Side-left has available = main.start_col - 1 = 59. max_width=40 must
+        // clamp width to 40, and the right edge of the box must stay strictly
+        // left of the main popup.
+        let main = layout(5, 60, 20, 10);
+        let det = compute_detail_layout(&main, 24, 80, 40, 5, false).unwrap();
+        assert_eq!(det.position, DetailPosition::SideLeft);
+        assert_eq!(det.width, 40);
+        assert!(det.start_col + det.width < main.start_col);
+    }
+
+    #[test]
+    fn detail_below_with_borders_includes_border_pad_in_height() {
+        // Side tiers fail (60-col screen, full-width main) → tier 3 with
+        // borders=true. needed_height = lines + border_pad = 3 + 2 = 5, and
+        // the content row count must remain non-zero after subtracting padding.
+        let main = layout(0, 0, 60, 5);
+        let det = compute_detail_layout(&main, 24, 60, 60, 3, true).unwrap();
+        assert_eq!(det.position, DetailPosition::Below);
+        assert_eq!(det.height, 5);
+        assert!(det.height.saturating_sub(2) > 0);
+    }
+
+    #[test]
+    fn detail_below_clamps_width_to_avail_cols() {
+        // Main popup overhangs the right edge so avail_cols < main.width:
+        // start_col=5, width=40, screen_cols=40 → avail_cols=35, while
+        // max(main.width, MIN_USEFUL_WIDTH) = 40. The min(avail_cols) clamp
+        // must bind and produce width=35.
+        let main = layout(0, 5, 40, 5);
+        let det = compute_detail_layout(&main, 24, 40, 60, 3, false).unwrap();
+        assert_eq!(det.position, DetailPosition::Below);
+        assert_eq!(det.width, 35);
+    }
+
+    #[test]
     fn detail_below_requires_min_useful_width() {
         // Main popup width 20 is too narrow for side placement, but below can
         // expand to MIN_USEFUL_WIDTH and fit.
@@ -715,6 +755,8 @@ mod tests {
     fn wrap_empty_input_yields_no_lines() {
         assert!(wrap_description("", 80, 5).is_empty());
         assert!(wrap_description("   ", 80, 5).is_empty());
+        assert!(wrap_description("   \t  \n  ", 80, 5).is_empty());
+        assert!(wrap_description("\n\n\n", 80, 5).is_empty());
     }
 
     #[test]
@@ -862,6 +904,62 @@ mod tests {
             !buf.windows(5).any(|w| w == b"\x1b[31m"),
             "rendered output contains foreground-color set sequence",
         );
+    }
+
+    #[test]
+    fn render_detail_box_with_borders_at_minimum_height_emits_one_content_row() {
+        let layout = DetailLayout {
+            start_row: 0,
+            start_col: 0,
+            width: 10,
+            height: 3,
+            position: DetailPosition::SideRight,
+        };
+        let mut buf = Vec::new();
+        let theme = PopupTheme {
+            borders: true,
+            ..PopupTheme::default()
+        };
+        render_detail_box(&mut buf, &layout, "hi", &theme);
+        let s = String::from_utf8(buf).unwrap();
+        assert_eq!(s.matches('╭').count(), 1);
+        assert_eq!(s.matches('╰').count(), 1);
+    }
+
+    #[test]
+    fn render_detail_box_with_borders_at_or_below_border_pad_emits_nothing() {
+        let layout = DetailLayout {
+            start_row: 0,
+            start_col: 0,
+            width: 10,
+            height: 2,
+            position: DetailPosition::SideRight,
+        };
+        let mut buf = Vec::new();
+        let theme = PopupTheme {
+            borders: true,
+            ..PopupTheme::default()
+        };
+        render_detail_box(&mut buf, &layout, "hi", &theme);
+        assert!(buf.is_empty());
+    }
+
+    #[test]
+    fn render_detail_box_with_borders_and_zero_content_width_emits_nothing() {
+        let layout = DetailLayout {
+            start_row: 0,
+            start_col: 0,
+            width: 2,
+            height: 5,
+            position: DetailPosition::SideRight,
+        };
+        let mut buf = Vec::new();
+        let theme = PopupTheme {
+            borders: true,
+            ..PopupTheme::default()
+        };
+        render_detail_box(&mut buf, &layout, "hi", &theme);
+        assert!(buf.is_empty());
     }
 
     #[test]

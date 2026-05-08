@@ -151,11 +151,10 @@ pub struct PopupConfig {
     /// wrapped to multiple lines. `"off"` keeps the legacy inline-truncated
     /// behavior. Default `"off"`.
     ///
-    /// The sibling tuning fields (`description_box_max_width`,
-    /// `description_box_lines`, `description_box_debounce_ms`) are only read
-    /// when this is `"side"`. Setting them while in `"off"` mode is harmless
-    /// but has no effect — see [`PopupConfig::description_box_settings`] for
-    /// the shape that enforces this contract on the consumer side.
+    /// The runtime stores the sibling tuning fields
+    /// (`description_box_max_width`, `description_box_lines`,
+    /// `description_box_debounce_ms`) regardless of mode and gates actual
+    /// rendering on `description_box == Side`.
     pub description_box: DescriptionBoxMode,
     /// Maximum width (display columns) for the description box. Clamped to
     /// `[20, 200]` during normalization. The actual rendered width is
@@ -204,37 +203,6 @@ pub enum DescriptionBoxMode {
     /// Adjacent box rendered to the side of (or below) the main popup, with
     /// wrapped multi-line description for the selected suggestion.
     Side,
-}
-
-/// Tuning knobs for the side-description box. Returned from
-/// [`PopupConfig::description_box_settings`] only when `description_box` is
-/// `Side`, encoding "tuning is meaningless when the box is off" in the type
-/// system. The flat fields on `PopupConfig` remain public for serde, the TUI
-/// editor, and hot reload — this struct is the disciplined read path.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DescriptionBoxTuning {
-    /// Maximum width (display columns), already clamped to `[20, 200]`.
-    pub max_width: u16,
-    /// Maximum wrapped lines, already clamped to `[1, 20]`.
-    pub lines: u16,
-    /// Selection-change debounce window (ms), already clamped to `[0, 500]`.
-    pub debounce_ms: u16,
-}
-
-impl PopupConfig {
-    /// Returns the side-description-box tuning when the box is enabled,
-    /// `None` otherwise. Use this from rendering code to avoid reading
-    /// tuning fields whose values have no effect when the mode is `Off`.
-    pub fn description_box_settings(&self) -> Option<DescriptionBoxTuning> {
-        match self.description_box {
-            DescriptionBoxMode::Off => None,
-            DescriptionBoxMode::Side => Some(DescriptionBoxTuning {
-                max_width: self.description_box_max_width,
-                lines: self.description_box_lines,
-                debounce_ms: self.description_box_debounce_ms,
-            }),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1515,30 +1483,6 @@ description_box = "side"
             msg.contains("nonnegative integer"),
             "error must mention the expected shape, got: {msg}",
         );
-    }
-
-    #[test]
-    fn test_description_box_settings_returns_none_when_off() {
-        let cfg = PopupConfig::default();
-        assert_eq!(cfg.description_box, DescriptionBoxMode::Off);
-        assert!(cfg.description_box_settings().is_none());
-    }
-
-    #[test]
-    fn test_description_box_settings_returns_tuning_when_side() {
-        let cfg = PopupConfig {
-            description_box: DescriptionBoxMode::Side,
-            description_box_max_width: 80,
-            description_box_lines: 7,
-            description_box_debounce_ms: 120,
-            ..PopupConfig::default()
-        };
-        let tuning = cfg
-            .description_box_settings()
-            .expect("Side mode must yield tuning");
-        assert_eq!(tuning.max_width, 80);
-        assert_eq!(tuning.lines, 7);
-        assert_eq!(tuning.debounce_ms, 120);
     }
 
     #[test]
