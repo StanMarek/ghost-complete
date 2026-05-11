@@ -1,26 +1,44 @@
 {
-  "name": "create-react-app",
+  "args": {
+    "name": "name",
+    "template": "folders"
+  },
   "description": "Creates a new React project",
+  "name": "create-react-app",
   "options": [
     {
+      "args": {
+        "name": "name or url"
+      },
+      "description": "Specify a template for the created project (a custom template on npm (search for \"cra-template-*\"), a relative path, or an archive (.tgz or .tar.gz))",
       "name": [
         "--template"
       ],
-      "description": "Specify a template for the created project (a custom template on npm (search for \"cra-template-*\"), a relative path, or an archive (.tgz or .tar.gz))",
-      "priority": 76,
-      "args": {
-        "name": "name or url"
-      }
+      "priority": 76
     },
     {
+      "args": {
+        "isOptional": true,
+        "name": "boolean",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Use npm to install dependencies (default when Yarn is not installed)",
       "name": [
         "--use-npm"
       ],
-      "description": "Use npm to install dependencies (default when Yarn is not installed)",
-      "priority": 75,
+      "priority": 75
+    },
+    {
       "args": {
-        "name": "boolean",
         "isOptional": true,
+        "name": "boolean",
         "suggestions": [
           {
             "name": "true"
@@ -29,63 +47,45 @@
             "name": "false"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Use Yarn Plug'n'Play to create the app",
       "name": [
         "--use-pnp"
       ],
-      "description": "Use Yarn Plug'n'Play to create the app",
-      "priority": 75,
-      "args": {
-        "name": "boolean",
-        "isOptional": true,
-        "suggestions": [
-          {
-            "name": "true"
-          },
-          {
-            "name": "false"
-          }
-        ]
-      }
+      "priority": 75
     },
     {
+      "args": {
+        "name": "alternative package"
+      },
+      "description": "Use a non-standard version of react-scripts (a specific npm version or npm tag, a custom fork published on npm, a relative path, or an archive (.tgz or .tar.gz))",
       "name": [
         "--scripts-version"
       ],
-      "description": "Use a non-standard version of react-scripts (a specific npm version or npm tag, a custom fork published on npm, a relative path, or an archive (.tgz or .tar.gz))",
-      "priority": 74,
-      "args": {
-        "name": "alternative package"
-      }
+      "priority": 74
     },
     {
+      "description": "Print additional logs",
       "name": [
         "--verbose"
       ],
-      "description": "Print additional logs",
       "priority": 1
     },
     {
+      "description": "Output usage information",
       "name": [
         "-h",
         "--help"
       ],
-      "description": "Output usage information",
       "priority": 1
     },
     {
+      "description": "Output the version number",
       "name": [
         "-V",
         "--version"
       ],
-      "description": "Output the version number",
       "priority": 1
     }
-  ],
-  "args": {
-    "name": "name",
-    "template": "folders"
-  }
+  ]
 }

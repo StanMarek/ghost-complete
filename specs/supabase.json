@@ -1,397 +1,412 @@
 {
-  "name": "supabase",
   "description": "Supabase CLI",
+  "name": "supabase",
+  "options": [
+    {
+      "description": "Output debug logs to stderr",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "description": "Display help",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "completion",
       "description": "Generate the autocompletion script for the specified shell",
+      "name": "completion",
       "subcommands": [
         {
-          "name": "bash",
           "description": "Generate the autocompletion script for bash",
+          "name": "bash",
           "options": [
             {
+              "description": "Disable completion descriptions",
               "name": [
                 "--no-descriptions"
-              ],
-              "description": "Disable completion descriptions"
+              ]
             }
           ]
         },
         {
-          "name": "fish",
           "description": "Generate the autocompletion script for fish",
+          "name": "fish",
           "options": [
             {
+              "description": "Disable completion descriptions",
               "name": [
                 "--no-descriptions"
-              ],
-              "description": "Disable completion descriptions"
+              ]
             }
           ]
         },
         {
-          "name": "powershell",
           "description": "Generate the autocompletion script for powershell",
+          "name": "powershell",
           "options": [
             {
+              "description": "Disable completion descriptions",
               "name": [
                 "--no-descriptions"
-              ],
-              "description": "Disable completion descriptions"
+              ]
             }
           ]
         },
         {
-          "name": "zsh",
           "description": "Generate the autocompletion script for zsh",
+          "name": "zsh",
           "options": [
             {
+              "description": "Disable completion descriptions",
               "name": [
                 "--no-descriptions"
-              ],
-              "description": "Disable completion descriptions"
+              ]
             }
           ]
         }
       ]
     },
     {
-      "name": "db",
       "description": "Manage local Postgres databases",
+      "name": "db",
       "subcommands": [
         {
-          "name": "branch",
           "description": "Manage local database branches",
+          "name": "branch",
           "subcommands": [
             {
-              "name": "create",
               "description": "Create a branch",
+              "name": "create",
               "priority": 72
             },
             {
-              "name": "delete",
               "description": "Delete a branch",
+              "name": "delete",
               "priority": 50
             },
             {
-              "name": "list",
               "description": "List branches",
+              "name": "list",
               "priority": 82
             },
             {
-              "name": "switch",
-              "description": "Switch the active branch"
+              "description": "Switch the active branch",
+              "name": "switch"
             }
           ]
         },
         {
-          "name": "diff",
           "description": "Diffs the local database for schema changes",
+          "name": "diff",
           "options": [
             {
-              "name": [
-                "--file",
-                "-f"
-              ],
-              "description": "Saves schema diff to a file",
               "args": {
                 "name": "file",
                 "template": "filepaths"
-              }
-            },
-            {
-              "name": [
-                "--schema",
-                "-s"
-              ],
-              "description": "List of schema to include",
-              "args": {
-                "name": "schema"
-              }
-            },
-            {
-              "name": [
-                "--use-migra"
-              ],
-              "description": "Use migra to generate schema diff"
-            }
-          ]
-        },
-        {
-          "name": "dump",
-          "description": "Dumps data or schemas from the remote database",
-          "options": [
-            {
-              "name": [
-                "--data-only"
-              ],
-              "description": "Dumps only data records"
-            },
-            {
-              "name": [
-                "--db-url"
-              ],
-              "description": "Dumps from the database specified by the connection string (must be percent-encoded)",
-              "args": {
-                "name": "string"
-              }
-            },
-            {
-              "name": [
-                "--dry-run"
-              ],
-              "description": "Prints the pg_dump script that would be executed"
-            },
-            {
+              },
+              "description": "Saves schema diff to a file",
               "name": [
                 "--file",
                 "-f"
-              ],
-              "description": "File path to save the dumped contents",
+              ]
+            },
+            {
+              "args": {
+                "name": "schema"
+              },
+              "description": "List of schema to include",
+              "name": [
+                "--schema",
+                "-s"
+              ]
+            },
+            {
+              "description": "Use migra to generate schema diff",
+              "name": [
+                "--use-migra"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Dumps data or schemas from the remote database",
+          "name": "dump",
+          "options": [
+            {
+              "description": "Dumps only data records",
+              "name": [
+                "--data-only"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Dumps from the database specified by the connection string (must be percent-encoded)",
+              "name": [
+                "--db-url"
+              ]
+            },
+            {
+              "description": "Prints the pg_dump script that would be executed",
+              "name": [
+                "--dry-run"
+              ]
+            },
+            {
               "args": {
                 "name": "string",
                 "template": "filepaths"
-              }
+              },
+              "description": "File path to save the dumped contents",
+              "name": [
+                "--file",
+                "-f"
+              ]
             },
             {
+              "description": "Help for dump",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Help for dump"
+              ]
             },
             {
+              "description": "Keeps commented lines from pg_dump output",
               "name": [
                 "--keep-comments"
-              ],
-              "description": "Keeps commented lines from pg_dump output"
+              ]
             },
             {
+              "description": "Dumps from the linked project. (default true)",
               "name": [
                 "--linked"
-              ],
-              "description": "Dumps from the linked project. (default true)"
+              ]
             },
             {
+              "description": "Dumps from the local database",
               "name": [
                 "--local"
-              ],
-              "description": "Dumps from the local database"
+              ]
             },
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "Password to your remote Postgres database",
               "name": [
                 "--password",
                 "-p"
-              ],
-              "description": "Password to your remote Postgres database",
-              "args": {
-                "name": "string"
-              }
+              ]
             },
             {
+              "description": "Dumps only cluster roles",
               "name": [
                 "--role-only"
-              ],
-              "description": "Dumps only cluster roles"
+              ]
             },
             {
-              "name": [
-                "--schema",
-                "-s"
-              ],
-              "description": "Comma separated list of schema to include. (default all)",
               "args": {
                 "name": "string"
-              }
-            },
-            {
-              "name": [
-                "--use-copy"
-              ],
-              "description": "Uses copy statements in place of inserts"
-            }
-          ]
-        },
-        {
-          "name": "lint",
-          "description": "Checks local database for typing error",
-          "options": [
-            {
-              "name": [
-                "--level"
-              ],
-              "description": "Error level to emit",
-              "args": {
-                "name": "level"
-              }
-            },
-            {
+              },
+              "description": "Comma separated list of schema to include. (default all)",
               "name": [
                 "--schema",
                 "-s"
-              ],
-              "description": "List of schema to include",
+              ]
+            },
+            {
+              "description": "Uses copy statements in place of inserts",
+              "name": [
+                "--use-copy"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Checks local database for typing error",
+          "name": "lint",
+          "options": [
+            {
+              "args": {
+                "name": "level"
+              },
+              "description": "Error level to emit",
+              "name": [
+                "--level"
+              ]
+            },
+            {
               "args": {
                 "name": "schema"
-              }
+              },
+              "description": "List of schema to include",
+              "name": [
+                "--schema",
+                "-s"
+              ]
             }
           ]
         },
         {
-          "name": "pull",
-          "description": "Pull schema from the remote database"
+          "description": "Pull schema from the remote database",
+          "name": "pull"
         },
         {
-          "name": "push",
           "description": "Push new migrations to the remote database",
+          "name": "push",
           "options": [
             {
+              "description": "Print the migrations that would be applied, but don't actually apply them",
               "name": [
                 "--dry-run"
-              ],
-              "description": "Print the migrations that would be applied, but don't actually apply them"
+              ]
             },
             {
+              "args": {
+                "name": "password"
+              },
+              "description": "Password to your remote Postgres database",
               "name": [
                 "--password",
                 "-p"
-              ],
-              "description": "Password to your remote Postgres database",
-              "args": {
-                "name": "password"
-              }
+              ]
             }
           ]
         },
         {
-          "name": "remote",
           "description": "Manage remote databases",
-          "subcommands": [
-            {
-              "name": "changes",
-              "description": "Show changes on the remote database"
-            },
-            {
-              "name": "commit",
-              "description": "Commit remote changes as a new migration"
-            }
-          ],
+          "name": "remote",
           "options": [
             {
+              "args": {
+                "name": "password"
+              },
+              "description": "Password to your remote Postgres database",
               "name": [
                 "--password",
                 "-p"
-              ],
-              "description": "Password to your remote Postgres database",
-              "args": {
-                "name": "password"
-              }
+              ]
+            }
+          ],
+          "subcommands": [
+            {
+              "description": "Show changes on the remote database",
+              "name": "changes"
+            },
+            {
+              "description": "Commit remote changes as a new migration",
+              "name": "commit"
             }
           ]
         },
         {
-          "name": "reset",
-          "description": "Resets the local database to current migrations"
+          "description": "Resets the local database to current migrations",
+          "name": "reset"
         }
       ]
     },
     {
-      "name": "functions",
       "description": "Manage Supabase Edge functions",
+      "name": "functions",
       "subcommands": [
         {
-          "name": "delete",
           "description": "Delete a Function from Supabase",
+          "name": "delete",
           "options": [
             {
-              "name": [
-                "--project-ref"
-              ],
-              "description": "Project ref of the Supabase project",
               "args": {
                 "name": "project-ref"
-              }
+              },
+              "description": "Project ref of the Supabase project",
+              "name": [
+                "--project-ref"
+              ]
             }
           ],
           "priority": 50
         },
         {
-          "name": "deploy",
           "description": "Deploy a Function to Supabase",
+          "name": "deploy",
           "options": [
             {
+              "description": "Disable JWT verification for the Function",
               "name": [
                 "--no-verify-jwt"
-              ],
-              "description": "Disable JWT verification for the Function"
+              ]
             },
             {
-              "name": [
-                "--project-ref"
-              ],
-              "description": "Project ref of the Supabase project",
               "args": {
                 "name": "project-ref"
-              }
+              },
+              "description": "Project ref of the Supabase project",
+              "name": [
+                "--project-ref"
+              ]
             }
           ],
           "priority": 90
         },
         {
-          "name": "new",
-          "description": "Create a new Function locally"
+          "description": "Create a new Function locally",
+          "name": "new"
         },
         {
-          "name": "serve",
           "description": "Serve a Function locally",
+          "name": "serve",
           "options": [
             {
-              "name": [
-                "--env-file"
-              ],
-              "description": "Path to an env file to be populated to the Function environment",
               "args": {
                 "name": "env-file",
                 "template": "filepaths"
-              }
+              },
+              "description": "Path to an env file to be populated to the Function environment",
+              "name": [
+                "--env-file"
+              ]
             },
             {
+              "description": "Disable JWT verification for the Function",
               "name": [
                 "--no-verify-jwt"
-              ],
-              "description": "Disable JWT verification for the Function"
+              ]
             }
           ]
         }
       ]
     },
     {
-      "name": "gen",
       "description": "Run code generation tools",
+      "name": "gen",
       "subcommands": [
         {
-          "name": "types",
           "description": "Generate types from Postgres schema",
+          "name": "types",
           "subcommands": [
             {
-              "name": "typescript",
               "description": "Generate types for TypeScript",
+              "name": "typescript",
               "options": [
                 {
-                  "name": [
-                    "--db-url"
-                  ],
-                  "description": "Generate types from a database url",
                   "args": {
                     "name": "db-url"
-                  }
+                  },
+                  "description": "Generate types from a database url",
+                  "name": [
+                    "--db-url"
+                  ]
                 },
                 {
+                  "description": "Generate types from the local dev database",
                   "name": [
                     "--local"
-                  ],
-                  "description": "Generate types from the local dev database"
+                  ]
                 }
               ]
             }
@@ -400,98 +415,96 @@
       ]
     },
     {
-      "name": "init",
-      "description": "Initialize a local project"
+      "description": "Initialize a local project",
+      "name": "init"
     },
     {
-      "name": "link",
       "description": "Link to a Supabase project",
+      "name": "link",
       "options": [
         {
+          "args": {
+            "name": "password"
+          },
+          "description": "Password to your remote Postgres database",
           "name": [
             "--password",
             "-p"
-          ],
-          "description": "Password to your remote Postgres database",
-          "args": {
-            "name": "password"
-          }
+          ]
         },
         {
-          "name": [
-            "--project-ref"
-          ],
-          "description": "Project ref of the Supabase project",
           "args": {
             "name": "project-ref"
-          }
+          },
+          "description": "Project ref of the Supabase project",
+          "name": [
+            "--project-ref"
+          ]
         }
       ]
     },
     {
-      "name": "login",
       "description": "Authenticate using an access token",
+      "name": "login",
       "priority": 88
     },
     {
-      "name": "migration",
       "description": "Manage database migration scripts",
+      "name": "migration",
       "subcommands": [
         {
-          "name": "list",
           "description": "List local and remote migrations",
+          "name": "list",
           "options": [
             {
+              "args": {
+                "name": "password"
+              },
+              "description": "Password to your remote Postgres database",
               "name": [
                 "--password",
                 "-p"
-              ],
-              "description": "Password to your remote Postgres database",
-              "args": {
-                "name": "password"
-              }
+              ]
             },
             {
+              "description": "Lists migrations applied to the local database",
               "name": [
                 "--local"
-              ],
-              "description": "Lists migrations applied to the local database"
+              ]
             },
             {
+              "description": "Lists migrations applied to the linked project (default true)",
               "name": [
                 "--linked"
-              ],
-              "description": "Lists migrations applied to the linked project (default true)"
+              ]
             },
             {
-              "name": [
-                "--db-url"
-              ],
-              "description": "Database URL to connect to",
               "args": {
                 "name": "string"
-              }
+              },
+              "description": "Database URL to connect to",
+              "name": [
+                "--db-url"
+              ]
             }
           ],
           "priority": 82
         },
         {
-          "name": "new",
-          "description": "Create an empty migration script",
           "args": {
             "name": "migration name"
-          }
+          },
+          "description": "Create an empty migration script",
+          "name": "new"
         },
         {
-          "name": "repair",
+          "args": {
+            "name": "version"
+          },
           "description": "Repair the migration history table",
+          "name": "repair",
           "options": [
             {
-              "name": [
-                "--status"
-              ],
-              "description": "Version status to update",
-              "priority": 100,
               "args": {
                 "name": "status",
                 "suggestions": [
@@ -502,447 +515,434 @@
                     "name": "reverted"
                   }
                 ]
-              }
+              },
+              "description": "Version status to update",
+              "name": [
+                "--status"
+              ],
+              "priority": 100
             },
             {
+              "args": {
+                "name": "password"
+              },
+              "description": "Password to your remote Postgres database",
               "name": [
                 "--password",
                 "-p"
-              ],
-              "description": "Password to your remote Postgres database",
-              "args": {
-                "name": "password"
-              }
+              ]
             },
             {
+              "description": "Repairs the migration history of the local database",
               "name": [
                 "--local"
-              ],
-              "description": "Repairs the migration history of the local database"
+              ]
             },
             {
+              "description": "Repairs the migration history of the linked project (default true)",
               "name": [
                 "--linked"
-              ],
-              "description": "Repairs the migration history of the linked project (default true)"
+              ]
             },
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "Database URL to connect to",
               "name": [
                 "--db-url"
-              ],
-              "description": "Database URL to connect to",
-              "args": {
-                "name": "string"
-              }
-            }
-          ],
-          "args": {
-            "name": "version"
-          }
-        },
-        {
-          "name": "squash",
-          "description": "Squash migrations to a single file",
-          "options": [
-            {
-              "name": [
-                "--password",
-                "-p"
-              ],
-              "description": "Password to your remote Postgres database",
-              "args": {
-                "name": "password"
-              }
-            },
-            {
-              "name": [
-                "--local"
-              ],
-              "description": "Squashes the migration history of the local database"
-            },
-            {
-              "name": [
-                "--version"
-              ],
-              "description": "Squash up to the specified version",
-              "args": {
-                "name": "string"
-              }
-            },
-            {
-              "name": [
-                "--linked"
-              ],
-              "description": "Squashes the migration history of the linked project (default true)"
-            },
-            {
-              "name": [
-                "--db-url"
-              ],
-              "description": "Database URL to connect to",
-              "args": {
-                "name": "string"
-              }
+              ]
             }
           ]
         },
         {
-          "name": "up",
-          "description": "Apply pending migrations to local database"
+          "description": "Squash migrations to a single file",
+          "name": "squash",
+          "options": [
+            {
+              "args": {
+                "name": "password"
+              },
+              "description": "Password to your remote Postgres database",
+              "name": [
+                "--password",
+                "-p"
+              ]
+            },
+            {
+              "description": "Squashes the migration history of the local database",
+              "name": [
+                "--local"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Squash up to the specified version",
+              "name": [
+                "--version"
+              ]
+            },
+            {
+              "description": "Squashes the migration history of the linked project (default true)",
+              "name": [
+                "--linked"
+              ]
+            },
+            {
+              "args": {
+                "name": "string"
+              },
+              "description": "Database URL to connect to",
+              "name": [
+                "--db-url"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Apply pending migrations to local database",
+          "name": "up"
         }
       ]
     },
     {
-      "name": "orgs",
       "description": "Manage Supabase organizations",
+      "name": "orgs",
       "subcommands": [
         {
-          "name": "list",
           "description": "List all organizations",
+          "name": "list",
           "priority": 82
         }
       ]
     },
     {
-      "name": "projects",
       "description": "Manage Supabase projects",
+      "name": "projects",
       "subcommands": [
         {
-          "name": "create",
           "description": "Create a project on Supabase",
+          "name": "create",
           "options": [
             {
-              "name": [
-                "--db-password"
-              ],
-              "description": "Database password of the project",
               "args": {
                 "name": "db-password"
-              }
+              },
+              "description": "Database password of the project",
+              "name": [
+                "--db-password"
+              ]
             },
             {
+              "description": "Enables interactive mode",
               "name": [
                 "--interactive",
                 "-i"
-              ],
-              "description": "Enables interactive mode"
+              ]
             },
             {
-              "name": [
-                "--org-id"
-              ],
-              "description": "Organization ID to create the project in",
               "args": {
                 "name": "org-id"
-              }
+              },
+              "description": "Organization ID to create the project in",
+              "name": [
+                "--org-id"
+              ]
             },
             {
-              "name": [
-                "--plan"
-              ],
-              "description": "Select a plan that suits your needs",
               "args": {
                 "name": "plan"
-              }
+              },
+              "description": "Select a plan that suits your needs",
+              "name": [
+                "--plan"
+              ]
             },
             {
-              "name": [
-                "--region"
-              ],
-              "description": "Select a region close to you for the best performance",
               "args": {
                 "name": "region"
               },
+              "description": "Select a region close to you for the best performance",
+              "name": [
+                "--region"
+              ],
               "priority": 65
             }
           ],
           "priority": 72
         },
         {
-          "name": "list",
           "description": "List all Supabase projects",
+          "name": "list",
           "priority": 82
         }
       ],
       "priority": 78
     },
     {
-      "name": "secrets",
       "description": "Manage Supabase secrets",
+      "name": "secrets",
       "subcommands": [
         {
-          "name": "list",
           "description": "List all secrets on Supabase",
+          "name": "list",
           "priority": 82
         },
         {
-          "name": "set",
           "description": "Set a secret(s) on Supabase",
+          "name": "set",
           "options": [
             {
-              "name": [
-                "--env-file"
-              ],
-              "description": "Read secrets from a .env file",
               "args": {
                 "name": "env-file",
                 "template": "filepaths"
-              }
+              },
+              "description": "Read secrets from a .env file",
+              "name": [
+                "--env-file"
+              ]
             }
           ]
         },
         {
-          "name": "unset",
-          "description": "Unset a secret(s) on Supabase"
+          "description": "Unset a secret(s) on Supabase",
+          "name": "unset"
         }
       ],
       "priority": 65
     },
     {
-      "name": "start",
-      "description": "Start containers for Supabase local development"
+      "description": "Start containers for Supabase local development",
+      "name": "start"
     },
     {
-      "name": "status",
       "description": "Show status of local Supabase containers",
+      "name": "status",
       "priority": 80
     },
     {
-      "name": "stop",
-      "description": "Stop all local Supabase containers"
+      "description": "Stop all local Supabase containers",
+      "name": "stop"
     },
     {
-      "name": "help",
       "description": "Help about any command",
+      "name": "help",
       "subcommands": [
         {
-          "name": "completion",
           "description": "Generate the autocompletion script for the specified shell",
+          "name": "completion",
           "subcommands": [
             {
-              "name": "bash",
-              "description": "Generate the autocompletion script for bash"
+              "description": "Generate the autocompletion script for bash",
+              "name": "bash"
             },
             {
-              "name": "fish",
-              "description": "Generate the autocompletion script for fish"
+              "description": "Generate the autocompletion script for fish",
+              "name": "fish"
             },
             {
-              "name": "powershell",
-              "description": "Generate the autocompletion script for powershell"
+              "description": "Generate the autocompletion script for powershell",
+              "name": "powershell"
             },
             {
-              "name": "zsh",
-              "description": "Generate the autocompletion script for zsh"
+              "description": "Generate the autocompletion script for zsh",
+              "name": "zsh"
             }
           ]
         },
         {
-          "name": "db",
           "description": "Manage local Postgres databases",
+          "name": "db",
           "subcommands": [
             {
-              "name": "branch",
               "description": "Manage local database branches",
+              "name": "branch",
               "subcommands": [
                 {
-                  "name": "create",
                   "description": "Create a branch",
+                  "name": "create",
                   "priority": 72
                 },
                 {
-                  "name": "delete",
                   "description": "Delete a branch",
+                  "name": "delete",
                   "priority": 50
                 },
                 {
-                  "name": "list",
                   "description": "List branches",
+                  "name": "list",
                   "priority": 82
                 },
                 {
-                  "name": "switch",
-                  "description": "Switch the active branch"
+                  "description": "Switch the active branch",
+                  "name": "switch"
                 }
               ]
             },
             {
-              "name": "diff",
-              "description": "Diffs the local database for schema changes"
+              "description": "Diffs the local database for schema changes",
+              "name": "diff"
             },
             {
-              "name": "lint",
-              "description": "Checks local database for typing error"
+              "description": "Checks local database for typing error",
+              "name": "lint"
             },
             {
-              "name": "push",
-              "description": "Push new migrations to the remote database"
+              "description": "Push new migrations to the remote database",
+              "name": "push"
             },
             {
-              "name": "remote",
               "description": "Manage remote databases",
+              "name": "remote",
               "subcommands": [
                 {
-                  "name": "changes",
-                  "description": "Show changes on the remote database"
+                  "description": "Show changes on the remote database",
+                  "name": "changes"
                 },
                 {
-                  "name": "commit",
-                  "description": "Commit remote changes as a new migration"
+                  "description": "Commit remote changes as a new migration",
+                  "name": "commit"
                 }
               ]
             },
             {
-              "name": "reset",
-              "description": "Resets the local database to current migrations"
+              "description": "Resets the local database to current migrations",
+              "name": "reset"
             }
           ]
         },
         {
-          "name": "functions",
           "description": "Manage Supabase Edge functions",
+          "name": "functions",
           "subcommands": [
             {
-              "name": "delete",
               "description": "Delete a Function from Supabase",
+              "name": "delete",
               "priority": 50
             },
             {
-              "name": "deploy",
               "description": "Deploy a Function to Supabase",
+              "name": "deploy",
               "priority": 90
             },
             {
-              "name": "new",
-              "description": "Create a new Function locally"
+              "description": "Create a new Function locally",
+              "name": "new"
             },
             {
-              "name": "serve",
-              "description": "Serve a Function locally"
+              "description": "Serve a Function locally",
+              "name": "serve"
             }
           ]
         },
         {
-          "name": "gen",
           "description": "Run code generation tools",
+          "name": "gen",
           "subcommands": [
             {
-              "name": "types",
               "description": "Generate types from Postgres schema",
+              "name": "types",
               "subcommands": [
                 {
-                  "name": "typescript",
-                  "description": "Generate types for TypeScript"
+                  "description": "Generate types for TypeScript",
+                  "name": "typescript"
                 }
               ]
             }
           ]
         },
         {
-          "name": "init",
-          "description": "Initialize a local project"
+          "description": "Initialize a local project",
+          "name": "init"
         },
         {
-          "name": "link",
-          "description": "Link to a Supabase project"
+          "description": "Link to a Supabase project",
+          "name": "link"
         },
         {
-          "name": "login",
           "description": "Authenticate using an access token",
+          "name": "login",
           "priority": 88
         },
         {
-          "name": "migration",
           "description": "Manage database migration scripts",
+          "name": "migration",
           "subcommands": [
             {
-              "name": "list",
               "description": "List local and remote migrations",
+              "name": "list",
               "priority": 82
             },
             {
-              "name": "new",
-              "description": "Create an empty migration script"
+              "description": "Create an empty migration script",
+              "name": "new"
             }
           ]
         },
         {
-          "name": "orgs",
           "description": "Manage Supabase organizations",
+          "name": "orgs",
           "subcommands": [
             {
-              "name": "list",
               "description": "List all organizations",
+              "name": "list",
               "priority": 82
             }
           ]
         },
         {
-          "name": "projects",
           "description": "Manage Supabase projects",
+          "name": "projects",
           "subcommands": [
             {
-              "name": "create",
               "description": "Create a project on Supabase",
+              "name": "create",
               "priority": 72
             },
             {
-              "name": "list",
               "description": "List all Supabase projects",
+              "name": "list",
               "priority": 82
             }
           ],
           "priority": 78
         },
         {
-          "name": "secrets",
           "description": "Manage Supabase secrets",
+          "name": "secrets",
           "subcommands": [
             {
-              "name": "list",
               "description": "List all secrets on Supabase",
+              "name": "list",
               "priority": 82
             },
             {
-              "name": "set",
-              "description": "Set a secret(s) on Supabase"
+              "description": "Set a secret(s) on Supabase",
+              "name": "set"
             },
             {
-              "name": "unset",
-              "description": "Unset a secret(s) on Supabase"
+              "description": "Unset a secret(s) on Supabase",
+              "name": "unset"
             }
           ],
           "priority": 65
         },
         {
-          "name": "start",
-          "description": "Start containers for Supabase local development"
+          "description": "Start containers for Supabase local development",
+          "name": "start"
         },
         {
-          "name": "status",
           "description": "Show status of local Supabase containers",
+          "name": "status",
           "priority": 80
         },
         {
-          "name": "stop",
-          "description": "Stop all local Supabase containers"
+          "description": "Stop all local Supabase containers",
+          "name": "stop"
         }
       ]
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--debug"
-      ],
-      "description": "Output debug logs to stderr"
-    },
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Display help"
     }
   ]
 }

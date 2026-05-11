@@ -1,52 +1,77 @@
 {
-  "name": "taplo",
   "description": "Tool for validation, formatting, and querying TOML documents with a jq-like fashion",
+  "name": "taplo",
+  "options": [
+    {
+      "description": "Print help information for taplo",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Print version information for taplo",
+      "name": [
+        "--version",
+        "-V"
+      ]
+    },
+    {
+      "description": "Enable verbose logging format",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "args": {
+        "suggestions": [
+          {
+            "name": "auto"
+          },
+          {
+            "name": "always"
+          },
+          {
+            "name": "never"
+          }
+        ]
+      },
+      "name": [
+        "--colors"
+      ]
+    },
+    {
+      "description": "Enable logging spans",
+      "name": [
+        "--log-spans"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "config",
       "description": "Operations with the Taplo config file",
-      "subcommands": [
-        {
-          "name": "default",
-          "description": "Print the default `.taplo.toml` configuration file"
-        },
-        {
-          "name": "help",
-          "description": "Print this message or the help of the given subcommand(s)",
-          "args": {
-            "template": "help"
-          }
-        },
-        {
-          "name": "schema",
-          "description": "Print the JSON schema of the `.taplo.toml` configuration file"
-        }
-      ],
+      "name": "config",
       "options": [
         {
+          "description": "Print help information for config",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Print help information for config"
+          ]
         },
         {
+          "description": "Enable logging spans",
           "name": [
             "--log-spans"
-          ],
-          "description": "Enable logging spans"
+          ]
         },
         {
+          "description": "Enable verbose logging format",
           "name": [
             "--verbose"
-          ],
-          "description": "Enable verbose logging format"
+          ]
         },
         {
-          "name": [
-            "--colors"
-          ],
-          "description": "Set color values for the output",
           "args": {
             "name": "COLORS",
             "suggestions": [
@@ -60,51 +85,75 @@
                 "name": "never"
               }
             ]
-          }
+          },
+          "description": "Set color values for the output",
+          "name": [
+            "--colors"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Print the default `.taplo.toml` configuration file",
+          "name": "default"
+        },
+        {
+          "args": {
+            "template": "help"
+          },
+          "description": "Print this message or the help of the given subcommand(s)",
+          "name": "help"
+        },
+        {
+          "description": "Print the JSON schema of the `.taplo.toml` configuration file",
+          "name": "schema"
         }
       ]
     },
     {
-      "name": "format",
+      "args": {
+        "description": "Paths or glob patterns to TOML documents",
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "FILES ...",
+        "template": "filepaths"
+      },
       "description": "Format TOML documents",
+      "name": "format",
       "options": [
         {
-          "name": [
-            "--config",
-            "-c"
-          ],
-          "description": "Path to the Taplo configuration file",
           "args": {
             "name": "CONFIG",
             "template": "filepaths"
-          }
+          },
+          "description": "Path to the Taplo configuration file",
+          "name": [
+            "--config",
+            "-c"
+          ]
         },
         {
-          "name": [
-            "--cache-path"
-          ],
-          "description": "Set a cache path",
           "args": {
             "name": "CACHE_PATH",
             "template": "filepaths"
-          }
+          },
+          "description": "Set a cache path",
+          "name": [
+            "--cache-path"
+          ]
         },
         {
+          "args": {
+            "isOptional": true,
+            "name": "CACHE_PATH",
+            "template": "filepaths"
+          },
+          "description": "Report any files that are not correctly formatted",
           "name": [
             "--check"
-          ],
-          "description": "Report any files that are not correctly formatted",
-          "args": {
-            "name": "CACHE_PATH",
-            "template": "filepaths",
-            "isOptional": true
-          }
+          ]
         },
         {
-          "name": [
-            "--colors"
-          ],
-          "description": "Set color values for the output",
           "args": {
             "name": "COLORS",
             "suggestions": [
@@ -118,52 +167,51 @@
                 "name": "never"
               }
             ]
-          }
+          },
+          "description": "Set color values for the output",
+          "name": [
+            "--colors"
+          ]
         },
         {
+          "description": "Print the differences in patch formatting to `stdout`",
           "name": [
             "--diff"
-          ],
-          "description": "Print the differences in patch formatting to `stdout`"
+          ]
         },
         {
+          "args": {
+            "isOptional": true,
+            "isVariadic": true,
+            "name": "FILES ...",
+            "template": "filepaths"
+          },
+          "description": "Force formatting of files",
           "name": [
             "f",
             "--force"
-          ],
-          "description": "Force formatting of files",
-          "args": {
-            "name": "FILES ...",
-            "template": "filepaths",
-            "isVariadic": true,
-            "isOptional": true
-          }
+          ]
         },
         {
+          "description": "Print help information for format",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Print help information for format"
+          ]
         },
         {
+          "description": "Enable logging spans",
           "name": [
             "--log-spans"
-          ],
-          "description": "Enable logging spans"
+          ]
         },
         {
+          "description": "Do not search for a configuration file",
           "name": [
             "--no-auto-config"
-          ],
-          "description": "Do not search for a configuration file"
+          ]
         },
         {
-          "name": [
-            "--option",
-            "-o"
-          ],
-          "description": "A formatter option given as a 'key=value', can be set multiple times",
           "args": {
             "name": "OPTIONS",
             "suggestions": [
@@ -174,53 +222,47 @@
                 "name": "indent_tables=false"
               }
             ]
-          }
+          },
+          "description": "A formatter option given as a 'key=value', can be set multiple times",
+          "name": [
+            "--option",
+            "-o"
+          ]
         },
         {
-          "name": [
-            "--stdin-filepath"
-          ],
-          "description": "A path to the file that the taplo will treat like stdin",
           "args": {
             "name": "STDIN_FILEPATH",
             "template": "filepaths"
-          }
+          },
+          "description": "A path to the file that the taplo will treat like stdin",
+          "name": [
+            "--stdin-filepath"
+          ]
         },
         {
+          "description": "Enable verbose logging format",
           "name": [
             "--verbose"
-          ],
-          "description": "Enable verbose logging format"
+          ]
         }
-      ],
-      "args": {
-        "name": "FILES ...",
-        "description": "Paths or glob patterns to TOML documents",
-        "template": "filepaths",
-        "isVariadic": true,
-        "isOptional": true
-      }
+      ]
     },
     {
-      "name": "get",
       "description": "Extract a value from the given TOML document",
+      "name": "get",
       "options": [
         {
-          "name": [
-            "--file-path",
-            "-f"
-          ],
-          "description": "Path to the TOML document",
           "args": {
             "name": "FILE_PATH",
             "template": "filepaths"
-          }
+          },
+          "description": "Path to the TOML document",
+          "name": [
+            "--file-path",
+            "-f"
+          ]
         },
         {
-          "name": [
-            "--colors"
-          ],
-          "description": "Set color values for the output",
           "args": {
             "name": "COLORS",
             "suggestions": [
@@ -234,27 +276,26 @@
                 "name": "never"
               }
             ]
-          }
+          },
+          "description": "Set color values for the output",
+          "name": [
+            "--colors"
+          ]
         },
         {
+          "description": "Print help information for get",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Print help information for get"
+          ]
         },
         {
+          "description": "Enable logging spans",
           "name": [
             "--log-spans"
-          ],
-          "description": "Enable logging spans"
+          ]
         },
         {
-          "name": [
-            "-o",
-            "--output-format"
-          ],
-          "description": "The format specifying how the output is printed",
           "args": {
             "name": "OUTPUT_FORMAT",
             "suggestions": [
@@ -268,57 +309,64 @@
                 "name": "toml"
               }
             ]
-          }
+          },
+          "description": "The format specifying how the output is printed",
+          "name": [
+            "-o",
+            "--output-format"
+          ]
         },
         {
+          "description": "Strip the trailing newline from the output",
           "name": [
             "--strip-newline",
             "-s"
-          ],
-          "description": "Strip the trailing newline from the output"
+          ]
         },
         {
+          "description": "Enable verbose logging format",
           "name": [
             "--verbose"
-          ],
-          "description": "Enable verbose logging format"
+          ]
         }
       ]
     },
     {
-      "name": "help",
-      "description": "Print help information for taplo"
+      "description": "Print help information for taplo",
+      "name": "help"
     },
     {
-      "name": "lint",
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "FILES ...",
+        "template": "filepaths"
+      },
       "description": "Lint a TOML documents",
+      "name": "lint",
       "options": [
         {
-          "name": [
-            "--config",
-            "-c"
-          ],
-          "description": "Path to the Taplo configuration file",
           "args": {
             "name": "CONFIG",
             "template": "filepaths"
-          }
+          },
+          "description": "Path to the Taplo configuration file",
+          "name": [
+            "--config",
+            "-c"
+          ]
         },
         {
-          "name": [
-            "--cache-path"
-          ],
-          "description": "Set a cache path",
           "args": {
             "name": "CACHE_PATH",
             "template": "filepaths"
-          }
+          },
+          "description": "Set a cache path",
+          "name": [
+            "--cache-path"
+          ]
         },
         {
-          "name": [
-            "--colors"
-          ],
-          "description": "Set color values for the output",
           "args": {
             "name": "COLORS",
             "suggestions": [
@@ -332,90 +380,70 @@
                 "name": "never"
               }
             ]
-          }
+          },
+          "description": "Set color values for the output",
+          "name": [
+            "--colors"
+          ]
         },
         {
+          "description": "Use the default online catalogs for schemas",
           "name": [
             "--default-schema-catalogs"
-          ],
-          "description": "Use the default online catalogs for schemas"
+          ]
         },
         {
+          "description": "Print help information for lint",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Print help information for lint"
+          ]
         },
         {
+          "description": "Enable logging spans",
           "name": [
             "--log-spans"
-          ],
-          "description": "Enable logging spans"
+          ]
         },
         {
+          "description": "Disable all schema validation",
           "name": [
             "--no-schema"
-          ],
-          "description": "Disable all schema validation"
+          ]
         },
         {
-          "name": [
-            "--schema"
-          ],
-          "description": "URL to the schema to be used for validation",
           "args": {
             "name": "SCHEMA",
             "template": "history"
-          }
+          },
+          "description": "URL to the schema to be used for validation",
+          "name": [
+            "--schema"
+          ]
         },
         {
-          "name": [
-            "--schema-catalog"
-          ],
-          "description": "URL to the schema catalog to be used for validation",
           "args": {
             "name": "SCHEMA_CATALOG",
             "template": "history"
-          }
+          },
+          "description": "URL to the schema catalog to be used for validation",
+          "name": [
+            "--schema-catalog"
+          ]
         },
         {
+          "description": "Enable verbose logging format",
           "name": [
             "--verbose"
-          ],
-          "description": "Enable verbose logging format"
+          ]
         }
-      ],
-      "args": {
-        "name": "FILES ...",
-        "template": "filepaths",
-        "isVariadic": true,
-        "isOptional": true
-      }
+      ]
     },
     {
-      "name": "lsp",
       "description": "Language server operations",
-      "subcommands": [
-        {
-          "name": "help",
-          "description": "Print help information for lsp"
-        },
-        {
-          "name": "stdio",
-          "description": "Run the language server over the standard input and output"
-        },
-        {
-          "name": "tcp",
-          "description": "Run the language server and listen on a TCP address"
-        }
-      ],
+      "name": "lsp",
       "options": [
         {
-          "name": [
-            "--colors"
-          ],
-          "description": "Set color values for the output",
           "args": {
             "name": "COLORS",
             "suggestions": [
@@ -429,74 +457,46 @@
                 "name": "never"
               }
             ]
-          }
+          },
+          "description": "Set color values for the output",
+          "name": [
+            "--colors"
+          ]
         },
         {
+          "description": "Print help information for lsp",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Print help information for lsp"
+          ]
         },
         {
+          "description": "Enable logging spans",
           "name": [
             "--log-spans"
-          ],
-          "description": "Enable logging spans"
+          ]
         },
         {
+          "description": "Enable verbose logging format",
           "name": [
             "--verbose"
-          ],
-          "description": "Enable verbose logging format"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Print help information for lsp",
+          "name": "help"
+        },
+        {
+          "description": "Run the language server over the standard input and output",
+          "name": "stdio"
+        },
+        {
+          "description": "Run the language server and listen on a TCP address",
+          "name": "tcp"
         }
       ]
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Print help information for taplo"
-    },
-    {
-      "name": [
-        "--version",
-        "-V"
-      ],
-      "description": "Print version information for taplo"
-    },
-    {
-      "name": [
-        "--verbose"
-      ],
-      "description": "Enable verbose logging format"
-    },
-    {
-      "name": [
-        "--colors"
-      ],
-      "args": {
-        "suggestions": [
-          {
-            "name": "auto"
-          },
-          {
-            "name": "always"
-          },
-          {
-            "name": "never"
-          }
-        ]
-      }
-    },
-    {
-      "name": [
-        "--log-spans"
-      ],
-      "description": "Enable logging spans"
     }
   ]
 }

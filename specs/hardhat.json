@@ -1,172 +1,172 @@
 {
-  "name": "hardhat",
   "description": "Ethereum development environment",
-  "subcommands": [
+  "name": "hardhat",
+  "options": [
     {
-      "name": "accounts",
-      "description": "Prints the list of accounts"
-    },
-    {
-      "name": "check",
-      "description": "Check whatever you need"
-    },
-    {
-      "name": "clean",
-      "description": "Clears the cache and deletes all artifacts",
-      "options": [
-        {
-          "name": [
-            "--global"
-          ],
-          "description": "Clear the global cache"
-        }
+      "description": "A Hardhat config file",
+      "name": [
+        "config"
       ]
     },
     {
-      "name": "compile",
-      "description": "Compiles the entire project, building all artifacts",
-      "options": [
-        {
-          "name": [
-            "--force"
-          ],
-          "description": "Force compilation ignoring cache"
-        },
-        {
-          "name": [
-            "--quiet"
-          ],
-          "description": "Makes the compilation process less verbose"
-        }
+      "description": "Use emoji in messages",
+      "name": [
+        "--emoji"
       ]
     },
     {
-      "name": "console",
-      "description": "Opens a hardhat console",
-      "options": [
-        {
-          "name": [
-            "--no-compile"
-          ],
-          "description": "Don't compile before running this task"
-        }
+      "description": "The maximum amount of memory that Hardhat can use",
+      "name": [
+        "--max-memory"
       ]
     },
     {
-      "name": "flatten",
-      "description": "Flattens and prints contracts and their dependencies"
-    },
-    {
-      "name": "help",
-      "description": "Prints this message"
-    },
-    {
-      "name": "node",
-      "description": "Starts a JSON-RPC server on top of Hardhat Network",
-      "options": [
-        {
-          "name": [
-            "--fork"
-          ],
-          "description": "The URL of the JSON-RPC server to fork from"
-        },
-        {
-          "name": [
-            "--fork-block-number"
-          ],
-          "description": "The block number to fork from"
-        },
-        {
-          "name": [
-            "--hostname"
-          ],
-          "description": "The host to which to bind to for new connections"
-        },
-        {
-          "name": [
-            "--port"
-          ],
-          "description": "The port on which to listen for new connections (default: 8545)"
-        }
+      "args": {
+        "isOptional": true,
+        "name": "task"
+      },
+      "description": "Shows the help text or task's help if name is provided",
+      "name": [
+        "--help"
       ]
     },
     {
-      "name": "run",
-      "description": "Runs a user-defined script after compiling the project",
-      "options": [
-        {
-          "name": [
-            "--no-compile"
-          ],
-          "description": "Don't compile before running this task"
-        }
+      "description": "The network to connect to",
+      "name": [
+        "--network"
       ]
     },
     {
-      "name": "test",
-      "description": "Runs mocha tests",
-      "options": [
-        {
-          "name": [
-            "--no-compile"
-          ],
-          "description": "Don't compile before running this task"
-        }
+      "description": "Show stack traces",
+      "name": [
+        "---show-stack-traces"
+      ]
+    },
+    {
+      "description": "Enables Hardhat verbose logging",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Shows hardhat's version",
+      "name": [
+        "--version"
       ]
     }
   ],
-  "options": [
+  "subcommands": [
     {
-      "name": [
-        "config"
-      ],
-      "description": "A Hardhat config file"
+      "description": "Prints the list of accounts",
+      "name": "accounts"
     },
     {
-      "name": [
-        "--emoji"
-      ],
-      "description": "Use emoji in messages"
+      "description": "Check whatever you need",
+      "name": "check"
     },
     {
-      "name": [
-        "--max-memory"
-      ],
-      "description": "The maximum amount of memory that Hardhat can use"
+      "description": "Clears the cache and deletes all artifacts",
+      "name": "clean",
+      "options": [
+        {
+          "description": "Clear the global cache",
+          "name": [
+            "--global"
+          ]
+        }
+      ]
     },
     {
-      "name": [
-        "--help"
-      ],
-      "description": "Shows the help text or task's help if name is provided",
-      "args": {
-        "name": "task",
-        "isOptional": true
-      }
+      "description": "Compiles the entire project, building all artifacts",
+      "name": "compile",
+      "options": [
+        {
+          "description": "Force compilation ignoring cache",
+          "name": [
+            "--force"
+          ]
+        },
+        {
+          "description": "Makes the compilation process less verbose",
+          "name": [
+            "--quiet"
+          ]
+        }
+      ]
     },
     {
-      "name": [
-        "--network"
-      ],
-      "description": "The network to connect to"
+      "description": "Opens a hardhat console",
+      "name": "console",
+      "options": [
+        {
+          "description": "Don't compile before running this task",
+          "name": [
+            "--no-compile"
+          ]
+        }
+      ]
     },
     {
-      "name": [
-        "---show-stack-traces"
-      ],
-      "description": "Show stack traces"
+      "description": "Flattens and prints contracts and their dependencies",
+      "name": "flatten"
     },
     {
-      "name": [
-        "--verbose"
-      ],
-      "description": "Enables Hardhat verbose logging"
+      "description": "Prints this message",
+      "name": "help"
     },
     {
-      "name": [
-        "--version"
-      ],
-      "description": "Shows hardhat's version"
+      "description": "Starts a JSON-RPC server on top of Hardhat Network",
+      "name": "node",
+      "options": [
+        {
+          "description": "The URL of the JSON-RPC server to fork from",
+          "name": [
+            "--fork"
+          ]
+        },
+        {
+          "description": "The block number to fork from",
+          "name": [
+            "--fork-block-number"
+          ]
+        },
+        {
+          "description": "The host to which to bind to for new connections",
+          "name": [
+            "--hostname"
+          ]
+        },
+        {
+          "description": "The port on which to listen for new connections (default: 8545)",
+          "name": [
+            "--port"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Runs a user-defined script after compiling the project",
+      "name": "run",
+      "options": [
+        {
+          "description": "Don't compile before running this task",
+          "name": [
+            "--no-compile"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Runs mocha tests",
+      "name": "test",
+      "options": [
+        {
+          "description": "Don't compile before running this task",
+          "name": [
+            "--no-compile"
+          ]
+        }
+      ]
     }
   ]
 }

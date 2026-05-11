@@ -1,30 +1,29 @@
 {
-  "name": "pg_dump",
+  "args": {
+    "description": "Name of the database to dump",
+    "name": "dbname"
+  },
   "description": "Dumps a database as a text file or to other formats",
+  "name": "pg_dump",
   "options": [
     {
+      "description": "Show help for pg_dump",
       "name": [
         "--help",
         "-?"
-      ],
-      "description": "Show help for pg_dump"
+      ]
     },
     {
+      "args": {
+        "name": "filename"
+      },
+      "description": "Output file or directory name",
       "name": [
         "--file",
         "-f"
-      ],
-      "description": "Output file or directory name",
-      "args": {
-        "name": "filename"
-      }
+      ]
     },
     {
-      "name": [
-        "--format",
-        "-F"
-      ],
-      "description": "Output file format",
       "args": {
         "name": "format",
         "suggestions": [
@@ -41,38 +40,38 @@
             "name": "p"
           }
         ]
-      }
+      },
+      "description": "Output file format",
+      "name": [
+        "--format",
+        "-F"
+      ]
     },
     {
+      "args": {
+        "name": "num"
+      },
+      "description": "Number of parallel job to dump",
       "name": [
         "--jobs",
         "-j"
-      ],
-      "description": "Number of parallel job to dump",
-      "args": {
-        "name": "num"
-      }
+      ]
     },
     {
+      "description": "Verbose mode",
       "name": [
         "--verbose",
         "-v"
-      ],
-      "description": "Verbose mode"
+      ]
     },
     {
+      "description": "Output version information",
       "name": [
         "--version",
         "-V"
-      ],
-      "description": "Output version information"
+      ]
     },
     {
-      "name": [
-        "--compress",
-        "-Z"
-      ],
-      "description": "Compression level for compressed formats",
       "args": {
         "name": "level",
         "suggestions": [
@@ -107,397 +106,398 @@
             "name": "9"
           }
         ]
-      }
+      },
+      "description": "Compression level for compressed formats",
+      "name": [
+        "--compress",
+        "-Z"
+      ]
     },
     {
-      "name": [
-        "--lock-wait-timeout"
-      ],
-      "description": "Fail after waiting <timeout> for a table lock",
       "args": {
         "name": "timeout"
-      }
+      },
+      "description": "Fail after waiting <timeout> for a table lock",
+      "name": [
+        "--lock-wait-timeout"
+      ]
     },
     {
+      "description": "Do not wait for changes to be written safely to disk",
       "name": [
         "--no-sync"
-      ],
-      "description": "Do not wait for changes to be written safely to disk"
+      ]
     },
     {
+      "description": "Dump only the data, not the schema",
       "name": [
         "--data-only",
         "-a"
-      ],
-      "description": "Dump only the data, not the schema"
+      ]
     },
     {
+      "description": "Include large objects in dump",
       "name": [
         "--blobs",
         "-b"
-      ],
-      "description": "Include large objects in dump"
+      ]
     },
     {
+      "description": "Exclude large objects in dump",
       "name": [
         "--no-blobs",
         "-B"
-      ],
-      "description": "Exclude large objects in dump"
+      ]
     },
     {
+      "description": "Clean (drop) database objects before recreating",
       "name": [
         "--clean",
         "-c"
-      ],
-      "description": "Clean (drop) database objects before recreating"
+      ]
     },
     {
+      "description": "Include commands to create database in dump",
       "name": [
         "--create",
         "-C"
-      ],
-      "description": "Include commands to create database in dump"
+      ]
     },
     {
+      "args": {
+        "name": "pattern"
+      },
+      "description": "Dump the specified extension(s) only",
       "name": [
         "--extension",
         "-e"
-      ],
-      "description": "Dump the specified extension(s) only",
-      "args": {
-        "name": "pattern"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "encoding"
+      },
+      "description": "Dump the data in encoding <encoding>",
       "name": [
         "--encoding",
         "-E"
-      ],
-      "description": "Dump the data in encoding <encoding>",
-      "args": {
-        "name": "encoding"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "pattern"
+      },
+      "description": "Dump the specified schema(s) only",
       "name": [
         "--schema",
         "-n"
-      ],
-      "description": "Dump the specified schema(s) only",
-      "args": {
-        "name": "pattern"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "pattern"
+      },
+      "description": "Do NOT dump the specified schema(s)",
       "name": [
         "--exclude-schema",
         "-N"
-      ],
-      "description": "Do NOT dump the specified schema(s)",
-      "args": {
-        "name": "pattern"
-      }
+      ]
     },
     {
+      "description": "Skip restoration of object ownership in plain-text format",
       "name": [
         "--no-owner",
         "-O"
-      ],
-      "description": "Skip restoration of object ownership in plain-text format"
+      ]
     },
     {
+      "description": "Dump only the schema, no data",
       "name": [
         "--schema-only",
         "-s"
-      ],
-      "description": "Dump only the schema, no data"
+      ]
     },
     {
+      "args": {
+        "name": "name"
+      },
+      "description": "Superuser user name to use in plain-text format",
       "name": [
         "--superuser",
         "-S"
-      ],
-      "description": "Superuser user name to use in plain-text format",
-      "args": {
-        "name": "name"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "table"
+      },
+      "description": "Dump the specified table(s) only",
       "name": [
         "--table",
         "-t"
-      ],
-      "description": "Dump the specified table(s) only",
-      "args": {
-        "name": "table"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "table"
+      },
+      "description": "Do NOT dump the specified table(s)",
       "name": [
         "--exclude-table",
         "-T"
-      ],
-      "description": "Do NOT dump the specified table(s)",
-      "args": {
-        "name": "table"
-      }
+      ]
     },
     {
+      "description": "Do not dump privileges (grant/revoke)",
       "name": [
         "--no-privileges",
         "-x",
         "--no-acl"
-      ],
-      "description": "Do not dump privileges (grant/revoke)"
+      ]
     },
     {
+      "description": "For use by upgrade utilities only",
       "name": [
         "--binary-upgrade"
-      ],
-      "description": "For use by upgrade utilities only"
+      ]
     },
     {
+      "description": "Dump data as INSERT commands with column names",
       "name": [
         "--column-inserts",
         "--attribute-inserts"
-      ],
-      "description": "Dump data as INSERT commands with column names"
+      ]
     },
     {
+      "description": "Disable dollar quoting, use SQL standard quoting",
       "name": [
         "--disable-dollar-quoting"
-      ],
-      "description": "Disable dollar quoting, use SQL standard quoting"
+      ]
     },
     {
+      "description": "Disable triggers during data-only restore",
       "name": [
         "--disable-triggers"
-      ],
-      "description": "Disable triggers during data-only restore"
+      ]
     },
     {
+      "description": "Enable row security (dump only content user has access to)",
       "name": [
         "--enable-row-security"
-      ],
-      "description": "Enable row security (dump only content user has access to)"
+      ]
     },
     {
-      "name": [
-        "--exclude-table-data"
-      ],
-      "description": "Do NOT dump data for the specified table(s)",
       "args": {
         "name": "table"
-      }
+      },
+      "description": "Do NOT dump data for the specified table(s)",
+      "name": [
+        "--exclude-table-data"
+      ]
     },
     {
-      "name": [
-        "--extra-float-digits"
-      ],
-      "description": "Override default setting for extra_float_digits",
       "args": {
         "name": "num"
-      }
+      },
+      "description": "Override default setting for extra_float_digits",
+      "name": [
+        "--extra-float-digits"
+      ]
     },
     {
+      "description": "Use IF EXISTS when dropping objects",
       "name": [
         "--if-exists"
-      ],
-      "description": "Use IF EXISTS when dropping objects"
+      ]
     },
     {
-      "name": [
-        "--include-foreign-data"
-      ],
-      "description": "Include data of foreign tables on foreign servers matching PATTERN",
       "args": {
         "name": "pattern"
-      }
+      },
+      "description": "Include data of foreign tables on foreign servers matching PATTERN",
+      "name": [
+        "--include-foreign-data"
+      ]
     },
     {
+      "description": "Dump data as INSERT commands, rather than COPY",
       "name": [
         "--inserts"
-      ],
-      "description": "Dump data as INSERT commands, rather than COPY"
+      ]
     },
     {
+      "description": "Load partitions via the root table",
       "name": [
         "--load-via-partition-root"
-      ],
-      "description": "Load partitions via the root table"
+      ]
     },
     {
+      "description": "Do not dump comments",
       "name": [
         "--no-comments"
-      ],
-      "description": "Do not dump comments"
+      ]
     },
     {
+      "description": "Do not dump publications",
       "name": [
         "--no-publications"
-      ],
-      "description": "Do not dump publications"
+      ]
     },
     {
+      "description": "Do not dump security label assignments",
       "name": [
         "--no-security-labels"
-      ],
-      "description": "Do not dump security label assignments"
+      ]
     },
     {
+      "description": "Do not dump subscriptions",
       "name": [
         "--no-subscriptions"
-      ],
-      "description": "Do not dump subscriptions"
+      ]
     },
     {
+      "description": "Do not use synchronized snapshots in parallel jobs",
       "name": [
         "--no-synchronized-snapshots"
-      ],
-      "description": "Do not use synchronized snapshots in parallel jobs"
+      ]
     },
     {
+      "description": "Do not dump tablespace assignments",
       "name": [
         "--no-tablespaces"
-      ],
-      "description": "Do not dump tablespace assignments"
+      ]
     },
     {
+      "description": "Do not dump TOAST compression methods",
       "name": [
         "--no-toast-compression"
-      ],
-      "description": "Do not dump TOAST compression methods"
+      ]
     },
     {
+      "description": "Do not dump unlogged table data",
       "name": [
         "--no-unlogged-table-data"
-      ],
-      "description": "Do not dump unlogged table data"
+      ]
     },
     {
+      "description": "Add ON CONFLICT DO NOTHING to INSERT commands",
       "name": [
         "--on-conflict-do-nothing"
-      ],
-      "description": "Add ON CONFLICT DO NOTHING to INSERT commands"
+      ]
     },
     {
+      "description": "Quote all identifiers, even if not key words",
       "name": [
         "--quote-all-identifiers"
-      ],
-      "description": "Quote all identifiers, even if not key words"
+      ]
     },
     {
-      "name": [
-        "--rows-per-insert"
-      ],
-      "description": "Number of rows per INSERT; implies --inserts",
       "args": {
         "name": "numbers"
-      }
+      },
+      "description": "Number of rows per INSERT; implies --inserts",
+      "name": [
+        "--rows-per-insert"
+      ]
     },
     {
-      "name": [
-        "--section"
-      ],
-      "description": "Dump named section (pre-data, data, or post-data)",
       "args": {
         "name": "section"
-      }
+      },
+      "description": "Dump named section (pre-data, data, or post-data)",
+      "name": [
+        "--section"
+      ]
     },
     {
+      "description": "Wait until the dump can run without anomalies",
       "name": [
         "--serializable-deferrable"
-      ],
-      "description": "Wait until the dump can run without anomalies"
+      ]
     },
     {
-      "name": [
-        "--snapshot"
-      ],
-      "description": "Use given snapshot for the dump",
       "args": {
         "name": "snapshot"
-      }
+      },
+      "description": "Use given snapshot for the dump",
+      "name": [
+        "--snapshot"
+      ]
     },
     {
+      "description": "Require table and/or schema include patterns to match at least one entity each",
       "name": [
         "--strict-names"
-      ],
-      "description": "Require table and/or schema include patterns to match at least one entity each"
+      ]
     },
     {
+      "description": "Use SET SESSION AUTHORIZATION commands instead of ALTER OWNER commands to set ownership",
       "name": [
         "--use-set-session-authorization"
-      ],
-      "description": "Use SET SESSION AUTHORIZATION commands instead of ALTER OWNER commands to set ownership"
+      ]
     },
     {
+      "args": {
+        "name": "database"
+      },
+      "description": "Database to dump",
       "name": [
         "--dbname",
         "-d"
-      ],
-      "description": "Database to dump",
-      "args": {
-        "name": "database"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "host"
+      },
+      "description": "Database server host or socket directory",
       "name": [
         "--host",
         "-h"
-      ],
-      "description": "Database server host or socket directory",
-      "args": {
-        "name": "host"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "number"
+      },
+      "description": "Database server port number",
       "name": [
         "--port",
         "-p"
-      ],
-      "description": "Database server port number",
-      "args": {
-        "name": "number"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "name"
+      },
+      "description": "Connect as specified database user",
       "name": [
         "--username",
         "-U"
-      ],
-      "description": "Connect as specified database user",
-      "args": {
-        "name": "name"
-      }
+      ]
     },
     {
+      "description": "Never prompt for password",
       "name": [
         "--no-password",
         "-w"
-      ],
-      "description": "Never prompt for password"
+      ]
     },
     {
+      "description": "Force password prompt (should happen automatically)",
       "name": [
         "--password",
         "-W"
-      ],
-      "description": "Force password prompt (should happen automatically)"
+      ]
     },
     {
-      "name": [
-        "--role"
-      ],
-      "description": "Do SET ROLE before dump",
       "args": {
         "name": "name"
-      }
+      },
+      "description": "Do SET ROLE before dump",
+      "name": [
+        "--role"
+      ]
     }
-  ],
-  "args": {
-    "name": "dbname",
-    "description": "Name of the database to dump"
-  }
+  ]
 }

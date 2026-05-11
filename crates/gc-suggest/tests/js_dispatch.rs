@@ -151,6 +151,50 @@ fn custom_generator(source: &str) -> Arc<GeneratorSpec> {
     })
 }
 
+fn token_only_generator(source: &str, self_contained: bool) -> Arc<GeneratorSpec> {
+    Arc::new(GeneratorSpec {
+        generator_type: None,
+        script: None,
+        script_template: None,
+        transforms: Vec::new(),
+        cache: None,
+        requires_js: true,
+        js_source: None,
+        js_runtime: Some(Arc::new(JsRuntimeSpec {
+            kind: JsRuntimeKind::TokenOnly,
+            source: source.to_string(),
+            self_contained,
+            timeout_ms: None,
+            allow_shell_command: false,
+        })),
+        corrected_in: None,
+        template: None,
+        params: std::collections::BTreeMap::new(),
+    })
+}
+
+fn token_only_generator_with_timeout(source: &str, timeout_ms: u64) -> Arc<GeneratorSpec> {
+    Arc::new(GeneratorSpec {
+        generator_type: None,
+        script: None,
+        script_template: None,
+        transforms: Vec::new(),
+        cache: None,
+        requires_js: true,
+        js_source: None,
+        js_runtime: Some(Arc::new(JsRuntimeSpec {
+            kind: JsRuntimeKind::TokenOnly,
+            source: source.to_string(),
+            self_contained: false,
+            timeout_ms: Some(timeout_ms),
+            allow_shell_command: false,
+        })),
+        corrected_in: None,
+        template: None,
+        params: std::collections::BTreeMap::new(),
+    })
+}
+
 fn custom_generator_with_shell_string(source: &str) -> Arc<GeneratorSpec> {
     Arc::new(GeneratorSpec {
         generator_type: None,
@@ -357,6 +401,130 @@ async fn custom_tokens_include_non_empty_current_word() {
         hit.description.as_deref(),
         Some("current:rea,previous:install")
     );
+}
+
+#[tokio::test]
+async fn token_only_returns_tokens() {
+    let gen = token_only_generator("tokens.map(name => ({ name }))", false);
+    let engine = make_engine();
+    let ctx = make_ctx("kubectl", vec!["get"], "");
+    let results = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch");
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(names, vec!["kubectl", "get"]);
+}
+
+#[tokio::test]
+async fn token_only_filters_by_previous_token() {
+    let source = "previousToken === 'get' \
+        ? ['pods', 'services'].map(name => ({ name })) \
+        : ['apply', 'delete'].map(name => ({ name }))";
+    let gen = token_only_generator(source, false);
+    let engine = make_engine();
+    let ctx = make_ctx("kubectl", vec!["get"], "");
+    let results = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch");
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(names, vec!["pods", "services"]);
+}
+
+#[tokio::test]
+async fn token_only_runtime_error_returns_no_suggestions() {
+    let (captured, _guard) = install_log_capture();
+    let gen = token_only_generator("(() => { throw new Error('boom'); })()", false);
+    let engine = make_engine();
+    let ctx = make_ctx("kubectl", vec!["get"], "");
+    let results = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch tolerates runtime errors");
+    assert!(results.is_empty());
+
+    let logs =
+        String::from_utf8_lossy(&captured.lock().expect("capture buffer poisoned")).into_owned();
+    assert!(
+        logs.contains("code=\"exception\""),
+        "expected token_only runtime exception diagnostic in logs:\n{logs}"
+    );
+    assert!(
+        logs.contains("generator_id=kubectl#0#token_only"),
+        "expected token_only generator_id in logs:\n{logs}"
+    );
+}
+
+#[tokio::test]
+async fn token_only_repeated_timeouts_are_demoted() {
+    let (captured, _guard) = install_log_capture();
+    let gen = token_only_generator_with_timeout("() => { while (true) {} }", 5);
+    let engine = make_engine();
+    let ctx = make_ctx("kubectl", vec!["get"], "");
+
+    for _ in 0..3 {
+        let results = engine
+            .run_generators(&[Arc::clone(&gen)], &ctx, Path::new("/tmp"), 5_000)
+            .await
+            .expect("dispatch tolerates repeated token_only timeouts");
+        assert!(results.is_empty());
+    }
+
+    let logs =
+        String::from_utf8_lossy(&captured.lock().expect("capture buffer poisoned")).into_owned();
+    assert_eq!(
+        logs.matches("js_runtime: evaluation timed out").count(),
+        2,
+        "third dispatch should skip the demoted generator instead of evaluating JS:\n{logs}"
+    );
+    assert!(
+        logs.contains("token_only generator demoted after repeated timeouts"),
+        "expected token_only demotion log:\n{logs}"
+    );
+    assert!(
+        logs.contains("token_only generator is demoted after repeated timeouts"),
+        "expected token_only skip log:\n{logs}"
+    );
+}
+
+#[tokio::test]
+async fn token_only_with_self_contained_false_is_scheduled_from_spec() {
+    let (engine, _spec_dir) = engine_from_spec_json(
+        "phase12-token-only.json",
+        r#"{
+            "name": "phase12-token-only",
+            "args": [{
+                "name": "resource",
+                "generators": [{
+                    "requires_js": true,
+                    "js_runtime": {
+                        "kind": "token_only",
+                        "self_contained": false,
+                        "source": "tokens.map(name => ({ name }))"
+                    }
+                }]
+            }]
+        }"#,
+    );
+    let ctx = make_ctx("phase12-token-only", Vec::new(), "");
+
+    let result = engine
+        .suggest_sync(&ctx, Path::new("/tmp"), "phase12-token-only ")
+        .expect("suggest_sync");
+
+    assert_eq!(
+        result.script_generators.len(),
+        1,
+        "TokenOnly must be scheduled even when self_contained=false"
+    );
+
+    let dynamic = engine
+        .run_generators(&result.script_generators, &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch");
+    let names: Vec<&str> = dynamic.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(names, vec!["phase12-token-only"]);
 }
 
 #[tokio::test]

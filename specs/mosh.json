@@ -1,143 +1,164 @@
 {
+  "args": {
+    "description": "Address of remote machine to log into",
+    "generators": [
+      {
+        "js_runtime": {
+          "kind": "custom",
+          "self_contained": true,
+          "source": "async(n,e,o)=>{let{stdout:a}=await e({command:\"cat\",args:[`${o.environmentVariables.HOME}/.ssh/known_hosts`]});return a.split(`\n`).map(t=>{let i=h.exec(t);if(i)return String(i)}).filter((t,i,r)=>t&&r.indexOf(t)===i).map(t=>({name:(n[1].endsWith(\"@\")?n[1]:\"\")+t,description:\"SSH host\"}))}"
+        },
+        "requires_js": true
+      },
+      {
+        "js_runtime": {
+          "kind": "custom",
+          "self_contained": true,
+          "source": "async(n,e,o)=>(await c(\"config\",e,o.environmentVariables.HOME,\"~/.ssh\")).filter(t=>t.trim().toLowerCase().startsWith(\"host \")&&!t.includes(\"*\")).map(t=>({name:t.split(\" \")[1],description:\"SSH host\",priority:90}))"
+        },
+        "requires_js": true
+      },
+      {
+        "template": "history"
+      }
+    ],
+    "name": "user@hostname"
+  },
   "name": "mosh",
   "options": [
     {
+      "description": "Show help for mosh",
       "name": [
         "--help",
         "-h"
-      ],
-      "description": "Show help for mosh"
+      ]
     },
     {
+      "description": "Mosh client on local machine (default: \"mosh-client\")",
       "name": [
         "--client"
-      ],
-      "description": "Mosh client on local machine (default: \"mosh-client\")"
+      ]
     },
     {
+      "description": "Mosh server on remote machine (default: \"mosh-server\")",
       "name": [
         "--server"
-      ],
-      "description": "Mosh server on remote machine (default: \"mosh-server\")"
+      ]
     },
     {
+      "args": {
+        "suggestions": [
+          {
+            "description": "Local echo for slower links [default]",
+            "name": "adaptive"
+          },
+          {
+            "description": "Use local echo even on fast links",
+            "name": "always"
+          },
+          {
+            "description": "Never use local echo",
+            "name": "never"
+          },
+          {
+            "description": "Aggressively echo even when incorrect",
+            "name": "experimental"
+          }
+        ]
+      },
+      "description": "Local echo options",
       "name": [
         "--predict"
-      ],
-      "description": "Local echo options",
-      "args": {
-        "suggestions": [
-          {
-            "name": "adaptive",
-            "description": "Local echo for slower links [default]"
-          },
-          {
-            "name": "always",
-            "description": "Use local echo even on fast links"
-          },
-          {
-            "name": "never",
-            "description": "Never use local echo"
-          },
-          {
-            "name": "experimental",
-            "description": "Aggressively echo even when incorrect"
-          }
-        ]
-      }
+      ]
     },
     {
+      "description": "Use IPv4 only",
       "name": [
         "-4"
-      ],
-      "description": "Use IPv4 only"
+      ]
     },
     {
+      "description": "Use IPv6 only",
       "name": [
         "-6"
-      ],
-      "description": "Use IPv6 only"
+      ]
     },
     {
-      "name": [
-        "--family"
-      ],
-      "description": "Network Type",
       "args": {
         "suggestions": [
           {
-            "name": "inet",
-            "description": "Use IPv4 only"
+            "description": "Use IPv4 only",
+            "name": "inet"
           },
           {
-            "name": "ine6",
-            "description": "Use IPv6 only"
+            "description": "Use IPv6 only",
+            "name": "ine6"
           },
           {
-            "name": "auto",
-            "description": "Autodetect network type for single-family hosts only"
+            "description": "Autodetect network type for single-family hosts only",
+            "name": "auto"
           },
           {
-            "name": "all",
-            "description": "Try all network types"
+            "description": "Try all network types",
+            "name": "all"
           },
           {
-            "name": "prefer-inet4",
-            "description": "Use all network types, but try IPv4 first [default]"
+            "description": "Use all network types, but try IPv4 first [default]",
+            "name": "prefer-inet4"
           },
           {
-            "name": "prefer-inet6",
-            "description": "Use all network types, but try IPv6 first"
+            "description": "Use all network types, but try IPv6 first",
+            "name": "prefer-inet6"
           }
         ]
-      }
+      },
+      "description": "Network Type",
+      "name": [
+        "--family"
+      ]
     },
     {
+      "description": "Server-side UDP port or range, (No effect on server-side SSH port)",
       "name": [
         "--port",
         "-p"
       ],
-      "description": "Server-side UDP port or range, (No effect on server-side SSH port)",
       "priority": 70
     },
     {
+      "description": "{ssh|any|IP}, ask the server to reply from an IP address, (default: \"ssh\")",
       "name": [
         "--bind-server"
-      ],
-      "description": "{ssh|any|IP}, ask the server to reply from an IP address, (default: \"ssh\")"
+      ]
     },
     {
-      "name": [
-        "--ssh"
-      ],
-      "description": "Ssh command to run when setting up session, (example: \"ssh -p 2222\")",
       "args": {
         "name": "command"
-      }
+      },
+      "description": "Ssh command to run when setting up session, (example: \"ssh -p 2222\")",
+      "name": [
+        "--ssh"
+      ]
     },
     {
+      "description": "Do not allocate a pseudo tty on ssh connection",
       "name": [
         "--no-ssh-pty"
-      ],
-      "description": "Do not allocate a pseudo tty on ssh connection"
+      ]
     },
     {
+      "description": "Do not send terminal initialization string",
       "name": [
         "--no-init"
-      ],
-      "description": "Do not send terminal initialization string"
+      ]
     },
     {
+      "description": "Run mosh-server locally without using ssh",
       "name": [
         "--local"
-      ],
-      "description": "Run mosh-server locally without using ssh"
+      ]
     },
     {
-      "name": [
-        "--experimental-remote-ip"
-      ],
-      "description": "Select the method for discovering the remote IP address to use for mosh",
       "args": {
         "name": "method",
         "suggestions": [
@@ -151,36 +172,17 @@
             "name": "proxy"
           }
         ]
-      }
+      },
+      "description": "Select the method for discovering the remote IP address to use for mosh",
+      "name": [
+        "--experimental-remote-ip"
+      ]
     },
     {
+      "description": "Version and copyright information",
       "name": [
         "--version"
-      ],
-      "description": "Version and copyright information"
+      ]
     }
-  ],
-  "args": {
-    "name": "user@hostname",
-    "description": "Address of remote machine to log into",
-    "generators": [
-      {
-        "requires_js": true,
-        "js_runtime": {
-          "kind": "custom",
-          "source": "async(n,e,o)=>{let{stdout:a}=await e({command:\"cat\",args:[`${o.environmentVariables.HOME}/.ssh/known_hosts`]});return a.split(`\n`).map(t=>{let i=h.exec(t);if(i)return String(i)}).filter((t,i,r)=>t&&r.indexOf(t)===i).map(t=>({name:(n[1].endsWith(\"@\")?n[1]:\"\")+t,description:\"SSH host\"}))}"
-        }
-      },
-      {
-        "requires_js": true,
-        "js_runtime": {
-          "kind": "custom",
-          "source": "async(n,e,o)=>(await c(\"config\",e,o.environmentVariables.HOME,\"~/.ssh\")).filter(t=>t.trim().toLowerCase().startsWith(\"host \")&&!t.includes(\"*\")).map(t=>({name:t.split(\" \")[1],description:\"SSH host\",priority:90}))"
-        }
-      },
-      {
-        "template": "history"
-      }
-    ]
-  }
+  ]
 }

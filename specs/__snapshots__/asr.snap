@@ -370,10 +370,6 @@
             "description": "Configuration file in standard property list format",
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "custom",
-                  "source": "(p,h,S)=>le(this,void 0,void 0,function*(){var d;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:m}=S,w=(d=(0,v.getCurrentInsertedDirectory)(c??O,m,S))!==null&&d!==void 0?d:\"/\";try{let E=yield h({command:\"ls\",args:[\"-1ApL\"],cwd:w}),Z=R(E.stdout.split(`\n`),[\".DS_Store\"]),z=[];for(let j of Z)if(j){let k=j.endsWith(\"/\")?\"folders\":\"filepaths\";(k===\"filepaths\"&&l!==\"only\"||k===\"folders\"&&l!==\"never\")&&z.push({type:k===\"filepaths\"?\"file\":\"folder\",name:j,insertValue:j,isDangerous:b,context:{templateType:k}})}return _(g(z))}catch{return[]}})"
-                },
                 "requires_js": true
               }
             ],

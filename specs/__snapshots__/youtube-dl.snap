@@ -213,6 +213,7 @@
           {
             "js_runtime": {
               "kind": "script_function",
+              "self_contained": true,
               "source": "i=>[\"youtube-dl\",\"--flat-playlist\",\"-J\",...i.filter(e=>e.includes(\"youtube.\"))]"
             },
             "requires_js": true
@@ -231,6 +232,7 @@
           {
             "js_runtime": {
               "kind": "script_function",
+              "self_contained": true,
               "source": "i=>[\"youtube-dl\",\"--flat-playlist\",\"-J\",...i.filter(e=>e.includes(\"youtube.\"))]"
             },
             "requires_js": true
@@ -249,6 +251,7 @@
           {
             "js_runtime": {
               "kind": "script_function",
+              "self_contained": true,
               "source": "i=>[\"youtube-dl\",\"--flat-playlist\",\"-J\",...i.filter(e=>e.includes(\"youtube.\"))]"
             },
             "requires_js": true
@@ -1417,6 +1420,7 @@
           {
             "js_runtime": {
               "kind": "custom",
+              "self_contained": true,
               "source": "async(i,e,t)=>{let{stdout:n}=await e({command:\"youtube-dl\",args:[...i.filter(o=>o.includes(\"youtube.\")),\"--simulate\",\"--ap-list-mso\"]});return n.split(`\n`).slice(3).map(o=>{let[r,...s]=o.split(\" \");return{name:r,description:s.join(\" \")}})}"
             },
             "requires_js": true

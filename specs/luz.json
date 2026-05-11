@@ -1,68 +1,68 @@
 {
-  "name": "luz",
   "description": "A next-generation build system for Apple Darwin-based systems",
+  "name": "luz",
+  "options": [
+    {
+      "description": "Show help for Luz",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "build",
       "description": "Build the target in the current directory",
+      "name": "build",
       "options": [
         {
+          "description": "Show help for the build command",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Show help for the build command"
+          ]
         },
         {
+          "description": "Clean the build directory before building",
           "name": [
             "--clean",
             "-c"
-          ],
-          "description": "Clean the build directory before building"
+          ]
         }
       ]
     },
     {
-      "name": "gen",
       "description": "Generate a new project",
+      "name": "gen",
       "options": [
         {
+          "description": "Show help for the gen command",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Show help for the gen command"
+          ]
         },
         {
-          "name": [
-            "--type",
-            "-t"
-          ],
-          "description": "The type of project to generate",
           "args": {
             "name": "type",
             "suggestions": [
               {
-                "name": "tool",
-                "description": "A command-line tool"
+                "description": "A command-line tool",
+                "name": "tool"
               },
               {
-                "name": "tweak",
-                "description": "A tweak"
+                "description": "A tweak",
+                "name": "tweak"
               }
             ]
-          }
+          },
+          "description": "The type of project to generate",
+          "name": [
+            "--type",
+            "-t"
+          ]
         }
       ]
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Show help for Luz"
     }
   ]
 }

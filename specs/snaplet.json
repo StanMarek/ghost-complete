@@ -1,28 +1,44 @@
 {
-  "name": "snaplet",
   "description": "Create and share PostgreSQL snapshots with schema, data transformation, and preview databases for collaborative development (see: https://docs.snaplet.dev)",
+  "name": "snaplet",
+  "options": [
+    {
+      "description": "Show help for snaplet",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Show version number",
+      "name": [
+        "--version",
+        "-v"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "auth",
       "description": "Manage auth state",
+      "name": "auth",
       "subcommands": [
         {
-          "name": "login",
-          "description": "Login with an access token",
           "args": {
-            "name": "access-token",
-            "isOptional": true
-          }
+            "isOptional": true,
+            "name": "access-token"
+          },
+          "description": "Login with an access token",
+          "name": "login"
         }
       ]
     },
     {
-      "name": "config",
       "description": "Manage configuration",
+      "name": "config",
       "subcommands": [
         {
-          "name": "generate",
           "description": "Generate transform files",
+          "name": "generate",
           "options": [
             {
               "name": [
@@ -30,10 +46,6 @@
               ]
             },
             {
-              "name": [
-                "--type",
-                "-t"
-              ],
               "args": {
                 "suggestions": [
                   {
@@ -49,23 +61,23 @@
                     "name": "seed"
                   }
                 ]
-              }
+              },
+              "name": [
+                "--type",
+                "-t"
+              ]
             }
           ]
         },
         {
-          "name": "list",
-          "description": "List config variables"
+          "description": "List config variables",
+          "name": "list"
         },
         {
-          "name": "pull",
           "description": "Pull cloud project config to local",
+          "name": "pull",
           "options": [
             {
-              "name": [
-                "--type",
-                "-t"
-              ],
               "args": {
                 "suggestions": [
                   {
@@ -81,19 +93,19 @@
                     "name": "seed"
                   }
                 ]
-              }
+              },
+              "name": [
+                "--type",
+                "-t"
+              ]
             }
           ]
         },
         {
-          "name": "push",
           "description": "Push local project config to cloud",
+          "name": "push",
           "options": [
             {
-              "name": [
-                "--type",
-                "-t"
-              ],
               "args": {
                 "suggestions": [
                   {
@@ -109,13 +121,21 @@
                     "name": "seed"
                   }
                 ]
-              }
+              },
+              "name": [
+                "--type",
+                "-t"
+              ]
             }
           ]
         },
         {
-          "name": "setup",
+          "args": {
+            "isOptional": true,
+            "name": "targetDatabaseUrl"
+          },
           "description": "Setup local project configuration",
+          "name": "setup",
           "options": [
             {
               "name": [
@@ -128,414 +148,410 @@
               ]
             },
             {
+              "description": "Automatically accept any prompt, useful for scripts",
               "name": [
                 "--yes"
-              ],
-              "description": "Automatically accept any prompt, useful for scripts"
+              ]
             }
-          ],
-          "args": {
-            "name": "targetDatabaseUrl",
-            "isOptional": true
-          }
+          ]
         }
       ]
     },
     {
-      "name": "database",
       "description": "Manage preview database",
+      "name": "database",
       "subcommands": [
         {
-          "name": "cache",
-          "description": "Cache a snapshot into the preview database server",
-          "options": [
-            {
-              "name": [
-                "--tags"
-              ],
-              "description": "Filter snapshots by tags",
-              "args": {
-                "name": "tags-list",
-                "description": "Tag1,tag2,tag3"
-              }
-            },
-            {
-              "name": [
-                "--latest"
-              ],
-              "description": "Select the latest snapshot captured to cache in the preview database server"
-            },
-            {
-              "name": [
-                "--clear"
-              ],
-              "description": "Remove the snapshot from the preview database server cache"
-            }
-          ],
           "args": {
-            "name": "snapshot",
-            "isOptional": true,
             "generators": [
               {
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "s=>{let n=[],a=g(s).filter(e=>e.src===\"CLOUD\"&&e.status===\"SUCCESS\");for(let e of a)n.push({name:e.name,description:`\\u2705 ${e.created} ${e.size} \\u2601\\uFE0F`});return n}"
+                },
+                "requires_js": true,
                 "script": [
                   "snaplet",
                   "snapshot",
                   "ls"
-                ],
-                "requires_js": true,
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "s=>{let n=[],a=g(s).filter(e=>e.src===\"CLOUD\"&&e.status===\"SUCCESS\");for(let e of a)n.push({name:e.name,description:`\\u2705 ${e.created} ${e.size} \\u2601\\uFE0F`});return n}"
-                }
+                ]
               }
-            ]
-          }
-        },
-        {
-          "name": "create",
-          "description": "Create a preview database from a snapshot",
+            ],
+            "isOptional": true,
+            "name": "snapshot"
+          },
+          "description": "Cache a snapshot into the preview database server",
+          "name": "cache",
           "options": [
             {
+              "args": {
+                "description": "Tag1,tag2,tag3",
+                "name": "tags-list"
+              },
+              "description": "Filter snapshots by tags",
               "name": [
                 "--tags"
-              ],
-              "description": "Filter snapshots by tags",
-              "args": {
-                "name": "tags-list",
-                "description": "Tag1,tag2,tag3"
-              }
+              ]
             },
             {
+              "description": "Select the latest snapshot captured to cache in the preview database server",
               "name": [
                 "--latest"
-              ],
-              "description": "Restore the latest snapshot"
+              ]
             },
             {
+              "description": "Remove the snapshot from the preview database server cache",
               "name": [
-                "--git"
-              ],
-              "description": "Infer the database name from the current git branch"
-            },
-            {
-              "name": [
-                "--no-snapshot"
-              ],
-              "description": "Create an empty database not based on a snapshot"
-            },
-            {
-              "name": [
-                "--force"
-              ],
-              "description": "Force the database creation, it will drop and recreate the existing database if present"
-            }
-          ],
-          "args": [
-            {
-              "name": "database-name"
-            },
-            {
-              "name": "snapshot",
-              "isOptional": true,
-              "generators": [
-                {
-                  "script": [
-                    "snaplet",
-                    "snapshot",
-                    "ls"
-                  ],
-                  "requires_js": true,
-                  "js_runtime": {
-                    "kind": "post_process",
-                    "source": "s=>{let n=[],a=g(s).filter(e=>e.src===\"CLOUD\"&&e.status===\"SUCCESS\");for(let e of a)n.push({name:e.name,description:`\\u2705 ${e.created} ${e.size} \\u2601\\uFE0F`});return n}"
-                  }
-                }
+                "--clear"
               ]
             }
           ]
         },
         {
-          "name": "drop",
-          "description": "Drop a preview database",
-          "options": [
+          "args": [
             {
-              "name": [
-                "--git"
+              "name": "database-name"
+            },
+            {
+              "generators": [
+                {
+                  "js_runtime": {
+                    "kind": "post_process",
+                    "source": "s=>{let n=[],a=g(s).filter(e=>e.src===\"CLOUD\"&&e.status===\"SUCCESS\");for(let e of a)n.push({name:e.name,description:`\\u2705 ${e.created} ${e.size} \\u2601\\uFE0F`});return n}"
+                  },
+                  "requires_js": true,
+                  "script": [
+                    "snaplet",
+                    "snapshot",
+                    "ls"
+                  ]
+                }
               ],
-              "description": "Infer the database name from the current git branch"
+              "isOptional": true,
+              "name": "snapshot"
             }
           ],
-          "args": {
-            "name": "database-name",
-            "isOptional": true,
-            "generators": [
-              {
-                "script": [
-                  "snaplet",
-                  "database",
-                  "ls"
-                ],
-                "requires_js": true,
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "s=>{let n=[],a=f(s);for(let e of a)n.push({name:e.name,description:`${e.size} (${e.snapshotName})`});return n}"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "name": "url",
-          "description": "Show a preview database url",
+          "description": "Create a preview database from a snapshot",
+          "name": "create",
           "options": [
             {
+              "args": {
+                "description": "Tag1,tag2,tag3",
+                "name": "tags-list"
+              },
+              "description": "Filter snapshots by tags",
+              "name": [
+                "--tags"
+              ]
+            },
+            {
+              "description": "Restore the latest snapshot",
+              "name": [
+                "--latest"
+              ]
+            },
+            {
+              "description": "Infer the database name from the current git branch",
               "name": [
                 "--git"
-              ],
-              "description": "Infer the database name from the current git branch"
-            }
-          ],
-          "args": {
-            "name": "database-name",
-            "isOptional": true,
-            "generators": [
-              {
-                "script": [
-                  "snaplet",
-                  "database",
-                  "ls"
-                ],
-                "requires_js": true,
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "s=>{let n=[],a=f(s);for(let e of a)n.push({name:e.name,description:`${e.size} (${e.snapshotName})`});return n}"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "name": "destroy",
-          "description": "Destroy the database server",
-          "options": [
+              ]
+            },
             {
+              "description": "Create an empty database not based on a snapshot",
               "name": [
-                "--yes"
-              ],
-              "description": "Automatically accept any prompt, useful for scripts"
+                "--no-snapshot"
+              ]
+            },
+            {
+              "description": "Force the database creation, it will drop and recreate the existing database if present",
+              "name": [
+                "--force"
+              ]
             }
           ]
         },
         {
-          "name": "setup",
-          "description": "Create a preview database server",
+          "args": {
+            "generators": [
+              {
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "s=>{let n=[],a=f(s);for(let e of a)n.push({name:e.name,description:`${e.size} (${e.snapshotName})`});return n}"
+                },
+                "requires_js": true,
+                "script": [
+                  "snaplet",
+                  "database",
+                  "ls"
+                ]
+              }
+            ],
+            "isOptional": true,
+            "name": "database-name"
+          },
+          "description": "Drop a preview database",
+          "name": "drop",
           "options": [
             {
+              "description": "Infer the database name from the current git branch",
               "name": [
-                "--region"
-              ],
-              "description": "Fly.io region where the preview database server should be created",
+                "--git"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "s=>{let n=[],a=f(s);for(let e of a)n.push({name:e.name,description:`${e.size} (${e.snapshotName})`});return n}"
+                },
+                "requires_js": true,
+                "script": [
+                  "snaplet",
+                  "database",
+                  "ls"
+                ]
+              }
+            ],
+            "isOptional": true,
+            "name": "database-name"
+          },
+          "description": "Show a preview database url",
+          "name": "url",
+          "options": [
+            {
+              "description": "Infer the database name from the current git branch",
+              "name": [
+                "--git"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Destroy the database server",
+          "name": "destroy",
+          "options": [
+            {
+              "description": "Automatically accept any prompt, useful for scripts",
+              "name": [
+                "--yes"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Create a preview database server",
+          "name": "setup",
+          "options": [
+            {
               "args": {
                 "suggestions": [
                   {
-                    "name": "ams",
-                    "description": "Amsterdam, Netherlands"
+                    "description": "Amsterdam, Netherlands",
+                    "name": "ams"
                   },
                   {
-                    "name": "cdg",
-                    "description": "Paris, France"
+                    "description": "Paris, France",
+                    "name": "cdg"
                   },
                   {
-                    "name": "den",
-                    "description": "Denver, Colorado (US)"
+                    "description": "Denver, Colorado (US)",
+                    "name": "den"
                   },
                   {
-                    "name": "dfw",
-                    "description": "Dallas, Texas (US)"
+                    "description": "Dallas, Texas (US)",
+                    "name": "dfw"
                   },
                   {
-                    "name": "ewr",
-                    "description": "Secaucus, NJ (US)"
+                    "description": "Secaucus, NJ (US)",
+                    "name": "ewr"
                   },
                   {
-                    "name": "fra",
-                    "description": "Frankfurt, Germany"
+                    "description": "Frankfurt, Germany",
+                    "name": "fra"
                   },
                   {
-                    "name": "gru",
-                    "description": "São Paulo"
+                    "description": "São Paulo",
+                    "name": "gru"
                   },
                   {
-                    "name": "hkg",
-                    "description": "Hong Kong, Hong Kong"
+                    "description": "Hong Kong, Hong Kong",
+                    "name": "hkg"
                   },
                   {
-                    "name": "iad",
-                    "description": "Ashburn, Virginia (US)"
+                    "description": "Ashburn, Virginia (US)",
+                    "name": "iad"
                   },
                   {
-                    "name": "jnb",
-                    "description": "Johannesburg, South Africa"
+                    "description": "Johannesburg, South Africa",
+                    "name": "jnb"
                   },
                   {
-                    "name": "lax",
-                    "description": "Los Angeles, California (US)"
+                    "description": "Los Angeles, California (US)",
+                    "name": "lax"
                   },
                   {
-                    "name": "lhr",
-                    "description": "London, United Kingdom"
+                    "description": "London, United Kingdom",
+                    "name": "lhr"
                   },
                   {
-                    "name": "maa",
-                    "description": "Chennai (Madras), India"
+                    "description": "Chennai (Madras), India",
+                    "name": "maa"
                   },
                   {
-                    "name": "mad",
-                    "description": "Madrid, Spain"
+                    "description": "Madrid, Spain",
+                    "name": "mad"
                   },
                   {
-                    "name": "mia",
-                    "description": "Miami, Florida (US)"
+                    "description": "Miami, Florida (US)",
+                    "name": "mia"
                   },
                   {
-                    "name": "nrt",
-                    "description": "Tokyo, Japan"
+                    "description": "Tokyo, Japan",
+                    "name": "nrt"
                   },
                   {
-                    "name": "ord",
-                    "description": "Chicago, Illinois (US)"
+                    "description": "Chicago, Illinois (US)",
+                    "name": "ord"
                   },
                   {
-                    "name": "otp",
-                    "description": "Bucharest, Romania"
+                    "description": "Bucharest, Romania",
+                    "name": "otp"
                   },
                   {
-                    "name": "scl",
-                    "description": "Santiago, Chile"
+                    "description": "Santiago, Chile",
+                    "name": "scl"
                   },
                   {
-                    "name": "sea",
-                    "description": "Seattle, Washington (US)"
+                    "description": "Seattle, Washington (US)",
+                    "name": "sea"
                   },
                   {
-                    "name": "sin",
-                    "description": "Singapore"
+                    "description": "Singapore",
+                    "name": "sin"
                   },
                   {
-                    "name": "sjc",
-                    "description": "Sunnyvale, California (US)"
+                    "description": "Sunnyvale, California (US)",
+                    "name": "sjc"
                   },
                   {
-                    "name": "syd",
-                    "description": "Sydney, Australia"
+                    "description": "Sydney, Australia",
+                    "name": "syd"
                   },
                   {
-                    "name": "waw",
-                    "description": "Warsaw, Poland"
+                    "description": "Warsaw, Poland",
+                    "name": "waw"
                   },
                   {
-                    "name": "yul",
-                    "description": "Montreal, Canada"
+                    "description": "Montreal, Canada",
+                    "name": "yul"
                   },
                   {
-                    "name": "yyz",
-                    "description": "Toronto, Canada"
+                    "description": "Toronto, Canada",
+                    "name": "yyz"
                   }
                 ]
-              }
+              },
+              "description": "Fly.io region where the preview database server should be created",
+              "name": [
+                "--region"
+              ]
             }
           ]
         },
         {
-          "name": "list",
-          "description": "List preview databases"
+          "description": "List preview databases",
+          "name": "list"
         }
       ]
     },
     {
-      "name": "discord",
-      "description": "Open the Snaplet Discord chat window in your browser"
+      "description": "Open the Snaplet Discord chat window in your browser",
+      "name": "discord"
     },
     {
-      "name": "documentation",
-      "description": "Opens the Snaplet Documentation in your browser"
+      "description": "Opens the Snaplet Documentation in your browser",
+      "name": "documentation"
     },
     {
-      "name": "project",
       "description": "Manage project configuration",
+      "name": "project",
       "subcommands": [
         {
-          "name": "create",
+          "args": {
+            "name": "name"
+          },
           "description": "Create a new project",
+          "name": "create",
           "options": [
             {
+              "args": {
+                "name": "team-name"
+              },
               "name": [
                 "--team",
                 "-t"
-              ],
-              "args": {
-                "name": "team-name"
-              }
+              ]
             }
-          ],
+          ]
+        },
+        {
+          "description": "Create an invite URL for this project",
+          "name": "invite"
+        },
+        {
           "args": {
-            "name": "name"
-          }
-        },
-        {
-          "name": "invite",
-          "description": "Create an invite URL for this project"
-        },
-        {
-          "name": "setup",
+            "isOptional": true,
+            "name": "project-id"
+          },
           "description": "Set up a project",
-          "args": {
-            "name": "project-id",
-            "isOptional": true
-          }
+          "name": "setup"
         }
       ]
     },
     {
-      "name": "proxy",
-      "description": "Start a database proxy"
+      "description": "Start a database proxy",
+      "name": "proxy"
     },
     {
-      "name": "seed",
       "description": "Populates an empty database with generated data",
+      "name": "seed",
       "options": [
         {
+          "description": "Show interactive prompts to customise seeding",
           "name": [
             "-i",
             "--interactive"
-          ],
-          "description": "Show interactive prompts to customise seeding"
+          ]
         },
         {
+          "args": {
+            "name": "number"
+          },
           "name": [
             "-n",
             "--entriesPerTable"
-          ],
-          "args": {
-            "name": "number"
-          }
+          ]
         }
       ]
     },
     {
-      "name": "snapshot",
       "description": "Manage snapshots",
+      "name": "snapshot",
       "subcommands": [
         {
-          "name": "capture",
+          "args": {
+            "isOptional": true,
+            "name": "destination-path",
+            "template": "folders"
+          },
           "description": "Capture a new snapshot",
+          "name": "capture",
           "options": [
             {
-              "name": [
-                "--env",
-                "--environment"
-              ],
-              "description": "Environment to use when capturing the snapshot",
               "args": {
                 "name": "environment-name",
                 "suggestions": [
@@ -546,45 +562,45 @@
                     "name": "local"
                   }
                 ]
-              }
+              },
+              "description": "Environment to use when capturing the snapshot",
+              "name": [
+                "--env",
+                "--environment"
+              ]
             },
             {
+              "args": {
+                "name": "message"
+              },
+              "description": "Attach a message to the snapshot",
               "name": [
                 "-m",
                 "--message"
-              ],
-              "description": "Attach a message to the snapshot",
-              "args": {
-                "name": "message"
-              }
+              ]
             },
             {
-              "name": [
-                "--subset-path",
-                "--subset"
-              ],
-              "description": "Path to a subset config file",
               "args": {
                 "name": "path",
                 "template": "filepaths"
-              }
+              },
+              "description": "Path to a subset config file",
+              "name": [
+                "--subset-path",
+                "--subset"
+              ]
             },
             {
+              "args": {
+                "description": "Tag1,tag2,tag3",
+                "name": "tags-list"
+              },
+              "description": "Attach tags to the snapshot",
               "name": [
                 "--tags"
-              ],
-              "description": "Attach tags to the snapshot",
-              "args": {
-                "name": "tags-list",
-                "description": "Tag1,tag2,tag3"
-              }
+              ]
             },
             {
-              "name": [
-                "-t",
-                "--transform-mode"
-              ],
-              "description": "Transformation mode to apply to the snapshot",
               "args": {
                 "name": "transformation-mode",
                 "suggestions": [
@@ -598,18 +614,18 @@
                     "name": "auto"
                   }
                 ]
-              }
+              },
+              "description": "Transformation mode to apply to the snapshot",
+              "name": [
+                "-t",
+                "--transform-mode"
+              ]
             }
-          ],
-          "args": {
-            "name": "destination-path",
-            "template": "folders",
-            "isOptional": true
-          }
+          ]
         },
         {
-          "name": "create",
           "description": "Create a snapshot in cloud",
+          "name": "create",
           "options": [
             {
               "name": [
@@ -619,157 +635,157 @@
           ]
         },
         {
-          "name": "list",
           "description": "List all snapshots",
+          "name": "list",
           "options": [
             {
+              "args": {
+                "description": "Tag1,tag2,tag3",
+                "name": "tags-list"
+              },
+              "description": "Filter snapshots by tags",
               "name": [
                 "--tags"
-              ],
-              "description": "Filter snapshots by tags",
-              "args": {
-                "name": "tags-list",
-                "description": "Tag1,tag2,tag3"
-              }
+              ]
             }
           ]
         },
         {
-          "name": "restore",
+          "args": {
+            "generators": [
+              {
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "s=>{let n=[],a=g(s);for(let e of a){let t=e.status===\"SUCCESS\"?\"\\u2705\":\"\\u274C\",i=e.src===\"CLOUD\"?\"\\u2601\\uFE0F\":\"\\u{1F4BB}\";n.push({name:e.name,description:`${t} ${e.created} ${e.size} ${i}`})}return n}"
+                },
+                "requires_js": true,
+                "script": [
+                  "snaplet",
+                  "snapshot",
+                  "ls"
+                ]
+              }
+            ],
+            "isOptional": true,
+            "name": "snapshot-name"
+          },
           "description": "Restore a snapshot",
+          "name": "restore",
           "options": [
             {
+              "description": "Restore data on the database (skip with --no-data)",
               "name": [
                 "data",
                 "--no-data"
-              ],
-              "description": "Restore data on the database (skip with --no-data)"
+              ]
             },
             {
+              "description": "Restore schema on the database (skip with --no-schema)",
               "name": [
                 "schema",
                 "--no-schema"
-              ],
-              "description": "Restore schema on the database (skip with --no-schema)"
+              ]
             },
             {
+              "description": "Drop destination database before restoring schemas (skip with --no-reset)",
               "name": [
                 "reset",
                 "--no-reset"
-              ],
-              "description": "Drop destination database before restoring schemas (skip with --no-reset)"
+              ]
             },
             {
+              "args": {
+                "description": "Tag1,tag2,tag3",
+                "name": "tags-list"
+              },
+              "description": "Filter snapshots by tags",
               "name": [
                 "--tags"
-              ],
-              "description": "Filter snapshots by tags",
-              "args": {
-                "name": "tags-list",
-                "description": "Tag1,tag2,tag3"
-              }
+              ]
             },
             {
+              "description": "Restore the latest snapshot",
               "name": [
                 "--latest"
-              ],
-              "description": "Restore the latest snapshot"
+              ]
             },
             {
+              "description": "Performs a restore without a confirmation message",
               "name": [
                 "-y",
                 "--yes"
-              ],
-              "description": "Performs a restore without a confirmation message"
+              ]
             },
             {
+              "description": "Skip data, only restore schema",
               "name": [
                 "--schema-only"
-              ],
-              "description": "Skip data, only restore schema"
+              ]
             },
             {
+              "description": "Restore data only (keep the current schema and indexes)",
               "name": [
                 "--data-only"
-              ],
-              "description": "Restore data only (keep the current schema and indexes)"
+              ]
             }
-          ],
+          ]
+        },
+        {
           "args": {
-            "name": "snapshot-name",
-            "isOptional": true,
             "generators": [
               {
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "s=>{let n=[],a=g(s);for(let e of a){let t=e.status===\"SUCCESS\"?\"\\u2705\":\"\\u274C\",i=e.src===\"CLOUD\"?\"\\u2601\\uFE0F\":\"\\u{1F4BB}\";n.push({name:e.name,description:`${t} ${e.created} ${e.size} ${i}`})}return n}"
+                },
+                "requires_js": true,
                 "script": [
                   "snaplet",
                   "snapshot",
                   "ls"
-                ],
-                "requires_js": true,
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "s=>{let n=[],a=g(s);for(let e of a){let t=e.status===\"SUCCESS\"?\"\\u2705\":\"\\u274C\",i=e.src===\"CLOUD\"?\"\\u2601\\uFE0F\":\"\\u{1F4BB}\";n.push({name:e.name,description:`${t} ${e.created} ${e.size} ${i}`})}return n}"
-                }
+                ]
               }
-            ]
-          }
-        },
-        {
-          "name": "share",
+            ],
+            "isOptional": true,
+            "name": "snapshot-name"
+          },
           "description": "Share a snapshot",
+          "name": "share",
           "options": [
             {
+              "description": "Disable encryption",
               "name": [
                 "--no-encrypt"
-              ],
-              "description": "Disable encryption"
+              ]
             },
             {
+              "args": {
+                "description": "Tag1,tag2,tag3",
+                "name": "tags-list"
+              },
+              "description": "Filter snapshots by tags",
               "name": [
                 "--tags"
-              ],
-              "description": "Filter snapshots by tags",
-              "args": {
-                "name": "tags-list",
-                "description": "Tag1,tag2,tag3"
-              }
+              ]
             },
             {
+              "description": "Share the latest snapshot",
               "name": [
                 "--latest"
-              ],
-              "description": "Share the latest snapshot"
+              ]
             }
-          ],
-          "args": {
-            "name": "snapshot-name",
-            "isOptional": true,
-            "generators": [
-              {
-                "script": [
-                  "snaplet",
-                  "snapshot",
-                  "ls"
-                ],
-                "requires_js": true,
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "s=>{let n=[],a=g(s);for(let e of a){let t=e.status===\"SUCCESS\"?\"\\u2705\":\"\\u274C\",i=e.src===\"CLOUD\"?\"\\u2601\\uFE0F\":\"\\u{1F4BB}\";n.push({name:e.name,description:`${t} ${e.created} ${e.size} ${i}`})}return n}"
-                }
-              }
-            ]
-          }
+          ]
         },
         {
-          "name": "sample",
+          "args": {
+            "isOptional": true,
+            "name": "destination-path",
+            "template": "folders"
+          },
           "description": "Create a sample of a database",
+          "name": "sample",
           "options": [
             {
-              "name": [
-                "--env",
-                "--environment"
-              ],
-              "description": "Environment to use when slicing the snapshot",
               "args": {
                 "name": "environment-name",
                 "suggestions": [
@@ -780,80 +796,64 @@
                     "name": "local"
                   }
                 ]
-              }
+              },
+              "description": "Environment to use when slicing the snapshot",
+              "name": [
+                "--env",
+                "--environment"
+              ]
             },
             {
+              "args": {
+                "template": "filepaths"
+              },
+              "description": "Path to a sample config file",
               "name": [
                 "--sample-config-path",
                 "--subset-path"
-              ],
-              "description": "Path to a sample config file",
-              "args": {
-                "template": "filepaths"
-              }
+              ]
             },
             {
+              "description": "Force overwrite existing sample file",
               "name": [
                 "-f",
                 "--force"
-              ],
-              "description": "Force overwrite existing sample file"
+              ]
             }
-          ],
-          "args": {
-            "name": "destination-path",
-            "template": "folders",
-            "isOptional": true
-          }
+          ]
         }
       ]
     },
     {
-      "name": "subset",
       "description": "Manage subsetting",
+      "name": "subset",
       "subcommands": [
         {
-          "name": "setup",
-          "description": "Configure subsetting"
+          "description": "Configure subsetting",
+          "name": "setup"
         }
       ]
     },
     {
-      "name": "team",
       "description": "Manage team configuration",
+      "name": "team",
       "subcommands": [
         {
-          "name": "create",
-          "description": "Create a new team",
           "args": {
             "name": "team-name"
-          }
+          },
+          "description": "Create a new team",
+          "name": "create"
         }
       ]
     },
     {
-      "name": "upgrade",
-      "description": "Upgrade this binary"
+      "description": "Upgrade this binary",
+      "name": "upgrade"
     },
     {
-      "name": "completion",
-      "description": "Generate completion script"
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Show help for snaplet"
-    },
-    {
-      "name": [
-        "--version",
-        "-v"
-      ],
-      "description": "Show version number"
+      "description": "Generate completion script",
+      "name": "completion"
     }
   ]
 }

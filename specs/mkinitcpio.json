@@ -1,141 +1,135 @@
 {
-  "name": "mkinitcpio",
   "description": "Create an initial ramdisk environment",
+  "name": "mkinitcpio",
   "options": [
     {
+      "description": "Show help for mkinitcpio",
       "name": [
         "--help",
         "-h"
-      ],
-      "description": "Show help for mkinitcpio"
+      ]
     },
     {
+      "description": "Display version information",
       "name": [
         "--version",
         "-V"
-      ],
-      "description": "Display version information"
+      ]
     },
     {
-      "name": [
-        "--addhooks",
-        "-A"
-      ],
-      "description": "Add additional hooks to the image",
       "args": {
         "name": "hooks",
         "template": "filepaths"
-      }
+      },
+      "description": "Add additional hooks to the image",
+      "name": [
+        "--addhooks",
+        "-A"
+      ]
     },
     {
-      "name": [
-        "--config",
-        "-c"
-      ],
-      "description": "Use config file to generate the ramdisk",
       "args": {
         "name": "config",
         "template": "filepaths"
-      }
+      },
+      "description": "Use config file to generate the ramdisk",
+      "name": [
+        "--config",
+        "-c"
+      ]
     },
     {
+      "args": {
+        "name": "directory",
+        "template": "folders"
+      },
+      "description": "Set directory as the location where the initramfs is built",
       "name": [
         "--generatedir",
         "-d"
-      ],
-      "description": "Set directory as the location where the initramfs is built",
+      ]
+    },
+    {
       "args": {
         "name": "directory",
         "template": "folders"
-      }
-    },
-    {
+      },
+      "description": "Set directory as the location where hooks will be searched for when generating the image",
       "name": [
         "--hookdir",
         "-D"
-      ],
-      "description": "Set directory as the location where hooks will be searched for when generating the image",
-      "args": {
-        "name": "directory",
-        "template": "folders"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "filename"
+      },
+      "description": "Generate a CPIO image as filename",
       "name": [
         "--generate",
         "-g"
-      ],
-      "description": "Generate a CPIO image as filename",
-      "args": {
-        "name": "filename"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "hookname"
+      },
+      "description": "Output help for hookname",
       "name": [
         "--hookhelp",
         "-H"
-      ],
-      "description": "Output help for hookname",
-      "args": {
-        "name": "hookname"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "kernelversion"
+      },
+      "description": "Use kernelversion, instead of the current running kernel",
       "name": [
         "--kernel",
         "-k"
-      ],
-      "description": "Use kernelversion, instead of the current running kernel",
-      "args": {
-        "name": "kernelversion"
-      }
+      ]
     },
     {
+      "description": "List all available hooks",
       "name": [
         "--listhooks",
         "-L"
-      ],
-      "description": "List all available hooks"
+      ]
     },
     {
+      "description": "Display modules found via autodetection",
       "name": [
         "--automods",
         "-M"
-      ],
-      "description": "Display modules found via autodetection"
+      ]
     },
     {
+      "description": "Disable color output",
       "name": [
         "--nocolor",
         "-n"
-      ],
-      "description": "Disable color output"
+      ]
     },
     {
+      "args": {
+        "name": "filename"
+      },
+      "description": "Generate a UEFI executable as filename",
       "name": [
         "--uefi",
         "-U"
-      ],
-      "description": "Generate a UEFI executable as filename",
-      "args": {
-        "name": "filename"
-      }
+      ]
     },
     {
+      "description": "Process all presets contained in /etc/mkinitcpio.d",
       "name": [
         "--allpresets",
         "-P"
-      ],
-      "description": "Process all presets contained in /etc/mkinitcpio.d"
+      ]
     },
     {
-      "name": [
-        "--preset",
-        "-p"
-      ],
-      "description": "Build initramfs image(s) according to specified preset",
       "args": {
-        "name": "preset",
         "generators": [
           {
             "script": [
@@ -148,117 +142,123 @@
               "trim"
             ]
           }
-        ]
-      }
+        ],
+        "name": "preset"
+      },
+      "description": "Build initramfs image(s) according to specified preset",
+      "name": [
+        "--preset",
+        "-p"
+      ]
     },
     {
+      "args": {
+        "name": "root"
+      },
+      "description": "Specifies the root directory to find modules in",
       "name": [
         "--moduleroot",
         "-r"
-      ],
-      "description": "Specifies the root directory to find modules in",
-      "args": {
-        "name": "root"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "hooks"
+      },
+      "description": "Skip hooks when generating the image",
       "name": [
         "--skiphooks",
         "-S"
-      ],
-      "description": "Skip hooks when generating the image",
-      "args": {
-        "name": "hooks"
-      }
+      ]
     },
     {
+      "description": "Saves the build directory for the initial ramdisk",
       "name": [
         "--save",
         "-s"
-      ],
-      "description": "Saves the build directory for the initial ramdisk"
+      ]
     },
     {
-      "name": [
-        "--builddir",
-        "-t"
-      ],
-      "description": "Use tmpdir as the temporary build directory instead of /tmp",
       "args": {
         "name": "tmpdir",
         "template": "folders"
-      }
+      },
+      "description": "Use tmpdir as the temporary build directory instead of /tmp",
+      "name": [
+        "--builddir",
+        "-t"
+      ]
     },
     {
+      "description": "Verbose output",
       "name": [
         "--verbose",
         "-v"
-      ],
-      "description": "Verbose output"
+      ]
     },
     {
+      "args": {
+        "name": "compress"
+      },
+      "description": "Override the compression method with the compress program",
       "name": [
         "--compress",
         "-z"
-      ],
-      "description": "Override the compression method with the compress program",
-      "args": {
-        "name": "compress"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "filename"
+      },
+      "description": "Use kernel command line with UEFI executable",
       "name": [
         "--cmdline"
-      ],
-      "description": "Use kernel command line with UEFI executable",
-      "args": {
-        "name": "filename"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "filename"
+      },
+      "description": "UEFI executables can show a bitmap file on boot",
       "name": [
         "--splash"
-      ],
-      "description": "UEFI executables can show a bitmap file on boot",
-      "args": {
-        "name": "filename"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "filename"
+      },
+      "description": "UEFI stub image used for UEFI executable generation",
       "name": [
         "--uefistub"
-      ],
-      "description": "UEFI stub image used for UEFI executable generation",
-      "args": {
-        "name": "filename"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "filename"
+      },
+      "description": "Include a kernel image for the UEFI executable",
       "name": [
         "--kernelimage"
-      ],
-      "description": "Include a kernel image for the UEFI executable",
-      "args": {
-        "name": "filename"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "filename"
+      },
+      "description": "Include microcode into the UEFI executable",
       "name": [
         "--microcode"
-      ],
-      "description": "Include microcode into the UEFI executable",
-      "args": {
-        "name": "filename"
-      }
+      ]
     },
     {
-      "name": [
-        "--osrelease"
-      ],
-      "description": "Include a os-release file for the UEFI executable",
       "args": {
         "name": "filename"
-      }
+      },
+      "description": "Include a os-release file for the UEFI executable",
+      "name": [
+        "--osrelease"
+      ]
     }
   ]
 }

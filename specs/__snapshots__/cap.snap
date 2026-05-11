@@ -109,6 +109,7 @@
               {
                 "js_runtime": {
                   "kind": "custom",
+                  "self_contained": true,
                   "source": "async(i,t)=>{let[u,f,n]=i;if(!d(n))return[];let{stdout:a}=await t({command:\"npx\",args:[\"capacitor\",\"run\",n,\"--list\"]});return a.trim().split(`\n`).slice(2).map(s=>{let[r,p,c]=s.replace(/\\s\\s+/g,\"|\").split(\"|\");return{name:c,displayName:`${r} ${p}`,icon:\"\\u{1F4F1}\"}})}"
                 },
                 "requires_js": true

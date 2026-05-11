@@ -1,362 +1,421 @@
 {
-  "name": "rustup",
+  "args": {
+    "description": "Release channel (e.g. +stable) or custom toolchain to set override",
+    "isOptional": true,
+    "name": "toolchain"
+  },
   "description": "The Rust toolchain installer",
+  "name": "rustup",
+  "options": [
+    {
+      "description": "Prints help information",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Prints version information",
+      "name": [
+        "-V",
+        "--version"
+      ]
+    },
+    {
+      "description": "Disable progress output",
+      "name": [
+        "-q",
+        "--quiet"
+      ]
+    },
+    {
+      "description": "Enable verbose output",
+      "name": [
+        "-v",
+        "--verbose"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "show",
       "description": "Show the active and installed toolchains or profiles",
-      "subcommands": [
-        {
-          "name": "active-toolchain",
-          "description": "Show the active toolchain"
-        },
-        {
-          "name": "home",
-          "description": "Display the computed value of RUSTUP_HOME"
-        },
-        {
-          "name": "profile",
-          "description": "Show the current profile"
-        },
-        {
-          "name": "keys",
-          "description": "Display the known PGP keys"
-        },
-        {
-          "name": "help",
-          "description": "Prints this message or the help of the given subcommand(s)"
-        }
-      ],
+      "name": "show",
       "options": [
         {
+          "description": "Prints help information",
           "name": [
             "-h",
             "--help"
-          ],
-          "description": "Prints help information"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Show the active toolchain",
+          "name": "active-toolchain"
+        },
+        {
+          "description": "Display the computed value of RUSTUP_HOME",
+          "name": "home"
+        },
+        {
+          "description": "Show the current profile",
+          "name": "profile"
+        },
+        {
+          "description": "Display the known PGP keys",
+          "name": "keys"
+        },
+        {
+          "description": "Prints this message or the help of the given subcommand(s)",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "update",
+      "args": {
+        "description": "Toolchain name. For more information see `rustup help toolchain`",
+        "generators": [
+          {
+            "script": [
+              "rustup",
+              "toolchain",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "toolchain"
+      },
       "description": "Update Rust toolchains and rustup",
+      "name": "update",
       "options": [
         {
+          "description": "Force an update, even if some components are missing",
           "name": [
             "--force"
-          ],
-          "description": "Force an update, even if some components are missing"
-        },
-        {
-          "name": [
-            "--force-non-host"
-          ],
-          "description": "Install toolchains that require an emulator. See https://github.com/rust-lang/rustup/wiki/Non-host-toolchains"
-        },
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Prints help information"
-        },
-        {
-          "name": [
-            "--no-self-update"
-          ],
-          "description": "Don't perform self update when running the `rustup update` command"
-        }
-      ],
-      "args": {
-        "name": "toolchain",
-        "description": "Toolchain name. For more information see `rustup help toolchain`",
-        "isVariadic": true,
-        "isOptional": true,
-        "generators": [
-          {
-            "script": [
-              "rustup",
-              "toolchain",
-              "list"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "name": "check",
-      "description": "Check for updates to Rust toolchains and rustup",
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Prints help information"
-        }
-      ],
-      "args": {
-        "name": "toolchain",
-        "description": "Toolchain name. For more information see `rustup help toolchain`",
-        "isOptional": true
-      }
-    },
-    {
-      "name": "default",
-      "description": "Sets the default toolchain to the one specified. If the toolchain is not already installed then it is installed first",
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Prints help information"
-        }
-      ],
-      "args": {
-        "name": "toolchain",
-        "description": "Toolchain name",
-        "isOptional": true,
-        "generators": [
-          {
-            "script": [
-              "rustup",
-              "toolchain",
-              "list"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "name": "target",
-      "description": "Modify a toolchain's supported targets",
-      "subcommands": [
-        {
-          "name": "list",
-          "description": "List installed and available targets",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Prints help information"
-            },
-            {
-              "name": [
-                "-V",
-                "--version"
-              ],
-              "description": "Prints version information"
-            }
           ]
         },
         {
-          "name": "add",
-          "description": "Add a target to a Rust toolchain",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Prints help information"
-            },
-            {
-              "name": [
-                "-V",
-                "--version"
-              ],
-              "description": "Prints version information"
-            },
-            {
-              "name": [
-                "--toolchain"
-              ],
-              "args": {
-                "name": "toolchain",
-                "description": "Toolchain name",
-                "generators": [
-                  {
-                    "script": [
-                      "rustup",
-                      "toolchain",
-                      "list"
-                    ],
-                    "transforms": [
-                      "split_lines",
-                      "filter_empty"
-                    ]
-                  }
-                ]
-              }
-            }
-          ],
-          "args": {
-            "name": "target",
-            "description": "Target triple",
-            "generators": [
-              {
-                "script": [
-                  "rustup",
-                  "target",
-                  "list"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty"
-                ]
-              }
-            ]
-          }
+          "description": "Install toolchains that require an emulator. See https://github.com/rust-lang/rustup/wiki/Non-host-toolchains",
+          "name": [
+            "--force-non-host"
+          ]
         },
         {
-          "name": "remove",
-          "description": "Remove a target from a Rust toolchain",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Prints help information"
-            },
-            {
-              "name": [
-                "-V",
-                "--version"
-              ],
-              "description": "Prints version information"
-            },
-            {
-              "name": [
-                "--toolchain"
-              ],
-              "args": {
-                "name": "toolchain",
-                "description": "Toolchain name",
-                "generators": [
-                  {
-                    "script": [
-                      "rustup",
-                      "toolchain",
-                      "list"
-                    ],
-                    "transforms": [
-                      "split_lines",
-                      "filter_empty"
-                    ]
-                  }
-                ]
-              }
-            }
-          ],
-          "args": {
-            "name": "target",
-            "description": "Target triple",
-            "generators": [
-              {
-                "script": [
-                  "rustup",
-                  "target",
-                  "list"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty"
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "help",
-          "description": "Prints this message or the help of the given subcommand(s)",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Prints help information"
-            },
-            {
-              "name": [
-                "-V",
-                "--version"
-              ],
-              "description": "Prints version information"
-            }
-          ],
-          "args": {
-            "name": "subcommand",
-            "isOptional": true
-          }
-        }
-      ],
-      "options": [
-        {
+          "description": "Prints help information",
           "name": [
             "-h",
             "--help"
-          ],
-          "description": "Prints help information"
+          ]
+        },
+        {
+          "description": "Don't perform self update when running the `rustup update` command",
+          "name": [
+            "--no-self-update"
+          ]
         }
       ]
     },
     {
-      "name": "toolchain",
-      "description": "Modify or query the installed toolchains",
+      "args": {
+        "description": "Toolchain name. For more information see `rustup help toolchain`",
+        "isOptional": true,
+        "name": "toolchain"
+      },
+      "description": "Check for updates to Rust toolchains and rustup",
+      "name": "check",
+      "options": [
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Toolchain name",
+        "generators": [
+          {
+            "script": [
+              "rustup",
+              "toolchain",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "isOptional": true,
+        "name": "toolchain"
+      },
+      "description": "Sets the default toolchain to the one specified. If the toolchain is not already installed then it is installed first",
+      "name": "default",
+      "options": [
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Modify a toolchain's supported targets",
+      "name": "target",
+      "options": [
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
       "subcommands": [
         {
+          "description": "List installed and available targets",
           "name": "list",
-          "description": "List installed toolchains",
           "options": [
             {
+              "description": "Prints help information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Prints help information"
+              ]
             },
             {
+              "description": "Prints version information",
               "name": [
                 "-V",
                 "--version"
-              ],
-              "description": "Prints version information"
+              ]
             }
           ]
         },
         {
-          "name": "install",
-          "description": "Install or update a given toolchain",
+          "args": {
+            "description": "Target triple",
+            "generators": [
+              {
+                "script": [
+                  "rustup",
+                  "target",
+                  "list"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target"
+          },
+          "description": "Add a target to a Rust toolchain",
+          "name": "add",
           "options": [
             {
+              "description": "Prints help information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Prints help information"
+              ]
             },
             {
+              "description": "Prints version information",
               "name": [
-                "-t",
-                "--target"
-              ],
-              "description": "Add specific targets on installation",
+                "-V",
+                "--version"
+              ]
+            },
+            {
               "args": {
-                "name": "targets",
-                "isVariadic": true,
+                "description": "Toolchain name",
+                "generators": [
+                  {
+                    "script": [
+                      "rustup",
+                      "toolchain",
+                      "list"
+                    ],
+                    "transforms": [
+                      "split_lines",
+                      "filter_empty"
+                    ]
+                  }
+                ],
+                "name": "toolchain"
+              },
+              "name": [
+                "--toolchain"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Target triple",
+            "generators": [
+              {
+                "script": [
+                  "rustup",
+                  "target",
+                  "list"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "target"
+          },
+          "description": "Remove a target from a Rust toolchain",
+          "name": "remove",
+          "options": [
+            {
+              "description": "Prints help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Prints version information",
+              "name": [
+                "-V",
+                "--version"
+              ]
+            },
+            {
+              "args": {
+                "description": "Toolchain name",
+                "generators": [
+                  {
+                    "script": [
+                      "rustup",
+                      "toolchain",
+                      "list"
+                    ],
+                    "transforms": [
+                      "split_lines",
+                      "filter_empty"
+                    ]
+                  }
+                ],
+                "name": "toolchain"
+              },
+              "name": [
+                "--toolchain"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "subcommand"
+          },
+          "description": "Prints this message or the help of the given subcommand(s)",
+          "name": "help",
+          "options": [
+            {
+              "description": "Prints help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Prints version information",
+              "name": [
+                "-V",
+                "--version"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Modify or query the installed toolchains",
+      "name": "toolchain",
+      "options": [
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "List installed toolchains",
+          "name": "list",
+          "options": [
+            {
+              "description": "Prints help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Prints version information",
+              "name": [
+                "-V",
+                "--version"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Toolchain name",
+            "generators": [
+              {
+                "cache": {
+                  "ttl_seconds": 3600
+                },
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "o=>{if(o===\"\")return[];let t=JSON.parse(o);return[{name:\"stable\"},{name:\"beta\"},{name:\"nightly\"},...t.map(n=>({name:n.tag_name,description:`${n.name} - ${new Date(n.published_at).toLocaleDateString()}`}))]}"
+                },
+                "requires_js": true,
+                "script": [
+                  "bash",
+                  "-c",
+                  "if command -v gh > /dev/null; then       gh api -H \"Accept: application/vnd.github+json\" /repos/rust-lang/rust/releases;     else       curl -sfL -H \"Accept: application/vnd.github+json\" https://api.github.com/repos/rust-lang/rust/releases;     fi"
+                ]
+              }
+            ],
+            "isVariadic": true,
+            "name": "toolchain"
+          },
+          "description": "Install or update a given toolchain",
+          "name": "install",
+          "options": [
+            {
+              "description": "Prints help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
                 "generators": [
                   {
                     "script": [
@@ -369,24 +428,28 @@
                       "filter_empty"
                     ]
                   }
-                ]
-              }
+                ],
+                "isVariadic": true,
+                "name": "targets"
+              },
+              "description": "Add specific targets on installation",
+              "name": [
+                "-t",
+                "--target"
+              ]
             },
             {
+              "args": {
+                "isVariadic": true,
+                "name": "components"
+              },
+              "description": "Add specific components on installation",
               "name": [
                 "-c",
                 "--component"
-              ],
-              "description": "Add specific components on installation",
-              "args": {
-                "name": "components",
-                "isVariadic": true
-              }
+              ]
             },
             {
-              "name": [
-                "--profile"
-              ],
               "args": {
                 "name": "profile",
                 "suggestions": [
@@ -400,66 +463,34 @@
                     "name": "complete"
                   }
                 ]
-              }
+              },
+              "name": [
+                "--profile"
+              ]
             },
             {
+              "description": "Allow rustup to downgrade the toolchain to satisfy your component choice",
               "name": [
                 "--allow-downgrade"
-              ],
-              "description": "Allow rustup to downgrade the toolchain to satisfy your component choice"
+              ]
             },
             {
+              "description": "Force an update, even if some components are missing",
               "name": [
                 "--force"
-              ],
-              "description": "Force an update, even if some components are missing"
+              ]
             },
             {
+              "description": "Don't perform self update when running the`rustup toolchain install` command",
               "name": [
                 "--no-self-update"
-              ],
-              "description": "Don't perform self update when running the`rustup toolchain install` command"
+              ]
             }
-          ],
-          "args": {
-            "name": "toolchain",
-            "description": "Toolchain name",
-            "isVariadic": true,
-            "generators": [
-              {
-                "script": [
-                  "bash",
-                  "-c",
-                  "if command -v gh > /dev/null; then       gh api -H \"Accept: application/vnd.github+json\" /repos/rust-lang/rust/releases;     else       curl -sfL -H \"Accept: application/vnd.github+json\" https://api.github.com/repos/rust-lang/rust/releases;     fi"
-                ],
-                "requires_js": true,
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "o=>{if(o===\"\")return[];let t=JSON.parse(o);return[{name:\"stable\"},{name:\"beta\"},{name:\"nightly\"},...t.map(n=>({name:n.tag_name,description:`${n.name} - ${new Date(n.published_at).toLocaleDateString()}`}))]}"
-                },
-                "cache": {
-                  "ttl_seconds": 3600
-                }
-              }
-            ]
-          }
+          ]
         },
         {
-          "name": "uninstall",
-          "description": "Uninstall a toolchain",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Prints help information"
-            }
-          ],
           "args": {
-            "name": "toolchain",
             "description": "Toolchain name",
-            "isVariadic": true,
             "generators": [
               {
                 "script": [
@@ -472,196 +503,190 @@
                   "filter_empty"
                 ]
               }
-            ]
-          }
-        },
-        {
-          "name": "link",
-          "description": "Create a custom toolchain by symlinking to a directory",
+            ],
+            "isVariadic": true,
+            "name": "toolchain"
+          },
+          "description": "Uninstall a toolchain",
+          "name": "uninstall",
           "options": [
             {
+              "description": "Prints help information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Prints help information"
+              ]
             }
-          ],
+          ]
+        },
+        {
           "args": [
             {
-              "name": "toolchain",
               "description": "Custom toolchain name",
-              "isVariadic": true
+              "isVariadic": true,
+              "name": "toolchain"
             },
             {
-              "name": "path",
-              "description": "Path to the directory"
+              "description": "Path to the directory",
+              "name": "path"
+            }
+          ],
+          "description": "Create a custom toolchain by symlinking to a directory",
+          "name": "link",
+          "options": [
+            {
+              "description": "Prints help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
             }
           ]
         },
         {
-          "name": "help",
+          "args": {
+            "isOptional": true,
+            "name": "subcommand"
+          },
           "description": "Prints this message or the help of the given subcommand(s)",
+          "name": "help",
           "options": [
             {
+              "description": "Prints help information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Prints help information"
+              ]
             },
             {
+              "description": "Prints version information",
               "name": [
                 "-V",
                 "--version"
-              ],
-              "description": "Prints version information"
+              ]
             }
-          ],
-          "args": {
-            "name": "subcommand",
-            "isOptional": true
-          }
-        }
-      ],
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Prints help information"
+          ]
         }
       ]
     },
     {
-      "name": "component",
       "description": "Modify a toolchain's installed components",
-      "subcommands": [
-        {
-          "name": "list",
-          "description": "List installed and available components",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Prints help information"
-            },
-            {
-              "name": [
-                "-V",
-                "--version"
-              ],
-              "description": "Prints version information"
-            }
-          ]
-        },
-        {
-          "name": "add",
-          "description": "Add a component to a Rust toolchain",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Prints help information"
-            },
-            {
-              "name": [
-                "-V",
-                "--version"
-              ],
-              "description": "Prints version information"
-            }
-          ]
-        },
-        {
-          "name": "remove",
-          "description": "Remove a component from a Rust toolchain",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Prints help information"
-            },
-            {
-              "name": [
-                "-V",
-                "--version"
-              ],
-              "description": "Prints version information"
-            }
-          ]
-        },
-        {
-          "name": "help",
-          "description": "Prints this message or the help of the given subcommand(s)",
-          "args": {
-            "name": "subcommand(s)",
-            "isOptional": true
-          }
-        }
-      ],
+      "name": "component",
       "options": [
         {
+          "description": "Prints help information",
           "name": [
             "-h",
             "--help"
-          ],
-          "description": "Prints help information"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "List installed and available components",
+          "name": "list",
+          "options": [
+            {
+              "description": "Prints help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Prints version information",
+              "name": [
+                "-V",
+                "--version"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Add a component to a Rust toolchain",
+          "name": "add",
+          "options": [
+            {
+              "description": "Prints help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Prints version information",
+              "name": [
+                "-V",
+                "--version"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Remove a component from a Rust toolchain",
+          "name": "remove",
+          "options": [
+            {
+              "description": "Prints help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Prints version information",
+              "name": [
+                "-V",
+                "--version"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "subcommand(s)"
+          },
+          "description": "Prints this message or the help of the given subcommand(s)",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "override",
       "description": "Modify directory toolchain overrides",
+      "name": "override",
+      "options": [
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
       "subcommands": [
         {
-          "name": "list",
           "description": "List directory toolchain overrides",
+          "name": "list",
           "options": [
             {
+              "description": "Prints help information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Prints help information"
+              ]
             },
             {
+              "description": "Prints version information",
               "name": [
                 "-V",
                 "--version"
-              ],
-              "description": "Prints version information"
+              ]
             }
           ]
         },
         {
-          "name": "set",
-          "description": "Set the override toolchain for a directory",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Prints help information"
-            },
-            {
-              "name": [
-                "-V",
-                "--version"
-              ],
-              "description": "Prints version information"
-            }
-          ],
           "args": {
-            "name": "toolchain",
             "description": "Toolchain name",
             "generators": [
               {
@@ -675,69 +700,61 @@
                   "filter_empty"
                 ]
               }
-            ]
-          }
-        },
-        {
-          "name": "unset",
-          "description": "Remove the override toolchain for a directory",
+            ],
+            "name": "toolchain"
+          },
+          "description": "Set the override toolchain for a directory",
+          "name": "set",
           "options": [
             {
+              "description": "Prints help information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Prints help information"
+              ]
             },
             {
+              "description": "Prints version information",
               "name": [
                 "-V",
                 "--version"
-              ],
-              "description": "Prints version information"
+              ]
             }
           ]
         },
         {
-          "name": "help",
-          "description": "Prints this message or the help of the given subcommand(s)",
-          "args": {
-            "name": "subcommand(s)",
-            "isOptional": true
-          }
-        }
-      ],
-      "options": [
+          "description": "Remove the override toolchain for a directory",
+          "name": "unset",
+          "options": [
+            {
+              "description": "Prints help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Prints version information",
+              "name": [
+                "-V",
+                "--version"
+              ]
+            }
+          ]
+        },
         {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Prints help information"
+          "args": {
+            "isOptional": true,
+            "name": "subcommand(s)"
+          },
+          "description": "Prints this message or the help of the given subcommand(s)",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "run",
-      "description": "Run a command with an environment configured for a given toolchain",
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Prints help information"
-        },
-        {
-          "name": [
-            "--install"
-          ],
-          "description": "Install the requested toolchain if needed"
-        }
-      ],
       "args": [
         {
-          "name": "toolchain",
           "description": "Toolchain name",
           "generators": [
             {
@@ -751,32 +768,45 @@
                 "filter_empty"
               ]
             }
+          ],
+          "name": "toolchain"
+        },
+        {
+          "isVariadic": true,
+          "name": "command"
+        }
+      ],
+      "description": "Run a command with an environment configured for a given toolchain",
+      "name": "run",
+      "options": [
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
           ]
         },
         {
-          "name": "command",
-          "isVariadic": true
+          "description": "Install the requested toolchain if needed",
+          "name": [
+            "--install"
+          ]
         }
       ]
     },
     {
-      "name": "which",
       "description": "Display which binary will be run for a given command",
+      "name": "which",
       "options": [
         {
+          "description": "Prints help information",
           "name": [
             "-h",
             "--help"
-          ],
-          "description": "Prints help information"
+          ]
         },
         {
-          "name": [
-            "--toolchain"
-          ],
-          "description": "Toolchain name",
           "args": {
-            "name": "toolchain",
             "generators": [
               {
                 "script": [
@@ -789,143 +819,18 @@
                   "filter_empty"
                 ]
               }
-            ]
-          }
+            ],
+            "name": "toolchain"
+          },
+          "description": "Toolchain name",
+          "name": [
+            "--toolchain"
+          ]
         }
       ]
     },
     {
-      "name": "doc",
-      "description": "Open the documentation for the current toolchain",
-      "options": [
-        {
-          "name": [
-            "--alloc"
-          ],
-          "description": "The Rust core allocation and collections library"
-        },
-        {
-          "name": [
-            "--book"
-          ],
-          "description": "The Rust Programming Language book"
-        },
-        {
-          "name": [
-            "--cargo"
-          ],
-          "description": "The Cargo Book"
-        },
-        {
-          "name": [
-            "--core"
-          ],
-          "description": "The Rust Core Library"
-        },
-        {
-          "name": [
-            "--edition-guide"
-          ],
-          "description": "The Rust Edition Guide"
-        },
-        {
-          "name": [
-            "--embedded-book"
-          ],
-          "description": "The Embedded Rust Book"
-        },
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Prints help information"
-        },
-        {
-          "name": [
-            "--nomicon"
-          ],
-          "description": "The Dark Arts of Advanced and Unsafe Rust Programming"
-        },
-        {
-          "name": [
-            "--path"
-          ],
-          "description": "Only print the path to the documentation"
-        },
-        {
-          "name": [
-            "--proc_macro"
-          ],
-          "description": "A support library for macro authors when defining new macros"
-        },
-        {
-          "name": [
-            "--reference"
-          ],
-          "description": "The Rust Reference"
-        },
-        {
-          "name": [
-            "--rust-by-example"
-          ],
-          "description": "A collection of runnable examples that illustrate various Rust concepts and standard libraries"
-        },
-        {
-          "name": [
-            "--rustc"
-          ],
-          "description": "The compiler for the Rust programming language"
-        },
-        {
-          "name": [
-            "--rustdoc"
-          ],
-          "description": "Generate documentation for Rust projects"
-        },
-        {
-          "name": [
-            "--std"
-          ],
-          "description": "Standard library API documentation"
-        },
-        {
-          "name": [
-            "--test"
-          ],
-          "description": "Support code for rustc's built in unit-test and micro-benchmarking framework"
-        },
-        {
-          "name": [
-            "--unstable-book"
-          ],
-          "description": "--unstable-book"
-        },
-        {
-          "name": [
-            "--toolchain"
-          ],
-          "description": "Toolchain name",
-          "args": {
-            "name": "toolchain",
-            "generators": [
-              {
-                "script": [
-                  "rustup",
-                  "toolchain",
-                  "list"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty"
-                ]
-              }
-            ]
-          }
-        }
-      ],
       "args": {
-        "name": "topic",
         "description": "Topic such as 'core', 'fn', 'usize', 'eprintln!', 'core::arch', 'alloc::format!', 'std::fs', 'std::fs::read_dir', 'std::io::Bytes', 'std::iter::Sum', 'std::io::error::Result' etc",
         "generators": [
           {
@@ -939,27 +844,117 @@
               "filter_empty"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "man",
-      "description": "View the man page for a given command",
+        ],
+        "name": "topic"
+      },
+      "description": "Open the documentation for the current toolchain",
+      "name": "doc",
       "options": [
         {
+          "description": "The Rust core allocation and collections library",
+          "name": [
+            "--alloc"
+          ]
+        },
+        {
+          "description": "The Rust Programming Language book",
+          "name": [
+            "--book"
+          ]
+        },
+        {
+          "description": "The Cargo Book",
+          "name": [
+            "--cargo"
+          ]
+        },
+        {
+          "description": "The Rust Core Library",
+          "name": [
+            "--core"
+          ]
+        },
+        {
+          "description": "The Rust Edition Guide",
+          "name": [
+            "--edition-guide"
+          ]
+        },
+        {
+          "description": "The Embedded Rust Book",
+          "name": [
+            "--embedded-book"
+          ]
+        },
+        {
+          "description": "Prints help information",
           "name": [
             "-h",
             "--help"
-          ],
-          "description": "Prints help information"
+          ]
         },
         {
+          "description": "The Dark Arts of Advanced and Unsafe Rust Programming",
           "name": [
-            "--toolchain"
-          ],
-          "description": "Toolchain name",
+            "--nomicon"
+          ]
+        },
+        {
+          "description": "Only print the path to the documentation",
+          "name": [
+            "--path"
+          ]
+        },
+        {
+          "description": "A support library for macro authors when defining new macros",
+          "name": [
+            "--proc_macro"
+          ]
+        },
+        {
+          "description": "The Rust Reference",
+          "name": [
+            "--reference"
+          ]
+        },
+        {
+          "description": "A collection of runnable examples that illustrate various Rust concepts and standard libraries",
+          "name": [
+            "--rust-by-example"
+          ]
+        },
+        {
+          "description": "The compiler for the Rust programming language",
+          "name": [
+            "--rustc"
+          ]
+        },
+        {
+          "description": "Generate documentation for Rust projects",
+          "name": [
+            "--rustdoc"
+          ]
+        },
+        {
+          "description": "Standard library API documentation",
+          "name": [
+            "--std"
+          ]
+        },
+        {
+          "description": "Support code for rustc's built in unit-test and micro-benchmarking framework",
+          "name": [
+            "--test"
+          ]
+        },
+        {
+          "description": "--unstable-book",
+          "name": [
+            "--unstable-book"
+          ]
+        },
+        {
           "args": {
-            "name": "toolchain",
             "generators": [
               {
                 "script": [
@@ -972,120 +967,151 @@
                   "filter_empty"
                 ]
               }
-            ]
-          }
+            ],
+            "name": "toolchain"
+          },
+          "description": "Toolchain name",
+          "name": [
+            "--toolchain"
+          ]
         }
       ]
     },
     {
-      "name": "self",
-      "description": "Modify the rustup installation",
-      "subcommands": [
-        {
-          "name": "update",
-          "description": "Download and install updates to rustup",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Prints help information"
-            },
-            {
-              "name": [
-                "-V",
-                "--version"
-              ],
-              "description": "Prints version information"
-            }
-          ]
-        },
-        {
-          "name": "uninstall",
-          "description": "Uninstall rustup",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Prints help information"
-            },
-            {
-              "name": [
-                "-V",
-                "--version"
-              ],
-              "description": "Prints version information"
-            }
-          ]
-        },
-        {
-          "name": "upgrade-data",
-          "description": "Upgrade the internal data format",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Prints help information"
-            },
-            {
-              "name": [
-                "-V",
-                "--version"
-              ],
-              "description": "Prints version information"
-            }
-          ]
-        },
-        {
-          "name": "help",
-          "description": "Prints this message or the help of the given subcommand(s)",
-          "args": {
-            "name": "subcommand(s)",
-            "isOptional": true
-          }
-        }
-      ],
+      "description": "View the man page for a given command",
+      "name": "man",
       "options": [
         {
+          "description": "Prints help information",
           "name": [
             "-h",
             "--help"
-          ],
-          "description": "Prints help information"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "rustup",
+                  "toolchain",
+                  "list"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "toolchain"
+          },
+          "description": "Toolchain name",
+          "name": [
+            "--toolchain"
+          ]
         }
       ]
     },
     {
-      "name": "set",
-      "description": "Alter rustup settings",
+      "description": "Modify the rustup installation",
+      "name": "self",
+      "options": [
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
       "subcommands": [
         {
-          "name": "auto-self-update",
-          "description": "The rustup auto self update mode",
+          "description": "Download and install updates to rustup",
+          "name": "update",
           "options": [
             {
+              "description": "Prints help information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Prints help information"
+              ]
             },
             {
+              "description": "Prints version information",
               "name": [
                 "-V",
                 "--version"
-              ],
-              "description": "Prints version information"
+              ]
             }
-          ],
+          ]
+        },
+        {
+          "description": "Uninstall rustup",
+          "name": "uninstall",
+          "options": [
+            {
+              "description": "Prints help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Prints version information",
+              "name": [
+                "-V",
+                "--version"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Upgrade the internal data format",
+          "name": "upgrade-data",
+          "options": [
+            {
+              "description": "Prints help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Prints version information",
+              "name": [
+                "-V",
+                "--version"
+              ]
+            }
+          ]
+        },
+        {
           "args": {
-            "name": "auto-self-update-mode",
             "isOptional": true,
+            "name": "subcommand(s)"
+          },
+          "description": "Prints this message or the help of the given subcommand(s)",
+          "name": "help"
+        }
+      ]
+    },
+    {
+      "description": "Alter rustup settings",
+      "name": "set",
+      "options": [
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "auto-self-update-mode",
             "suggestions": [
               {
                 "name": "enable"
@@ -1097,28 +1123,28 @@
                 "name": "check-only"
               }
             ]
-          }
-        },
-        {
-          "name": "default-host",
+          },
+          "description": "The rustup auto self update mode",
+          "name": "auto-self-update",
           "options": [
             {
+              "description": "Prints help information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Prints help information"
+              ]
             },
             {
+              "description": "Prints version information",
               "name": [
                 "-V",
                 "--version"
-              ],
-              "description": "Prints version information"
+              ]
             }
-          ],
+          ]
+        },
+        {
           "args": {
-            "name": "host-triple",
             "generators": [
               {
                 "script": [
@@ -1131,32 +1157,30 @@
                   "filter_empty"
                 ]
               }
-            ]
-          }
-        }
-      ],
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Prints help information"
+            ],
+            "name": "host-triple"
+          },
+          "name": "default-host",
+          "options": [
+            {
+              "description": "Prints help information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Prints version information",
+              "name": [
+                "-V",
+                "--version"
+              ]
+            }
+          ]
         }
       ]
     },
     {
-      "name": "completions",
-      "description": "Generate tab-completion scripts for your shell",
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Prints help information"
-        }
-      ],
       "args": [
         {
           "name": "shell",
@@ -1189,51 +1213,27 @@
             }
           ]
         }
+      ],
+      "description": "Generate tab-completion scripts for your shell",
+      "name": "completions",
+      "options": [
+        {
+          "description": "Prints help information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
       ]
     },
     {
-      "name": "help",
-      "description": "Prints this message or the help of the given subcommand(s)",
       "args": {
-        "name": "subcommand",
+        "isOptional": true,
         "isVariadic": true,
-        "isOptional": true
-      }
+        "name": "subcommand"
+      },
+      "description": "Prints this message or the help of the given subcommand(s)",
+      "name": "help"
     }
-  ],
-  "options": [
-    {
-      "name": [
-        "-h",
-        "--help"
-      ],
-      "description": "Prints help information"
-    },
-    {
-      "name": [
-        "-V",
-        "--version"
-      ],
-      "description": "Prints version information"
-    },
-    {
-      "name": [
-        "-q",
-        "--quiet"
-      ],
-      "description": "Disable progress output"
-    },
-    {
-      "name": [
-        "-v",
-        "--verbose"
-      ],
-      "description": "Enable verbose output"
-    }
-  ],
-  "args": {
-    "name": "toolchain",
-    "description": "Release channel (e.g. +stable) or custom toolchain to set override",
-    "isOptional": true
-  }
+  ]
 }

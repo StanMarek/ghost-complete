@@ -1,242 +1,255 @@
 {
-  "name": "killall",
+  "args": {
+    "generators": [
+      {
+        "js_runtime": {
+          "kind": "post_process",
+          "source": "s=>s.trim().split(`\n`).map(e=>{let i=e.indexOf(\".app/\"),t=i!==-1,n=e.slice(e.lastIndexOf(\"/\")+1),r=new Set(n);return{name:n,description:e,priority:![\"(\",\"_\",\".\"].some(o=>r.has(o))&&t?51:40,icon:t?\"fig://\"+e.slice(0,i+4):\"fig://icon?type=gear\"}})"
+        },
+        "requires_js": true,
+        "script": [
+          "bash",
+          "-c",
+          "ps -A -o comm | sort -u"
+        ]
+      }
+    ],
+    "isVariadic": true,
+    "name": "process_name"
+  },
   "description": "Kill processes by name",
+  "name": "killall",
   "options": [
     {
+      "description": "Be verbose (dry run) and display number of user processes",
       "name": [
         "-d"
-      ],
-      "description": "Be verbose (dry run) and display number of user processes"
+      ]
     },
     {
+      "description": "Use the effective user ID instead of the real user ID for matching processes with -u",
       "name": [
         "-e"
-      ],
-      "description": "Use the effective user ID instead of the real user ID for matching processes with -u"
+      ]
     },
     {
+      "description": "Display help and exit",
       "name": [
         "-help"
-      ],
-      "description": "Display help and exit"
+      ]
     },
     {
+      "description": "Request confirmation before killing each process",
       "name": [
         "-I"
-      ],
-      "description": "Request confirmation before killing each process"
+      ]
     },
     {
+      "description": "List the names of the available signals and exit",
       "name": [
         "-l"
-      ],
-      "description": "List the names of the available signals and exit"
+      ]
     },
     {
+      "description": "Match the process name as a regular expression",
       "name": [
         "-m"
-      ],
-      "description": "Match the process name as a regular expression"
+      ]
     },
     {
+      "description": "Be verbose",
       "name": [
         "-v"
-      ],
-      "description": "Be verbose"
+      ]
     },
     {
+      "description": "Be verbose (dry run)",
       "name": [
         "-s"
-      ],
-      "description": "Be verbose (dry run)"
+      ]
     },
     {
+      "description": "Send HUP instead of TERM",
       "name": [
         "-SIGHUP"
-      ],
-      "description": "Send HUP instead of TERM"
+      ]
     },
     {
+      "description": "Send INT instead of TERM",
       "name": [
         "-SIGINT"
-      ],
-      "description": "Send INT instead of TERM"
+      ]
     },
     {
+      "description": "Send QUIT instead of TERM",
       "name": [
         "-SIGQUIT"
-      ],
-      "description": "Send QUIT instead of TERM"
+      ]
     },
     {
+      "description": "Send ILL instead of TERM",
       "name": [
         "-SIGILL"
-      ],
-      "description": "Send ILL instead of TERM"
+      ]
     },
     {
+      "description": "Send TRAP instead of TERM",
       "name": [
         "-SIGTRAP"
-      ],
-      "description": "Send TRAP instead of TERM"
+      ]
     },
     {
+      "description": "Send ABRT instead of TERM",
       "name": [
         "-SIGABRT"
-      ],
-      "description": "Send ABRT instead of TERM"
+      ]
     },
     {
+      "description": "Send EMT instead of TERM",
       "name": [
         "-SIGEMT"
-      ],
-      "description": "Send EMT instead of TERM"
+      ]
     },
     {
+      "description": "Send FPE instead of TERM",
       "name": [
         "-SIGFPE"
-      ],
-      "description": "Send FPE instead of TERM"
+      ]
     },
     {
+      "description": "Send KILL instead of TERM",
       "name": [
         "-SIGKILL"
-      ],
-      "description": "Send KILL instead of TERM"
+      ]
     },
     {
+      "description": "Send BUS instead of TERM",
       "name": [
         "-SIGBUS"
-      ],
-      "description": "Send BUS instead of TERM"
+      ]
     },
     {
+      "description": "Send SEGV instead of TERM",
       "name": [
         "-SIGSEGV"
-      ],
-      "description": "Send SEGV instead of TERM"
+      ]
     },
     {
+      "description": "Send SYS instead of TERM",
       "name": [
         "-SIGSYS"
-      ],
-      "description": "Send SYS instead of TERM"
+      ]
     },
     {
+      "description": "Send PIPE instead of TERM",
       "name": [
         "-SIGPIPE"
-      ],
-      "description": "Send PIPE instead of TERM"
+      ]
     },
     {
+      "description": "Send ALRM instead of TERM",
       "name": [
         "-SIGALRM"
-      ],
-      "description": "Send ALRM instead of TERM"
+      ]
     },
     {
+      "description": "Send URG instead of TERM",
       "name": [
         "-SIGURG"
-      ],
-      "description": "Send URG instead of TERM"
+      ]
     },
     {
+      "description": "Send STOP instead of TERM",
       "name": [
         "-SIGSTOP"
-      ],
-      "description": "Send STOP instead of TERM"
+      ]
     },
     {
+      "description": "Send TSTP instead of TERM",
       "name": [
         "-SIGTSTP"
-      ],
-      "description": "Send TSTP instead of TERM"
+      ]
     },
     {
+      "description": "Send CONT instead of TERM",
       "name": [
         "-SIGCONT"
-      ],
-      "description": "Send CONT instead of TERM"
+      ]
     },
     {
+      "description": "Send CHLD instead of TERM",
       "name": [
         "-SIGCHLD"
-      ],
-      "description": "Send CHLD instead of TERM"
+      ]
     },
     {
+      "description": "Send TTIN instead of TERM",
       "name": [
         "-SIGTTIN"
-      ],
-      "description": "Send TTIN instead of TERM"
+      ]
     },
     {
+      "description": "Send TTOU instead of TERM",
       "name": [
         "-SIGTTOU"
-      ],
-      "description": "Send TTOU instead of TERM"
+      ]
     },
     {
+      "description": "Send IO instead of TERM",
       "name": [
         "-SIGIO"
-      ],
-      "description": "Send IO instead of TERM"
+      ]
     },
     {
+      "description": "Send XCPU instead of TERM",
       "name": [
         "-SIGXCPU"
-      ],
-      "description": "Send XCPU instead of TERM"
+      ]
     },
     {
+      "description": "Send XFSZ instead of TERM",
       "name": [
         "-SIGXFSZ"
-      ],
-      "description": "Send XFSZ instead of TERM"
+      ]
     },
     {
+      "description": "Send VTALRM instead of TERM",
       "name": [
         "-SIGVTALRM"
-      ],
-      "description": "Send VTALRM instead of TERM"
+      ]
     },
     {
+      "description": "Send PROF instead of TERM",
       "name": [
         "-SIGPROF"
-      ],
-      "description": "Send PROF instead of TERM"
+      ]
     },
     {
+      "description": "Send WINCH instead of TERM",
       "name": [
         "-SIGWINCH"
-      ],
-      "description": "Send WINCH instead of TERM"
+      ]
     },
     {
+      "description": "Send INFO instead of TERM",
       "name": [
         "-SIGINFO"
-      ],
-      "description": "Send INFO instead of TERM"
+      ]
     },
     {
+      "description": "Send USR1 instead of TERM",
       "name": [
         "-SIGUSR1"
-      ],
-      "description": "Send USR1 instead of TERM"
+      ]
     },
     {
+      "description": "Send USR2 instead of TERM",
       "name": [
         "-SIGUSR2"
-      ],
-      "description": "Send USR2 instead of TERM"
+      ]
     },
     {
-      "name": [
-        "-u"
-      ],
-      "description": "Limit potentially matching processes to those belonging to the user",
       "args": {
-        "name": "user",
         "generators": [
           {
             "script": [
@@ -250,56 +263,43 @@
               "trim"
             ]
           }
-        ]
-      }
+        ],
+        "name": "user"
+      },
+      "description": "Limit potentially matching processes to those belonging to the user",
+      "name": [
+        "-u"
+      ]
     },
     {
-      "name": [
-        "-t"
-      ],
-      "description": "Limit matching processes to those running on the specified TTY",
       "args": {
         "name": "tty"
-      }
+      },
+      "description": "Limit matching processes to those running on the specified TTY",
+      "name": [
+        "-t"
+      ]
     },
     {
-      "name": [
-        "-c"
-      ],
-      "description": "Limit matching processes to those matching the given name",
       "args": {
         "name": "name"
-      }
+      },
+      "description": "Limit matching processes to those matching the given name",
+      "name": [
+        "-c"
+      ]
     },
     {
+      "description": "Suppress error message if no processes are matched",
       "name": [
         "-q"
-      ],
-      "description": "Suppress error message if no processes are matched"
+      ]
     },
     {
+      "description": "Do not skip zombies",
       "name": [
         "-z"
-      ],
-      "description": "Do not skip zombies"
+      ]
     }
-  ],
-  "args": {
-    "name": "process_name",
-    "isVariadic": true,
-    "generators": [
-      {
-        "script": [
-          "bash",
-          "-c",
-          "ps -A -o comm | sort -u"
-        ],
-        "requires_js": true,
-        "js_runtime": {
-          "kind": "post_process",
-          "source": "s=>s.trim().split(`\n`).map(e=>{let i=e.indexOf(\".app/\"),t=i!==-1,n=e.slice(e.lastIndexOf(\"/\")+1),r=new Set(n);return{name:n,description:e,priority:![\"(\",\"_\",\".\"].some(o=>r.has(o))&&t?51:40,icon:t?\"fig://\"+e.slice(0,i+4):\"fig://icon?type=gear\"}})"
-        }
-      }
-    ]
-  }
+  ]
 }

@@ -1,34 +1,36 @@
 {
-  "name": "ansible-lint",
+  "args": {
+    "description": "Files to lint",
+    "isOptional": true,
+    "isVariadic": true,
+    "name": "lintables",
+    "template": "filepaths"
+  },
   "description": "Ansible static code analysis",
+  "name": "ansible-lint",
   "options": [
     {
+      "description": "Show help for ansible-lint",
       "name": [
         "--help",
         "-h"
-      ],
-      "description": "Show help for ansible-lint"
+      ]
     },
     {
+      "description": "List all the rules",
       "name": [
         "--list-rules",
         "-L"
-      ],
-      "description": "List all the rules"
+      ]
     },
     {
+      "description": "List all the tags and the rules they cover",
       "name": [
         "--list-tags",
         "-T"
-      ],
-      "description": "List all the tags and the rules they cover"
+      ]
     },
     {
-      "name": [
-        "--format",
-        "-f"
-      ],
-      "description": "Stdout formatting",
       "args": {
         "name": "-f",
         "suggestions": [
@@ -57,61 +59,62 @@
             "name": "sarif"
           }
         ]
-      }
+      },
+      "description": "Stdout formatting",
+      "name": [
+        "--format",
+        "-f"
+      ]
     },
     {
+      "description": "Quieter, reduce verbosity, can be specified twice",
       "name": [
         "-q"
-      ],
-      "description": "Quieter, reduce verbosity, can be specified twice"
+      ]
     },
     {
+      "description": "Parseable output, same as '-f pep8'",
       "name": [
         "-p"
-      ],
-      "description": "Parseable output, same as '-f pep8'"
+      ]
     },
     {
+      "description": "Return success if it detects a reduction in number of violations compared with previous git commit. This feature works only in git repositories",
       "name": [
         "--progressive"
-      ],
-      "description": "Return success if it detects a reduction in number of violations compared with previous git commit. This feature works only in git repositories"
+      ]
     },
     {
-      "name": [
-        "--project-dir"
-      ],
-      "description": "Location of project/repository, autodetected based on location of configuration file",
       "args": {
         "name": "PROJECT_DIR",
         "template": "folders"
-      }
+      },
+      "description": "Location of project/repository, autodetected based on location of configuration file",
+      "name": [
+        "--project-dir"
+      ]
     },
     {
-      "name": [
-        "--rules-dir",
-        "-r"
-      ],
-      "description": "Specify custom rule directories",
       "args": {
         "name": "RULESDIR",
         "template": "folders"
-      }
+      },
+      "description": "Specify custom rule directories",
+      "name": [
+        "--rules-dir",
+        "-r"
+      ]
     },
     {
+      "description": "Keep using embedded rules when using '-r'",
       "name": [
         "-R"
-      ],
-      "description": "Keep using embedded rules when using '-r'"
+      ]
     },
     {
-      "name": [
-        "--write"
-      ],
-      "description": "Allow ansible-lint to reformat YAML files and run rule transforms",
       "args": {
-        "name": "WRITE_LIST",
         "description": "Limit the effective rule transforms by passing a keywords 'all' or 'none' or a comma separated list of rule ids or rule tags",
+        "name": "WRITE_LIST",
         "suggestions": [
           {
             "name": "all"
@@ -123,107 +126,104 @@
             "name": "rule1,rule2,..."
           }
         ]
-      }
+      },
+      "description": "Allow ansible-lint to reformat YAML files and run rule transforms",
+      "name": [
+        "--write"
+      ]
     },
     {
+      "description": "Display path relative to CWD",
       "name": [
         "--show-relpath"
-      ],
-      "description": "Display path relative to CWD"
+      ]
     },
     {
+      "description": "Only check rules whose id/tags match these values",
       "name": [
         "--tags",
         "-t"
-      ],
-      "description": "Only check rules whose id/tags match these values"
+      ]
     },
     {
+      "description": "Increase verbosity level (-vv for more)",
       "name": [
         "-v"
-      ],
-      "description": "Increase verbosity level (-vv for more)"
+      ]
     },
     {
+      "args": {
+        "name": "SKIP_LIST"
+      },
+      "description": "Only check rules whose id/tags do not match these values",
       "name": [
         "--skip-list",
         "-x"
-      ],
-      "description": "Only check rules whose id/tags do not match these values",
-      "args": {
-        "name": "SKIP_LIST"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "WARN_LIST"
+      },
+      "description": "Only warn about these rules, unless overridden in config file defaults to 'experimental'",
       "name": [
         "--warn-list",
         "-w"
-      ],
-      "description": "Only warn about these rules, unless overridden in config file defaults to 'experimental'",
-      "args": {
-        "name": "WARN_LIST"
-      }
+      ]
     },
     {
-      "name": [
-        "--enable-list"
-      ],
-      "description": "Activate optional rules by their tag name",
       "args": {
         "name": "ENABLE_LIST"
-      }
+      },
+      "description": "Activate optional rules by their tag name",
+      "name": [
+        "--enable-list"
+      ]
     },
     {
+      "description": "Disable colored output, same as NO_COLOR=1",
       "name": [
         "--nocolor"
-      ],
-      "description": "Disable colored output, same as NO_COLOR=1"
+      ]
     },
     {
+      "description": "Force colored output, same as FORCE_COLOR=1",
       "name": [
         "--force-color"
-      ],
-      "description": "Force colored output, same as FORCE_COLOR=1"
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "EXCLUDE_PATHS",
+        "template": "folders"
+      },
+      "description": "Path to directories or files to skip. This option is repeatable",
       "name": [
         "--exclude-paths"
-      ],
-      "description": "Path to directories or files to skip. This option is repeatable",
-      "args": {
-        "name": "EXCLUDE_PATHS",
-        "template": "folders",
-        "isVariadic": true
-      }
+      ]
     },
     {
-      "name": [
-        "--config-file"
-      ],
-      "description": "Specify configuration file to use. By default it will look for '.ansible-lint' or '.config/ansible-lint.yml'",
       "args": {
         "name": "CONFIG_FILE",
         "template": "filepaths"
-      }
+      },
+      "description": "Specify configuration file to use. By default it will look for '.ansible-lint' or '.config/ansible-lint.yml'",
+      "name": [
+        "--config-file"
+      ]
     },
     {
+      "description": "Disable installation of requirements.yml",
       "name": [
         "--offline"
-      ],
-      "description": "Disable installation of requirements.yml"
+      ]
     },
     {
+      "description": "Show version of ansible-lint",
       "name": [
         "--version"
-      ],
-      "description": "Show version of ansible-lint"
+      ]
     }
-  ],
-  "args": {
-    "name": "lintables",
-    "description": "Files to lint",
-    "template": "filepaths",
-    "isVariadic": true,
-    "isOptional": true
-  }
+  ]
 }

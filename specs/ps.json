@@ -1,163 +1,163 @@
 {
-  "name": "ps",
   "description": "Report a snapshot of the current processes",
+  "name": "ps",
   "options": [
     {
+      "description": "Select all processes",
       "name": [
         "-A",
         "-e"
-      ],
-      "description": "Select all processes"
+      ]
     },
     {
-      "name": [
-        "-a"
-      ],
-      "description": "Select all processes except both session leaders",
       "args": {
         "name": "getsid"
       },
+      "description": "Select all processes except both session leaders",
+      "name": [
+        "-a"
+      ],
       "priority": 60
     },
     {
+      "description": "Select all processes except session leaders",
       "name": [
         "-d"
-      ],
-      "description": "Select all processes except session leaders"
+      ]
     },
     {
+      "description": "Select all processes except those that fulfill the specified conditions",
       "name": [
         "--deselect"
-      ],
-      "description": "Select all processes except those that fulfill the specified conditions"
+      ]
     },
     {
+      "description": "Select all processes except those that fulfill the specified conditions (negates the selection)",
       "name": [
         "-N"
-      ],
-      "description": "Select all processes except those that fulfill the specified conditions (negates the selection)"
+      ]
     },
     {
+      "args": {
+        "name": "pidlist"
+      },
+      "description": "Select by process ID",
       "name": [
         "--pid"
-      ],
-      "description": "Select by process ID",
-      "args": {
-        "name": "pidlist"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "pidlist"
+      },
+      "description": "Select by parent process ID. This selects the processes with a parent process ID in pidlist",
       "name": [
         "--ppid"
-      ],
-      "description": "Select by parent process ID. This selects the processes with a parent process ID in pidlist",
-      "args": {
-        "name": "pidlist"
-      }
+      ]
     },
     {
-      "name": [
-        "--sid"
-      ],
-      "description": "Select by session ID",
       "args": {
         "name": "sesslist"
-      }
+      },
+      "description": "Select by session ID",
+      "name": [
+        "--sid"
+      ]
     },
     {
-      "name": [
-        "--tty"
-      ],
-      "description": "Select by terminal",
       "args": {
         "name": "ttylist"
-      }
+      },
+      "description": "Select by terminal",
+      "name": [
+        "--tty"
+      ]
     },
     {
+      "args": {
+        "name": "userlist"
+      },
+      "description": "Select by effective user ID (EUID) or name",
       "name": [
         "U"
-      ],
-      "description": "Select by effective user ID (EUID) or name",
-      "args": {
-        "name": "userlist"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "userlist"
+      },
+      "description": "Select by real user ID (RUID) or name",
       "name": [
         "-U"
-      ],
-      "description": "Select by real user ID (RUID) or name",
-      "args": {
-        "name": "userlist"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "userlist"
+      },
+      "description": "Select by effective user ID (EUID) or name",
       "name": [
         "-u"
-      ],
-      "description": "Select by effective user ID (EUID) or name",
-      "args": {
-        "name": "userlist"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "userlist"
+      },
+      "description": "Select by real user ID (RUID) or name",
       "name": [
         "--User"
-      ],
-      "description": "Select by real user ID (RUID) or name",
-      "args": {
-        "name": "userlist"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "userlist"
+      },
+      "description": "Select by effective user ID (EUID) or name",
       "name": [
         "--user"
-      ],
-      "description": "Select by effective user ID (EUID) or name",
-      "args": {
-        "name": "userlist"
-      }
+      ]
     },
     {
+      "description": "Show different scheduler information for the -l option",
       "name": [
         "-c"
-      ],
-      "description": "Show different scheduler information for the -l option"
+      ]
     },
     {
+      "description": "Display security context format (for SE Linux)",
       "name": [
         "--context"
-      ],
-      "description": "Display security context format (for SE Linux)"
+      ]
     },
     {
+      "description": "Do full-format listing",
       "name": [
         "-f"
-      ],
-      "description": "Do full-format listing"
+      ]
     },
     {
+      "description": "Extra full format",
       "name": [
         "-F"
-      ],
-      "description": "Extra full format"
+      ]
     },
     {
+      "args": {
+        "name": "format"
+      },
       "name": [
         "--format",
         "-o",
         "o"
-      ],
-      "args": {
-        "name": "format"
-      }
+      ]
     },
     {
+      "description": "(for SE Linux)",
       "name": [
         "-M",
         "Z"
-      ],
-      "description": "(for SE Linux)"
+      ]
     },
     {
       "name": [
@@ -167,129 +167,129 @@
       "priority": 65
     },
     {
+      "args": {
+        "name": "n"
+      },
+      "description": "Set screen width",
       "name": [
         "--cols"
-      ],
-      "description": "Set screen width",
-      "args": {
-        "name": "n"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "n"
+      },
+      "description": "Set screen width",
       "name": [
         "--columns"
-      ],
-      "description": "Set screen width",
-      "args": {
-        "name": "n"
-      }
+      ]
     },
     {
+      "description": "Include some dead child process data (as a sum with the parent)",
       "name": [
         "--cumulative"
-      ],
-      "description": "Include some dead child process data (as a sum with the parent)"
+      ]
     },
     {
+      "description": "ASCII art process tree",
       "name": [
         "--forest"
-      ],
-      "description": "ASCII art process tree"
+      ]
     },
     {
+      "description": "Show process hierarchy (forest)",
       "name": [
         "-H"
-      ],
-      "description": "Show process hierarchy (forest)"
+      ]
     },
     {
+      "description": "Repeat header lines, one per page of output",
       "name": [
         "--headers"
-      ],
-      "description": "Repeat header lines, one per page of output"
+      ]
     },
     {
-      "name": [
-        "-n"
-      ],
-      "description": "Set namelist file",
       "args": {
         "name": "namelist"
       },
+      "description": "Set namelist file",
+      "name": [
+        "-n"
+      ],
       "priority": 65
     },
     {
-      "name": [
-        "--lines"
-      ],
-      "description": "Set screen height",
       "args": {
         "name": "n"
-      }
+      },
+      "description": "Set screen height",
+      "name": [
+        "--lines"
+      ]
     },
     {
+      "description": "Print no header line at all",
       "name": [
         "--no-headers",
         "--no-heading"
-      ],
-      "description": "Print no header line at all"
+      ]
     },
     {
+      "args": {
+        "name": "n"
+      },
+      "description": "Set screen height",
       "name": [
         "--rows"
-      ],
-      "description": "Set screen height",
-      "args": {
-        "name": "n"
-      }
+      ]
     },
     {
-      "name": [
-        "--sort"
-      ],
-      "description": "Specify sorting order",
       "args": {
         "name": "spec"
-      }
+      },
+      "description": "Specify sorting order",
+      "name": [
+        "--sort"
+      ]
     },
     {
-      "name": [
-        "--width"
-      ],
-      "description": "Set screen width",
       "args": {
         "name": "n"
-      }
+      },
+      "description": "Set screen width",
+      "name": [
+        "--width"
+      ]
     },
     {
+      "description": "Show threads, possibly with LWP and NLWP columns",
       "name": [
         "-L"
-      ],
-      "description": "Show threads, possibly with LWP and NLWP columns"
+      ]
     },
     {
+      "description": "Show threads, possibly with SPID column",
       "name": [
         "-T"
-      ],
-      "description": "Show threads, possibly with SPID column"
+      ]
     },
     {
+      "description": "Print a help message",
       "name": [
         "--help"
-      ],
-      "description": "Print a help message"
+      ]
     },
     {
+      "description": "Print debugging info",
       "name": [
         "--info"
-      ],
-      "description": "Print debugging info"
+      ]
     },
     {
+      "description": "Print the procps version",
       "name": [
         "--version"
-      ],
-      "description": "Print the procps version"
+      ]
     }
   ]
 }

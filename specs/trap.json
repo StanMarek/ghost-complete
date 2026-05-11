@@ -1,42 +1,42 @@
 {
-  "name": "trap",
-  "description": "Automatically execute commands after receiving signals by processes or the operating system",
-  "options": [
-    {
-      "name": [
-        "--print",
-        "-p"
-      ],
-      "description": "Prints all defined signal handlers"
-    },
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Displays help about using this command"
-    }
-  ],
   "args": [
     {
-      "name": "function name",
-      "isOptional": true
+      "isOptional": true,
+      "name": "function name"
     },
     {
-      "name": "reason",
       "generators": [
         {
+          "js_runtime": {
+            "kind": "post_process",
+            "source": "e=>[...e.matchAll(a)].map(n=>({name:n[2]}))"
+          },
+          "requires_js": true,
           "script": [
             "command",
             "kill",
             "-l"
-          ],
-          "requires_js": true,
-          "js_runtime": {
-            "kind": "post_process",
-            "source": "e=>[...e.matchAll(a)].map(n=>({name:n[2]}))"
-          }
+          ]
         }
+      ],
+      "name": "reason"
+    }
+  ],
+  "description": "Automatically execute commands after receiving signals by processes or the operating system",
+  "name": "trap",
+  "options": [
+    {
+      "description": "Prints all defined signal handlers",
+      "name": [
+        "--print",
+        "-p"
+      ]
+    },
+    {
+      "description": "Displays help about using this command",
+      "name": [
+        "--help",
+        "-h"
       ]
     }
   ]

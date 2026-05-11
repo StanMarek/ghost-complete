@@ -1,27 +1,49 @@
 {
-  "name": "iconv",
+  "args": {
+    "isVariadic": true,
+    "name": "inputfile",
+    "template": "filepaths"
+  },
   "description": "Character set conversion",
+  "name": "iconv",
   "options": [
     {
+      "description": "Show help for iconv",
       "name": [
         "--help"
-      ],
-      "description": "Show help for iconv"
+      ]
     },
     {
+      "description": "Output version information and exit",
       "name": [
         "--version"
-      ],
-      "description": "Output version information and exit"
+      ]
     },
     {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "iconv -l | command tr ' ' '\\n' | sort"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "encoding"
+      },
+      "description": "Specifies the encoding of the input",
       "name": [
         "-f",
         "--from-code"
-      ],
-      "description": "Specifies the encoding of the input",
+      ]
+    },
+    {
       "args": {
-        "name": "encoding",
         "generators": [
           {
             "script": [
@@ -34,79 +56,57 @@
               "filter_empty"
             ]
           }
-        ]
-      }
-    },
-    {
+        ],
+        "name": "encoding"
+      },
+      "description": "Specifies the encoding of the output",
       "name": [
         "-t",
         "--to-code"
-      ],
-      "description": "Specifies the encoding of the output",
-      "args": {
-        "name": "encoding",
-        "generators": [
-          {
-            "script": [
-              "bash",
-              "-c",
-              "iconv -l | command tr ' ' '\\n' | sort"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty"
-            ]
-          }
-        ]
-      }
+      ]
     },
     {
+      "description": "Discard unconvertible characters",
       "name": [
         "-c"
-      ],
-      "description": "Discard unconvertible characters"
+      ]
     },
     {
+      "description": "List the supported encodings",
       "name": [
         "-l",
         "--list"
-      ],
-      "description": "List the supported encodings"
+      ]
     },
     {
+      "args": {
+        "description": "The formatstring must be a format string in the same format as for the printf command",
+        "name": "FORMATSTRING"
+      },
+      "description": "Substitution for unconvertible Unicode characters",
       "name": [
         "--unicode-subst"
-      ],
-      "description": "Substitution for unconvertible Unicode characters",
-      "args": {
-        "name": "FORMATSTRING",
-        "description": "The formatstring must be a format string in the same format as for the printf command"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "The formatstring must be a format string in the same format as for the printf command",
+        "name": "FORMATSTRING"
+      },
+      "description": "Substitution for unconvertible bytes",
       "name": [
         "--byte-subst"
-      ],
-      "description": "Substitution for unconvertible bytes",
-      "args": {
-        "name": "FORMATSTRING",
-        "description": "The formatstring must be a format string in the same format as for the printf command"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "The formatstring must be a format string in the same format as for the printf command",
+        "name": "FORMATSTRING"
+      },
+      "description": "Substitution for unconvertible wide characters",
       "name": [
         "--widechar-subst"
-      ],
-      "description": "Substitution for unconvertible wide characters",
-      "args": {
-        "name": "FORMATSTRING",
-        "description": "The formatstring must be a format string in the same format as for the printf command"
-      }
+      ]
     }
-  ],
-  "args": {
-    "name": "inputfile",
-    "template": "filepaths",
-    "isVariadic": true
-  }
+  ]
 }

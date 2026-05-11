@@ -1,198 +1,198 @@
 {
-  "name": "stencil",
   "description": "CLI to build Stencil projects and generate components",
+  "name": "stencil",
+  "options": [
+    {
+      "description": "Display the help output explaining the different flags",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Prints the current Stencil version",
+      "name": [
+        "--version"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "build",
       "description": "Build components for development or production",
+      "name": "build",
       "options": [
         {
+          "description": "Run a build using recommended settings for a Continuous Integration (CI) environment",
           "name": [
             "--ci"
-          ],
-          "description": "Run a build using recommended settings for a Continuous Integration (CI) environment"
+          ]
         },
         {
-          "name": [
-            "--config",
-            "-c"
-          ],
-          "description": "Set stencil config file",
           "args": {
             "name": "config file",
             "template": "filepaths"
-          }
+          },
+          "description": "Set stencil config file",
+          "name": [
+            "--config",
+            "-c"
+          ]
         },
         {
+          "description": "Set the log level to debug",
           "name": [
             "--debug"
-          ],
-          "description": "Set the log level to debug"
+          ]
         },
         {
+          "description": "Development build",
           "name": [
             "--dev"
-          ],
-          "description": "Development build"
+          ]
         },
         {
+          "description": "Generate component readme.md docs",
           "name": [
             "--docs-readme"
-          ],
-          "description": "Generate component readme.md docs"
+          ]
         },
         {
+          "description": "Creates an ES5 compatible build",
           "name": [
             "--es5"
-          ],
-          "description": "Creates an ES5 compatible build"
+          ]
         },
         {
+          "description": "Write stencil-build.log file",
           "name": [
             "--log"
-          ],
-          "description": "Write stencil-build.log file"
+          ]
         },
         {
+          "description": "Prerender the application",
           "name": [
             "--prerender"
-          ],
-          "description": "Prerender the application"
+          ]
         },
         {
+          "description": "Runs a production build",
           "name": [
             "--prod"
-          ],
-          "description": "Runs a production build"
+          ]
         },
         {
+          "args": {
+            "description": "Number of workers",
+            "name": "workers"
+          },
+          "description": "Max number of workers the compiler should use",
           "name": [
             "--max-workers"
-          ],
-          "description": "Max number of workers the compiler should use",
-          "args": {
-            "name": "workers",
-            "description": "Number of workers"
-          }
+          ]
         },
         {
+          "description": "Opt-in to test the 'next' Stencil compiler features",
           "name": [
             "--next"
-          ],
-          "description": "Opt-in to test the 'next' Stencil compiler features"
+          ]
         },
         {
+          "description": "Disables using the cache",
           "name": [
             "--no-cache"
-          ],
-          "description": "Disables using the cache"
+          ]
         },
         {
+          "description": "Do not automatically open the browser window",
           "name": [
             "--no-open"
-          ],
-          "description": "Do not automatically open the browser window"
+          ]
         },
         {
+          "args": {
+            "name": "port"
+          },
+          "description": "Port for the Integrated Dev Server",
           "name": [
             "--port",
             "--p"
-          ],
-          "description": "Port for the Integrated Dev Server",
-          "args": {
-            "name": "port"
-          }
+          ]
         },
         {
+          "description": "Start the dev-server",
           "name": [
             "--serve"
-          ],
-          "description": "Start the dev-server"
+          ]
         },
         {
+          "description": "Write stencil-stats.json file",
           "name": [
             "--stats"
-          ],
-          "description": "Write stencil-stats.json file"
+          ]
         },
         {
+          "description": "Logs additional information about each step of the build",
           "name": [
             "--verbose"
-          ],
-          "description": "Logs additional information about each step of the build"
+          ]
         },
         {
+          "description": "Rebuild when files update",
           "name": [
             "--watch"
-          ],
-          "description": "Rebuild when files update"
+          ]
         }
       ]
     },
     {
-      "name": "test",
       "description": "Run unit and end-to-end tests",
+      "name": "test",
       "options": [
         {
+          "description": "Run unit tests with Jest",
           "name": [
             "--spec"
-          ],
-          "description": "Run unit tests with Jest"
+          ]
         },
         {
+          "description": "Run e2e tests with Puppeteer",
           "name": [
             "--e2e"
-          ],
-          "description": "Run e2e tests with Puppeteer"
+          ]
         },
         {
+          "description": "Skips build process before running the tests",
           "name": [
             "--no-build"
-          ],
-          "description": "Skips build process before running the tests"
+          ]
         }
       ]
     },
     {
-      "name": "generate",
-      "description": "Bootstrap components",
       "args": {
-        "name": "name",
         "description": "Name of new component (must contain dash (-))",
+        "isOptional": true,
         "isVariadic": true,
-        "isOptional": true
-      }
+        "name": "name"
+      },
+      "description": "Bootstrap components",
+      "name": "generate"
     },
     {
-      "name": "telemetry",
-      "description": "Opt in or out of telemetry",
       "args": {
         "name": "state",
         "suggestions": [
           {
-            "name": "off",
-            "description": "Disable sharing anonymous usage data"
+            "description": "Disable sharing anonymous usage data",
+            "name": "off"
           },
           {
-            "name": "on",
-            "description": "Enable sharing anonymous usage data"
+            "description": "Enable sharing anonymous usage data",
+            "name": "on"
           }
         ]
-      }
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--help"
-      ],
-      "description": "Display the help output explaining the different flags"
-    },
-    {
-      "name": [
-        "--version"
-      ],
-      "description": "Prints the current Stencil version"
+      },
+      "description": "Opt in or out of telemetry",
+      "name": "telemetry"
     }
   ]
 }

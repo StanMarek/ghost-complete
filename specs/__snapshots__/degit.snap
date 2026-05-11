@@ -5,6 +5,7 @@
         {
           "js_runtime": {
             "kind": "custom",
+            "self_contained": true,
             "source": "async(r,e)=>{let n=r[r.length-1];if(n.includes(\":\"))return[];let t=n.slice(0,n.indexOf(\"/\")),{stdout:i}=await e({command:\"curl\",args:[\"-sL\",`https://api.github.com/users/${t}/repos`]});return JSON.parse(i).map(s=>({name:s.full_name,description:s.description??\"Repository\",priority:s.is_template?51:50,displayName:s.name,icon:\"fig://icon?type=git\"}))}"
           },
           "requires_js": true

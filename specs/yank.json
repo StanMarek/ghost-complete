@@ -1,61 +1,61 @@
 {
-  "name": "yank",
   "description": "Yank terminal output to clipboard",
+  "name": "yank",
   "options": [
     {
+      "description": "Ignore case differences between pattern and the input",
       "name": [
         "-i"
-      ],
-      "description": "Ignore case differences between pattern and the input"
+      ]
     },
     {
+      "description": "Use the default delimiters except for space",
       "name": [
         "-l"
-      ],
-      "description": "Use the default delimiters except for space"
+      ]
     },
     {
+      "description": "Use alternate screen",
       "name": [
         "-x"
-      ],
-      "description": "Use alternate screen"
+      ]
     },
     {
+      "description": "Print the version",
       "name": [
         "-v"
-      ],
-      "description": "Print the version"
+      ]
     },
     {
+      "args": {
+        "description": "Custom delimiters",
+        "name": "delim"
+      },
+      "description": "All input characters not present in delim will be recognized as fields",
       "name": [
         "-d"
-      ],
-      "description": "All input characters not present in delim will be recognized as fields",
-      "args": {
-        "name": "delim",
-        "description": "Custom delimiters"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "Pattern to recognize fields",
+        "name": "pattern"
+      },
+      "description": "Use pattern to recognize fields",
       "name": [
         "-g"
-      ],
-      "description": "Use pattern to recognize fields",
-      "args": {
-        "name": "pattern",
-        "description": "Pattern to recognize fields"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "Command to use as the yank command",
+        "isVariadic": true,
+        "name": "command"
+      },
+      "description": "Use a command as the yank command",
       "name": [
         "--"
-      ],
-      "description": "Use a command as the yank command",
-      "args": {
-        "name": "command",
-        "description": "Command to use as the yank command",
-        "isVariadic": true
-      }
+      ]
     }
   ]
 }

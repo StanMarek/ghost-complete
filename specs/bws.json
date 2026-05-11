@@ -1,394 +1,394 @@
 {
   "name": "bws",
-  "subcommands": [
-    {
-      "name": "config",
-      "description": "Specify server settings for the Secrets Manager CLI",
-      "options": [
-        {
-          "name": [
-            "--profile"
-          ],
-          "description": "Save specified value(s) to an alternate profile",
-          "args": {
-            "name": "profile",
-            "description": "Profile name to save to"
-          }
-        },
-        {
-          "name": [
-            "--config-file"
-          ],
-          "description": "Save specified value(s) to an alternative config file",
-          "args": {
-            "name": "Config file path",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Display help for login command",
-          "priority": 49
-        }
-      ],
-      "args": {
-        "name": "Setting",
-        "description": "Server setting to specify",
-        "suggestions": [
-          {
-            "name": "server-base",
-            "description": "Base server URL"
-          },
-          {
-            "name": "server-api",
-            "description": "Server API endpoint URL"
-          },
-          {
-            "name": "server-identity",
-            "description": "Server Identity endpoint URL"
-          },
-          {
-            "name": "state-file-dir",
-            "description": "Server file storage location"
-          }
-        ]
-      }
-    },
-    {
-      "name": "completions",
-      "description": "Generate shell completions",
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Display help for logout command",
-          "priority": 49
-        }
-      ],
-      "args": {
-        "name": "SHELL",
-        "description": "Shell to generate completions for",
-        "suggestions": [
-          {
-            "name": "bash",
-            "description": "Generate shell completions for bash"
-          },
-          {
-            "name": "elvish",
-            "description": "Generate shell completions for elvish"
-          },
-          {
-            "name": "fish",
-            "description": "Generate shell completions for fish"
-          },
-          {
-            "name": "powershell",
-            "description": "Generate shell completions for powershell"
-          },
-          {
-            "name": "zsh",
-            "description": "Generate shell completions for zsh"
-          }
-        ]
-      }
-    },
-    {
-      "name": "project",
-      "description": "Access, manipulate and create projects",
-      "subcommands": [
-        {
-          "name": "create",
-          "description": "Create a new project",
-          "args": {
-            "name": "NAME",
-            "description": "Name of project to be created"
-          }
-        },
-        {
-          "name": "delete",
-          "description": "Delete one or more existing projects",
-          "args": {
-            "name": "PROJECT_ID(s)",
-            "description": "ID(s) of project(s) to delete"
-          }
-        },
-        {
-          "name": "edit",
-          "description": "Change the name of an existing project",
-          "args": [
-            {
-              "name": "--name",
-              "description": "New project name"
-            },
-            {
-              "name": "PROJECT_ID",
-              "description": "ID of project to edit"
-            }
-          ]
-        },
-        {
-          "name": "get",
-          "description": "Retrieve a specific project accessible to this service account",
-          "args": {
-            "name": "PROJECT_ID",
-            "description": "ID of project to retrieve"
-          }
-        },
-        {
-          "name": "list",
-          "description": "List projects accessible to this service account"
-        }
-      ],
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Access, manipulate and create projects",
-          "priority": 49
-        }
-      ]
-    },
-    {
-      "name": "secret",
-      "description": "Access, manipulate and create secrets",
-      "subcommands": [
-        {
-          "name": "create",
-          "description": "Create a new secret",
-          "options": [
-            {
-              "name": [
-                "--note"
-              ],
-              "description": "Optional notes about this secret"
-            }
-          ],
-          "args": [
-            {
-              "name": "KEY",
-              "description": "Secret Key"
-            },
-            {
-              "name": "VALUE",
-              "description": "Secret Value"
-            },
-            {
-              "name": "PROJECT_ID",
-              "description": "The ID of the project this secret will be added to"
-            }
-          ]
-        },
-        {
-          "name": "delete",
-          "description": "Delete an existing secret",
-          "args": {
-            "name": "SECRET_IDS",
-            "description": "Delete one or more secrets designated by SECRET_IDS"
-          }
-        },
-        {
-          "name": "edit",
-          "description": "Edit an existing secret",
-          "options": [
-            {
-              "name": [
-                "key"
-              ],
-              "description": "Edit the Secret Key"
-            },
-            {
-              "name": [
-                "value"
-              ],
-              "description": "Edit the Secret Value"
-            },
-            {
-              "name": [
-                "project-id"
-              ],
-              "description": "Edit the ID of project this secret belongs to"
-            },
-            {
-              "name": [
-                "note"
-              ],
-              "description": "Edit the optional notes about this secret"
-            }
-          ],
-          "args": {
-            "name": "SECRET_ID",
-            "description": "ID of secret to be edited"
-          }
-        },
-        {
-          "name": "get",
-          "description": "Retrieve an existing secret",
-          "args": {
-            "name": "SECRET_ID",
-            "description": "Secret to retrieve"
-          }
-        },
-        {
-          "name": "list",
-          "description": "List the secrets this service account can access",
-          "args": {
-            "name": "Project",
-            "description": "Project Identifier",
-            "isOptional": true
-          }
-        }
-      ],
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Display help for unlock command",
-          "priority": 49
-        }
-      ]
-    },
-    {
-      "name": "--help",
-      "description": "Get help about using the Bitwarden Secrets Manager CLI tool"
-    }
-  ],
   "options": [
     {
+      "args": {
+        "description": "Select output format",
+        "name": "Format",
+        "suggestions": [
+          {
+            "description": "Produce json output",
+            "name": "json"
+          },
+          {
+            "description": "Produce yaml output",
+            "name": "yaml"
+          },
+          {
+            "description": "Produce env output",
+            "name": "env"
+          },
+          {
+            "description": "Produce table output",
+            "name": "table"
+          },
+          {
+            "description": "Produce tsv output",
+            "name": "tsv"
+          },
+          {
+            "description": "Produce no output",
+            "name": "none"
+          }
+        ]
+      },
+      "description": "Output format [default: json]",
       "name": [
         "-o",
         "--output"
       ],
-      "description": "Output format [default: json]",
-      "priority": 40,
-      "args": {
-        "name": "Format",
-        "description": "Select output format",
-        "suggestions": [
-          {
-            "name": "json",
-            "description": "Produce json output"
-          },
-          {
-            "name": "yaml",
-            "description": "Produce yaml output"
-          },
-          {
-            "name": "env",
-            "description": "Produce env output"
-          },
-          {
-            "name": "table",
-            "description": "Produce table output"
-          },
-          {
-            "name": "tsv",
-            "description": "Produce tsv output"
-          },
-          {
-            "name": "none",
-            "description": "Produce no output"
-          }
-        ]
-      }
+      "priority": 40
     },
     {
+      "args": {
+        "description": "Select output coloration scheme",
+        "name": "Color",
+        "suggestions": [
+          {
+            "description": "Do not color output",
+            "name": "no"
+          },
+          {
+            "description": "Colorize output",
+            "name": "yes"
+          },
+          {
+            "description": "Use default terminal colors",
+            "name": "auto"
+          }
+        ]
+      },
+      "description": "Use colors in the output [default: auto]",
       "name": [
         "-c",
         "--color"
       ],
-      "description": "Use colors in the output [default: auto]",
-      "priority": 40,
-      "args": {
-        "name": "Color",
-        "description": "Select output coloration scheme",
-        "suggestions": [
-          {
-            "name": "no",
-            "description": "Do not color output"
-          },
-          {
-            "name": "yes",
-            "description": "Colorize output"
-          },
-          {
-            "name": "auto",
-            "description": "Use default terminal colors"
-          }
-        ]
-      }
+      "priority": 40
     },
     {
+      "args": {
+        "description": "Bitwarden Secrets Manager Access Token",
+        "name": "Access Token"
+      },
+      "description": "Specify access token for the service account [env: BWS_ACCESS_TOKEN]",
       "name": [
         "-t",
         "--access-token"
       ],
-      "description": "Specify access token for the service account [env: BWS_ACCESS_TOKEN]",
-      "priority": 40,
-      "args": {
-        "name": "Access Token",
-        "description": "Bitwarden Secrets Manager Access Token"
-      }
+      "priority": 40
     },
     {
+      "args": {
+        "name": "Config File",
+        "template": "filepaths"
+      },
+      "description": "Config file to use [default: ~/.bws.config]",
       "name": [
         "-f",
         "--config-file"
       ],
-      "description": "Config file to use [default: ~/.bws.config]",
-      "priority": 40,
-      "args": {
-        "name": "Config File",
-        "template": "filepaths"
-      }
+      "priority": 40
     },
     {
+      "args": {
+        "description": "User Profile to enable",
+        "name": "Profile"
+      },
+      "description": "Profile to use from the config file [env: BWS_PROFILE=]",
       "name": [
         "-p",
         "--profile"
       ],
-      "description": "Profile to use from the config file [env: BWS_PROFILE=]",
-      "priority": 40,
-      "args": {
-        "name": "Profile",
-        "description": "User Profile to enable"
-      }
+      "priority": 40
     },
     {
+      "args": {
+        "description": "URL of Bitwarden Secrets Manager server",
+        "name": "Server URL"
+      },
+      "description": "Override the server URL from the config file [env: BWS_SERVER_URL=]",
       "name": [
         "-u",
         "--server-url"
       ],
-      "description": "Override the server URL from the config file [env: BWS_SERVER_URL=]",
-      "priority": 40,
-      "args": {
-        "name": "Server URL",
-        "description": "URL of Bitwarden Secrets Manager server"
-      }
+      "priority": 40
     },
     {
+      "description": "Print help",
       "name": [
         "-h",
         "--help"
       ],
-      "description": "Print help",
       "priority": 49
     },
     {
+      "description": "Print version",
       "name": [
         "-V",
         "--version"
       ],
-      "description": "Print version",
       "priority": 49
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "description": "Server setting to specify",
+        "name": "Setting",
+        "suggestions": [
+          {
+            "description": "Base server URL",
+            "name": "server-base"
+          },
+          {
+            "description": "Server API endpoint URL",
+            "name": "server-api"
+          },
+          {
+            "description": "Server Identity endpoint URL",
+            "name": "server-identity"
+          },
+          {
+            "description": "Server file storage location",
+            "name": "state-file-dir"
+          }
+        ]
+      },
+      "description": "Specify server settings for the Secrets Manager CLI",
+      "name": "config",
+      "options": [
+        {
+          "args": {
+            "description": "Profile name to save to",
+            "name": "profile"
+          },
+          "description": "Save specified value(s) to an alternate profile",
+          "name": [
+            "--profile"
+          ]
+        },
+        {
+          "args": {
+            "name": "Config file path",
+            "template": "filepaths"
+          },
+          "description": "Save specified value(s) to an alternative config file",
+          "name": [
+            "--config-file"
+          ]
+        },
+        {
+          "description": "Display help for login command",
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "priority": 49
+        }
+      ]
+    },
+    {
+      "args": {
+        "description": "Shell to generate completions for",
+        "name": "SHELL",
+        "suggestions": [
+          {
+            "description": "Generate shell completions for bash",
+            "name": "bash"
+          },
+          {
+            "description": "Generate shell completions for elvish",
+            "name": "elvish"
+          },
+          {
+            "description": "Generate shell completions for fish",
+            "name": "fish"
+          },
+          {
+            "description": "Generate shell completions for powershell",
+            "name": "powershell"
+          },
+          {
+            "description": "Generate shell completions for zsh",
+            "name": "zsh"
+          }
+        ]
+      },
+      "description": "Generate shell completions",
+      "name": "completions",
+      "options": [
+        {
+          "description": "Display help for logout command",
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "priority": 49
+        }
+      ]
+    },
+    {
+      "description": "Access, manipulate and create projects",
+      "name": "project",
+      "options": [
+        {
+          "description": "Access, manipulate and create projects",
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "priority": 49
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "description": "Name of project to be created",
+            "name": "NAME"
+          },
+          "description": "Create a new project",
+          "name": "create"
+        },
+        {
+          "args": {
+            "description": "ID(s) of project(s) to delete",
+            "name": "PROJECT_ID(s)"
+          },
+          "description": "Delete one or more existing projects",
+          "name": "delete"
+        },
+        {
+          "args": [
+            {
+              "description": "New project name",
+              "name": "--name"
+            },
+            {
+              "description": "ID of project to edit",
+              "name": "PROJECT_ID"
+            }
+          ],
+          "description": "Change the name of an existing project",
+          "name": "edit"
+        },
+        {
+          "args": {
+            "description": "ID of project to retrieve",
+            "name": "PROJECT_ID"
+          },
+          "description": "Retrieve a specific project accessible to this service account",
+          "name": "get"
+        },
+        {
+          "description": "List projects accessible to this service account",
+          "name": "list"
+        }
+      ]
+    },
+    {
+      "description": "Access, manipulate and create secrets",
+      "name": "secret",
+      "options": [
+        {
+          "description": "Display help for unlock command",
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "priority": 49
+        }
+      ],
+      "subcommands": [
+        {
+          "args": [
+            {
+              "description": "Secret Key",
+              "name": "KEY"
+            },
+            {
+              "description": "Secret Value",
+              "name": "VALUE"
+            },
+            {
+              "description": "The ID of the project this secret will be added to",
+              "name": "PROJECT_ID"
+            }
+          ],
+          "description": "Create a new secret",
+          "name": "create",
+          "options": [
+            {
+              "description": "Optional notes about this secret",
+              "name": [
+                "--note"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Delete one or more secrets designated by SECRET_IDS",
+            "name": "SECRET_IDS"
+          },
+          "description": "Delete an existing secret",
+          "name": "delete"
+        },
+        {
+          "args": {
+            "description": "ID of secret to be edited",
+            "name": "SECRET_ID"
+          },
+          "description": "Edit an existing secret",
+          "name": "edit",
+          "options": [
+            {
+              "description": "Edit the Secret Key",
+              "name": [
+                "key"
+              ]
+            },
+            {
+              "description": "Edit the Secret Value",
+              "name": [
+                "value"
+              ]
+            },
+            {
+              "description": "Edit the ID of project this secret belongs to",
+              "name": [
+                "project-id"
+              ]
+            },
+            {
+              "description": "Edit the optional notes about this secret",
+              "name": [
+                "note"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Secret to retrieve",
+            "name": "SECRET_ID"
+          },
+          "description": "Retrieve an existing secret",
+          "name": "get"
+        },
+        {
+          "args": {
+            "description": "Project Identifier",
+            "isOptional": true,
+            "name": "Project"
+          },
+          "description": "List the secrets this service account can access",
+          "name": "list"
+        }
+      ]
+    },
+    {
+      "description": "Get help about using the Bitwarden Secrets Manager CLI tool",
+      "name": "--help"
     }
   ]
 }

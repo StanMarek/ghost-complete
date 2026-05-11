@@ -1,177 +1,189 @@
 {
-  "name": "rg",
+  "args": [
+    {
+      "description": "A regular expression used for searching",
+      "name": "Pattern"
+    },
+    {
+      "description": "A file or directory to search",
+      "isOptional": true,
+      "isVariadic": true,
+      "name": "Path",
+      "template": [
+        "filepaths",
+        "folders"
+      ]
+    }
+  ],
   "description": "Recursively searches current directory for lines matching a pattern",
+  "name": "rg",
   "options": [
     {
+      "args": {
+        "name": "Num"
+      },
+      "description": "Shows NUM lines after each match",
       "name": [
         "-A",
         "--after-context"
-      ],
-      "description": "Shows NUM lines after each match",
-      "args": {
-        "name": "Num"
-      }
+      ]
     },
     {
+      "description": "When this flag is used, ripgrep will dynamically choose between supported regex engines depending on the features used in a pattern",
       "name": [
         "--auto-hybrid-regex"
-      ],
-      "description": "When this flag is used, ripgrep will dynamically choose between supported regex engines depending on the features used in a pattern"
+      ]
     },
     {
+      "args": {
+        "name": "Num"
+      },
+      "description": "Shows NUM lines before each match",
       "name": [
         "-B",
         "--before-context"
-      ],
-      "description": "Shows NUM lines before each match",
-      "args": {
-        "name": "Num"
-      }
+      ]
     },
     {
+      "description": "Enabling this flag will cause ripgrep to search binary files",
       "name": [
         "--binary"
-      ],
-      "description": "Enabling this flag will cause ripgrep to search binary files"
+      ]
     },
     {
+      "description": "When enabled, ripgrep will use block buffering",
       "name": [
         "--block-buffered"
-      ],
-      "description": "When enabled, ripgrep will use block buffering"
+      ]
     },
     {
+      "description": "Prints the 0-based byte offset within the input file before each line of output",
       "name": [
         "-b",
         "--byte-offset"
-      ],
-      "description": "Prints the 0-based byte offset within the input file before each line of output"
+      ]
     },
     {
+      "description": "Search case sensitively",
       "name": [
         "-s",
         "--case-sensitive"
-      ],
-      "description": "Search case sensitively"
+      ]
     },
     {
-      "name": [
-        "--color"
-      ],
-      "description": "Controls when to use colors",
       "args": {
         "name": "when",
         "suggestions": [
           {
-            "name": "never",
-            "description": "Colors will never be used"
+            "description": "Colors will never be used",
+            "name": "never"
           },
           {
-            "name": "auto",
-            "description": "Ripgrep tries to be smart"
+            "description": "Ripgrep tries to be smart",
+            "name": "auto"
           },
           {
-            "name": "always",
-            "description": "Colors will always be used regardless of where output is sent"
+            "description": "Colors will always be used regardless of where output is sent",
+            "name": "always"
           },
           {
-            "name": "ansi",
-            "description": "Colors will always be used, but emits ANSI escapes"
+            "description": "Colors will always be used, but emits ANSI escapes",
+            "name": "ansi"
           }
         ]
-      }
+      },
+      "description": "Controls when to use colors",
+      "name": [
+        "--color"
+      ]
     },
     {
+      "args": {
+        "description": "{type}:{attribute}:{value}, ex: `match:fg:magenta`",
+        "isVariadic": true,
+        "name": "Color Spec"
+      },
+      "description": "Specifies color settings for use in the output",
       "name": [
         "--colors"
-      ],
-      "description": "Specifies color settings for use in the output",
-      "args": {
-        "name": "Color Spec",
-        "description": "{type}:{attribute}:{value}, ex: `match:fg:magenta`",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "description": "Shows column numbers for the first match on each line",
       "name": [
         "--column"
-      ],
-      "description": "Shows column numbers for the first match on each line"
+      ]
     },
     {
+      "args": {
+        "name": "NUM"
+      },
+      "description": "Shows NUM lines before and after each match",
       "name": [
         "-C",
         "--context"
-      ],
-      "description": "Shows NUM lines before and after each match",
-      "args": {
-        "name": "NUM"
-      }
+      ]
     },
     {
-      "name": [
-        "--context-separator"
-      ],
-      "description": "The string used to separate non-contiguous context lines in the output",
       "args": {
         "name": "Separator"
-      }
+      },
+      "description": "The string used to separate non-contiguous context lines in the output",
+      "name": [
+        "--context-separator"
+      ]
     },
     {
+      "description": "Suppresses normal output and shows the number of lines that match the given pattersns for each file searched",
       "name": [
         "-c",
         "--count"
-      ],
-      "description": "Suppresses normal output and shows the number of lines that match the given pattersns for each file searched"
+      ]
     },
     {
+      "description": "Suppresses normal output and shows the number of individual matches of the given patterns for each file searched",
       "name": [
         "--count-matches"
-      ],
-      "description": "Suppresses normal output and shows the number of individual matches of the given patterns for each file searched"
+      ]
     },
     {
+      "description": "Treats CRLF as a line terminator instead of just a line break",
       "name": [
         "--crlf"
-      ],
-      "description": "Treats CRLF as a line terminator instead of just a line break"
+      ]
     },
     {
+      "description": "Shows debug messages",
       "name": [
         "--debug"
-      ],
-      "description": "Shows debug messages"
+      ]
     },
     {
-      "name": [
-        "--dfa-size-limit"
-      ],
-      "description": "The upper size limit of the regex DFA",
       "args": [
         {
           "name": "NUM"
         },
         {
-          "name": "suffix",
-          "isOptional": true
+          "isOptional": true,
+          "name": "suffix"
         }
+      ],
+      "description": "The upper size limit of the regex DFA",
+      "name": [
+        "--dfa-size-limit"
       ]
     },
     {
+      "args": {
+        "name": "Encoding"
+      },
+      "description": "Specifies the text encoding that ripgrep will use on all files searched",
       "name": [
         "-E",
         "--encoding"
-      ],
-      "description": "Specifies the text encoding that ripgrep will use on all files searched",
-      "args": {
-        "name": "Encoding"
-      }
+      ]
     },
     {
-      "name": [
-        "--engine"
-      ],
-      "description": "Specifies which regular expression engine to use",
       "args": {
         "name": "Engine",
         "suggestions": [
@@ -185,315 +197,319 @@
             "name": "auto"
           }
         ]
-      }
+      },
+      "description": "Specifies which regular expression engine to use",
+      "name": [
+        "--engine"
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "Patternfile",
+        "template": "filepaths"
+      },
+      "description": "Searches for patterns from the given file, with one pattern per line",
       "name": [
         "-f",
         "--file"
-      ],
-      "description": "Searches for patterns from the given file, with one pattern per line",
-      "args": {
-        "name": "Patternfile",
-        "template": "filepaths",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "description": "Prints each file that would be searched without actually performing the search",
       "name": [
         "--files"
-      ],
-      "description": "Prints each file that would be searched without actually performing the search"
+      ]
     },
     {
+      "description": "Only prints the paths with at least one match",
       "name": [
         "-l",
         "--files-with-matches"
       ],
-      "description": "Only prints the paths with at least one match",
       "priority": 65
     },
     {
+      "description": "Only prints the paths that contains zero matches",
       "name": [
         "--files-without-match"
-      ],
-      "description": "Only prints the paths that contains zero matches"
+      ]
     },
     {
+      "description": "Treats the pattern as a literal string instead of a regular expression",
       "name": [
         "-F",
         "--fixed-strings"
-      ],
-      "description": "Treats the pattern as a literal string instead of a regular expression"
+      ]
     },
     {
+      "description": "Follows symbolic links while traversing directories",
       "name": [
         "-L",
         "--follow"
-      ],
-      "description": "Follows symbolic links while traversing directories"
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "GLOB"
+      },
+      "description": "Includes or excludes files and directories for searching that match the given glob",
       "name": [
         "-g",
         "--glob"
-      ],
-      "description": "Includes or excludes files and directories for searching that match the given glob",
-      "args": {
-        "name": "GLOB",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "description": "Processes glob patterns given with the -g/--glob flag",
       "name": [
         "--glob-case-insensitive"
-      ],
-      "description": "Processes glob patterns given with the -g/--glob flag"
+      ]
     },
     {
+      "description": "Prints the file path above clusters of matches from each file instead of printing the file path as a prefix for reach matched line",
       "name": [
         "--heading"
-      ],
-      "description": "Prints the file path above clusters of matches from each file instead of printing the file path as a prefix for reach matched line"
+      ]
     },
     {
+      "description": "Searches hidden files and directories",
       "name": [
         "--hidden"
-      ],
-      "description": "Searches hidden files and directories"
+      ]
     },
     {
-      "name": [
-        "--iglob"
-      ],
-      "description": "Includes or excludes files and directories for searching that match given the glob",
       "args": {
+        "isVariadic": true,
         "name": "GLOB",
         "template": [
           "filepaths",
           "folders"
-        ],
-        "isVariadic": true
-      }
+        ]
+      },
+      "description": "Includes or excludes files and directories for searching that match given the glob",
+      "name": [
+        "--iglob"
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "Path",
+        "template": "filepaths"
+      },
+      "description": "Specifies a path to one or more .gitignore format rules files",
       "name": [
         "--ignore-file"
-      ],
-      "description": "Specifies a path to one or more .gitignore format rules files",
-      "args": {
-        "name": "Path",
-        "template": "filepaths",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "description": "Process ignores files case insensitively",
       "name": [
         "--ignore-file-case-insensitive"
-      ],
-      "description": "Process ignores files case insensitively"
+      ]
     },
     {
+      "description": "Prints the number of matchesfor each file when used with --count or --count matches",
       "name": [
         "--include-zero"
-      ],
-      "description": "Prints the number of matchesfor each file when used with --count or --count matches"
+      ]
     },
     {
+      "description": "Inverts matching",
       "name": [
         "-v",
         "--invert-match"
       ],
-      "description": "Inverts matching",
       "priority": 50
     },
     {
+      "description": "Enables printing results in a JSON Lines format",
       "name": [
         "--json"
-      ],
-      "description": "Enables printing results in a JSON Lines format"
+      ]
     },
     {
+      "description": "Disables the JSON Lines format",
       "name": [
         "--no-json"
-      ],
-      "description": "Disables the JSON Lines format"
+      ]
     },
     {
+      "description": "Enables line buffering",
       "name": [
         "--line-buffered"
-      ],
-      "description": "Enables line buffering"
+      ]
     },
     {
+      "description": "Shows the line numbers (1-based)",
       "name": [
         "-n",
         "--line-number"
       ],
-      "description": "Shows the line numbers (1-based)",
       "priority": 65
     },
     {
+      "description": "Only shows matches surrounded by line boundaries",
       "name": [
         "-x",
         "--line-regexp"
-      ],
-      "description": "Only shows matches surrounded by line boundaries"
+      ]
     },
     {
+      "args": {
+        "name": "NUM"
+      },
+      "description": "Don't print lines longer than this limit in bytes",
       "name": [
         "-M",
         "--max-columns"
-      ],
-      "description": "Don't print lines longer than this limit in bytes",
-      "args": {
-        "name": "NUM"
-      }
+      ]
     },
     {
+      "description": "Completely replaces any line that is too long with a message indicating that a matching line was removed",
       "name": [
         "--max-columns-preview"
-      ],
-      "description": "Completely replaces any line that is too long with a message indicating that a matching line was removed"
+      ]
     },
     {
+      "args": {
+        "name": "NUM"
+      },
+      "description": "Limits the number of matching lines per file searched to NUM",
       "name": [
         "-m",
         "--max-count"
-      ],
-      "description": "Limits the number of matching lines per file searched to NUM",
-      "args": {
-        "name": "NUM"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "NUM"
+      },
+      "description": "Limits the depth of directory traversal to NUM levels beyond the paths given",
       "name": [
         "--max-depth"
-      ],
-      "description": "Limits the depth of directory traversal to NUM levels beyond the paths given",
-      "args": {
-        "name": "NUM"
-      }
+      ]
     },
     {
-      "name": [
-        "--max-filesize"
-      ],
-      "description": "Ignores files larger than NUM in size",
       "args": [
         {
           "name": "NUM"
         },
         {
-          "name": "Suffix",
-          "isOptional": true
+          "isOptional": true,
+          "name": "Suffix"
         }
+      ],
+      "description": "Ignores files larger than NUM in size",
+      "name": [
+        "--max-filesize"
       ]
     },
     {
+      "description": "Searches using memory maps when possible",
       "name": [
         "-mmap"
-      ],
-      "description": "Searches using memory maps when possible"
+      ]
     },
     {
+      "description": "Enables matching across multiple lines",
       "name": [
         "-U",
         "--multiline"
-      ],
-      "description": "Enables matching across multiple lines"
+      ]
     },
     {
+      "description": "Enables dot all in your regex pattern",
       "name": [
         "--multiline-dotall"
-      ],
-      "description": "Enables dot all in your regex pattern"
+      ]
     },
     {
+      "description": "Never read configuration files",
       "name": [
         "--no-config"
-      ],
-      "description": "Never read configuration files"
+      ]
     },
     {
+      "description": "Never prints the file path with the matched lines",
       "name": [
         "-I",
         "--no-filename"
-      ],
-      "description": "Never prints the file path with the matched lines"
+      ]
     },
     {
+      "description": "Don't group matches by each file",
       "name": [
         "--no-heading"
-      ],
-      "description": "Don't group matches by each file"
+      ]
     },
     {
+      "description": "Don't respect ignore files (.gitignore, .ignore, etc.)",
       "name": [
         "--no-ignore"
-      ],
-      "description": "Don't respect ignore files (.gitignore, .ignore, etc.)"
+      ]
     },
     {
+      "description": "Don't respect .ignore files",
       "name": [
         "--no-ignore-dot"
-      ],
-      "description": "Don't respect .ignore files"
+      ]
     },
     {
+      "description": "Don't respect ignore files that are manually configured for the repository",
       "name": [
         "--no-ignore-excluded"
-      ],
-      "description": "Don't respect ignore files that are manually configured for the repository"
+      ]
     },
     {
+      "description": "Ignores any --ignore-file flags",
       "name": [
         "--no-ignore-files"
-      ],
-      "description": "Ignores any --ignore-file flags"
+      ]
     },
     {
+      "description": "Don't respect ignore files that come from `global` sources",
       "name": [
         "--no-ignore-global"
-      ],
-      "description": "Don't respect ignore files that come from `global` sources"
+      ]
     },
     {
+      "description": "Suppresses all error messages related to parsing ignore files",
       "name": [
         "--no-ignore-messages"
-      ],
-      "description": "Suppresses all error messages related to parsing ignore files"
+      ]
     },
     {
+      "description": "Don't repsect ignore files in parent directories",
       "name": [
         "--no-ignore-parent"
-      ],
-      "description": "Don't repsect ignore files in parent directories"
+      ]
     },
     {
+      "description": "Don't respect version control ignore files",
       "name": [
         "--no-ignore-vcs"
-      ],
-      "description": "Don't respect version control ignore files"
+      ]
     },
     {
+      "description": "Suppress line numbers",
       "name": [
         "-N",
         "--no-line-number"
-      ],
-      "description": "Suppress line numbers"
+      ]
     },
     {
+      "description": "Suppresses all error messages related to opening and reading files",
       "name": [
         "--no-messages"
-      ],
-      "description": "Suppresses all error messages related to opening and reading files"
+      ]
     },
     {
+      "description": "Never use memory maps, even when they might be faster",
       "name": [
         "--no-map"
-      ],
-      "description": "Never use memory maps, even when they might be faster"
+      ]
     },
     {
       "name": [
@@ -501,348 +517,332 @@
       ]
     },
     {
+      "description": "Will only respect global gitignore rules",
       "name": [
         "--no-require-git"
-      ],
-      "description": "Will only respect global gitignore rules"
+      ]
     },
     {
+      "description": "Turn off unicode",
       "name": [
         "--no-unicode"
-      ],
-      "description": "Turn off unicode"
+      ]
     },
     {
+      "description": "Disables --no-unicode flag",
       "name": [
         "--unicode"
-      ],
-      "description": "Disables --no-unicode flag"
+      ]
     },
     {
+      "description": "Whenever a file path is printed, follow it with a NUL byte",
       "name": [
         "-0",
         "--null"
-      ],
-      "description": "Whenever a file path is printed, follow it with a NUL byte"
+      ]
     },
     {
+      "description": "Uses NUL as a line terminator instead of the default line break",
       "name": [
         "--null-data"
-      ],
-      "description": "Uses NUL as a line terminator instead of the default line break"
+      ]
     },
     {
+      "description": "Will not cross file system boundaries relative to where the search started from",
       "name": [
         "--one-file-system"
-      ],
-      "description": "Will not cross file system boundaries relative to where the search started from"
+      ]
     },
     {
+      "description": "Disables `--one-file-system` flag",
       "name": [
         "--no-one-file-system"
-      ],
-      "description": "Disables `--one-file-system` flag"
+      ]
     },
     {
+      "description": "Prints only the matched (non-empty) parts of a matching line, with each such part on a separate output line",
       "name": [
         "-o",
         "--only-matching"
-      ],
-      "description": "Prints only the matched (non-empty) parts of a matching line, with each such part on a separate output line"
+      ]
     },
     {
+      "description": "Prints both matching and non-matching lines",
       "name": [
         "--passthru"
-      ],
-      "description": "Prints both matching and non-matching lines"
+      ]
     },
     {
-      "name": [
-        "--path-separator"
-      ],
-      "description": "Sets the path separator to use when printing file paths",
       "args": {
         "name": "Separator"
-      }
+      },
+      "description": "Sets the path separator to use when printing file paths",
+      "name": [
+        "--path-separator"
+      ]
     },
     {
+      "description": "Usess the PCRE2 regex engine instead of its default regex engine",
       "name": [
         "-P",
         "--pcre2"
-      ],
-      "description": "Usess the PCRE2 regex engine instead of its default regex engine"
+      ]
     },
     {
+      "description": "Prints the version of PCRE2 in use",
       "name": [
         "--pcre2-version"
-      ],
-      "description": "Prints the version of PCRE2 in use"
+      ]
     },
     {
-      "name": [
-        "--pre"
-      ],
-      "description": "For each input File, search the standard output of the command",
       "args": {
         "name": "Command"
-      }
+      },
+      "description": "For each input File, search the standard output of the command",
+      "name": [
+        "--pre"
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "GLOB"
+      },
+      "description": "Only files that match the given set of globs will be handed to the command specified by the `--pre flag`",
       "name": [
         "--pre-glob"
-      ],
-      "description": "Only files that match the given set of globs will be handed to the command specified by the `--pre flag`",
-      "args": {
-        "name": "GLOB",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "description": "Convenience alias for `--color always --heading --line-number`",
       "name": [
         "-p",
         "--pretty"
-      ],
-      "description": "Convenience alias for `--color always --heading --line-number`"
+      ]
     },
     {
+      "description": "Do not print anything to stdout",
       "name": [
         "-q",
         "--quiet"
-      ],
-      "description": "Do not print anything to stdout"
+      ]
     },
     {
-      "name": [
-        "--regex-size-limit"
-      ],
-      "description": "Sets the upper size limit of the compiled regex",
       "args": [
         {
           "name": "NUM"
         },
         {
-          "name": "Suffix",
-          "isOptional": true
+          "isOptional": true,
+          "name": "Suffix"
         }
+      ],
+      "description": "Sets the upper size limit of the compiled regex",
+      "name": [
+        "--regex-size-limit"
       ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "Pattern"
+      },
+      "description": "A pattern to search for",
       "name": [
         "-e",
         "--regexp"
-      ],
-      "description": "A pattern to search for",
-      "args": {
-        "name": "Pattern",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "args": {
+        "name": "Replacement Text"
+      },
+      "description": "Replace every match with the text given when printing results",
       "name": [
         "-r",
         "--replace"
       ],
-      "description": "Replace every match with the text given when printing results",
-      "args": {
-        "name": "Replacement Text"
-      },
       "priority": 70
     },
     {
+      "description": "Search in compressed files",
       "name": [
         "-z",
         "--search-zip"
-      ],
-      "description": "Search in compressed files"
+      ]
     },
     {
+      "description": "Searches case insensitively if the pattern is all lowercase",
       "name": [
         "-S",
         "--smart-case"
-      ],
-      "description": "Searches case insensitively if the pattern is all lowercase"
+      ]
     },
     {
+      "args": {
+        "name": "Sortby",
+        "suggestions": [
+          {
+            "description": "Do not sort results. Fastest. Can be multi-threaded",
+            "name": "none"
+          },
+          {
+            "description": "Sort by file path, Always single-threaded",
+            "name": "path"
+          },
+          {
+            "description": "Sort by the last modified time on a file. Always single-threaded",
+            "name": "modified"
+          },
+          {
+            "description": "Sort by the last accessed time on a file. Always single-threaded",
+            "name": "accessed"
+          },
+          {
+            "description": "Sort by the creation time on a file. Always single-threaded",
+            "name": "created"
+          }
+        ]
+      },
       "name": [
         "--sort"
-      ],
+      ]
+    },
+    {
       "args": {
         "name": "Sortby",
         "suggestions": [
           {
-            "name": "none",
-            "description": "Do not sort results. Fastest. Can be multi-threaded"
+            "description": "Do not sort results. Fastest. Can be multi-threaded",
+            "name": "none"
           },
           {
-            "name": "path",
-            "description": "Sort by file path, Always single-threaded"
+            "description": "Sort by file path, Always single-threaded",
+            "name": "path"
           },
           {
-            "name": "modified",
-            "description": "Sort by the last modified time on a file. Always single-threaded"
+            "description": "Sort by the last modified time on a file. Always single-threaded",
+            "name": "modified"
           },
           {
-            "name": "accessed",
-            "description": "Sort by the last accessed time on a file. Always single-threaded"
+            "description": "Sort by the last accessed time on a file. Always single-threaded",
+            "name": "accessed"
           },
           {
-            "name": "created",
-            "description": "Sort by the creation time on a file. Always single-threaded"
+            "description": "Sort by the creation time on a file. Always single-threaded",
+            "name": "created"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Enables sorting results in descending order",
       "name": [
         "--sortr"
-      ],
-      "description": "Enables sorting results in descending order",
-      "args": {
-        "name": "Sortby",
-        "suggestions": [
-          {
-            "name": "none",
-            "description": "Do not sort results. Fastest. Can be multi-threaded"
-          },
-          {
-            "name": "path",
-            "description": "Sort by file path, Always single-threaded"
-          },
-          {
-            "name": "modified",
-            "description": "Sort by the last modified time on a file. Always single-threaded"
-          },
-          {
-            "name": "accessed",
-            "description": "Sort by the last accessed time on a file. Always single-threaded"
-          },
-          {
-            "name": "created",
-            "description": "Sort by the creation time on a file. Always single-threaded"
-          }
-        ]
-      }
+      ]
     },
     {
+      "description": "Prints aggregate statistics about this ripgrep search",
       "name": [
         "--stats"
-      ],
-      "description": "Prints aggregate statistics about this ripgrep search"
+      ]
     },
     {
+      "description": "Searches binary files as if they were text",
       "name": [
         "-a",
         "--text"
       ],
-      "description": "Searches binary files as if they were text",
       "priority": 60
     },
     {
+      "args": {
+        "name": "NUM"
+      },
+      "description": "The approximate number of threads to use",
       "name": [
         "-j",
         "--threads"
-      ],
-      "description": "The approximate number of threads to use",
-      "args": {
-        "name": "NUM"
-      }
+      ]
     },
     {
+      "description": "All ASCII whitespace at the beginning of each line printed will be trimmed",
       "name": [
         "--trim"
-      ],
-      "description": "All ASCII whitespace at the beginning of each line printed will be trimmed"
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "Type"
+      },
+      "description": "Only searches files matching TYPE",
       "name": [
         "-t",
         "--type"
-      ],
-      "description": "Only searches files matching TYPE",
-      "args": {
-        "name": "Type",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "Type Spec"
+      },
+      "description": "Add a new glob for a particular file type",
       "name": [
         "--type-add"
-      ],
-      "description": "Add a new glob for a particular file type",
-      "args": {
-        "name": "Type Spec",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "type"
+      },
+      "description": "Clear the file type globs previously defined for type",
       "name": [
         "--type-clear"
-      ],
-      "description": "Clear the file type globs previously defined for type",
-      "args": {
-        "name": "type",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "description": "Shows all supported file types and their corresponding globs",
       "name": [
         "--type-list"
-      ],
-      "description": "Shows all supported file types and their corresponding globs"
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "type"
+      },
+      "description": "Do not search files matching type",
       "name": [
         "-T",
         "--type-not"
-      ],
-      "description": "Do not search files matching type",
-      "args": {
-        "name": "type",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "description": "Reduce the level of smart searching, increase by adding `u`s, ex: -uuu",
       "name": [
         "-u",
         "--unrestricted"
-      ],
-      "description": "Reduce the level of smart searching, increase by adding `u`s, ex: -uuu"
+      ]
     },
     {
+      "description": "Shows results with every match on its own line, including line numbers and column nnumbers",
       "name": [
         "--vimgrep"
-      ],
-      "description": "Shows results with every match on its own line, including line numbers and column nnumbers"
+      ]
     },
     {
+      "description": "Displays the file path for matches",
       "name": [
         "-H",
         "--with-filename"
-      ],
-      "description": "Displays the file path for matches"
+      ]
     },
     {
+      "description": "Only shows the matches surrounded by word boundaries",
       "name": [
         "-w",
         "--word-regexp"
-      ],
-      "description": "Only shows the matches surrounded by word boundaries"
-    }
-  ],
-  "args": [
-    {
-      "name": "Pattern",
-      "description": "A regular expression used for searching"
-    },
-    {
-      "name": "Path",
-      "description": "A file or directory to search",
-      "template": [
-        "filepaths",
-        "folders"
-      ],
-      "isVariadic": true,
-      "isOptional": true
+      ]
     }
   ]
 }

@@ -1,179 +1,179 @@
 {
-  "name": "broot",
+  "args": {
+    "description": "Sets the root directory",
+    "name": "ROOT"
+  },
   "description": "Broot lets you explore file hierarchies with a tree-like view, manipulate files, launch actions, and define your own shortcuts. broot is best launched as br: this shell function gives you access to more commands, especially cd. The br shell function is interactively installed on first broot launch. Flags and options can be classically passed on launch but also written in the configuration file. Each flag has a counter-flag so that you can cancel at command line a flag which has been set in the configuration file",
+  "name": "broot",
   "options": [
     {
+      "description": "Show the last modified date of files and directories",
       "name": [
         "--dates",
         "-d"
-      ],
-      "description": "Show the last modified date of files and directories"
+      ]
     },
     {
+      "description": "Don't show the last modified date",
       "name": [
         "--no-dates",
         "-D"
-      ],
-      "description": "Don't show the last modified date"
+      ]
     },
     {
+      "description": "Only show folders",
       "name": [
         "--only-folders",
         "-f"
-      ],
-      "description": "Only show folders"
+      ]
     },
     {
+      "description": "Show folders and files alike",
       "name": [
         "--no-only-folders",
         "-F"
-      ],
-      "description": "Show folders and files alike"
+      ]
     },
     {
+      "description": "Show filesystem info on top",
       "name": [
         "--show-root-fs"
-      ],
-      "description": "Show filesystem info on top"
+      ]
     },
     {
+      "description": "Show git statuses on files and stats of repository",
       "name": [
         "--show-git-info",
         "-g"
-      ],
-      "description": "Show git statuses on files and stats of repository"
+      ]
     },
     {
+      "description": "Don't show git statuses on files nor stats",
       "name": [
         "--no-show-git-info",
         "-G"
-      ],
-      "description": "Don't show git statuses on files nor stats"
+      ]
     },
     {
+      "description": "Only show files having an interesting git status, including hidden ones",
       "name": [
         "--git-status"
-      ],
-      "description": "Only show files having an interesting git status, including hidden ones"
+      ]
     },
     {
+      "description": "Show hidden files",
       "name": [
         "--hidden",
         "-h"
-      ],
-      "description": "Show hidden files"
+      ]
     },
     {
+      "description": "Don't show hidden files",
       "name": [
         "--no-hidden",
         "-H"
-      ],
-      "description": "Don't show hidden files"
+      ]
     },
     {
+      "description": "Show files which should be ignored according to git",
       "name": [
         "--show-gitignored",
         "-i"
-      ],
-      "description": "Show files which should be ignored according to git"
+      ]
     },
     {
+      "description": "Don't show gitignored files",
       "name": [
         "--no-show-gitignored",
         "-I"
-      ],
-      "description": "Don't show gitignored files"
+      ]
     },
     {
+      "description": "Show permissions with owner and group",
       "name": [
         "--permissions",
         "-p"
-      ],
-      "description": "Show permissions with owner and group"
+      ]
     },
     {
+      "description": "Don't show permissions",
       "name": [
         "--no-permissions",
         "-P"
-      ],
-      "description": "Don't show permissions"
+      ]
     },
     {
+      "description": "Show the sizes of files and directories. When this mode is on, children aren't shown so that the biggest entries at the selected level can be sorted first",
       "name": [
         "--sizes",
         "-s"
-      ],
-      "description": "Show the sizes of files and directories. When this mode is on, children aren't shown so that the biggest entries at the selected level can be sorted first"
+      ]
     },
     {
+      "description": "Don't show sizes",
       "name": [
         "--no-sizes",
         "-S"
-      ],
-      "description": "Don't show sizes"
+      ]
     },
     {
+      "description": "Sort by count (only show one level of the tree)",
       "name": [
         "--sort-by-count"
-      ],
-      "description": "Sort by count (only show one level of the tree)"
+      ]
     },
     {
+      "description": "Sort by date (only show one level of the tree)",
       "name": [
         "--sort-by-date"
-      ],
-      "description": "Sort by date (only show one level of the tree)"
+      ]
     },
     {
+      "description": "Sort by size (only show one level of the tree)",
       "name": [
         "--sort-by-size"
-      ],
-      "description": "Sort by size (only show one level of the tree)"
+      ]
     },
     {
+      "description": "Sort by size, show ignored and hidden files",
       "name": [
         "--whale-spotting",
         "-w"
-      ],
-      "description": "Sort by size, show ignored and hidden files"
+      ]
     },
     {
+      "description": "Don't sort",
       "name": [
         "--no-sort"
-      ],
-      "description": "Don't sort"
+      ]
     },
     {
+      "description": "Trim the root: remove elements which would exceed the screen size. This removes the scrollbar",
       "name": [
         "--trim-root",
         "-t"
-      ],
-      "description": "Trim the root: remove elements which would exceed the screen size. This removes the scrollbar"
+      ]
     },
     {
+      "description": "Don't trim the root (still trim the deeper levels). A scrollbar may be used when there are too many elements to show on screen",
       "name": [
         "--no-trim-root",
         "-T"
-      ],
-      "description": "Don't trim the root (still trim the deeper levels). A scrollbar may be used when there are too many elements to show on screen"
+      ]
     },
     {
+      "description": "Install or reinstall the br shell function",
       "name": [
         "--install"
-      ],
-      "description": "Install or reinstall the br shell function"
+      ]
     },
     {
+      "description": "Ask for the current root of the remote broot",
       "name": [
         "--get-root"
-      ],
-      "description": "Ask for the current root of the remote broot"
+      ]
     },
     {
-      "name": [
-        "--color"
-      ],
-      "description": "Controls styling of the output (default: auto). If set to auto, all styling is removed when output is piped",
       "args": {
         "isOptional": true,
         "suggestions": [
@@ -187,74 +187,74 @@
             "name": "auto"
           }
         ]
-      }
+      },
+      "description": "Controls styling of the output (default: auto). If set to auto, all styling is removed when output is piped",
+      "name": [
+        "--color"
+      ]
     },
     {
+      "description": "Prints a help page, with more or less the same content as this man page",
       "name": [
         "--help"
-      ],
-      "description": "Prints a help page, with more or less the same content as this man page"
+      ]
     },
     {
+      "description": "Prints the version of broot",
       "name": [
         "--version",
         "-v"
-      ],
-      "description": "Prints the version of broot"
+      ]
     },
     {
-      "name": [
-        "--outcmd"
-      ],
-      "description": "Where to write a command if broot produces one",
       "args": {
         "name": "cmd-export-path"
-      }
+      },
+      "description": "Where to write a command if broot produces one",
+      "name": [
+        "--outcmd"
+      ]
     },
     {
+      "args": {
+        "name": "commands"
+      },
+      "description": "Semicolon separated commands to execute on start of broot",
       "name": [
         "--cmd",
         "-c"
-      ],
-      "description": "Semicolon separated commands to execute on start of broot",
-      "args": {
-        "name": "commands"
-      }
+      ]
     },
     {
-      "name": [
-        "--conf"
-      ],
-      "description": "Semicolon separated paths to specific config files",
       "args": {
         "name": "conf"
-      }
+      },
+      "description": "Semicolon separated paths to specific config files",
+      "name": [
+        "--conf"
+      ]
     },
     {
-      "name": [
-        "--height"
-      ],
-      "description": "Height to use if you don't want to fill the screen or for file export (by default the terminal height is used)",
       "args": {
         "name": "height"
-      }
+      },
+      "description": "Height to use if you don't want to fill the screen or for file export (by default the terminal height is used)",
+      "name": [
+        "--height"
+      ]
     },
     {
-      "name": [
-        "--out",
-        "-o"
-      ],
-      "description": "Where to write the produced path, if any",
       "args": {
         "name": "file-export-path",
         "template": "filepaths"
-      }
+      },
+      "description": "Where to write the produced path, if any",
+      "name": [
+        "--out",
+        "-o"
+      ]
     },
     {
-      "name": [
-        "--set-install-state"
-      ],
-      "description": "Set the installation state. This is mostly useful in installation scripts to override the normal installation process",
       "args": {
         "name": "state",
         "suggestions": [
@@ -268,13 +268,13 @@
             "name": "installed"
           }
         ]
-      }
+      },
+      "description": "Set the installation state. This is mostly useful in installation scripts to override the normal installation process",
+      "name": [
+        "--set-install-state"
+      ]
     },
     {
-      "name": [
-        "--print-shell-function"
-      ],
-      "description": "Print to stdout the br function for the given shell. This can be used in your own installation process overriden the standard one",
       "args": {
         "name": "shell",
         "suggestions": [
@@ -288,29 +288,29 @@
             "name": "zsh"
           }
         ]
-      }
+      },
+      "description": "Print to stdout the br function for the given shell. This can be used in your own installation process overriden the standard one",
+      "name": [
+        "--print-shell-function"
+      ]
     },
     {
-      "name": [
-        "--listen"
-      ],
-      "description": "Listen for commands",
       "args": {
         "name": "listen"
-      }
+      },
+      "description": "Listen for commands",
+      "name": [
+        "--listen"
+      ]
     },
     {
-      "name": [
-        "--send"
-      ],
-      "description": "Send commands to a remote broot then quits",
       "args": {
         "name": "send"
-      }
+      },
+      "description": "Send commands to a remote broot then quits",
+      "name": [
+        "--send"
+      ]
     }
-  ],
-  "args": {
-    "name": "ROOT",
-    "description": "Sets the root directory"
-  }
+  ]
 }

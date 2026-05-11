@@ -1,93 +1,94 @@
 {
-  "name": "dos2unix",
+  "args": {
+    "isOptional": true,
+    "isVariadic": true,
+    "name": "file",
+    "template": "filepaths"
+  },
   "description": "DOS to Unix file format converter",
+  "name": "dos2unix",
   "options": [
     {
+      "description": "Show help for dos2unix",
       "name": [
         "-h",
         "--help"
-      ],
-      "description": "Show help for dos2unix"
+      ]
     },
     {
+      "description": "Treat all following options as file names. Use this option if you want to convert files whose names start with a dash",
       "name": [
         "--"
-      ],
-      "description": "Treat all following options as file names. Use this option if you want to convert files whose names start with a dash"
+      ]
     },
     {
+      "description": "Allow file ownership change in old file mode",
       "name": [
         "--allow-chown"
-      ],
-      "description": "Allow file ownership change in old file mode"
+      ]
     },
     {
+      "description": "Convert only line breaks. This is the default conversion mode",
       "name": [
         "-ascii"
-      ],
-      "description": "Convert only line breaks. This is the default conversion mode"
+      ]
     },
     {
+      "description": "Conversion between DOS and ISO-8859-1 character set",
       "name": [
         "-iso"
-      ],
-      "description": "Conversion between DOS and ISO-8859-1 character set"
+      ]
     },
     {
+      "description": "Use Windows code page 1252 (Western European)",
       "name": [
         "-1252"
-      ],
-      "description": "Use Windows code page 1252 (Western European)"
+      ]
     },
     {
+      "description": "Use DOS code page 437 (US). This is the default code page used for ISO conversion",
       "name": [
         "-437"
-      ],
-      "description": "Use DOS code page 437 (US). This is the default code page used for ISO conversion"
+      ]
     },
     {
+      "description": "Use DOS code page 850 (Western European)",
       "name": [
         "-850"
-      ],
-      "description": "Use DOS code page 850 (Western European)"
+      ]
     },
     {
+      "description": "Use DOS code page 860 (Portuguese)",
       "name": [
         "-860"
-      ],
-      "description": "Use DOS code page 860 (Portuguese)"
+      ]
     },
     {
+      "description": "Use DOS code page 863 (French Canadian)",
       "name": [
         "-863"
-      ],
-      "description": "Use DOS code page 863 (French Canadian)"
+      ]
     },
     {
+      "description": "Use DOS code page 865 (Nordic)",
       "name": [
         "-865"
-      ],
-      "description": "Use DOS code page 865 (Nordic)"
+      ]
     },
     {
+      "description": "Convert 8 bit characters to 7 bit space",
       "name": [
         "-7"
-      ],
-      "description": "Convert 8 bit characters to 7 bit space"
+      ]
     },
     {
+      "description": "Keep Byte Order Mark (BOM). When the input file has a BOM, write a BOM in the output file",
       "name": [
         "-b",
         "--keep-bom"
-      ],
-      "description": "Keep Byte Order Mark (BOM). When the input file has a BOM, write a BOM in the output file"
+      ]
     },
     {
-      "name": [
-        "-c",
-        "--convmode"
-      ],
-      "description": "Set conversion mode",
       "args": {
         "name": "CONVMODE",
         "suggestions": [
@@ -104,14 +105,14 @@
             "name": "mac"
           }
         ]
-      }
+      },
+      "description": "Set conversion mode",
+      "name": [
+        "-c",
+        "--convmode"
+      ]
     },
     {
-      "name": [
-        "-D",
-        "--display-enc"
-      ],
-      "description": "Set encoding of displayed text",
       "args": {
         "name": "ENCODING",
         "suggestions": [
@@ -131,39 +132,44 @@
             "name": "utf8bom"
           }
         ]
-      }
+      },
+      "description": "Set encoding of displayed text",
+      "name": [
+        "-D",
+        "--display-enc"
+      ]
     },
     {
+      "description": "Force conversion of binary files",
       "name": [
         "-f",
         "--force"
-      ],
-      "description": "Force conversion of binary files"
+      ]
     },
     {
+      "description": "On Windows UTF-16 files are by default converted to UTF-8, regardless of the locale setting",
       "name": [
         "-gb",
         "--gb18030"
-      ],
-      "description": "On Windows UTF-16 files are by default converted to UTF-8, regardless of the locale setting"
+      ]
     },
     {
+      "args": {
+        "name": "value"
+      },
+      "description": "Display file information. No conversion is done",
       "name": [
         "-i"
-      ],
-      "description": "Display file information. No conversion is done",
-      "args": {
-        "name": "value"
-      }
+      ]
     },
     {
-      "name": [
-        "--info"
-      ],
-      "description": "Display file information. No conversion is done",
       "args": {
         "name": "value"
-      }
+      },
+      "description": "Display file information. No conversion is done",
+      "name": [
+        "--info"
+      ]
     },
     {
       "name": [
@@ -172,31 +178,27 @@
       ]
     },
     {
+      "description": "Display program's license",
       "name": [
         "-L",
         "--license"
-      ],
-      "description": "Display program's license"
+      ]
     },
     {
+      "description": "Add additional newline",
       "name": [
         "-l",
         "--newline"
-      ],
-      "description": "Add additional newline"
+      ]
     },
     {
+      "description": "Write a Byte Order Mark (BOM) in the output file. By default an UTF-8 BOM is written",
       "name": [
         "-m",
         "--add-bom"
-      ],
-      "description": "Write a Byte Order Mark (BOM) in the output file. By default an UTF-8 BOM is written"
+      ]
     },
     {
-      "name": [
-        "--newfile"
-      ],
-      "description": "New file mode. Convert file INFILE and write output to file OUTFILE. File names must be given in pairs and wildcard names should not be used or you will lose your files",
       "args": [
         {
           "name": "INFILE",
@@ -206,108 +208,106 @@
           "name": "OUTFILE",
           "template": "filepaths"
         }
+      ],
+      "description": "New file mode. Convert file INFILE and write output to file OUTFILE. File names must be given in pairs and wildcard names should not be used or you will lose your files",
+      "name": [
+        "--newfile"
       ]
     },
     {
+      "description": "Don't allow file ownership change in old file mode (default)",
       "name": [
         "--no-allow-chown"
-      ],
-      "description": "Don't allow file ownership change in old file mode (default)"
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "FILE",
+        "template": "filepaths"
+      },
+      "description": "Old file mode. Convert file FILE and overwrite output to it",
       "name": [
         "-o",
         "--oldfile"
-      ],
-      "description": "Old file mode. Convert file FILE and overwrite output to it",
-      "args": {
-        "name": "FILE",
-        "template": "filepaths",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "description": "Quiet mode. Suppress all warnings and messages. The return value is zero.  Except when wrong command-line options are used",
       "name": [
         "-q",
         "--quiet"
-      ],
-      "description": "Quiet mode. Suppress all warnings and messages. The return value is zero.  Except when wrong command-line options are used"
+      ]
     },
     {
+      "description": "Remove Byte Order Mark (BOM). Do not write a BOM in the output file",
       "name": [
         "-r",
         "--remove-bom"
-      ],
-      "description": "Remove Byte Order Mark (BOM). Do not write a BOM in the output file"
+      ]
     },
     {
+      "description": "Skip binary files (default)",
       "name": [
         "-s",
         "--safe"
-      ],
-      "description": "Skip binary files (default)"
+      ]
     },
     {
+      "description": "Keep UTF-16 encoding",
       "name": [
         "-u",
         "--keep-utf16"
-      ],
-      "description": "Keep UTF-16 encoding"
+      ]
     },
     {
+      "description": "Assume that the input format is UTF-16LE",
       "name": [
         "-ul",
         "--assume-utf16le"
-      ],
-      "description": "Assume that the input format is UTF-16LE"
+      ]
     },
     {
+      "description": "Assume that the input format is UTF-16BE",
       "name": [
         "-ub",
         "--assume-utf16be"
-      ],
-      "description": "Assume that the input format is UTF-16BE"
+      ]
     },
     {
+      "description": "Verbose operation",
       "name": [
         "-v",
         "--verbose"
-      ],
-      "description": "Verbose operation"
+      ]
     },
     {
+      "description": "Follow symbolic links and convert the targets",
       "name": [
         "-F",
         "--follow-symlink"
-      ],
-      "description": "Follow symbolic links and convert the targets"
+      ]
     },
     {
+      "description": "Replace symbolic links with converted files",
       "name": [
         "-R",
         "--replace-symlink"
-      ],
-      "description": "Replace symbolic links with converted files"
+      ]
     },
     {
+      "description": "Keep symbolic links and targets unchanged (default)",
       "name": [
         "-S",
         "--skip-symlink"
-      ],
-      "description": "Keep symbolic links and targets unchanged (default)"
+      ]
     },
     {
+      "description": "Display version number",
       "name": [
         "-V",
         "--version"
-      ],
-      "description": "Display version number"
+      ]
     }
-  ],
-  "args": {
-    "name": "file",
-    "template": "filepaths",
-    "isVariadic": true,
-    "isOptional": true
-  }
+  ]
 }

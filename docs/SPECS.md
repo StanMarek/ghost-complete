@@ -123,8 +123,8 @@ with `schema_version: "1.0"` and one row per release. Each row records:
   `requires_js_generators_(total|supported|unsupported)`,
   `command_alias_conflicts`. See `docs/COMPLETION_SPEC.md` for the
   classification rules. `requires_js_generators_supported` is broken down
-  per `js_runtime.kind` (`post_process`, `script_function`, `custom`) in
-  schema 1.2 of `status --json`.
+  per `js_runtime.kind` (`post_process`, `script_function`, `custom`,
+  `token_only`) in `status --json`.
 
 `ghost-complete status --json` emits a `spec_counts` object whose keys
 mirror the new baseline fields one-to-one. The legacy keys

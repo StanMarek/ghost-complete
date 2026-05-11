@@ -9,6 +9,7 @@
           {
             "js_runtime": {
               "kind": "custom",
+              "self_contained": true,
               "source": "async(r,t)=>{let{stdout:i}=await t({command:\"curl\",args:[\"-sL\",\"https://raw.githubusercontent.com/shadcn/ui/main/apps/www/public/registry/index.json\"]});return JSON.parse(i).map(e=>({name:e.name,description:e.type,priority:50,icon:\"fig://icon?type=box\"}))}"
             },
             "requires_js": true
@@ -63,6 +64,7 @@
           {
             "js_runtime": {
               "kind": "custom",
+              "self_contained": true,
               "source": "async(r,t)=>{let{stdout:i}=await t({command:\"curl\",args:[\"-sL\",\"https://raw.githubusercontent.com/shadcn/ui/main/apps/www/public/registry/index.json\"]});return JSON.parse(i).map(e=>({name:e.name,description:e.type,priority:50,icon:\"fig://icon?type=box\"}))}"
             },
             "requires_js": true

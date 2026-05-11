@@ -2,53 +2,53 @@
   "name": "nuxt",
   "subcommands": [
     {
-      "name": "dev",
-      "description": "Launch the development server"
+      "description": "Launch the development server",
+      "name": "dev"
     },
     {
-      "name": "start",
-      "description": "Start the production server (after running nuxt build). Use it for Node.js hosting like Heroku, Digital Ocean, etc"
+      "description": "Start the production server (after running nuxt build). Use it for Node.js hosting like Heroku, Digital Ocean, etc",
+      "name": "start"
     },
     {
-      "name": "generate",
-      "description": "Build the application (if needed), generate every route as a HTML file and statically export to dist/ directory (used for static hosting)"
+      "description": "Build the application (if needed), generate every route as a HTML file and statically export to dist/ directory (used for static hosting)",
+      "name": "generate"
     },
     {
-      "name": "build",
-      "description": "Build and optimize your application with webpack for production"
+      "description": "Build and optimize your application with webpack for production",
+      "name": "build"
     },
     {
-      "name": "webpack",
       "description": "Inspect the webpack config",
+      "name": "webpack",
+      "options": [
+        {
+          "description": "Bundle name to inspect. (client, server, modern)",
+          "name": [
+            "--name"
+          ]
+        },
+        {
+          "description": "Inspect webpack config for dev mode",
+          "name": [
+            "--dev"
+          ]
+        },
+        {
+          "description": "Inspection depth. Defaults to 2 to prevent verbose output",
+          "name": [
+            "--depth"
+          ]
+        },
+        {
+          "description": "Disable ANSI colors (disabled by default when TTY is not available or when piping to a file)",
+          "name": [
+            "--no-colors"
+          ]
+        }
+      ],
       "subcommands": [
         {
           "name": "subcommands coming soon"
-        }
-      ],
-      "options": [
-        {
-          "name": [
-            "--name"
-          ],
-          "description": "Bundle name to inspect. (client, server, modern)"
-        },
-        {
-          "name": [
-            "--dev"
-          ],
-          "description": "Inspect webpack config for dev mode"
-        },
-        {
-          "name": [
-            "--depth"
-          ],
-          "description": "Inspection depth. Defaults to 2 to prevent verbose output"
-        },
-        {
-          "name": [
-            "--no-colors"
-          ],
-          "description": "Disable ANSI colors (disabled by default when TTY is not available or when piping to a file)"
         }
       ]
     }

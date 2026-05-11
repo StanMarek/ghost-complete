@@ -106,6 +106,7 @@ fn collect_missing_js_runtime_warnings(spec: &CompletionSpec) -> Vec<String> {
                             None
                         }
                     }
+                    JsRuntimeKind::TokenOnly => None,
                 }
             }
         }
@@ -1458,6 +1459,20 @@ mod tests {
                         "kind":"custom",
                         "source":"()=>[{name:'a'}]",
                         "self_contained": true
+                    }
+                }"#,
+                true,
+            ),
+            // Supported: token_only needs non-empty source but does not
+            // require self_contained because no host API is installed.
+            (
+                "token-only",
+                r#"{
+                    "requires_js": true,
+                    "js_runtime": {
+                        "kind":"token_only",
+                        "source":"tokens.map(name => ({ name }))",
+                        "self_contained": false
                     }
                 }"#,
                 true,

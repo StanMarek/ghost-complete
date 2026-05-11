@@ -1,20 +1,101 @@
 {
-  "name": "pkgutil",
   "description": "Query and manipulate for macOS Installer packages and receipts",
+  "name": "pkgutil",
+  "options": [
+    {
+      "description": "A brief summary of commands and usage",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Skip confirmation before a potentially destructive or ambiguous action",
+      "name": [
+        "-f",
+        "--force"
+      ]
+    },
+    {
+      "description": "Output in a human-readable format",
+      "name": [
+        "-v",
+        "--verbose"
+      ]
+    },
+    {
+      "args": {
+        "description": "Volume to perform operations on",
+        "name": "volume",
+        "template": "folders"
+      },
+      "description": "Perform all operations on specified volume",
+      "name": [
+        "--volume"
+      ]
+    },
+    {
+      "args": {
+        "description": "Package ID of the receipt to modify",
+        "generators": [
+          {
+            "script": [
+              "pkgutil",
+              "--pkgs"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "package-id"
+      },
+      "description": "Specifies an existing receipt to be modified in-place by --learn",
+      "name": [
+        "--edit-pkg"
+      ]
+    },
+    {
+      "description": "List only files (not directories) in --files listing",
+      "name": [
+        "--only-files"
+      ]
+    },
+    {
+      "description": "List only directories (not files) in --files listing",
+      "name": [
+        "--only-dirs"
+      ]
+    },
+    {
+      "description": "Use regex to match package-id arguments, if an exact match isn't found",
+      "name": [
+        "--regexp"
+      ]
+    },
+    {
+      "args": {
+        "description": "Regular expression",
+        "name": "REGEXP"
+      },
+      "description": "List all installed package IDs, optionally matching kwarg REGEXP, on the specified --volume",
+      "name": [
+        "--pkgs"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "--packages",
-      "description": "List all installed package IDs on the specified --volume"
+      "description": "List all installed package IDs on the specified --volume",
+      "name": "--packages"
     },
     {
-      "name": "--pkgs-plist",
-      "description": "List all installed package IDs, in Mac OS X plist(5) format, on the specified --volume"
+      "description": "List all installed package IDs, in Mac OS X plist(5) format, on the specified --volume",
+      "name": "--pkgs-plist"
     },
     {
-      "name": "--files",
-      "description": "List all of the files installed under the package-id",
       "args": {
-        "name": "package-id",
         "description": "The package ID to list the files of",
         "generators": [
           {
@@ -27,14 +108,14 @@
               "filter_empty"
             ]
           }
-        ]
-      }
+        ],
+        "name": "package-id"
+      },
+      "description": "List all of the files installed under the package-id",
+      "name": "--files"
     },
     {
-      "name": "--export-plist",
-      "description": "Print all receipt information about the specified package-id in Mac OS X plist(5) format",
       "args": {
-        "name": "package-id",
         "description": "The package ID to export the plist of",
         "generators": [
           {
@@ -47,14 +128,14 @@
               "filter_empty"
             ]
           }
-        ]
-      }
+        ],
+        "name": "package-id"
+      },
+      "description": "Print all receipt information about the specified package-id in Mac OS X plist(5) format",
+      "name": "--export-plist"
     },
     {
-      "name": "--verify",
-      "description": "Run repair_packages(8) to verify the specified package-id",
       "args": {
-        "name": "package-id",
         "description": "The package ID to verify",
         "generators": [
           {
@@ -67,14 +148,14 @@
               "filter_empty"
             ]
           }
-        ]
-      }
+        ],
+        "name": "package-id"
+      },
+      "description": "Run repair_packages(8) to verify the specified package-id",
+      "name": "--verify"
     },
     {
-      "name": "--repair",
-      "description": "Run repair_packages(8) to repair the specified package-id",
       "args": {
-        "name": "package-id",
         "description": "The package ID to repair",
         "generators": [
           {
@@ -87,14 +168,34 @@
               "filter_empty"
             ]
           }
-        ]
-      }
+        ],
+        "name": "package-id"
+      },
+      "description": "Run repair_packages(8) to repair the specified package-id",
+      "name": "--repair"
     },
     {
-      "name": "--pkg-info",
+      "args": {
+        "description": "The package ID to print the info of",
+        "generators": [
+          {
+            "script": [
+              "pkgutil",
+              "--pkgs"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "package-id"
+      },
       "description": "Print extended information about the specified package-id",
+      "name": "--pkg-info"
+    },
+    {
       "args": {
-        "name": "package-id",
         "description": "The package ID to print the info of",
         "generators": [
           {
@@ -107,34 +208,14 @@
               "filter_empty"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "--pkg-info-plist",
+        ],
+        "name": "package-id"
+      },
       "description": "Print extended information about the specified package-id in Mac OS X plist(5) format",
-      "args": {
-        "name": "package-id",
-        "description": "The package ID to print the info of",
-        "generators": [
-          {
-            "script": [
-              "pkgutil",
-              "--pkgs"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty"
-            ]
-          }
-        ]
-      }
+      "name": "--pkg-info-plist"
     },
     {
-      "name": "--forget",
-      "description": "Discard all receipt data about package-id, but don't touch installed files",
       "args": {
-        "name": "package-id",
         "description": "The package ID to forget",
         "generators": [
           {
@@ -147,31 +228,32 @@
               "filter_empty"
             ]
           }
-        ]
-      }
+        ],
+        "name": "package-id"
+      },
+      "description": "Discard all receipt data about package-id, but don't touch installed files",
+      "name": "--forget"
     },
     {
-      "name": "--learn",
-      "description": "Update the ACLs of the given path in the receipt identified by --edit-pkg",
       "args": {
-        "name": "path",
         "description": "The path to update ACLs on",
         "generators": [
           {
-            "requires_js": true,
             "js_runtime": {
-              "kind": "custom",
+              "kind": "token_only",
+              "self_contained": false,
               "source": "async(t,a)=>{let p=t.indexOf(\"--edit-pkg\"),s=p+1;if(p===-1||s>=t.length)return[];let n=t[s],i=t[t.length-1];return r({pathPrefix:i})((await a({command:\"pkgutil\",args:[\"--files\",n]})).stdout,t)}"
-            }
+            },
+            "requires_js": true
           }
-        ]
-      }
+        ],
+        "name": "path"
+      },
+      "description": "Update the ACLs of the given path in the receipt identified by --edit-pkg",
+      "name": "--learn"
     },
     {
-      "name": "--pkg-groups",
-      "description": "List all of the package groups this package-id is a member of",
       "args": {
-        "name": "package-id",
         "description": "The package ID to list the groups of",
         "generators": [
           {
@@ -184,22 +266,22 @@
               "filter_empty"
             ]
           }
-        ]
-      }
+        ],
+        "name": "package-id"
+      },
+      "description": "List all of the package groups this package-id is a member of",
+      "name": "--pkg-groups"
     },
     {
-      "name": "--groups",
-      "description": "List all of the package groups ont he specified --volume"
+      "description": "List all of the package groups ont he specified --volume",
+      "name": "--groups"
     },
     {
-      "name": "--group-plist",
-      "description": "List all of the package groups ont he specified --volume in Mac OS X plist(5) format"
+      "description": "List all of the package groups ont he specified --volume in Mac OS X plist(5) format",
+      "name": "--group-plist"
     },
     {
-      "name": "--group-pkgs",
-      "description": "List all of the packages that are members of this group-id",
       "args": {
-        "name": "group-id",
         "description": "The group ID to list the packages of",
         "generators": [
           {
@@ -212,64 +294,64 @@
               "filter_empty"
             ]
           }
-        ]
-      }
+        ],
+        "name": "group-id"
+      },
+      "description": "List all of the packages that are members of this group-id",
+      "name": "--group-pkgs"
     },
     {
-      "name": "--file-info",
+      "args": {
+        "description": "The path to show the metadata of",
+        "name": "path",
+        "template": "filepaths"
+      },
       "description": "Show the metadata known about path",
-      "args": {
-        "name": "path",
-        "description": "The path to show the metadata of",
-        "template": "filepaths"
-      }
+      "name": "--file-info"
     },
     {
-      "name": "--file-info-plist",
+      "args": {
+        "description": "The path to show the metadata of",
+        "name": "path",
+        "template": "filepaths"
+      },
       "description": "Show the metadata known about path in Mac OS X plist(5) format",
-      "args": {
-        "name": "path",
-        "description": "The path to show the metadata of",
-        "template": "filepaths"
-      }
+      "name": "--file-info-plist"
     },
     {
-      "name": "--expand",
-      "description": "Expand the flat package at pkg-path into a new directory specified by dir-path",
       "args": [
         {
-          "name": "pkg-path",
           "description": "The path to the flat package to expand",
+          "name": "pkg-path",
           "template": "filepaths"
         },
         {
-          "name": "dir-path",
           "description": "The path to the directory to expand the package into",
+          "name": "dir-path",
           "template": "folders"
         }
-      ]
+      ],
+      "description": "Expand the flat package at pkg-path into a new directory specified by dir-path",
+      "name": "--expand"
     },
     {
-      "name": "--flatten",
-      "description": "Flatten the dir-path into a new flat package created at pkg-path",
       "args": [
         {
-          "name": "dir-path",
           "description": "The path to the directory to flatten",
+          "name": "dir-path",
           "template": "folders"
         },
         {
-          "name": "pkg-path",
           "description": "The path to the flat package to create",
+          "name": "pkg-path",
           "template": "filepaths"
         }
-      ]
+      ],
+      "description": "Flatten the dir-path into a new flat package created at pkg-path",
+      "name": "--flatten"
     },
     {
-      "name": "--bom",
-      "description": "Extract any BOM files from the flat pkg at path into /tmp and return the filename(s)",
       "args": {
-        "name": "path",
         "description": "The path to the flat package to extract the BOM from",
         "generators": [
           {
@@ -288,14 +370,14 @@
               "filter_empty"
             ]
           }
-        ]
-      }
+        ],
+        "name": "path"
+      },
+      "description": "Extract any BOM files from the flat pkg at path into /tmp and return the filename(s)",
+      "name": "--bom"
     },
     {
-      "name": "--payload-files",
-      "description": "List the files archived within the uninstalled flat package(s) at path",
       "args": {
-        "name": "path",
         "description": "The path to the flat package to list the archived files of",
         "generators": [
           {
@@ -314,14 +396,14 @@
               "filter_empty"
             ]
           }
-        ]
-      }
+        ],
+        "name": "path"
+      },
+      "description": "List the files archived within the uninstalled flat package(s) at path",
+      "name": "--payload-files"
     },
     {
-      "name": "--check-signature",
-      "description": "Check the validity and trust of the signature on the package at pkg-path",
       "args": {
-        "name": "pkg-path",
         "description": "The path to the flat package to check the signature of",
         "generators": [
           {
@@ -340,92 +422,11 @@
               "filter_empty"
             ]
           }
-        ]
-      }
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "-h",
-        "--help"
-      ],
-      "description": "A brief summary of commands and usage"
-    },
-    {
-      "name": [
-        "-f",
-        "--force"
-      ],
-      "description": "Skip confirmation before a potentially destructive or ambiguous action"
-    },
-    {
-      "name": [
-        "-v",
-        "--verbose"
-      ],
-      "description": "Output in a human-readable format"
-    },
-    {
-      "name": [
-        "--volume"
-      ],
-      "description": "Perform all operations on specified volume",
-      "args": {
-        "name": "volume",
-        "description": "Volume to perform operations on",
-        "template": "folders"
-      }
-    },
-    {
-      "name": [
-        "--edit-pkg"
-      ],
-      "description": "Specifies an existing receipt to be modified in-place by --learn",
-      "args": {
-        "name": "package-id",
-        "description": "Package ID of the receipt to modify",
-        "generators": [
-          {
-            "script": [
-              "pkgutil",
-              "--pkgs"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "name": [
-        "--only-files"
-      ],
-      "description": "List only files (not directories) in --files listing"
-    },
-    {
-      "name": [
-        "--only-dirs"
-      ],
-      "description": "List only directories (not files) in --files listing"
-    },
-    {
-      "name": [
-        "--regexp"
-      ],
-      "description": "Use regex to match package-id arguments, if an exact match isn't found"
-    },
-    {
-      "name": [
-        "--pkgs"
-      ],
-      "description": "List all installed package IDs, optionally matching kwarg REGEXP, on the specified --volume",
-      "args": {
-        "name": "REGEXP",
-        "description": "Regular expression"
-      }
+        ],
+        "name": "pkg-path"
+      },
+      "description": "Check the validity and trust of the signature on the package at pkg-path",
+      "name": "--check-signature"
     }
   ]
 }

@@ -1,94 +1,96 @@
 {
-  "name": "ncu",
+  "args": {
+    "description": "A list or regex of package names to check (all others will be ignored)",
+    "isOptional": true,
+    "isVariadic": true,
+    "name": "filter"
+  },
   "description": "Upgrade your npm package.json dependencies to the latest versions, ignoring specified versions",
+  "name": "ncu",
   "options": [
     {
+      "description": "Cache versions to a local cache file. Default --cacheFile is ~/.ncu-cache.json and default --cacheExpiration is 10 minutes",
       "name": [
         "--cache"
-      ],
-      "description": "Cache versions to a local cache file. Default --cacheFile is ~/.ncu-cache.json and default --cacheExpiration is 10 minutes"
+      ]
     },
     {
+      "description": "Clear the default cache, or the cache file specified by --cacheFile",
       "name": [
         "--cacheClear"
-      ],
-      "description": "Clear the default cache, or the cache file specified by --cacheFile"
+      ]
     },
     {
-      "name": [
-        "--cacheExpiration"
-      ],
-      "description": "Cache expiration in minutes. Only works with --cache. (default: 10)",
       "args": {
         "name": "min"
-      }
+      },
+      "description": "Cache expiration in minutes. Only works with --cache. (default: 10)",
+      "name": [
+        "--cacheExpiration"
+      ]
     },
     {
-      "name": [
-        "--cacheFile"
-      ],
-      "description": "Filepath for the cache file. Only works with --cache. (default: \"~/.ncu-cache.json\")",
       "args": {
         "name": "path",
         "template": "filepaths"
-      }
+      },
+      "description": "Filepath for the cache file. Only works with --cache. (default: \"~/.ncu-cache.json\")",
+      "name": [
+        "--cacheFile"
+      ]
     },
     {
+      "description": "Force color in terminal",
       "name": [
         "--color"
-      ],
-      "description": "Force color in terminal"
+      ]
     },
     {
-      "name": [
-        "--concurrency"
-      ],
-      "description": "Max number of concurrent HTTP requests to registry. (default: 8)",
       "args": {
         "name": "n"
-      }
+      },
+      "description": "Max number of concurrent HTTP requests to registry. (default: 8)",
+      "name": [
+        "--concurrency"
+      ]
     },
     {
-      "name": [
-        "--configFileName"
-      ],
-      "description": "Config file name. (default: .ncurc.{json,yml,js,cjs})",
       "args": {
         "name": "s",
         "template": "filepaths"
-      }
+      },
+      "description": "Config file name. (default: .ncurc.{json,yml,js,cjs})",
+      "name": [
+        "--configFileName"
+      ]
     },
     {
+      "args": {
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Directory of .ncurc config file. (default: directory of packageFile)",
       "name": [
         "--configFilePath"
-      ],
-      "description": "Directory of .ncurc config file. (default: directory of packageFile)",
+      ]
+    },
+    {
       "args": {
         "name": "path",
         "template": "folders"
-      }
-    },
-    {
+      },
+      "description": "Working directory in which npm will be executed",
       "name": [
         "--cwd"
-      ],
-      "description": "Working directory in which npm will be executed",
-      "args": {
-        "name": "path",
-        "template": "folders"
-      }
+      ]
     },
     {
+      "description": "Run recursively in current working directory. Alias of (--packageFile '**/package.json')",
       "name": [
         "--deep"
-      ],
-      "description": "Run recursively in current working directory. Alias of (--packageFile '**/package.json')"
+      ]
     },
     {
-      "name": [
-        "--dep"
-      ],
-      "description": "Check one or more sections of dependencies only: dev, optional, peer, prod, or packageManager (comma-delimited). (default: [\"prod\",\"dev\",\"optional\"])",
       "args": {
         "name": "value",
         "suggestions": [
@@ -108,85 +110,85 @@
             "name": "packageManager"
           }
         ]
-      }
+      },
+      "description": "Check one or more sections of dependencies only: dev, optional, peer, prod, or packageManager (comma-delimited). (default: [\"prod\",\"dev\",\"optional\"])",
+      "name": [
+        "--dep"
+      ]
     },
     {
+      "description": "Include deprecated packages",
       "name": [
         "--deprecated"
-      ],
-      "description": "Include deprecated packages"
+      ]
     },
     {
+      "description": "Iteratively installs upgrades and runs tests to identify breaking upgrades. Requires -u to execute. Run \"ncu --help --doctor\" for details",
       "name": [
         "--doctor",
         "-d"
-      ],
-      "description": "Iteratively installs upgrades and runs tests to identify breaking upgrades. Requires -u to execute. Run \"ncu --help --doctor\" for details"
+      ]
     },
     {
+      "args": {
+        "name": "command"
+      },
+      "description": "Specifies the install script to use in doctor mode. (default: npm install/yarn)",
       "name": [
         "--doctorInstall"
-      ],
-      "description": "Specifies the install script to use in doctor mode. (default: npm install/yarn)",
-      "args": {
-        "name": "command"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "command"
+      },
+      "description": "Specifies the test script to use in doctor mode. (default: npm test)",
       "name": [
         "--doctorTest"
-      ],
-      "description": "Specifies the test script to use in doctor mode. (default: npm test)",
-      "args": {
-        "name": "command"
-      }
+      ]
     },
     {
+      "description": "Include only packages that satisfy engines.node as specified in the package file",
       "name": [
         "--enginesNode"
-      ],
-      "description": "Include only packages that satisfy engines.node as specified in the package file"
+      ]
     },
     {
+      "args": {
+        "name": "n"
+      },
+      "description": "Set the error level. 1: exits with error code 0 if no errors occur. 2: exits with error code 0 if no packages need updating (useful for continuous integration). (default: 1)",
       "name": [
         "--errorLevel",
         "-e"
-      ],
-      "description": "Set the error level. 1: exits with error code 0 if no errors occur. 2: exits with error code 0 if no packages need updating (useful for continuous integration). (default: 1)",
-      "args": {
-        "name": "n"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "p"
+      },
+      "description": "Include only package names matching the given string, wildcard, glob, comma-or-space-delimited list, /regex/, or predicate function",
       "name": [
         "--filter",
         "-f"
-      ],
-      "description": "Include only package names matching the given string, wildcard, glob, comma-or-space-delimited list, /regex/, or predicate function",
-      "args": {
-        "name": "p"
-      }
+      ]
     },
     {
+      "description": "Filters out upgrades based on a user provided function. Run \"ncu --help --filterResults\" for details",
       "name": [
         "--filterResults"
-      ],
-      "description": "Filters out upgrades based on a user provided function. Run \"ncu --help --filterResults\" for details"
+      ]
     },
     {
-      "name": [
-        "--filterVersion"
-      ],
-      "description": "Filter on package version using comma-or-space-delimited list, /regex/, or predicate function",
       "args": {
         "name": "p"
-      }
+      },
+      "description": "Filter on package version using comma-or-space-delimited list, /regex/, or predicate function",
+      "name": [
+        "--filterVersion"
+      ]
     },
     {
-      "name": [
-        "--format"
-      ],
-      "description": "Modify the output formatting or show additional information. Specify one or more comma-delimited values: group, ownerChanged, repo, time, lines. Run \"ncu --help --format\" for details. (default: [])",
       "args": {
         "name": "value",
         "suggestions": [
@@ -206,60 +208,59 @@
             "name": "lines"
           }
         ]
-      }
+      },
+      "description": "Modify the output formatting or show additional information. Specify one or more comma-delimited values: group, ownerChanged, repo, time, lines. Run \"ncu --help --format\" for details. (default: [])",
+      "name": [
+        "--format"
+      ]
     },
     {
+      "description": "Check global packages instead of in the current project",
       "name": [
         "--global",
         "-g"
-      ],
-      "description": "Check global packages instead of in the current project"
+      ]
     },
     {
+      "description": "Customize how packages are divided into groups when using --format group. Run \"ncu --help --groupFunction\" for details",
       "name": [
         "--groupFunction"
-      ],
-      "description": "Customize how packages are divided into groups when using --format group. Run \"ncu --help --groupFunction\" for details"
+      ]
     },
     {
+      "description": "Show help",
       "name": [
         "--help",
         "-h"
-      ],
-      "description": "Show help"
+      ]
     },
     {
+      "description": "Enable interactive prompts for each dependency; implies -u unless one of the json options are set",
       "name": [
         "--interactive",
         "-i"
-      ],
-      "description": "Enable interactive prompts for each dependency; implies -u unless one of the json options are set"
+      ]
     },
     {
+      "description": "Output new package file instead of human-readable message",
       "name": [
         "--jsonAll",
         "-j"
-      ],
-      "description": "Output new package file instead of human-readable message"
+      ]
     },
     {
+      "description": "Like jsonAll but only lists dependencies, devDependencies, optionalDependencies, etc of the new package data",
       "name": [
         "--jsonDeps"
-      ],
-      "description": "Like jsonAll but only lists dependencies, devDependencies, optionalDependencies, etc of the new package data"
+      ]
     },
     {
+      "description": "Output upgraded dependencies in json",
       "name": [
         "--jsonUpgraded"
-      ],
-      "description": "Output upgraded dependencies in json"
+      ]
     },
     {
-      "name": [
-        "--loglevel",
-        "-l"
-      ],
-      "description": "Amount to log: silent, error, minimal, warn, info, verbose, silly. (default: \"warn\")",
       "args": {
         "name": "n",
         "suggestions": [
@@ -285,46 +286,46 @@
             "name": "silly"
           }
         ]
-      }
+      },
+      "description": "Amount to log: silent, error, minimal, warn, info, verbose, silly. (default: \"warn\")",
+      "name": [
+        "--loglevel",
+        "-l"
+      ]
     },
     {
+      "description": "Merges nested configs with the root config file for --deep or --packageFile options. (default: false)",
       "name": [
         "--mergeConfig"
-      ],
-      "description": "Merges nested configs with the root config file for --deep or --packageFile options. (default: false)"
+      ]
     },
     {
+      "description": "Do not upgrade newer versions that are already satisfied by the version range according to semver",
       "name": [
         "--minimal",
         "-m"
-      ],
-      "description": "Do not upgrade newer versions that are already satisfied by the version range according to semver"
+      ]
     },
     {
-      "name": [
-        "--packageData"
-      ],
-      "description": "Package file data (you can also use stdin)",
       "args": {
         "name": "value"
-      }
+      },
+      "description": "Package file data (you can also use stdin)",
+      "name": [
+        "--packageData"
+      ]
     },
     {
-      "name": [
-        "--packageFile"
-      ],
-      "description": "Package file(s) location. (default: ./package.json)",
       "args": {
         "name": "path|glob",
         "template": "filepaths"
-      }
+      },
+      "description": "Package file(s) location. (default: ./package.json)",
+      "name": [
+        "--packageFile"
+      ]
     },
     {
-      "name": [
-        "--packageManager",
-        "-p"
-      ],
-      "description": "Npm, yarn, pnpm, deno, staticRegistry (default: npm). Run \"ncu --help --packageManager\" for details",
       "args": {
         "name": "s",
         "suggestions": [
@@ -344,102 +345,102 @@
             "name": "staticRegistry"
           }
         ]
-      }
+      },
+      "description": "Npm, yarn, pnpm, deno, staticRegistry (default: npm). Run \"ncu --help --packageManager\" for details",
+      "name": [
+        "--packageManager",
+        "-p"
+      ]
     },
     {
+      "description": "Check peer dependencies of installed packages and filter updates to compatible versions. Run \"ncu --help --peer\" for details",
       "name": [
         "--peer"
-      ],
-      "description": "Check peer dependencies of installed packages and filter updates to compatible versions. Run \"ncu --help --peer\" for details"
+      ]
     },
     {
-      "name": [
-        "--pre"
-      ],
-      "description": "Include prerelease versions, e.g. -alpha.0, -beta.5, -rc.2. Automatically set to 1 when --target is newest or greatest, or when the current version is a prerelease. (default: 0)",
       "args": {
         "name": "n"
-      }
+      },
+      "description": "Include prerelease versions, e.g. -alpha.0, -beta.5, -rc.2. Automatically set to 1 when --target is newest or greatest, or when the current version is a prerelease. (default: 0)",
+      "name": [
+        "--pre"
+      ]
     },
     {
-      "name": [
-        "--prefix"
-      ],
-      "description": "Current working directory of npm",
       "args": {
         "name": "path",
         "template": "folders"
-      }
+      },
+      "description": "Current working directory of npm",
+      "name": [
+        "--prefix"
+      ]
     },
     {
+      "args": {
+        "name": "uri"
+      },
+      "description": "Third-party npm registry. Run \"ncu --help --registry\" for details",
       "name": [
         "--registry",
         "-r"
-      ],
-      "description": "Third-party npm registry. Run \"ncu --help --registry\" for details",
-      "args": {
-        "name": "uri"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "p"
+      },
+      "description": "Exclude packages matching the given string, wildcard, glob, comma-or-space-delimited list, /regex/, or predicate function",
       "name": [
         "--reject",
         "-x"
-      ],
-      "description": "Exclude packages matching the given string, wildcard, glob, comma-or-space-delimited list, /regex/, or predicate function",
-      "args": {
-        "name": "p"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "p"
+      },
+      "description": "Exclude package.json versions using comma-or-space-delimited list, /regex/, or predicate function",
       "name": [
         "--rejectVersion"
-      ],
-      "description": "Exclude package.json versions using comma-or-space-delimited list, /regex/, or predicate function",
-      "args": {
-        "name": "p"
-      }
+      ]
     },
     {
+      "description": "Remove version ranges from the final package version",
       "name": [
         "--removeRange"
-      ],
-      "description": "Remove version ranges from the final package version"
+      ]
     },
     {
-      "name": [
-        "--retry"
-      ],
-      "description": "Number of times to retry failed requests for package info. (default: 3)",
       "args": {
         "name": "n"
-      }
+      },
+      "description": "Number of times to retry failed requests for package info. (default: 3)",
+      "name": [
+        "--retry"
+      ]
     },
     {
+      "description": "Runs updates on the root project in addition to specified workspaces. Only allowed with --workspace or --workspaces. (default: false)",
       "name": [
         "--root"
-      ],
-      "description": "Runs updates on the root project in addition to specified workspaces. Only allowed with --workspace or --workspaces. (default: false)"
+      ]
     },
     {
+      "description": "Don't output anything. Alias for --loglevel silent",
       "name": [
         "--silent",
         "-s"
-      ],
-      "description": "Don't output anything. Alias for --loglevel silent"
+      ]
     },
     {
+      "description": "Read package.json from stdin",
       "name": [
         "--stdin"
-      ],
-      "description": "Read package.json from stdin"
+      ]
     },
     {
-      "name": [
-        "--target",
-        "-t"
-      ],
-      "description": "Determines the version to upgrade to: latest, newest, greatest, minor, patch, @[tag], or [function]. (default: latest) Run \"ncu --help --target\" for details",
       "args": {
         "name": "value",
         "suggestions": [
@@ -459,59 +460,58 @@
             "name": "patch"
           }
         ]
-      }
+      },
+      "description": "Determines the version to upgrade to: latest, newest, greatest, minor, patch, @[tag], or [function]. (default: latest) Run \"ncu --help --target\" for details",
+      "name": [
+        "--target",
+        "-t"
+      ]
     },
     {
-      "name": [
-        "--timeout"
-      ],
-      "description": "Global timeout in milliseconds. (default: no global timeout and 30 seconds per npm-registry-fetch)",
       "args": {
         "name": "ms"
-      }
+      },
+      "description": "Global timeout in milliseconds. (default: no global timeout and 30 seconds per npm-registry-fetch)",
+      "name": [
+        "--timeout"
+      ]
     },
     {
+      "description": "Overwrite package file with upgraded versions instead of just outputting to console",
       "name": [
         "--upgrade",
         "-u"
-      ],
-      "description": "Overwrite package file with upgraded versions instead of just outputting to console"
+      ]
     },
     {
+      "description": "Log additional information for debugging. Alias for --loglevel verbose",
       "name": [
         "--verbose"
-      ],
-      "description": "Log additional information for debugging. Alias for --loglevel verbose"
+      ]
     },
     {
+      "description": "Output the version number of npm-check-updates",
       "name": [
         "--version",
         "-v"
-      ],
-      "description": "Output the version number of npm-check-updates"
+      ]
     },
     {
+      "args": {
+        "name": "s"
+      },
+      "description": "Run on one or more specified workspaces. Add --root to also upgrade the root project. (default: [])",
       "name": [
         "--workspace",
         "-w"
-      ],
-      "description": "Run on one or more specified workspaces. Add --root to also upgrade the root project. (default: [])",
-      "args": {
-        "name": "s"
-      }
+      ]
     },
     {
+      "description": "Run on all workspaces. Add --root to also upgrade the root project",
       "name": [
         "--workspaces",
         "-ws"
-      ],
-      "description": "Run on all workspaces. Add --root to also upgrade the root project"
+      ]
     }
-  ],
-  "args": {
-    "name": "filter",
-    "description": "A list or regex of package names to check (all others will be ignored)",
-    "isVariadic": true,
-    "isOptional": true
-  }
+  ]
 }

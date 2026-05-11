@@ -738,6 +738,7 @@ fn count_runtime_metadata_issues_in_spec(spec: &CompletionSpec) -> RuntimeMetada
                             Some(Issue::UnsupportedUnproven)
                         }
                     }
+                    JsRuntimeKind::TokenOnly => None,
                 }
             }
         }

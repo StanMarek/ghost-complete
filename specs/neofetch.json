@@ -1,19 +1,75 @@
 {
-  "name": "neofetch",
+  "args": {
+    "isVariadic": true,
+    "name": "Information lines",
+    "suggestions": [
+      {
+        "name": "os"
+      },
+      {
+        "name": "host"
+      },
+      {
+        "name": "kernel"
+      },
+      {
+        "name": "uptime"
+      },
+      {
+        "name": "packages"
+      },
+      {
+        "name": "shell"
+      },
+      {
+        "name": "term"
+      },
+      {
+        "name": "cpu"
+      },
+      {
+        "name": "gpu"
+      },
+      {
+        "name": "memory"
+      },
+      {
+        "name": "disk"
+      },
+      {
+        "name": "battery"
+      },
+      {
+        "name": "resolution"
+      },
+      {
+        "name": "wm"
+      },
+      {
+        "name": "de"
+      },
+      {
+        "name": "theme"
+      },
+      {
+        "name": "wm_theme"
+      },
+      {
+        "name": "icons"
+      }
+    ]
+  },
   "description": "The most complete system information CLI tool",
+  "name": "neofetch",
   "options": [
     {
+      "description": "Show help for neofetch",
       "name": [
         "--help",
         "-h"
-      ],
-      "description": "Show help for neofetch"
+      ]
     },
     {
-      "name": [
-        "--disable"
-      ],
-      "description": "Disable information line",
       "args": {
         "name": "Information lines",
         "suggestions": [
@@ -72,13 +128,13 @@
             "name": "icons"
           }
         ]
-      }
+      },
+      "description": "Disable information line",
+      "name": [
+        "--disable"
+      ]
     },
     {
-      "name": [
-        "--title_fqdn"
-      ],
-      "description": "Hide/Show Fully Qualified Domain Name in title",
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -89,13 +145,13 @@
             "name": "off"
           }
         ]
-      }
+      },
+      "description": "Hide/Show Fully Qualified Domain Name in title",
+      "name": [
+        "--title_fqdn"
+      ]
     },
     {
-      "name": [
-        "--package_managers"
-      ],
-      "description": "Hide/Show Package Manager names",
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -109,13 +165,13 @@
             "name": "tiny"
           }
         ]
-      }
+      },
+      "description": "Hide/Show Package Manager names",
+      "name": [
+        "--package_managers"
+      ]
     },
     {
-      "name": [
-        "--os_arch"
-      ],
-      "description": "Hide/Show OS architecture",
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -126,13 +182,13 @@
             "name": "off"
           }
         ]
-      }
+      },
+      "description": "Hide/Show OS architecture",
+      "name": [
+        "--os_arch"
+      ]
     },
     {
-      "name": [
-        "--speed_type"
-      ],
-      "description": "Change the type of cpu speed to display",
       "args": {
         "name": "type",
         "suggestions": [
@@ -155,13 +211,30 @@
             "name": "scaling_max"
           }
         ]
-      }
+      },
+      "description": "Change the type of cpu speed to display",
+      "name": [
+        "--speed_type"
+      ]
     },
     {
+      "args": {
+        "name": "on/off",
+        "suggestions": [
+          {
+            "name": "on"
+          },
+          {
+            "name": "off"
+          }
+        ]
+      },
+      "description": "Whether or not to show decimals in CPU speed",
       "name": [
         "--speed_shorthand"
-      ],
-      "description": "Whether or not to show decimals in CPU speed",
+      ]
+    },
+    {
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -172,30 +245,13 @@
             "name": "off"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Enable/Disable CPU brand in output",
       "name": [
         "--cpu_brand"
-      ],
-      "description": "Enable/Disable CPU brand in output",
-      "args": {
-        "name": "on/off",
-        "suggestions": [
-          {
-            "name": "on"
-          },
-          {
-            "name": "off"
-          }
-        ]
-      }
+      ]
     },
     {
-      "name": [
-        "--cpu_cores"
-      ],
-      "description": "Whether or not to display the number of CPU cores",
       "args": {
         "name": "type",
         "suggestions": [
@@ -209,13 +265,13 @@
             "name": "off"
           }
         ]
-      }
+      },
+      "description": "Whether or not to display the number of CPU cores",
+      "name": [
+        "--cpu_cores"
+      ]
     },
     {
-      "name": [
-        "--cpu_speed"
-      ],
-      "description": "Hide/Show cpu speed",
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -226,13 +282,13 @@
             "name": "off"
           }
         ]
-      }
+      },
+      "description": "Hide/Show cpu speed",
+      "name": [
+        "--cpu_speed"
+      ]
     },
     {
-      "name": [
-        "--cpu_temp"
-      ],
-      "description": "Hide/Show cpu temperature",
       "args": {
         "name": "unit/off",
         "suggestions": [
@@ -246,13 +302,33 @@
             "name": "off"
           }
         ]
-      }
+      },
+      "description": "Hide/Show cpu temperature",
+      "name": [
+        "--cpu_temp"
+      ]
     },
     {
+      "args": {
+        "name": "on/off",
+        "suggestions": [
+          {
+            "name": "on"
+          },
+          {
+            "name": "off"
+          },
+          {
+            "name": "tiny"
+          }
+        ]
+      },
+      "description": "Shorten the output of distro",
       "name": [
         "--distro_shorthand"
-      ],
-      "description": "Shorten the output of distro",
+      ]
+    },
+    {
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -261,35 +337,15 @@
           },
           {
             "name": "off"
-          },
-          {
-            "name": "tiny"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Shorten the output of kernel",
       "name": [
         "--kernel_shorthand"
-      ],
-      "description": "Shorten the output of kernel",
-      "args": {
-        "name": "on/off",
-        "suggestions": [
-          {
-            "name": "on"
-          },
-          {
-            "name": "off"
-          }
-        ]
-      }
+      ]
     },
     {
-      "name": [
-        "--uptime_shorthand"
-      ],
-      "description": "Shorten the output of uptime",
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -303,13 +359,30 @@
             "name": "tiny"
           }
         ]
-      }
+      },
+      "description": "Shorten the output of uptime",
+      "name": [
+        "--uptime_shorthand"
+      ]
     },
     {
+      "args": {
+        "name": "on/off",
+        "suggestions": [
+          {
+            "name": "on"
+          },
+          {
+            "name": "off"
+          }
+        ]
+      },
+      "description": "Whether to display the refresh rate of each monitor",
       "name": [
         "--refresh_rate"
-      ],
-      "description": "Whether to display the refresh rate of each monitor",
+      ]
+    },
+    {
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -320,30 +393,13 @@
             "name": "off"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Enable/Disable GPU brand in output",
       "name": [
         "--gpu_brand"
-      ],
-      "description": "Enable/Disable GPU brand in output",
-      "args": {
-        "name": "on/off",
-        "suggestions": [
-          {
-            "name": "on"
-          },
-          {
-            "name": "off"
-          }
-        ]
-      }
+      ]
     },
     {
-      "name": [
-        "--gpu_type"
-      ],
-      "description": "Which GPU to display",
       "args": {
         "name": "type",
         "suggestions": [
@@ -357,13 +413,30 @@
             "name": "integrated"
           }
         ]
-      }
+      },
+      "description": "Which GPU to display",
+      "name": [
+        "--gpu_type"
+      ]
     },
     {
+      "args": {
+        "name": "on/off",
+        "suggestions": [
+          {
+            "name": "on"
+          },
+          {
+            "name": "off"
+          }
+        ]
+      },
+      "description": "Show/Hide Desktop Environment version",
       "name": [
         "--de_version"
-      ],
-      "description": "Show/Hide Desktop Environment version",
+      ]
+    },
+    {
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -374,13 +447,13 @@
             "name": "off"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Shorten output of gtk theme/icons",
       "name": [
         "--gtk_shorthand"
-      ],
-      "description": "Shorten output of gtk theme/icons",
+      ]
+    },
+    {
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -391,13 +464,13 @@
             "name": "off"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Enable/Disable gtk2 theme/font/icons output",
       "name": [
         "--gtk2"
-      ],
-      "description": "Enable/Disable gtk2 theme/font/icons output",
+      ]
+    },
+    {
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -408,13 +481,13 @@
             "name": "off"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Enable/Disable gtk3 theme/font/icons output",
       "name": [
         "--gtk3"
-      ],
-      "description": "Enable/Disable gtk3 theme/font/icons output",
+      ]
+    },
+    {
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -425,13 +498,13 @@
             "name": "off"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Enable/Disable showing $SHELL path",
       "name": [
         "--shell_path"
-      ],
-      "description": "Enable/Disable showing $SHELL path",
+      ]
+    },
+    {
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -442,30 +515,13 @@
             "name": "off"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Enable/Disable showing $SHELL version",
       "name": [
         "--shell_version"
-      ],
-      "description": "Enable/Disable showing $SHELL version",
-      "args": {
-        "name": "on/off",
-        "suggestions": [
-          {
-            "name": "on"
-          },
-          {
-            "name": "off"
-          }
-        ]
-      }
+      ]
     },
     {
-      "name": [
-        "--disk_show"
-      ],
-      "description": "Which disks to display",
       "args": {
         "name": "disk",
         "suggestions": [
@@ -488,13 +544,13 @@
             "name": "/run/media"
           }
         ]
-      }
+      },
+      "description": "Which disks to display",
+      "name": [
+        "--disk_show"
+      ]
     },
     {
-      "name": [
-        "--disk_subtitle"
-      ],
-      "description": "What information to append to the Disk subtitle",
       "args": {
         "name": "type",
         "suggestions": [
@@ -511,48 +567,48 @@
             "name": "none"
           }
         ]
-      }
+      },
+      "description": "What information to append to the Disk subtitle",
+      "name": [
+        "--disk_subtitle"
+      ]
     },
     {
+      "args": {
+        "name": "on/off",
+        "suggestions": [
+          {
+            "name": "on"
+          },
+          {
+            "name": "off"
+          }
+        ]
+      },
+      "description": "Hide/Show disk percent",
       "name": [
         "--disk_percent"
-      ],
-      "description": "Hide/Show disk percent",
-      "args": {
-        "name": "on/off",
-        "suggestions": [
-          {
-            "name": "on"
-          },
-          {
-            "name": "off"
-          }
-        ]
-      }
+      ]
     },
     {
-      "name": [
-        "--ip_host"
-      ],
-      "description": "URL to query for public IP",
       "args": {
         "name": "https://..."
-      }
+      },
+      "description": "URL to query for public IP",
+      "name": [
+        "--ip_host"
+      ]
     },
     {
-      "name": [
-        "--ip_timeout"
-      ],
-      "description": "Public IP timeout",
       "args": {
         "name": "X seconds"
-      }
+      },
+      "description": "Public IP timeout",
+      "name": [
+        "--ip_timeout"
+      ]
     },
     {
-      "name": [
-        "--memory_percent"
-      ],
-      "description": "Display memory percentage",
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -563,13 +619,13 @@
             "name": "off"
           }
         ]
-      }
+      },
+      "description": "Display memory percentage",
+      "name": [
+        "--memory_percent"
+      ]
     },
     {
-      "name": [
-        "--memory_unit"
-      ],
-      "description": "Memory output unit",
       "args": {
         "name": "unit",
         "suggestions": [
@@ -583,13 +639,13 @@
             "name": "gib"
           }
         ]
-      }
+      },
+      "description": "Memory output unit",
+      "name": [
+        "--memory_unit"
+      ]
     },
     {
-      "name": [
-        "--colors"
-      ],
-      "description": "Changes the text colors",
       "args": [
         {
           "name": "Title"
@@ -609,65 +665,65 @@
         {
           "name": "Info"
         }
+      ],
+      "description": "Changes the text colors",
+      "name": [
+        "--colors"
       ]
     },
     {
+      "args": {
+        "name": "on/off",
+        "suggestions": [
+          {
+            "name": "on"
+          },
+          {
+            "name": "off"
+          }
+        ]
+      },
+      "description": "Enable/Disable the underline",
       "name": [
         "--underline"
-      ],
-      "description": "Enable/Disable the underline",
-      "args": {
-        "name": "on/off",
-        "suggestions": [
-          {
-            "name": "on"
-          },
-          {
-            "name": "off"
-          }
-        ]
-      }
+      ]
     },
     {
-      "name": [
-        "--underline_char"
-      ],
-      "description": "Character to use when underlining title",
       "args": {
         "name": "char"
-      }
+      },
+      "description": "Character to use when underlining title",
+      "name": [
+        "--underline_char"
+      ]
     },
     {
+      "args": {
+        "name": "on/off",
+        "suggestions": [
+          {
+            "name": "on"
+          },
+          {
+            "name": "off"
+          }
+        ]
+      },
+      "description": "Enable/Disable bold text",
       "name": [
         "--bold"
-      ],
-      "description": "Enable/Disable bold text",
-      "args": {
-        "name": "on/off",
-        "suggestions": [
-          {
-            "name": "on"
-          },
-          {
-            "name": "off"
-          }
-        ]
-      }
+      ]
     },
     {
-      "name": [
-        "--separator"
-      ],
-      "description": "Changes the default ':' separator to the specified string",
       "args": {
         "name": "string"
-      }
+      },
+      "description": "Changes the default ':' separator to the specified string",
+      "name": [
+        "--separator"
+      ]
     },
     {
-      "name": [
-        "--color_blocks"
-      ],
-      "description": "Enable/Disable the color blocks",
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -678,13 +734,13 @@
             "name": "off"
           }
         ]
-      }
+      },
+      "description": "Enable/Disable the color blocks",
+      "name": [
+        "--color_blocks"
+      ]
     },
     {
-      "name": [
-        "--col_offset"
-      ],
-      "description": "Left-padding of color blocks",
       "args": {
         "name": "number",
         "suggestions": [
@@ -695,31 +751,31 @@
             "name": "[0-9]+"
           }
         ]
-      }
+      },
+      "description": "Left-padding of color blocks",
+      "name": [
+        "--col_offset"
+      ]
     },
     {
+      "args": {
+        "name": "[0-9]+"
+      },
+      "description": "Width of color blocks in spaces",
       "name": [
         "--block_width"
-      ],
-      "description": "Width of color blocks in spaces",
-      "args": {
-        "name": "[0-9]+"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "[0-9]+"
+      },
+      "description": "Height of color blocks in lines",
       "name": [
         "--block_height"
-      ],
-      "description": "Height of color blocks in lines",
-      "args": {
-        "name": "[0-9]+"
-      }
+      ]
     },
     {
-      "name": [
-        "--block_range"
-      ],
-      "description": "Range of colors to print as blocks",
       "args": [
         {
           "name": "[0-9]+"
@@ -727,13 +783,13 @@
         {
           "name": "[0-9]+"
         }
+      ],
+      "description": "Range of colors to print as blocks",
+      "name": [
+        "--block_range"
       ]
     },
     {
-      "name": [
-        "--bar_char"
-      ],
-      "description": "Characters to use when drawing bars",
       "args": [
         {
           "name": "Elapsed char"
@@ -741,13 +797,13 @@
         {
           "name": "Total char"
         }
+      ],
+      "description": "Characters to use when drawing bars",
+      "name": [
+        "--bar_char"
       ]
     },
     {
-      "name": [
-        "--bar_border"
-      ],
-      "description": "Whether or not to surround the bar with '[]'",
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -758,22 +814,22 @@
             "name": "off"
           }
         ]
-      }
+      },
+      "description": "Whether or not to surround the bar with '[]'",
+      "name": [
+        "--bar_border"
+      ]
     },
     {
-      "name": [
-        "--bar_length"
-      ],
-      "description": "Length in spaces to make the bars",
       "args": {
         "name": "[0-9]+"
-      }
+      },
+      "description": "Length in spaces to make the bars",
+      "name": [
+        "--bar_length"
+      ]
     },
     {
-      "name": [
-        "--bar_colors"
-      ],
-      "description": "Colors to make the bar",
       "args": [
         {
           "name": "Elapsed"
@@ -781,13 +837,36 @@
         {
           "name": "Total"
         }
+      ],
+      "description": "Colors to make the bar",
+      "name": [
+        "--bar_colors"
       ]
     },
     {
+      "args": {
+        "name": "mode",
+        "suggestions": [
+          {
+            "name": "bar"
+          },
+          {
+            "name": "infobar"
+          },
+          {
+            "name": "barinfo"
+          },
+          {
+            "name": "off"
+          }
+        ]
+      },
+      "description": "CPU bar mode",
       "name": [
         "--cpu_display"
-      ],
-      "description": "CPU bar mode",
+      ]
+    },
+    {
       "args": {
         "name": "mode",
         "suggestions": [
@@ -804,13 +883,13 @@
             "name": "off"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Memory display mode",
       "name": [
         "--memory_display"
-      ],
-      "description": "Memory display mode",
+      ]
+    },
+    {
       "args": {
         "name": "mode",
         "suggestions": [
@@ -827,13 +906,13 @@
             "name": "off"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Battery display mode",
       "name": [
         "--battery_display"
-      ],
-      "description": "Battery display mode",
+      ]
+    },
+    {
       "args": {
         "name": "mode",
         "suggestions": [
@@ -850,36 +929,13 @@
             "name": "off"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Disk display mode",
       "name": [
         "--disk_display"
-      ],
-      "description": "Disk display mode",
-      "args": {
-        "name": "mode",
-        "suggestions": [
-          {
-            "name": "bar"
-          },
-          {
-            "name": "infobar"
-          },
-          {
-            "name": "barinfo"
-          },
-          {
-            "name": "off"
-          }
-        ]
-      }
+      ]
     },
     {
-      "name": [
-        "--backend"
-      ],
-      "description": "Which image backend to use",
       "args": {
         "name": "backend",
         "suggestions": [
@@ -923,16 +979,15 @@
             "name": "kitty"
           }
         ]
-      }
+      },
+      "description": "Which image backend to use",
+      "name": [
+        "--backend"
+      ]
     },
     {
-      "name": [
-        "--source"
-      ],
-      "description": "Which image or ascii file to use",
       "args": {
         "name": "source",
-        "template": "filepaths",
         "suggestions": [
           {
             "name": "auto"
@@ -943,92 +998,93 @@
           {
             "name": "wallpaper"
           }
-        ]
-      }
+        ],
+        "template": "filepaths"
+      },
+      "description": "Which image or ascii file to use",
+      "name": [
+        "--source"
+      ]
     },
     {
+      "description": "Same as --backend ascii",
       "name": [
         "--ascii"
-      ],
-      "description": "Same as --backend ascii"
+      ]
     },
     {
+      "description": "Same as --backend caca",
       "name": [
         "--caca"
-      ],
-      "description": "Same as --backend caca"
+      ]
     },
     {
+      "description": "Same as --backend chafa",
       "name": [
         "--chafa"
-      ],
-      "description": "Same as --backend chafa"
+      ]
     },
     {
+      "description": "Same as --backend iterm2",
       "name": [
         "--iterm2"
-      ],
-      "description": "Same as --backend iterm2"
+      ]
     },
     {
+      "description": "Same as --backend jp2a",
       "name": [
         "--jp2a"
-      ],
-      "description": "Same as --backend jp2a"
+      ]
     },
     {
+      "description": "Same as --backend kitty",
       "name": [
         "--kitty"
-      ],
-      "description": "Same as --backend kitty"
+      ]
     },
     {
+      "description": "Same as --backend pot",
       "name": [
         "--pot"
-      ],
-      "description": "Same as --backend pot"
+      ]
     },
     {
+      "description": "Same as --backend pixterm",
       "name": [
         "--pixterm"
-      ],
-      "description": "Same as --backend pixterm"
+      ]
     },
     {
+      "description": "Same as --backend sixel",
       "name": [
         "--sixel"
-      ],
-      "description": "Same as --backend sixel"
+      ]
     },
     {
+      "description": "Same as --backend termpix",
       "name": [
         "--termpix"
-      ],
-      "description": "Same as --backend termpix"
+      ]
     },
     {
+      "description": "Same as --backend tycat",
       "name": [
         "--tycat"
-      ],
-      "description": "Same as --backend tycat"
+      ]
     },
     {
+      "description": "Same as --backend w3m",
       "name": [
         "--w3m"
-      ],
-      "description": "Same as --backend w3m"
+      ]
     },
     {
+      "description": "Same as --backend off",
       "name": [
         "--off"
-      ],
-      "description": "Same as --backend off"
+      ]
     },
     {
-      "name": [
-        "--ascii_colors"
-      ],
-      "description": "Colors to print the ascii art",
       "args": [
         {
           "name": "Color 1"
@@ -1048,22 +1104,22 @@
         {
           "name": "Color 6"
         }
+      ],
+      "description": "Colors to print the ascii art",
+      "name": [
+        "--ascii_colors"
       ]
     },
     {
-      "name": [
-        "--ascii_distro"
-      ],
-      "description": "Which Distro's ascii art to print",
       "args": {
         "name": "OS"
-      }
+      },
+      "description": "Which Distro's ascii art to print",
+      "name": [
+        "--ascii_distro"
+      ]
     },
     {
-      "name": [
-        "--ascii_bold"
-      ],
-      "description": "Whether or not to bold the ascii logo",
       "args": {
         "name": "on/off",
         "suggestions": [
@@ -1074,26 +1130,26 @@
             "name": "off"
           }
         ]
-      }
+      },
+      "description": "Whether or not to bold the ascii logo",
+      "name": [
+        "--ascii_bold"
+      ]
     },
     {
+      "description": "Hide the info text and only show the ascii logo",
       "name": [
         "-L",
         "--logo"
-      ],
-      "description": "Hide the info text and only show the ascii logo"
+      ]
     },
     {
+      "description": "Redraw the image constantly until Ctrl+C is used",
       "name": [
         "--loop"
-      ],
-      "description": "Redraw the image constantly until Ctrl+C is used"
+      ]
     },
     {
-      "name": [
-        "--size"
-      ],
-      "description": "How to size the image",
       "args": {
         "name": "size",
         "suggestions": [
@@ -1107,13 +1163,13 @@
             "name": "[0-9]+%"
           }
         ]
-      }
+      },
+      "description": "How to size the image",
+      "name": [
+        "--size"
+      ]
     },
     {
-      "name": [
-        "--crop_mode"
-      ],
-      "description": "Which crop mode to use",
       "args": {
         "name": "mode",
         "suggestions": [
@@ -1127,13 +1183,13 @@
             "name": "fill"
           }
         ]
-      }
+      },
+      "description": "Which crop mode to use",
+      "name": [
+        "--crop_mode"
+      ]
     },
     {
-      "name": [
-        "--crop_offset"
-      ],
-      "description": "Change the crop offset for normal mode",
       "args": {
         "name": "offset",
         "suggestions": [
@@ -1147,157 +1203,101 @@
             "name": "northeast"
           }
         ]
-      }
+      },
+      "description": "Change the crop offset for normal mode",
+      "name": [
+        "--crop_offset"
+      ]
     },
     {
+      "args": {
+        "name": "[0-9]+"
+      },
+      "description": "How close the image will be to the left edge of the window. This only works with w3m",
       "name": [
         "--xoffset"
-      ],
-      "description": "How close the image will be to the left edge of the window. This only works with w3m",
-      "args": {
-        "name": "[0-9]+"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "[0-9]+"
+      },
+      "description": "How close the image will be to the top edge of the window. This only works with w3m",
       "name": [
         "--yoffset"
-      ],
-      "description": "How close the image will be to the top edge of the window. This only works with w3m",
-      "args": {
-        "name": "[0-9]+"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "[0-9]+"
+      },
+      "description": "Gap between image and text",
       "name": [
         "--gap"
-      ],
-      "description": "Gap between image and text",
-      "args": {
-        "name": "[0-9]+"
-      }
+      ]
     },
     {
+      "description": "Delete cached files and thumbnails",
       "name": [
         "--clean"
-      ],
-      "description": "Delete cached files and thumbnails"
+      ]
     },
     {
-      "name": [
-        "--config"
-      ],
-      "description": "Specify a path to a custom config file",
       "args": {
         "name": "file/none",
-        "template": "filepaths",
         "suggestions": [
           {
             "name": "none"
           }
-        ]
-      }
+        ],
+        "template": "filepaths"
+      },
+      "description": "Specify a path to a custom config file",
+      "name": [
+        "--config"
+      ]
     },
     {
+      "description": "Don't create the user config file",
       "name": [
         "--no_config"
-      ],
-      "description": "Don't create the user config file"
+      ]
     },
     {
+      "description": "Print the default config file to stdout",
       "name": [
         "--print_config"
-      ],
-      "description": "Print the default config file to stdout"
+      ]
     },
     {
+      "description": "Turn off all colors and disables any ASCII/image backend",
       "name": [
         "--stdout"
-      ],
-      "description": "Turn off all colors and disables any ASCII/image backend"
+      ]
     },
     {
+      "description": "Show neofetch version",
       "name": [
         "--version"
-      ],
-      "description": "Show neofetch version"
+      ]
     },
     {
+      "description": "Display error messages",
       "name": [
         "-v"
-      ],
-      "description": "Display error messages"
+      ]
     },
     {
+      "description": "Display a verbose log for error reporting",
       "name": [
         "-vv"
-      ],
-      "description": "Display a verbose log for error reporting"
+      ]
     },
     {
+      "description": "Generate a manpage for neofetch in your PWD",
       "name": [
         "--gen-man"
-      ],
-      "description": "Generate a manpage for neofetch in your PWD"
+      ]
     }
-  ],
-  "args": {
-    "name": "Information lines",
-    "isVariadic": true,
-    "suggestions": [
-      {
-        "name": "os"
-      },
-      {
-        "name": "host"
-      },
-      {
-        "name": "kernel"
-      },
-      {
-        "name": "uptime"
-      },
-      {
-        "name": "packages"
-      },
-      {
-        "name": "shell"
-      },
-      {
-        "name": "term"
-      },
-      {
-        "name": "cpu"
-      },
-      {
-        "name": "gpu"
-      },
-      {
-        "name": "memory"
-      },
-      {
-        "name": "disk"
-      },
-      {
-        "name": "battery"
-      },
-      {
-        "name": "resolution"
-      },
-      {
-        "name": "wm"
-      },
-      {
-        "name": "de"
-      },
-      {
-        "name": "theme"
-      },
-      {
-        "name": "wm_theme"
-      },
-      {
-        "name": "icons"
-      }
-    ]
-  }
+  ]
 }

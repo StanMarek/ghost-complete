@@ -1,991 +1,1572 @@
 {
-  "name": "hugo",
   "description": "Hugo builds your site",
+  "name": "hugo",
+  "options": [
+    {
+      "description": "help for hugo",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "args": {
+        "name": "hostname and path"
+      },
+      "description": "Hostname (and path) to the root, e.g. http://spf13.com/",
+      "name": [
+        "-b",
+        "--baseURL"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Include content marked as draft (default false)",
+      "name": [
+        "-D",
+        "--buildDrafts"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Include expired content (default false)",
+      "name": [
+        "-E",
+        "--buildExpired"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Include content with publishdate in the future (default false)",
+      "name": [
+        "-F",
+        "--buildFuture"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Filesystem path to cache directory. Defaults: $TMPDIR/hugo_cache/",
+      "name": [
+        "--cacheDir"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Remove files from destination not found in static directories (default false)",
+      "name": [
+        "--cleanDestinationDir"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Filesystem path to content directory",
+      "name": [
+        "-c",
+        "--contentDir"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Filesystem path to write files to",
+      "name": [
+        "-d",
+        "--destination"
+      ]
+    },
+    {
+      "args": {
+        "name": "kind,kind",
+        "suggestions": [
+          {
+            "name": "page"
+          },
+          {
+            "name": "home"
+          },
+          {
+            "name": "section"
+          },
+          {
+            "name": "taxonomy"
+          },
+          {
+            "name": "term"
+          },
+          {
+            "name": "RSS"
+          },
+          {
+            "name": "sitemap"
+          },
+          {
+            "name": "robotsTXT"
+          },
+          {
+            "name": "404"
+          }
+        ]
+      },
+      "description": "Disable different kind of pages (home, RSS etc.)",
+      "name": [
+        "--disableKinds"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Add Git revision, date and author info to the pages (default false)",
+      "name": [
+        "--enableGitInfo"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Copy all files when static is changed (default false)",
+      "name": [
+        "--forceSyncStatic"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Enable to run some cleanup tasks (remove unused cache files) after the build (default false)",
+      "name": [
+        "--gc"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Print missing translations (default false)",
+      "name": [
+        "--i18n-warnings"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Ignores the cache directory (default false)",
+      "name": [
+        "--ignoreCache"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Filesystem path to layout directory",
+      "name": [
+        "-l",
+        "--layoutDir"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Minify any supported output format (HTML, XML etc.) (default false)",
+      "name": [
+        "--minify"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Don't sync permission mode of files (default false)",
+      "name": [
+        "--noChmod"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Don't sync modification time of files (default false)",
+      "name": [
+        "--noTimes"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Print warnings on duplicate target paths etc (default false)",
+      "name": [
+        "--path-warnings"
+      ]
+    },
+    {
+      "args": {
+        "name": "milliseconds"
+      },
+      "description": "Set this to a poll interval, e.g --poll 700ms, to use a poll based approach to watch for file system changes",
+      "name": [
+        "--poll"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Print memory usage to screen at intervals (default false)",
+      "name": [
+        "--print-mem"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Display metrics about template executions (default false)",
+      "name": [
+        "--templateMetrics"
+      ]
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Calculate some improvement hints when combined with --templateMetrics (default false)",
+      "name": [
+        "--templateMetricsHints"
+      ]
+    },
+    {
+      "args": {
+        "name": "theme name"
+      },
+      "description": "Themes to use (located in /themes/THEMENAME/)",
+      "name": [
+        "-t",
+        "--theme"
+      ]
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Write trace to file (not useful in general)",
+      "name": [
+        "--trace"
+      ]
+    },
+    {
+      "args": {
+        "description": "Default is path/config.yaml|json|toml",
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Config file (default is path/config.yaml|json|toml)",
+      "name": [
+        "--config"
+      ],
+      "priority": 50
+    },
+    {
+      "args": {
+        "description": "Default is 'config'",
+        "name": "directory path",
+        "template": "folders"
+      },
+      "description": "Config dir (default 'config')",
+      "name": [
+        "--configDir"
+      ],
+      "priority": 50
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Debug output (default false)",
+      "name": [
+        "--debug"
+      ],
+      "priority": 50
+    },
+    {
+      "args": {
+        "name": "environment"
+      },
+      "description": "Build environment",
+      "name": [
+        "-e",
+        "--environment"
+      ],
+      "priority": 50
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Ignores any _vendor directory (default false)",
+      "name": [
+        "--ignoreVendor"
+      ],
+      "priority": 50
+    },
+    {
+      "args": {
+        "name": "glob pattern"
+      },
+      "description": "Ignores any _vendor for module paths matching the given Glob pattern",
+      "name": [
+        "--ignoreVendorPaths"
+      ],
+      "priority": 50
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Enable Logging (default false)",
+      "name": [
+        "--log"
+      ],
+      "priority": 50
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Log File path (if set, logging enabled automatically)",
+      "name": [
+        "--logFile"
+      ],
+      "priority": 50
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Build in quiet mode (default false)",
+      "name": [
+        "--quiet"
+      ],
+      "priority": 50
+    },
+    {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Filesystem path to read files relative from",
+      "name": [
+        "-s",
+        "--source"
+      ],
+      "priority": 50
+    },
+    {
+      "args": {
+        "description": "Default is path/config.yaml|json|toml",
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Filesystem path to themes directory",
+      "name": [
+        "--themesDir"
+      ],
+      "priority": 50
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Verbose output (default false)",
+      "name": [
+        "-v",
+        "--verbose"
+      ],
+      "priority": 50
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Verbose logging (default false)",
+      "name": [
+        "--verboseLog"
+      ],
+      "priority": 50
+    },
+    {
+      "args": {
+        "name": "boolean"
+      },
+      "description": "Watch filesystem for changes and recreate as needed (default true)",
+      "name": [
+        "-w",
+        "--watch"
+      ]
+    },
+    {
+      "description": "Render to memory (only useful for benchmark testing)",
+      "name": [
+        "--renderToMemory"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "check",
-      "description": "Contains some verification checks",
-      "subcommands": [
-        {
-          "name": "ulimit",
-          "description": "Check system ulimit settings",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "help for ulimit"
-            }
-          ]
-        }
-      ],
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "help for check"
-        },
-        {
-          "name": [
-            "--config"
-          ],
-          "description": "Config file (default is path/config.yaml|json|toml)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--configDir"
-          ],
-          "description": "Config dir (default 'config')",
-          "priority": 50,
-          "args": {
-            "name": "directory path",
-            "description": "Default is 'config'",
-            "template": "folders"
-          }
-        },
-        {
-          "name": [
-            "--debug"
-          ],
-          "description": "Debug output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-e",
-            "--environment"
-          ],
-          "description": "Build environment",
-          "priority": 50,
-          "args": {
-            "name": "environment"
-          }
-        },
-        {
-          "name": [
-            "--ignoreVendor"
-          ],
-          "description": "Ignores any _vendor directory (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--ignoreVendorPaths"
-          ],
-          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
-          "priority": 50,
-          "args": {
-            "name": "glob pattern"
-          }
-        },
-        {
-          "name": [
-            "--log"
-          ],
-          "description": "Enable Logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--logFile"
-          ],
-          "description": "Log File path (if set, logging enabled automatically)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--quiet"
-          ],
-          "description": "Build in quiet mode (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-s",
-            "--source"
-          ],
-          "description": "Filesystem path to read files relative from",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--themesDir"
-          ],
-          "description": "Filesystem path to themes directory",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "-v",
-            "--verbose"
-          ],
-          "description": "Verbose output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--verboseLog"
-          ],
-          "description": "Verbose logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        }
-      ],
       "args": {
         "name": "command"
-      }
-    },
-    {
-      "name": "config",
-      "description": "Print the site configuration",
-      "subcommands": [
-        {
-          "name": "mounts",
-          "description": "Print the configured file mounts",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "help for mounts"
-            }
-          ]
-        }
-      ],
+      },
+      "description": "Contains some verification checks",
+      "name": "check",
       "options": [
         {
+          "description": "help for check",
           "name": [
             "-h",
             "--help"
-          ],
-          "description": "help for config"
+          ]
         },
         {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Config file (default is path/config.yaml|json|toml)",
           "name": [
             "--config"
           ],
-          "description": "Config file (default is path/config.yaml|json|toml)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "description": "Default is 'config'",
+            "name": "directory path",
+            "template": "folders"
+          },
+          "description": "Config dir (default 'config')",
           "name": [
             "--configDir"
           ],
-          "description": "Config dir (default 'config')",
-          "priority": 50,
-          "args": {
-            "name": "directory path",
-            "description": "Default is 'config'",
-            "template": "folders"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Debug output (default false)",
           "name": [
             "--debug"
           ],
-          "description": "Debug output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Build environment",
           "name": [
             "-e",
             "--environment"
           ],
-          "description": "Build environment",
-          "priority": 50,
-          "args": {
-            "name": "environment"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Ignores any _vendor directory (default false)",
           "name": [
             "--ignoreVendor"
           ],
-          "description": "Ignores any _vendor directory (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "glob pattern"
+          },
+          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
           "name": [
             "--ignoreVendorPaths"
           ],
-          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
-          "priority": 50,
-          "args": {
-            "name": "glob pattern"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Enable Logging (default false)",
           "name": [
             "--log"
           ],
-          "description": "Enable Logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
-          "name": [
-            "--logFile"
-          ],
-          "description": "Log File path (if set, logging enabled automatically)",
-          "priority": 50,
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Log File path (if set, logging enabled automatically)",
+          "name": [
+            "--logFile"
+          ],
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Build in quiet mode (default false)",
           "name": [
             "--quiet"
           ],
-          "description": "Build in quiet mode (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to read files relative from",
           "name": [
             "-s",
             "--source"
           ],
-          "description": "Filesystem path to read files relative from",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to themes directory",
           "name": [
             "--themesDir"
           ],
-          "description": "Filesystem path to themes directory",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose output (default false)",
           "name": [
             "-v",
             "--verbose"
           ],
-          "description": "Verbose output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose logging (default false)",
           "name": [
             "--verboseLog"
           ],
-          "description": "Verbose logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Check system ulimit settings",
+          "name": "ulimit",
+          "options": [
+            {
+              "description": "help for ulimit",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
         }
       ]
     },
     {
-      "name": "convert",
-      "description": "Convert your content to different formats",
+      "description": "Print the site configuration",
+      "name": "config",
+      "options": [
+        {
+          "description": "help for config",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Config file (default is path/config.yaml|json|toml)",
+          "name": [
+            "--config"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "description": "Default is 'config'",
+            "name": "directory path",
+            "template": "folders"
+          },
+          "description": "Config dir (default 'config')",
+          "name": [
+            "--configDir"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Debug output (default false)",
+          "name": [
+            "--debug"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Build environment",
+          "name": [
+            "-e",
+            "--environment"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Ignores any _vendor directory (default false)",
+          "name": [
+            "--ignoreVendor"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "glob pattern"
+          },
+          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
+          "name": [
+            "--ignoreVendorPaths"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Enable Logging (default false)",
+          "name": [
+            "--log"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Log File path (if set, logging enabled automatically)",
+          "name": [
+            "--logFile"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Build in quiet mode (default false)",
+          "name": [
+            "--quiet"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to read files relative from",
+          "name": [
+            "-s",
+            "--source"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to themes directory",
+          "name": [
+            "--themesDir"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose output (default false)",
+          "name": [
+            "-v",
+            "--verbose"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose logging (default false)",
+          "name": [
+            "--verboseLog"
+          ],
+          "priority": 50
+        }
+      ],
       "subcommands": [
         {
-          "name": "toJSON",
-          "description": "Convert front matter to JSON",
+          "description": "Print the configured file mounts",
+          "name": "mounts",
           "options": [
             {
+              "description": "help for mounts",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "help for toJSON"
-            },
-            {
-              "name": [
-                "-o",
-                "--output"
-              ],
-              "description": "Filesystem path to write files to",
-              "args": {
-                "name": "path",
-                "template": "folders"
-              }
-            },
-            {
-              "name": [
-                "--unsafe"
-              ],
-              "description": "Enable less safe operations, please backup first"
-            }
-          ]
-        },
-        {
-          "name": "toTOML",
-          "description": "Convert front matter to TOML",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "help for toTOML"
-            },
-            {
-              "name": [
-                "-o",
-                "--output"
-              ],
-              "description": "Filesystem path to write files to",
-              "args": {
-                "name": "path",
-                "template": "folders"
-              }
-            },
-            {
-              "name": [
-                "--unsafe"
-              ],
-              "description": "Enable less safe operations, please backup first"
-            }
-          ]
-        },
-        {
-          "name": "toYAML",
-          "description": "Convert front matter to YAML",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "help for toYAML"
-            },
-            {
-              "name": [
-                "-o",
-                "--output"
-              ],
-              "description": "Filesystem path to write files to",
-              "args": {
-                "name": "path",
-                "template": "folders"
-              }
-            },
-            {
-              "name": [
-                "--unsafe"
-              ],
-              "description": "Enable less safe operations, please backup first"
+              ]
             }
           ]
         }
-      ],
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "help for convert"
-        },
-        {
-          "name": [
-            "--config"
-          ],
-          "description": "Config file (default is path/config.yaml|json|toml)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--configDir"
-          ],
-          "description": "Config dir (default 'config')",
-          "priority": 50,
-          "args": {
-            "name": "directory path",
-            "description": "Default is 'config'",
-            "template": "folders"
-          }
-        },
-        {
-          "name": [
-            "--debug"
-          ],
-          "description": "Debug output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-e",
-            "--environment"
-          ],
-          "description": "Build environment",
-          "priority": 50,
-          "args": {
-            "name": "environment"
-          }
-        },
-        {
-          "name": [
-            "--ignoreVendor"
-          ],
-          "description": "Ignores any _vendor directory (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--ignoreVendorPaths"
-          ],
-          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
-          "priority": 50,
-          "args": {
-            "name": "glob pattern"
-          }
-        },
-        {
-          "name": [
-            "--log"
-          ],
-          "description": "Enable Logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--logFile"
-          ],
-          "description": "Log File path (if set, logging enabled automatically)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--quiet"
-          ],
-          "description": "Build in quiet mode (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-s",
-            "--source"
-          ],
-          "description": "Filesystem path to read files relative from",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--themesDir"
-          ],
-          "description": "Filesystem path to themes directory",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "-v",
-            "--verbose"
-          ],
-          "description": "Verbose output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--verboseLog"
-          ],
-          "description": "Verbose logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        }
-      ],
-      "args": {
-        "name": "command"
-      }
+      ]
     },
     {
-      "name": "deploy",
-      "description": "Deploy your site to a Cloud provider",
+      "args": {
+        "name": "command"
+      },
+      "description": "Convert your content to different formats",
+      "name": "convert",
       "options": [
         {
+          "description": "help for convert",
           "name": [
             "-h",
             "--help"
-          ],
-          "description": "help for deploy"
+          ]
         },
         {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Config file (default is path/config.yaml|json|toml)",
           "name": [
             "--config"
           ],
-          "description": "Config file (default is path/config.yaml|json|toml)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "description": "Default is 'config'",
+            "name": "directory path",
+            "template": "folders"
+          },
+          "description": "Config dir (default 'config')",
           "name": [
             "--configDir"
           ],
-          "description": "Config dir (default 'config')",
-          "priority": 50,
-          "args": {
-            "name": "directory path",
-            "description": "Default is 'config'",
-            "template": "folders"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Debug output (default false)",
           "name": [
             "--debug"
           ],
-          "description": "Debug output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Build environment",
           "name": [
             "-e",
             "--environment"
           ],
-          "description": "Build environment",
-          "priority": 50,
-          "args": {
-            "name": "environment"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Ignores any _vendor directory (default false)",
           "name": [
             "--ignoreVendor"
           ],
-          "description": "Ignores any _vendor directory (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "glob pattern"
+          },
+          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
           "name": [
             "--ignoreVendorPaths"
           ],
-          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
-          "priority": 50,
-          "args": {
-            "name": "glob pattern"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Enable Logging (default false)",
           "name": [
             "--log"
           ],
-          "description": "Enable Logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
-          "name": [
-            "--logFile"
-          ],
-          "description": "Log File path (if set, logging enabled automatically)",
-          "priority": 50,
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Log File path (if set, logging enabled automatically)",
+          "name": [
+            "--logFile"
+          ],
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Build in quiet mode (default false)",
           "name": [
             "--quiet"
           ],
-          "description": "Build in quiet mode (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to read files relative from",
           "name": [
             "-s",
             "--source"
           ],
-          "description": "Filesystem path to read files relative from",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to themes directory",
           "name": [
             "--themesDir"
           ],
-          "description": "Filesystem path to themes directory",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose output (default false)",
           "name": [
             "-v",
             "--verbose"
           ],
-          "description": "Verbose output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose logging (default false)",
           "name": [
             "--verboseLog"
           ],
-          "description": "Verbose logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Convert front matter to JSON",
+          "name": "toJSON",
+          "options": [
+            {
+              "description": "help for toJSON",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "path",
+                "template": "folders"
+              },
+              "description": "Filesystem path to write files to",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Enable less safe operations, please backup first",
+              "name": [
+                "--unsafe"
+              ]
+            }
+          ]
         },
         {
+          "description": "Convert front matter to TOML",
+          "name": "toTOML",
+          "options": [
+            {
+              "description": "help for toTOML",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "path",
+                "template": "folders"
+              },
+              "description": "Filesystem path to write files to",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Enable less safe operations, please backup first",
+              "name": [
+                "--unsafe"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Convert front matter to YAML",
+          "name": "toYAML",
+          "options": [
+            {
+              "description": "help for toYAML",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "args": {
+                "name": "path",
+                "template": "folders"
+              },
+              "description": "Filesystem path to write files to",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "description": "Enable less safe operations, please backup first",
+              "name": [
+                "--unsafe"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Deploy your site to a Cloud provider",
+      "name": "deploy",
+      "options": [
+        {
+          "description": "help for deploy",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Config file (default is path/config.yaml|json|toml)",
+          "name": [
+            "--config"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "description": "Default is 'config'",
+            "name": "directory path",
+            "template": "folders"
+          },
+          "description": "Config dir (default 'config')",
+          "name": [
+            "--configDir"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Debug output (default false)",
+          "name": [
+            "--debug"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Build environment",
+          "name": [
+            "-e",
+            "--environment"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Ignores any _vendor directory (default false)",
+          "name": [
+            "--ignoreVendor"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "glob pattern"
+          },
+          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
+          "name": [
+            "--ignoreVendorPaths"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Enable Logging (default false)",
+          "name": [
+            "--log"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Log File path (if set, logging enabled automatically)",
+          "name": [
+            "--logFile"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Build in quiet mode (default false)",
+          "name": [
+            "--quiet"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to read files relative from",
+          "name": [
+            "-s",
+            "--source"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to themes directory",
+          "name": [
+            "--themesDir"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose output (default false)",
+          "name": [
+            "-v",
+            "--verbose"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose logging (default false)",
+          "name": [
+            "--verboseLog"
+          ],
+          "priority": 50
+        },
+        {
+          "description": "Ask for confirmation before making changes to the target",
           "name": [
             "--confirm"
-          ],
-          "description": "Ask for confirmation before making changes to the target"
+          ]
         },
         {
+          "description": "Dry run",
           "name": [
             "--dryRun"
-          ],
-          "description": "Dry run"
+          ]
         },
         {
+          "description": "Force upload of all files",
           "name": [
             "--force"
-          ],
-          "description": "Force upload of all files"
+          ]
         },
         {
+          "description": "Invalidate the CDN cache listed in the deployment target (default true)",
           "name": [
             "--invalidateCDN"
-          ],
-          "description": "Invalidate the CDN cache listed in the deployment target (default true)"
+          ]
         },
         {
-          "name": [
-            "--maxDeletes"
-          ],
-          "description": "Maximum # of files to delete, or -1 to disable (default 256)",
           "args": {
             "name": "int"
-          }
+          },
+          "description": "Maximum # of files to delete, or -1 to disable (default 256)",
+          "name": [
+            "--maxDeletes"
+          ]
         },
         {
-          "name": [
-            "--target"
-          ],
-          "description": "Target deployment from deployments section in config file; defaults to the first one",
           "args": {
             "name": "target"
-          }
+          },
+          "description": "Target deployment from deployments section in config file; defaults to the first one",
+          "name": [
+            "--target"
+          ]
         }
       ]
     },
     {
-      "name": "env",
       "description": "Print Hugo version and environment info",
+      "name": "env",
       "options": [
         {
+          "description": "help for env",
           "name": [
             "-h",
             "--help"
-          ],
-          "description": "help for env"
+          ]
         },
         {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Config file (default is path/config.yaml|json|toml)",
           "name": [
             "--config"
           ],
-          "description": "Config file (default is path/config.yaml|json|toml)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "description": "Default is 'config'",
+            "name": "directory path",
+            "template": "folders"
+          },
+          "description": "Config dir (default 'config')",
           "name": [
             "--configDir"
           ],
-          "description": "Config dir (default 'config')",
-          "priority": 50,
-          "args": {
-            "name": "directory path",
-            "description": "Default is 'config'",
-            "template": "folders"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Debug output (default false)",
           "name": [
             "--debug"
           ],
-          "description": "Debug output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Build environment",
           "name": [
             "-e",
             "--environment"
           ],
-          "description": "Build environment",
-          "priority": 50,
-          "args": {
-            "name": "environment"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Ignores any _vendor directory (default false)",
           "name": [
             "--ignoreVendor"
           ],
-          "description": "Ignores any _vendor directory (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "glob pattern"
+          },
+          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
           "name": [
             "--ignoreVendorPaths"
           ],
-          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
-          "priority": 50,
-          "args": {
-            "name": "glob pattern"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Enable Logging (default false)",
           "name": [
             "--log"
           ],
-          "description": "Enable Logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
-          "name": [
-            "--logFile"
-          ],
-          "description": "Log File path (if set, logging enabled automatically)",
-          "priority": 50,
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Log File path (if set, logging enabled automatically)",
+          "name": [
+            "--logFile"
+          ],
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Build in quiet mode (default false)",
           "name": [
             "--quiet"
           ],
-          "description": "Build in quiet mode (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to read files relative from",
           "name": [
             "-s",
             "--source"
           ],
-          "description": "Filesystem path to read files relative from",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to themes directory",
           "name": [
             "--themesDir"
           ],
-          "description": "Filesystem path to themes directory",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose output (default false)",
           "name": [
             "-v",
             "--verbose"
           ],
-          "description": "Verbose output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose logging (default false)",
           "name": [
             "--verboseLog"
           ],
-          "description": "Verbose logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "description": "Get a full dependency list",
           "name": [
             "-v"
-          ],
-          "description": "Get a full dependency list"
+          ]
         }
       ]
     },
     {
-      "name": "gen",
+      "args": {
+        "name": "command"
+      },
       "description": "A collection of several useful generators",
+      "name": "gen",
+      "options": [
+        {
+          "description": "help for gen",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Config file (default is path/config.yaml|json|toml)",
+          "name": [
+            "--config"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "description": "Default is 'config'",
+            "name": "directory path",
+            "template": "folders"
+          },
+          "description": "Config dir (default 'config')",
+          "name": [
+            "--configDir"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Debug output (default false)",
+          "name": [
+            "--debug"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Build environment",
+          "name": [
+            "-e",
+            "--environment"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Ignores any _vendor directory (default false)",
+          "name": [
+            "--ignoreVendor"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "glob pattern"
+          },
+          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
+          "name": [
+            "--ignoreVendorPaths"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Enable Logging (default false)",
+          "name": [
+            "--log"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Log File path (if set, logging enabled automatically)",
+          "name": [
+            "--logFile"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Build in quiet mode (default false)",
+          "name": [
+            "--quiet"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to read files relative from",
+          "name": [
+            "-s",
+            "--source"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to themes directory",
+          "name": [
+            "--themesDir"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose output (default false)",
+          "name": [
+            "-v",
+            "--verbose"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose logging (default false)",
+          "name": [
+            "--verboseLog"
+          ],
+          "priority": 50
+        }
+      ],
       "subcommands": [
         {
-          "name": "autocomplete",
           "description": "Generate shell autocompletion script for Hugo (default outputs to stdout)",
+          "name": "autocomplete",
           "options": [
             {
+              "description": "help for autocomplete",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "help for autocomplete"
+              ]
             },
             {
-              "name": [
-                "-f",
-                "--completionfile"
-              ],
-              "description": "Autocompletion file, defaults to stdout",
               "args": {
                 "name": "file",
                 "template": "filepaths"
-              }
+              },
+              "description": "Autocompletion file, defaults to stdout",
+              "name": [
+                "-f",
+                "--completionfile"
+              ]
             },
             {
-              "name": [
-                "-t",
-                "--type"
-              ],
-              "description": "Autocompletion type (bash, zsh, fish, or powershell) (default 'bash')",
               "args": {
                 "name": "type",
                 "suggestions": [
                   {
-                    "name": "bash",
-                    "description": "Default"
+                    "description": "Default",
+                    "name": "bash"
                   },
                   {
                     "name": "zsh"
@@ -997,50 +1578,51 @@
                     "name": "powershell"
                   }
                 ]
-              }
+              },
+              "description": "Autocompletion type (bash, zsh, fish, or powershell) (default 'bash')",
+              "name": [
+                "-t",
+                "--type"
+              ]
             }
           ]
         },
         {
-          "name": "chromastyles",
           "description": "Generate CSS stylesheet for the Chroma code highlighter (default outputs to stdout)",
+          "name": "chromastyles",
           "options": [
             {
+              "description": "help for chromastyles",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "help for chromastyles"
+              ]
             },
             {
+              "args": {
+                "name": "hex triplet"
+              },
+              "description": "Style used for highlighting lines (see https://github.com/alecthomas/chroma) (default 'bg:#ffffcc')",
               "name": [
                 "--highlightStyle"
-              ],
-              "description": "Style used for highlighting lines (see https://github.com/alecthomas/chroma) (default 'bg:#ffffcc')",
-              "args": {
-                "name": "hex triplet"
-              }
+              ]
             },
             {
+              "args": {
+                "name": "hex triplet"
+              },
+              "description": "Style used for line numbers (see https://github.com/alecthomas/chroma)",
               "name": [
                 "--linesStyle"
-              ],
-              "description": "Style used for line numbers (see https://github.com/alecthomas/chroma)",
-              "args": {
-                "name": "hex triplet"
-              }
+              ]
             },
             {
-              "name": [
-                "--style"
-              ],
-              "description": "Highlighter style (see https://help.farbox.com/pygments.html) (default 'friendly')",
               "args": {
                 "name": "style name",
                 "suggestions": [
                   {
-                    "name": "friendly",
-                    "description": "Default"
+                    "description": "Default",
+                    "name": "friendly"
                   },
                   {
                     "name": "abap"
@@ -1175,214 +1757,63 @@
                     "name": "xcode"
                   }
                 ]
-              }
+              },
+              "description": "Highlighter style (see https://help.farbox.com/pygments.html) (default 'friendly')",
+              "name": [
+                "--style"
+              ]
             }
           ]
         },
         {
-          "name": "doc",
           "description": "Generate Markdown documentation for the Hugo CLI (default '/tmp/hugodoc/')",
+          "name": "doc",
           "options": [
             {
+              "description": "help for doc",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "help for doc"
+              ]
             },
             {
-              "name": [
-                "--dir"
-              ],
+              "args": {
+                "name": "path",
+                "template": "folders"
+              },
               "description": "The directory to write the doc. (default '/tmp/hugodoc/')",
-              "args": {
-                "name": "path",
-                "template": "folders"
-              }
+              "name": [
+                "--dir"
+              ]
             }
           ]
         },
         {
-          "name": "man",
           "description": "Generate man pages for the Hugo CLI (default 'man/')",
+          "name": "man",
           "options": [
             {
+              "description": "help for man",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "help for man"
+              ]
             },
             {
-              "name": [
-                "--dir"
-              ],
-              "description": "The directory to write the man pages. (default 'man/')",
               "args": {
                 "name": "path",
                 "template": "folders"
-              }
+              },
+              "description": "The directory to write the man pages. (default 'man/')",
+              "name": [
+                "--dir"
+              ]
             }
           ]
         }
-      ],
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "help for gen"
-        },
-        {
-          "name": [
-            "--config"
-          ],
-          "description": "Config file (default is path/config.yaml|json|toml)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--configDir"
-          ],
-          "description": "Config dir (default 'config')",
-          "priority": 50,
-          "args": {
-            "name": "directory path",
-            "description": "Default is 'config'",
-            "template": "folders"
-          }
-        },
-        {
-          "name": [
-            "--debug"
-          ],
-          "description": "Debug output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-e",
-            "--environment"
-          ],
-          "description": "Build environment",
-          "priority": 50,
-          "args": {
-            "name": "environment"
-          }
-        },
-        {
-          "name": [
-            "--ignoreVendor"
-          ],
-          "description": "Ignores any _vendor directory (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--ignoreVendorPaths"
-          ],
-          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
-          "priority": 50,
-          "args": {
-            "name": "glob pattern"
-          }
-        },
-        {
-          "name": [
-            "--log"
-          ],
-          "description": "Enable Logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--logFile"
-          ],
-          "description": "Log File path (if set, logging enabled automatically)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--quiet"
-          ],
-          "description": "Build in quiet mode (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-s",
-            "--source"
-          ],
-          "description": "Filesystem path to read files relative from",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--themesDir"
-          ],
-          "description": "Filesystem path to themes directory",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "-v",
-            "--verbose"
-          ],
-          "description": "Verbose output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--verboseLog"
-          ],
-          "description": "Verbose logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        }
-      ],
-      "args": {
-        "name": "command"
-      }
+      ]
     },
     {
-      "name": "help",
-      "description": "Help about any command",
       "args": {
         "name": "command",
         "suggestions": [
@@ -1426,30 +1857,168 @@
             "name": "version"
           }
         ]
-      }
+      },
+      "description": "Help about any command",
+      "name": "help"
     },
     {
-      "name": "import",
+      "args": {
+        "name": "command"
+      },
       "description": "Import your site from others",
+      "name": "import",
+      "options": [
+        {
+          "description": "help for import",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Config file (default is path/config.yaml|json|toml)",
+          "name": [
+            "--config"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "description": "Default is 'config'",
+            "name": "directory path",
+            "template": "folders"
+          },
+          "description": "Config dir (default 'config')",
+          "name": [
+            "--configDir"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Debug output (default false)",
+          "name": [
+            "--debug"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Build environment",
+          "name": [
+            "-e",
+            "--environment"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Ignores any _vendor directory (default false)",
+          "name": [
+            "--ignoreVendor"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "glob pattern"
+          },
+          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
+          "name": [
+            "--ignoreVendorPaths"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Enable Logging (default false)",
+          "name": [
+            "--log"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Log File path (if set, logging enabled automatically)",
+          "name": [
+            "--logFile"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Build in quiet mode (default false)",
+          "name": [
+            "--quiet"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to read files relative from",
+          "name": [
+            "-s",
+            "--source"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to themes directory",
+          "name": [
+            "--themesDir"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose output (default false)",
+          "name": [
+            "-v",
+            "--verbose"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose logging (default false)",
+          "name": [
+            "--verboseLog"
+          ],
+          "priority": 50
+        }
+      ],
       "subcommands": [
         {
-          "name": "jekyll",
-          "description": "Import from Jekyll requires two paths, e.g. ` + `hugo import jekyll jekyll_root_path target_path`",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "help for jekyll"
-            },
-            {
-              "name": [
-                "--force"
-              ],
-              "description": "Allow import into non-empty target directory"
-            }
-          ],
           "args": [
             {
               "name": "jekyll_root_path",
@@ -1459,1142 +2028,942 @@
               "name": "target_path",
               "template": "folders"
             }
-          ]
-        }
-      ],
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
           ],
-          "description": "help for import"
-        },
-        {
-          "name": [
-            "--config"
-          ],
-          "description": "Config file (default is path/config.yaml|json|toml)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--configDir"
-          ],
-          "description": "Config dir (default 'config')",
-          "priority": 50,
-          "args": {
-            "name": "directory path",
-            "description": "Default is 'config'",
-            "template": "folders"
-          }
-        },
-        {
-          "name": [
-            "--debug"
-          ],
-          "description": "Debug output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-e",
-            "--environment"
-          ],
-          "description": "Build environment",
-          "priority": 50,
-          "args": {
-            "name": "environment"
-          }
-        },
-        {
-          "name": [
-            "--ignoreVendor"
-          ],
-          "description": "Ignores any _vendor directory (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--ignoreVendorPaths"
-          ],
-          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
-          "priority": 50,
-          "args": {
-            "name": "glob pattern"
-          }
-        },
-        {
-          "name": [
-            "--log"
-          ],
-          "description": "Enable Logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--logFile"
-          ],
-          "description": "Log File path (if set, logging enabled automatically)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--quiet"
-          ],
-          "description": "Build in quiet mode (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-s",
-            "--source"
-          ],
-          "description": "Filesystem path to read files relative from",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--themesDir"
-          ],
-          "description": "Filesystem path to themes directory",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "-v",
-            "--verbose"
-          ],
-          "description": "Verbose output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--verboseLog"
-          ],
-          "description": "Verbose logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        }
-      ],
-      "args": {
-        "name": "command"
-      }
-    },
-    {
-      "name": "list",
-      "description": "Listing out various types of content",
-      "subcommands": [
-        {
-          "name": "drafts",
-          "description": "List all drafts",
+          "description": "Import from Jekyll requires two paths, e.g. ` + `hugo import jekyll jekyll_root_path target_path`",
+          "name": "jekyll",
           "options": [
             {
+              "description": "help for jekyll",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "help for drafts"
-            }
-          ]
-        },
-        {
-          "name": "future",
-          "description": "List all posts dated in the future",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "help for future"
-            }
-          ]
-        },
-        {
-          "name": "expired",
-          "description": "List all posts already expired",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "help for expired"
-            }
-          ]
-        },
-        {
-          "name": "all",
-          "description": "List all posts",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "help for all"
-            }
-          ]
-        }
-      ],
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "help for list"
-        },
-        {
-          "name": [
-            "--config"
-          ],
-          "description": "Config file (default is path/config.yaml|json|toml)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--configDir"
-          ],
-          "description": "Config dir (default 'config')",
-          "priority": 50,
-          "args": {
-            "name": "directory path",
-            "description": "Default is 'config'",
-            "template": "folders"
-          }
-        },
-        {
-          "name": [
-            "--debug"
-          ],
-          "description": "Debug output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-e",
-            "--environment"
-          ],
-          "description": "Build environment",
-          "priority": 50,
-          "args": {
-            "name": "environment"
-          }
-        },
-        {
-          "name": [
-            "--ignoreVendor"
-          ],
-          "description": "Ignores any _vendor directory (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--ignoreVendorPaths"
-          ],
-          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
-          "priority": 50,
-          "args": {
-            "name": "glob pattern"
-          }
-        },
-        {
-          "name": [
-            "--log"
-          ],
-          "description": "Enable Logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--logFile"
-          ],
-          "description": "Log File path (if set, logging enabled automatically)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--quiet"
-          ],
-          "description": "Build in quiet mode (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-s",
-            "--source"
-          ],
-          "description": "Filesystem path to read files relative from",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--themesDir"
-          ],
-          "description": "Filesystem path to themes directory",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "-v",
-            "--verbose"
-          ],
-          "description": "Verbose output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--verboseLog"
-          ],
-          "description": "Verbose logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        }
-      ],
-      "args": {
-        "name": "command"
-      }
-    },
-    {
-      "name": "mod",
-      "description": "Various Hugo Modules helpers",
-      "subcommands": [
-        {
-          "name": "clean",
-          "description": "Delete the Hugo Module cache for the current project",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "help for clean"
+              ]
             },
             {
+              "description": "Allow import into non-empty target directory",
+              "name": [
+                "--force"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "command"
+      },
+      "description": "Listing out various types of content",
+      "name": "list",
+      "options": [
+        {
+          "description": "help for list",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Config file (default is path/config.yaml|json|toml)",
+          "name": [
+            "--config"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "description": "Default is 'config'",
+            "name": "directory path",
+            "template": "folders"
+          },
+          "description": "Config dir (default 'config')",
+          "name": [
+            "--configDir"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Debug output (default false)",
+          "name": [
+            "--debug"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Build environment",
+          "name": [
+            "-e",
+            "--environment"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Ignores any _vendor directory (default false)",
+          "name": [
+            "--ignoreVendor"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "glob pattern"
+          },
+          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
+          "name": [
+            "--ignoreVendorPaths"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Enable Logging (default false)",
+          "name": [
+            "--log"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Log File path (if set, logging enabled automatically)",
+          "name": [
+            "--logFile"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Build in quiet mode (default false)",
+          "name": [
+            "--quiet"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to read files relative from",
+          "name": [
+            "-s",
+            "--source"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to themes directory",
+          "name": [
+            "--themesDir"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose output (default false)",
+          "name": [
+            "-v",
+            "--verbose"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose logging (default false)",
+          "name": [
+            "--verboseLog"
+          ],
+          "priority": 50
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "List all drafts",
+          "name": "drafts",
+          "options": [
+            {
+              "description": "help for drafts",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List all posts dated in the future",
+          "name": "future",
+          "options": [
+            {
+              "description": "help for future",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List all posts already expired",
+          "name": "expired",
+          "options": [
+            {
+              "description": "help for expired",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List all posts",
+          "name": "all",
+          "options": [
+            {
+              "description": "help for all",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "command"
+      },
+      "description": "Various Hugo Modules helpers",
+      "name": "mod",
+      "options": [
+        {
+          "description": "help for mod",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "args": {
+            "name": "hostname and path"
+          },
+          "description": "Hostname (and path) to the root, e.g. http://spf13.com/",
+          "name": [
+            "-b",
+            "--baseURL"
+          ]
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Include content marked as draft (default false)",
+          "name": [
+            "-D",
+            "--buildDrafts"
+          ]
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Include expired content (default false)",
+          "name": [
+            "-E",
+            "--buildExpired"
+          ]
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Include content with publishdate in the future (default false)",
+          "name": [
+            "-F",
+            "--buildFuture"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Filesystem path to cache directory. Defaults: $TMPDIR/hugo_cache/",
+          "name": [
+            "--cacheDir"
+          ]
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Remove files from destination not found in static directories (default false)",
+          "name": [
+            "--cleanDestinationDir"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Filesystem path to content directory",
+          "name": [
+            "-c",
+            "--contentDir"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Filesystem path to write files to",
+          "name": [
+            "-d",
+            "--destination"
+          ]
+        },
+        {
+          "args": {
+            "name": "kind,kind",
+            "suggestions": [
+              {
+                "name": "page"
+              },
+              {
+                "name": "home"
+              },
+              {
+                "name": "section"
+              },
+              {
+                "name": "taxonomy"
+              },
+              {
+                "name": "term"
+              },
+              {
+                "name": "RSS"
+              },
+              {
+                "name": "sitemap"
+              },
+              {
+                "name": "robotsTXT"
+              },
+              {
+                "name": "404"
+              }
+            ]
+          },
+          "description": "Disable different kind of pages (home, RSS etc.)",
+          "name": [
+            "--disableKinds"
+          ]
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Add Git revision, date and author info to the pages (default false)",
+          "name": [
+            "--enableGitInfo"
+          ]
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Copy all files when static is changed (default false)",
+          "name": [
+            "--forceSyncStatic"
+          ]
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Enable to run some cleanup tasks (remove unused cache files) after the build (default false)",
+          "name": [
+            "--gc"
+          ]
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Print missing translations (default false)",
+          "name": [
+            "--i18n-warnings"
+          ]
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Ignores the cache directory (default false)",
+          "name": [
+            "--ignoreCache"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Filesystem path to layout directory",
+          "name": [
+            "-l",
+            "--layoutDir"
+          ]
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Minify any supported output format (HTML, XML etc.) (default false)",
+          "name": [
+            "--minify"
+          ]
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Don't sync permission mode of files (default false)",
+          "name": [
+            "--noChmod"
+          ]
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Don't sync modification time of files (default false)",
+          "name": [
+            "--noTimes"
+          ]
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Print warnings on duplicate target paths etc (default false)",
+          "name": [
+            "--path-warnings"
+          ]
+        },
+        {
+          "args": {
+            "name": "milliseconds"
+          },
+          "description": "Set this to a poll interval, e.g --poll 700ms, to use a poll based approach to watch for file system changes",
+          "name": [
+            "--poll"
+          ]
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Print memory usage to screen at intervals (default false)",
+          "name": [
+            "--print-mem"
+          ]
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Display metrics about template executions (default false)",
+          "name": [
+            "--templateMetrics"
+          ]
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Calculate some improvement hints when combined with --templateMetrics (default false)",
+          "name": [
+            "--templateMetricsHints"
+          ]
+        },
+        {
+          "args": {
+            "name": "theme name"
+          },
+          "description": "Themes to use (located in /themes/THEMENAME/)",
+          "name": [
+            "-t",
+            "--theme"
+          ]
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Write trace to file (not useful in general)",
+          "name": [
+            "--trace"
+          ]
+        },
+        {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Config file (default is path/config.yaml|json|toml)",
+          "name": [
+            "--config"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "description": "Default is 'config'",
+            "name": "directory path",
+            "template": "folders"
+          },
+          "description": "Config dir (default 'config')",
+          "name": [
+            "--configDir"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Debug output (default false)",
+          "name": [
+            "--debug"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Build environment",
+          "name": [
+            "-e",
+            "--environment"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Ignores any _vendor directory (default false)",
+          "name": [
+            "--ignoreVendor"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "glob pattern"
+          },
+          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
+          "name": [
+            "--ignoreVendorPaths"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Enable Logging (default false)",
+          "name": [
+            "--log"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Log File path (if set, logging enabled automatically)",
+          "name": [
+            "--logFile"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Build in quiet mode (default false)",
+          "name": [
+            "--quiet"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to read files relative from",
+          "name": [
+            "-s",
+            "--source"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to themes directory",
+          "name": [
+            "--themesDir"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose output (default false)",
+          "name": [
+            "-v",
+            "--verbose"
+          ],
+          "priority": 50
+        },
+        {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose logging (default false)",
+          "name": [
+            "--verboseLog"
+          ],
+          "priority": 50
+        }
+      ],
+      "subcommands": [
+        {
+          "description": "Delete the Hugo Module cache for the current project",
+          "name": "clean",
+          "options": [
+            {
+              "description": "help for clean",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Clean entire module cache",
               "name": [
                 "--all"
-              ],
-              "description": "Clean entire module cache"
+              ]
             },
             {
-              "name": [
-                "--pattern"
-              ],
-              "description": "Pattern matching module paths to clean (all if not set)\", \"e.g. \"**hugo*\"",
               "args": {
                 "name": "path"
-              }
+              },
+              "description": "Pattern matching module paths to clean (all if not set)\", \"e.g. \"**hugo*\"",
+              "name": [
+                "--pattern"
+              ]
             }
           ]
         },
         {
-          "name": "get",
           "description": "Resolves dependencies in your current Hugo Project",
+          "name": "get",
           "options": [
             {
+              "description": "help for get",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "help for get"
+              ]
             },
             {
+              "description": "Download packages only and do not install",
               "name": [
                 "-d"
-              ],
-              "description": "Download packages only and do not install"
+              ]
             },
             {
+              "description": "Valid only when -u is set, forces get -u not to verify that each package has been checked out from the source control repository implied by its import path. This can be useful if the source is a local fork of the original",
               "name": [
                 "-f"
-              ],
-              "description": "Valid only when -u is set, forces get -u not to verify that each package has been checked out from the source control repository implied by its import path. This can be useful if the source is a local fork of the original"
+              ]
             },
             {
+              "description": "Run the fix tool on downloaded packages before resolving dependencies or building the code",
               "name": [
                 "-fix"
-              ],
-              "description": "Run the fix tool on downloaded packages before resolving dependencies or building the code"
+              ]
             },
             {
+              "description": "Permits fetching from repositories and resolving custom domains using insecure schemes such as HTTP. Use with caution",
               "name": [
                 "-insecure"
-              ],
-              "description": "Permits fetching from repositories and resolving custom domains using insecure schemes such as HTTP. Use with caution"
+              ]
             },
             {
+              "description": "Also download the packages required to build the tests for the specified packages",
               "name": [
                 "-t"
-              ],
-              "description": "Also download the packages required to build the tests for the specified packages"
+              ]
             },
             {
+              "description": "Recursively update modules. Use network to update the named packages and their dependencies. By default, get uses the network to check out missing packages but does not use it to look for updates to existing packages",
               "name": [
                 "-u"
-              ],
-              "description": "Recursively update modules. Use network to update the named packages and their dependencies. By default, get uses the network to check out missing packages but does not use it to look for updates to existing packages"
+              ]
             },
             {
+              "description": "Enables verbose progress and debug output",
               "name": [
                 "-v"
-              ],
-              "description": "Enables verbose progress and debug output"
+              ]
             }
           ]
         },
         {
-          "name": "graph",
           "description": "Use `hugo mod graph` from the relevant module directory and it will print the dependency graph, including vendoring, module replacement or disabled status",
+          "name": "graph",
           "options": [
             {
+              "description": "help for graph",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "help for graph"
+              ]
             }
           ]
         },
         {
-          "name": "init",
           "description": "Initialize this project as a Hugo Module",
+          "name": "init",
           "options": [
             {
+              "description": "help for init",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "help for init"
+              ]
             }
           ]
         },
         {
-          "name": "npm",
           "description": "Various npm helpers",
-          "subcommands": [
+          "name": "npm",
+          "options": [
             {
-              "name": "pack",
-              "description": "Experimental: Prepares and writes a composite package.json file for your project",
-              "options": [
-                {
-                  "name": [
-                    "-h",
-                    "--help"
-                  ],
-                  "description": "help for pack"
-                }
+              "description": "help for npm",
+              "name": [
+                "-h",
+                "--help"
               ]
             }
           ],
-          "options": [
+          "subcommands": [
             {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "help for npm"
+              "description": "Experimental: Prepares and writes a composite package.json file for your project",
+              "name": "pack",
+              "options": [
+                {
+                  "description": "help for pack",
+                  "name": [
+                    "-h",
+                    "--help"
+                  ]
+                }
+              ]
             }
           ]
         },
         {
-          "name": "tidy",
           "description": "Remove unused entries in go.mod and go.sum",
+          "name": "tidy",
           "options": [
             {
+              "description": "help for tidy",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "help for tidy"
+              ]
             }
           ]
         },
         {
-          "name": "vendor",
           "description": "Vendor all module dependencies into the _vendor directory",
+          "name": "vendor",
           "options": [
             {
+              "description": "help for vendor",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "help for vendor"
+              ]
             }
           ]
         },
         {
-          "name": "verify",
           "description": "Verify dependencies",
+          "name": "verify",
           "options": [
             {
+              "description": "help for verify",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "help for verify"
+              ]
             },
             {
+              "description": "Delete module cache for dependencies that fail verification",
               "name": [
                 "--clean"
-              ],
-              "description": "Delete module cache for dependencies that fail verification"
+              ]
             }
           ]
         }
-      ],
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "help for mod"
-        },
-        {
-          "name": [
-            "-b",
-            "--baseURL"
-          ],
-          "description": "Hostname (and path) to the root, e.g. http://spf13.com/",
-          "args": {
-            "name": "hostname and path"
-          }
-        },
-        {
-          "name": [
-            "-D",
-            "--buildDrafts"
-          ],
-          "description": "Include content marked as draft (default false)",
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-E",
-            "--buildExpired"
-          ],
-          "description": "Include expired content (default false)",
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-F",
-            "--buildFuture"
-          ],
-          "description": "Include content with publishdate in the future (default false)",
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--cacheDir"
-          ],
-          "description": "Filesystem path to cache directory. Defaults: $TMPDIR/hugo_cache/",
-          "args": {
-            "name": "path",
-            "template": "folders"
-          }
-        },
-        {
-          "name": [
-            "--cleanDestinationDir"
-          ],
-          "description": "Remove files from destination not found in static directories (default false)",
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-c",
-            "--contentDir"
-          ],
-          "description": "Filesystem path to content directory",
-          "args": {
-            "name": "path",
-            "template": "folders"
-          }
-        },
-        {
-          "name": [
-            "-d",
-            "--destination"
-          ],
-          "description": "Filesystem path to write files to",
-          "args": {
-            "name": "path",
-            "template": "folders"
-          }
-        },
-        {
-          "name": [
-            "--disableKinds"
-          ],
-          "description": "Disable different kind of pages (home, RSS etc.)",
-          "args": {
-            "name": "kind,kind",
-            "suggestions": [
-              {
-                "name": "page"
-              },
-              {
-                "name": "home"
-              },
-              {
-                "name": "section"
-              },
-              {
-                "name": "taxonomy"
-              },
-              {
-                "name": "term"
-              },
-              {
-                "name": "RSS"
-              },
-              {
-                "name": "sitemap"
-              },
-              {
-                "name": "robotsTXT"
-              },
-              {
-                "name": "404"
-              }
-            ]
-          }
-        },
-        {
-          "name": [
-            "--enableGitInfo"
-          ],
-          "description": "Add Git revision, date and author info to the pages (default false)",
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--forceSyncStatic"
-          ],
-          "description": "Copy all files when static is changed (default false)",
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--gc"
-          ],
-          "description": "Enable to run some cleanup tasks (remove unused cache files) after the build (default false)",
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--i18n-warnings"
-          ],
-          "description": "Print missing translations (default false)",
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--ignoreCache"
-          ],
-          "description": "Ignores the cache directory (default false)",
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-l",
-            "--layoutDir"
-          ],
-          "description": "Filesystem path to layout directory",
-          "args": {
-            "name": "path",
-            "template": "folders"
-          }
-        },
-        {
-          "name": [
-            "--minify"
-          ],
-          "description": "Minify any supported output format (HTML, XML etc.) (default false)",
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--noChmod"
-          ],
-          "description": "Don't sync permission mode of files (default false)",
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--noTimes"
-          ],
-          "description": "Don't sync modification time of files (default false)",
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--path-warnings"
-          ],
-          "description": "Print warnings on duplicate target paths etc (default false)",
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--poll"
-          ],
-          "description": "Set this to a poll interval, e.g --poll 700ms, to use a poll based approach to watch for file system changes",
-          "args": {
-            "name": "milliseconds"
-          }
-        },
-        {
-          "name": [
-            "--print-mem"
-          ],
-          "description": "Print memory usage to screen at intervals (default false)",
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--templateMetrics"
-          ],
-          "description": "Display metrics about template executions (default false)",
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--templateMetricsHints"
-          ],
-          "description": "Calculate some improvement hints when combined with --templateMetrics (default false)",
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-t",
-            "--theme"
-          ],
-          "description": "Themes to use (located in /themes/THEMENAME/)",
-          "args": {
-            "name": "theme name"
-          }
-        },
-        {
-          "name": [
-            "--trace"
-          ],
-          "description": "Write trace to file (not useful in general)",
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--config"
-          ],
-          "description": "Config file (default is path/config.yaml|json|toml)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--configDir"
-          ],
-          "description": "Config dir (default 'config')",
-          "priority": 50,
-          "args": {
-            "name": "directory path",
-            "description": "Default is 'config'",
-            "template": "folders"
-          }
-        },
-        {
-          "name": [
-            "--debug"
-          ],
-          "description": "Debug output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-e",
-            "--environment"
-          ],
-          "description": "Build environment",
-          "priority": 50,
-          "args": {
-            "name": "environment"
-          }
-        },
-        {
-          "name": [
-            "--ignoreVendor"
-          ],
-          "description": "Ignores any _vendor directory (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--ignoreVendorPaths"
-          ],
-          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
-          "priority": 50,
-          "args": {
-            "name": "glob pattern"
-          }
-        },
-        {
-          "name": [
-            "--log"
-          ],
-          "description": "Enable Logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--logFile"
-          ],
-          "description": "Log File path (if set, logging enabled automatically)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--quiet"
-          ],
-          "description": "Build in quiet mode (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "-s",
-            "--source"
-          ],
-          "description": "Filesystem path to read files relative from",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--themesDir"
-          ],
-          "description": "Filesystem path to themes directory",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "-v",
-            "--verbose"
-          ],
-          "description": "Verbose output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        },
-        {
-          "name": [
-            "--verboseLog"
-          ],
-          "description": "Verbose logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
-        }
-      ],
-      "args": {
-        "name": "command"
-      }
+      ]
     },
     {
-      "name": "new",
+      "args": {
+        "name": "content-section/file-name.md"
+      },
       "description": "Create new content for your site",
-      "subcommands": [
-        {
-          "name": "site",
-          "description": "Create a new site (skeleton)",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "help for site"
-            },
-            {
-              "name": [
-                "--force"
-              ],
-              "description": "Init inside non-empty directory"
-            },
-            {
-              "name": [
-                "-f",
-                "--format"
-              ],
-              "description": "Config & frontmatter format (default \"toml\")",
-              "args": {
-                "name": "format",
-                "suggestions": [
-                  {
-                    "name": "toml",
-                    "description": "Default"
-                  },
-                  {
-                    "name": "yaml"
-                  },
-                  {
-                    "name": "json"
-                  }
-                ]
-              }
-            }
-          ],
-          "args": {
-            "name": "path",
-            "template": "folders"
-          }
-        },
-        {
-          "name": "theme",
-          "description": "Create a new theme",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "help for theme"
-            }
-          ],
-          "args": {
-            "name": "name"
-          }
-        }
-      ],
+      "name": "new",
       "options": [
         {
+          "description": "help for new",
           "name": [
             "-h",
             "--help"
-          ],
-          "description": "help for new"
+          ]
         },
         {
+          "args": {
+            "name": "hostname and path"
+          },
+          "description": "Hostname (and path) to the root, e.g. http://spf13.com/",
           "name": [
             "-b",
             "--baseURL"
-          ],
-          "description": "Hostname (and path) to the root, e.g. http://spf13.com/",
-          "args": {
-            "name": "hostname and path"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Include content marked as draft (default false)",
           "name": [
             "-D",
             "--buildDrafts"
-          ],
-          "description": "Include content marked as draft (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Include expired content (default false)",
           "name": [
             "-E",
             "--buildExpired"
-          ],
-          "description": "Include expired content (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Include content with publishdate in the future (default false)",
           "name": [
             "-F",
             "--buildFuture"
-          ],
-          "description": "Include content with publishdate in the future (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
-          "name": [
-            "--cacheDir"
-          ],
-          "description": "Filesystem path to cache directory. Defaults: $TMPDIR/hugo_cache/",
           "args": {
             "name": "path",
             "template": "folders"
-          }
+          },
+          "description": "Filesystem path to cache directory. Defaults: $TMPDIR/hugo_cache/",
+          "name": [
+            "--cacheDir"
+          ]
         },
         {
-          "name": [
-            "--cleanDestinationDir"
-          ],
-          "description": "Remove files from destination not found in static directories (default false)",
           "args": {
             "name": "boolean"
-          }
+          },
+          "description": "Remove files from destination not found in static directories (default false)",
+          "name": [
+            "--cleanDestinationDir"
+          ]
         },
         {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Filesystem path to content directory",
           "name": [
             "-c",
             "--contentDir"
-          ],
-          "description": "Filesystem path to content directory",
+          ]
+        },
+        {
           "args": {
             "name": "path",
             "template": "folders"
-          }
-        },
-        {
+          },
+          "description": "Filesystem path to write files to",
           "name": [
             "-d",
             "--destination"
-          ],
-          "description": "Filesystem path to write files to",
-          "args": {
-            "name": "path",
-            "template": "folders"
-          }
+          ]
         },
         {
-          "name": [
-            "--disableKinds"
-          ],
-          "description": "Disable different kind of pages (home, RSS etc.)",
           "args": {
             "name": "kind,kind",
             "suggestions": [
@@ -2626,306 +2995,304 @@
                 "name": "404"
               }
             ]
-          }
+          },
+          "description": "Disable different kind of pages (home, RSS etc.)",
+          "name": [
+            "--disableKinds"
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Add Git revision, date and author info to the pages (default false)",
           "name": [
             "--enableGitInfo"
-          ],
-          "description": "Add Git revision, date and author info to the pages (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Copy all files when static is changed (default false)",
           "name": [
             "--forceSyncStatic"
-          ],
-          "description": "Copy all files when static is changed (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Enable to run some cleanup tasks (remove unused cache files) after the build (default false)",
           "name": [
             "--gc"
-          ],
-          "description": "Enable to run some cleanup tasks (remove unused cache files) after the build (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Print missing translations (default false)",
           "name": [
             "--i18n-warnings"
-          ],
-          "description": "Print missing translations (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Ignores the cache directory (default false)",
           "name": [
             "--ignoreCache"
-          ],
-          "description": "Ignores the cache directory (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
-          "name": [
-            "-l",
-            "--layoutDir"
-          ],
-          "description": "Filesystem path to layout directory",
           "args": {
             "name": "path",
             "template": "folders"
-          }
+          },
+          "description": "Filesystem path to layout directory",
+          "name": [
+            "-l",
+            "--layoutDir"
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Minify any supported output format (HTML, XML etc.) (default false)",
           "name": [
             "--minify"
-          ],
-          "description": "Minify any supported output format (HTML, XML etc.) (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Don't sync permission mode of files (default false)",
           "name": [
             "--noChmod"
-          ],
-          "description": "Don't sync permission mode of files (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Don't sync modification time of files (default false)",
           "name": [
             "--noTimes"
-          ],
-          "description": "Don't sync modification time of files (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Print warnings on duplicate target paths etc (default false)",
           "name": [
             "--path-warnings"
-          ],
-          "description": "Print warnings on duplicate target paths etc (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
-          "name": [
-            "--poll"
-          ],
-          "description": "Set this to a poll interval, e.g --poll 700ms, to use a poll based approach to watch for file system changes",
           "args": {
             "name": "milliseconds"
-          }
+          },
+          "description": "Set this to a poll interval, e.g --poll 700ms, to use a poll based approach to watch for file system changes",
+          "name": [
+            "--poll"
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Print memory usage to screen at intervals (default false)",
           "name": [
             "--print-mem"
-          ],
-          "description": "Print memory usage to screen at intervals (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Display metrics about template executions (default false)",
           "name": [
             "--templateMetrics"
-          ],
-          "description": "Display metrics about template executions (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Calculate some improvement hints when combined with --templateMetrics (default false)",
           "name": [
             "--templateMetricsHints"
-          ],
-          "description": "Calculate some improvement hints when combined with --templateMetrics (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "theme name"
+          },
+          "description": "Themes to use (located in /themes/THEMENAME/)",
           "name": [
             "-t",
             "--theme"
-          ],
-          "description": "Themes to use (located in /themes/THEMENAME/)",
-          "args": {
-            "name": "theme name"
-          }
+          ]
         },
         {
-          "name": [
-            "--trace"
-          ],
-          "description": "Write trace to file (not useful in general)",
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Write trace to file (not useful in general)",
+          "name": [
+            "--trace"
+          ]
         },
         {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Config file (default is path/config.yaml|json|toml)",
           "name": [
             "--config"
           ],
-          "description": "Config file (default is path/config.yaml|json|toml)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "description": "Default is 'config'",
+            "name": "directory path",
+            "template": "folders"
+          },
+          "description": "Config dir (default 'config')",
           "name": [
             "--configDir"
           ],
-          "description": "Config dir (default 'config')",
-          "priority": 50,
-          "args": {
-            "name": "directory path",
-            "description": "Default is 'config'",
-            "template": "folders"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Debug output (default false)",
           "name": [
             "--debug"
           ],
-          "description": "Debug output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Build environment",
           "name": [
             "-e",
             "--environment"
           ],
-          "description": "Build environment",
-          "priority": 50,
-          "args": {
-            "name": "environment"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Ignores any _vendor directory (default false)",
           "name": [
             "--ignoreVendor"
           ],
-          "description": "Ignores any _vendor directory (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "glob pattern"
+          },
+          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
           "name": [
             "--ignoreVendorPaths"
           ],
-          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
-          "priority": 50,
-          "args": {
-            "name": "glob pattern"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Enable Logging (default false)",
           "name": [
             "--log"
           ],
-          "description": "Enable Logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
-          "name": [
-            "--logFile"
-          ],
-          "description": "Log File path (if set, logging enabled automatically)",
-          "priority": 50,
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Log File path (if set, logging enabled automatically)",
+          "name": [
+            "--logFile"
+          ],
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Build in quiet mode (default false)",
           "name": [
             "--quiet"
           ],
-          "description": "Build in quiet mode (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to read files relative from",
           "name": [
             "-s",
             "--source"
           ],
-          "description": "Filesystem path to read files relative from",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to themes directory",
           "name": [
             "--themesDir"
           ],
-          "description": "Filesystem path to themes directory",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose output (default false)",
           "name": [
             "-v",
             "--verbose"
           ],
-          "description": "Verbose output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose logging (default false)",
           "name": [
             "--verboseLog"
           ],
-          "description": "Verbose logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
-          "name": [
-            "-k",
-            "--kind"
-          ],
-          "description": "Content type to create",
           "args": [
             {
-              "name": "archetype|default",
               "generators": [
                 {
                   "script": [
@@ -2937,124 +3304,186 @@
                     "filter_empty"
                   ]
                 }
-              ]
+              ],
+              "name": "archetype|default"
             },
             {
               "name": "content-section/file-name.md"
             }
+          ],
+          "description": "Content type to create",
+          "name": [
+            "-k",
+            "--kind"
           ]
         },
         {
-          "name": [
-            "--editor"
-          ],
-          "description": "Edit new content with this editor, if provided",
           "args": {
             "name": "editor"
-          }
+          },
+          "description": "Edit new content with this editor, if provided",
+          "name": [
+            "--editor"
+          ]
         }
       ],
-      "args": {
-        "name": "content-section/file-name.md"
-      }
+      "subcommands": [
+        {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Create a new site (skeleton)",
+          "name": "site",
+          "options": [
+            {
+              "description": "help for site",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            },
+            {
+              "description": "Init inside non-empty directory",
+              "name": [
+                "--force"
+              ]
+            },
+            {
+              "args": {
+                "name": "format",
+                "suggestions": [
+                  {
+                    "description": "Default",
+                    "name": "toml"
+                  },
+                  {
+                    "name": "yaml"
+                  },
+                  {
+                    "name": "json"
+                  }
+                ]
+              },
+              "description": "Config & frontmatter format (default \"toml\")",
+              "name": [
+                "-f",
+                "--format"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "Create a new theme",
+          "name": "theme",
+          "options": [
+            {
+              "description": "help for theme",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
-      "name": "server",
       "description": "A high performance webserver",
+      "name": "server",
       "options": [
         {
+          "description": "help for server",
           "name": [
             "-h",
             "--help"
-          ],
-          "description": "help for server"
+          ]
         },
         {
+          "args": {
+            "name": "hostname and path"
+          },
+          "description": "Hostname (and path) to the root, e.g. http://spf13.com/",
           "name": [
             "-b",
             "--baseURL"
-          ],
-          "description": "Hostname (and path) to the root, e.g. http://spf13.com/",
-          "args": {
-            "name": "hostname and path"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Include content marked as draft (default false)",
           "name": [
             "-D",
             "--buildDrafts"
-          ],
-          "description": "Include content marked as draft (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Include expired content (default false)",
           "name": [
             "-E",
             "--buildExpired"
-          ],
-          "description": "Include expired content (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Include content with publishdate in the future (default false)",
           "name": [
             "-F",
             "--buildFuture"
-          ],
-          "description": "Include content with publishdate in the future (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
-          "name": [
-            "--cacheDir"
-          ],
-          "description": "Filesystem path to cache directory. Defaults: $TMPDIR/hugo_cache/",
           "args": {
             "name": "path",
             "template": "folders"
-          }
+          },
+          "description": "Filesystem path to cache directory. Defaults: $TMPDIR/hugo_cache/",
+          "name": [
+            "--cacheDir"
+          ]
         },
         {
-          "name": [
-            "--cleanDestinationDir"
-          ],
-          "description": "Remove files from destination not found in static directories (default false)",
           "args": {
             "name": "boolean"
-          }
+          },
+          "description": "Remove files from destination not found in static directories (default false)",
+          "name": [
+            "--cleanDestinationDir"
+          ]
         },
         {
+          "args": {
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Filesystem path to content directory",
           "name": [
             "-c",
             "--contentDir"
-          ],
-          "description": "Filesystem path to content directory",
+          ]
+        },
+        {
           "args": {
             "name": "path",
             "template": "folders"
-          }
-        },
-        {
+          },
+          "description": "Filesystem path to write files to",
           "name": [
             "-d",
             "--destination"
-          ],
-          "description": "Filesystem path to write files to",
-          "args": {
-            "name": "path",
-            "template": "folders"
-          }
+          ]
         },
         {
-          "name": [
-            "--disableKinds"
-          ],
-          "description": "Disable different kind of pages (home, RSS etc.)",
           "args": {
             "name": "kind,kind",
             "suggestions": [
@@ -3086,1005 +3515,576 @@
                 "name": "404"
               }
             ]
-          }
+          },
+          "description": "Disable different kind of pages (home, RSS etc.)",
+          "name": [
+            "--disableKinds"
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Add Git revision, date and author info to the pages (default false)",
           "name": [
             "--enableGitInfo"
-          ],
-          "description": "Add Git revision, date and author info to the pages (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Copy all files when static is changed (default false)",
           "name": [
             "--forceSyncStatic"
-          ],
-          "description": "Copy all files when static is changed (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Enable to run some cleanup tasks (remove unused cache files) after the build (default false)",
           "name": [
             "--gc"
-          ],
-          "description": "Enable to run some cleanup tasks (remove unused cache files) after the build (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Print missing translations (default false)",
           "name": [
             "--i18n-warnings"
-          ],
-          "description": "Print missing translations (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Ignores the cache directory (default false)",
           "name": [
             "--ignoreCache"
-          ],
-          "description": "Ignores the cache directory (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
-          "name": [
-            "-l",
-            "--layoutDir"
-          ],
-          "description": "Filesystem path to layout directory",
           "args": {
             "name": "path",
             "template": "folders"
-          }
+          },
+          "description": "Filesystem path to layout directory",
+          "name": [
+            "-l",
+            "--layoutDir"
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Minify any supported output format (HTML, XML etc.) (default false)",
           "name": [
             "--minify"
-          ],
-          "description": "Minify any supported output format (HTML, XML etc.) (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Don't sync permission mode of files (default false)",
           "name": [
             "--noChmod"
-          ],
-          "description": "Don't sync permission mode of files (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Don't sync modification time of files (default false)",
           "name": [
             "--noTimes"
-          ],
-          "description": "Don't sync modification time of files (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Print warnings on duplicate target paths etc (default false)",
           "name": [
             "--path-warnings"
-          ],
-          "description": "Print warnings on duplicate target paths etc (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
-          "name": [
-            "--poll"
-          ],
-          "description": "Set this to a poll interval, e.g --poll 700ms, to use a poll based approach to watch for file system changes",
           "args": {
             "name": "milliseconds"
-          }
+          },
+          "description": "Set this to a poll interval, e.g --poll 700ms, to use a poll based approach to watch for file system changes",
+          "name": [
+            "--poll"
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Print memory usage to screen at intervals (default false)",
           "name": [
             "--print-mem"
-          ],
-          "description": "Print memory usage to screen at intervals (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Display metrics about template executions (default false)",
           "name": [
             "--templateMetrics"
-          ],
-          "description": "Display metrics about template executions (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Calculate some improvement hints when combined with --templateMetrics (default false)",
           "name": [
             "--templateMetricsHints"
-          ],
-          "description": "Calculate some improvement hints when combined with --templateMetrics (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "theme name"
+          },
+          "description": "Themes to use (located in /themes/THEMENAME/)",
           "name": [
             "-t",
             "--theme"
-          ],
-          "description": "Themes to use (located in /themes/THEMENAME/)",
-          "args": {
-            "name": "theme name"
-          }
+          ]
         },
         {
-          "name": [
-            "--trace"
-          ],
-          "description": "Write trace to file (not useful in general)",
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Write trace to file (not useful in general)",
+          "name": [
+            "--trace"
+          ]
         },
         {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Config file (default is path/config.yaml|json|toml)",
           "name": [
             "--config"
           ],
-          "description": "Config file (default is path/config.yaml|json|toml)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "description": "Default is 'config'",
+            "name": "directory path",
+            "template": "folders"
+          },
+          "description": "Config dir (default 'config')",
           "name": [
             "--configDir"
           ],
-          "description": "Config dir (default 'config')",
-          "priority": 50,
-          "args": {
-            "name": "directory path",
-            "description": "Default is 'config'",
-            "template": "folders"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Debug output (default false)",
           "name": [
             "--debug"
           ],
-          "description": "Debug output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Build environment",
           "name": [
             "-e",
             "--environment"
           ],
-          "description": "Build environment",
-          "priority": 50,
-          "args": {
-            "name": "environment"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Ignores any _vendor directory (default false)",
           "name": [
             "--ignoreVendor"
           ],
-          "description": "Ignores any _vendor directory (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "glob pattern"
+          },
+          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
           "name": [
             "--ignoreVendorPaths"
           ],
-          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
-          "priority": 50,
-          "args": {
-            "name": "glob pattern"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Enable Logging (default false)",
           "name": [
             "--log"
           ],
-          "description": "Enable Logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
-          "name": [
-            "--logFile"
-          ],
-          "description": "Log File path (if set, logging enabled automatically)",
-          "priority": 50,
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Log File path (if set, logging enabled automatically)",
+          "name": [
+            "--logFile"
+          ],
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Build in quiet mode (default false)",
           "name": [
             "--quiet"
           ],
-          "description": "Build in quiet mode (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to read files relative from",
           "name": [
             "-s",
             "--source"
           ],
-          "description": "Filesystem path to read files relative from",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to themes directory",
           "name": [
             "--themesDir"
           ],
-          "description": "Filesystem path to themes directory",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose output (default false)",
           "name": [
             "-v",
             "--verbose"
           ],
-          "description": "Verbose output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose logging (default false)",
           "name": [
             "--verboseLog"
           ],
-          "description": "Verbose logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Watch filesystem for changes and recreate as needed (default true)",
           "name": [
             "-w",
             "--watch"
-          ],
-          "description": "Watch filesystem for changes and recreate as needed (default true)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Append port to baseURL (default true)",
           "name": [
             "--appendPort"
-          ],
-          "description": "Append port to baseURL (default true)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
-          "name": [
-            "--bind"
-          ],
-          "description": "Interface to which the server will bind (default '127.0.0.1')",
           "args": {
             "name": "ip address"
-          }
+          },
+          "description": "Interface to which the server will bind (default '127.0.0.1')",
+          "name": [
+            "--bind"
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Do not show build errors in the browser (default false)",
           "name": [
             "--disableBrowserError"
-          ],
-          "description": "Do not show build errors in the browser (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Enables full re-renders on changes (default false)",
           "name": [
             "--disableFastRender"
-          ],
-          "description": "Enables full re-renders on changes (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Watch without enabling live browser reload on rebuild (default false)",
           "name": [
             "--disableLiveReload"
-          ],
-          "description": "Watch without enabling live browser reload on rebuild (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
-          "name": [
-            "--liveReloadPort"
-          ],
-          "description": "Port for live reloading (i.e. 443 in HTTPS proxy situations) (default -1)",
           "args": {
             "name": "port"
-          }
+          },
+          "description": "Port for live reloading (i.e. 443 in HTTPS proxy situations) (default -1)",
+          "name": [
+            "--liveReloadPort"
+          ]
         },
         {
-          "name": [
-            "--meminterval"
-          ],
-          "description": "Interval to poll memory usage (requires --memstats), valid time units are 'ns', 'us' (or 'µs'), 'ms', 's', 'm', 'h'. (default '100ms')",
           "args": {
             "name": "time unit"
-          }
+          },
+          "description": "Interval to poll memory usage (requires --memstats), valid time units are 'ns', 'us' (or 'µs'), 'ms', 's', 'm', 'h'. (default '100ms')",
+          "name": [
+            "--meminterval"
+          ]
         },
         {
-          "name": [
-            "--memstats"
-          ],
-          "description": "Log memory usage to this file",
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Log memory usage to this file",
+          "name": [
+            "--memstats"
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Navigate to changed content file on live browser reload (default false)",
           "name": [
             "--navigateToChanged"
-          ],
-          "description": "Navigate to changed content file on live browser reload (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Prevent HTTP caching (default false)",
           "name": [
             "--noHTTPCache"
-          ],
-          "description": "Prevent HTTP caching (default false)",
-          "args": {
-            "name": "boolean"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "port"
+          },
+          "description": "Port on which the server will listen (default 1313)",
           "name": [
             "-p",
             "--port"
-          ],
-          "description": "Port on which the server will listen (default 1313)",
-          "args": {
-            "name": "port"
-          }
+          ]
         },
         {
-          "name": [
-            "--renderToDisk"
-          ],
-          "description": "Render to Destination path (default is false: render to memory & serve from there)",
           "args": {
             "name": "boolean"
-          }
+          },
+          "description": "Render to Destination path (default is false: render to memory & serve from there)",
+          "name": [
+            "--renderToDisk"
+          ]
         }
       ]
     },
     {
-      "name": "version",
       "description": "Print the version number of Hugo",
+      "name": "version",
       "options": [
         {
+          "description": "help for version",
           "name": [
             "-h",
             "--help"
-          ],
-          "description": "help for version"
+          ]
         },
         {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Config file (default is path/config.yaml|json|toml)",
           "name": [
             "--config"
           ],
-          "description": "Config file (default is path/config.yaml|json|toml)",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "description": "Default is 'config'",
+            "name": "directory path",
+            "template": "folders"
+          },
+          "description": "Config dir (default 'config')",
           "name": [
             "--configDir"
           ],
-          "description": "Config dir (default 'config')",
-          "priority": 50,
-          "args": {
-            "name": "directory path",
-            "description": "Default is 'config'",
-            "template": "folders"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Debug output (default false)",
           "name": [
             "--debug"
           ],
-          "description": "Debug output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "environment"
+          },
+          "description": "Build environment",
           "name": [
             "-e",
             "--environment"
           ],
-          "description": "Build environment",
-          "priority": 50,
-          "args": {
-            "name": "environment"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Ignores any _vendor directory (default false)",
           "name": [
             "--ignoreVendor"
           ],
-          "description": "Ignores any _vendor directory (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "glob pattern"
+          },
+          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
           "name": [
             "--ignoreVendorPaths"
           ],
-          "description": "Ignores any _vendor for module paths matching the given Glob pattern",
-          "priority": 50,
-          "args": {
-            "name": "glob pattern"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Enable Logging (default false)",
           "name": [
             "--log"
           ],
-          "description": "Enable Logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
-          "name": [
-            "--logFile"
-          ],
-          "description": "Log File path (if set, logging enabled automatically)",
-          "priority": 50,
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Log File path (if set, logging enabled automatically)",
+          "name": [
+            "--logFile"
+          ],
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Build in quiet mode (default false)",
           "name": [
             "--quiet"
           ],
-          "description": "Build in quiet mode (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to read files relative from",
           "name": [
             "-s",
             "--source"
           ],
-          "description": "Filesystem path to read files relative from",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "description": "Default is path/config.yaml|json|toml",
+            "name": "file",
+            "template": "filepaths"
+          },
+          "description": "Filesystem path to themes directory",
           "name": [
             "--themesDir"
           ],
-          "description": "Filesystem path to themes directory",
-          "priority": 50,
-          "args": {
-            "name": "file",
-            "description": "Default is path/config.yaml|json|toml",
-            "template": "filepaths"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose output (default false)",
           "name": [
             "-v",
             "--verbose"
           ],
-          "description": "Verbose output (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         },
         {
+          "args": {
+            "name": "boolean"
+          },
+          "description": "Verbose logging (default false)",
           "name": [
             "--verboseLog"
           ],
-          "description": "Verbose logging (default false)",
-          "priority": 50,
-          "args": {
-            "name": "boolean"
-          }
+          "priority": 50
         }
       ]
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "-h",
-        "--help"
-      ],
-      "description": "help for hugo"
-    },
-    {
-      "name": [
-        "-b",
-        "--baseURL"
-      ],
-      "description": "Hostname (and path) to the root, e.g. http://spf13.com/",
-      "args": {
-        "name": "hostname and path"
-      }
-    },
-    {
-      "name": [
-        "-D",
-        "--buildDrafts"
-      ],
-      "description": "Include content marked as draft (default false)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "-E",
-        "--buildExpired"
-      ],
-      "description": "Include expired content (default false)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "-F",
-        "--buildFuture"
-      ],
-      "description": "Include content with publishdate in the future (default false)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "--cacheDir"
-      ],
-      "description": "Filesystem path to cache directory. Defaults: $TMPDIR/hugo_cache/",
-      "args": {
-        "name": "path",
-        "template": "folders"
-      }
-    },
-    {
-      "name": [
-        "--cleanDestinationDir"
-      ],
-      "description": "Remove files from destination not found in static directories (default false)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "-c",
-        "--contentDir"
-      ],
-      "description": "Filesystem path to content directory",
-      "args": {
-        "name": "path",
-        "template": "folders"
-      }
-    },
-    {
-      "name": [
-        "-d",
-        "--destination"
-      ],
-      "description": "Filesystem path to write files to",
-      "args": {
-        "name": "path",
-        "template": "folders"
-      }
-    },
-    {
-      "name": [
-        "--disableKinds"
-      ],
-      "description": "Disable different kind of pages (home, RSS etc.)",
-      "args": {
-        "name": "kind,kind",
-        "suggestions": [
-          {
-            "name": "page"
-          },
-          {
-            "name": "home"
-          },
-          {
-            "name": "section"
-          },
-          {
-            "name": "taxonomy"
-          },
-          {
-            "name": "term"
-          },
-          {
-            "name": "RSS"
-          },
-          {
-            "name": "sitemap"
-          },
-          {
-            "name": "robotsTXT"
-          },
-          {
-            "name": "404"
-          }
-        ]
-      }
-    },
-    {
-      "name": [
-        "--enableGitInfo"
-      ],
-      "description": "Add Git revision, date and author info to the pages (default false)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "--forceSyncStatic"
-      ],
-      "description": "Copy all files when static is changed (default false)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "--gc"
-      ],
-      "description": "Enable to run some cleanup tasks (remove unused cache files) after the build (default false)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "--i18n-warnings"
-      ],
-      "description": "Print missing translations (default false)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "--ignoreCache"
-      ],
-      "description": "Ignores the cache directory (default false)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "-l",
-        "--layoutDir"
-      ],
-      "description": "Filesystem path to layout directory",
-      "args": {
-        "name": "path",
-        "template": "folders"
-      }
-    },
-    {
-      "name": [
-        "--minify"
-      ],
-      "description": "Minify any supported output format (HTML, XML etc.) (default false)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "--noChmod"
-      ],
-      "description": "Don't sync permission mode of files (default false)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "--noTimes"
-      ],
-      "description": "Don't sync modification time of files (default false)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "--path-warnings"
-      ],
-      "description": "Print warnings on duplicate target paths etc (default false)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "--poll"
-      ],
-      "description": "Set this to a poll interval, e.g --poll 700ms, to use a poll based approach to watch for file system changes",
-      "args": {
-        "name": "milliseconds"
-      }
-    },
-    {
-      "name": [
-        "--print-mem"
-      ],
-      "description": "Print memory usage to screen at intervals (default false)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "--templateMetrics"
-      ],
-      "description": "Display metrics about template executions (default false)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "--templateMetricsHints"
-      ],
-      "description": "Calculate some improvement hints when combined with --templateMetrics (default false)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "-t",
-        "--theme"
-      ],
-      "description": "Themes to use (located in /themes/THEMENAME/)",
-      "args": {
-        "name": "theme name"
-      }
-    },
-    {
-      "name": [
-        "--trace"
-      ],
-      "description": "Write trace to file (not useful in general)",
-      "args": {
-        "name": "file",
-        "template": "filepaths"
-      }
-    },
-    {
-      "name": [
-        "--config"
-      ],
-      "description": "Config file (default is path/config.yaml|json|toml)",
-      "priority": 50,
-      "args": {
-        "name": "file",
-        "description": "Default is path/config.yaml|json|toml",
-        "template": "filepaths"
-      }
-    },
-    {
-      "name": [
-        "--configDir"
-      ],
-      "description": "Config dir (default 'config')",
-      "priority": 50,
-      "args": {
-        "name": "directory path",
-        "description": "Default is 'config'",
-        "template": "folders"
-      }
-    },
-    {
-      "name": [
-        "--debug"
-      ],
-      "description": "Debug output (default false)",
-      "priority": 50,
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "-e",
-        "--environment"
-      ],
-      "description": "Build environment",
-      "priority": 50,
-      "args": {
-        "name": "environment"
-      }
-    },
-    {
-      "name": [
-        "--ignoreVendor"
-      ],
-      "description": "Ignores any _vendor directory (default false)",
-      "priority": 50,
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "--ignoreVendorPaths"
-      ],
-      "description": "Ignores any _vendor for module paths matching the given Glob pattern",
-      "priority": 50,
-      "args": {
-        "name": "glob pattern"
-      }
-    },
-    {
-      "name": [
-        "--log"
-      ],
-      "description": "Enable Logging (default false)",
-      "priority": 50,
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "--logFile"
-      ],
-      "description": "Log File path (if set, logging enabled automatically)",
-      "priority": 50,
-      "args": {
-        "name": "file",
-        "template": "filepaths"
-      }
-    },
-    {
-      "name": [
-        "--quiet"
-      ],
-      "description": "Build in quiet mode (default false)",
-      "priority": 50,
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "-s",
-        "--source"
-      ],
-      "description": "Filesystem path to read files relative from",
-      "priority": 50,
-      "args": {
-        "name": "file",
-        "template": "filepaths"
-      }
-    },
-    {
-      "name": [
-        "--themesDir"
-      ],
-      "description": "Filesystem path to themes directory",
-      "priority": 50,
-      "args": {
-        "name": "file",
-        "description": "Default is path/config.yaml|json|toml",
-        "template": "filepaths"
-      }
-    },
-    {
-      "name": [
-        "-v",
-        "--verbose"
-      ],
-      "description": "Verbose output (default false)",
-      "priority": 50,
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "--verboseLog"
-      ],
-      "description": "Verbose logging (default false)",
-      "priority": 50,
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "-w",
-        "--watch"
-      ],
-      "description": "Watch filesystem for changes and recreate as needed (default true)",
-      "args": {
-        "name": "boolean"
-      }
-    },
-    {
-      "name": [
-        "--renderToMemory"
-      ],
-      "description": "Render to memory (only useful for benchmark testing)"
     }
   ]
 }

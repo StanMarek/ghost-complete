@@ -250,6 +250,42 @@ fn custom_without_self_contained_is_unsupported() {
     assert_eq!(counters.requires_js_unsupported, 1);
 }
 
+/// `token_only` is safe because the runtime installs no host bindings, so
+/// it is dispatchable even when `self_contained` is false. The migration
+/// counter tracks these promotions separately from the generic supported
+/// requires_js count.
+#[test]
+fn token_only_without_self_contained_is_supported_and_counted() {
+    let dir = TempDir::new().unwrap();
+    write_spec(
+        dir.path(),
+        "token-only.json",
+        r#"{
+            "name": "token-only",
+            "args": [{
+                "name": "x",
+                "generators": [{
+                    "requires_js": true,
+                    "js_runtime": {
+                        "kind": "token_only",
+                        "source": "tokens.map(name => ({ name }))",
+                        "self_contained": false
+                    }
+                }]
+            }]
+        }"#,
+    );
+    let counters = SpecStore::load_from_dir(dir.path())
+        .unwrap()
+        .store
+        .counters();
+
+    assert_eq!(counters.requires_js_total, 1);
+    assert_eq!(counters.requires_js_supported, 1);
+    assert_eq!(counters.requires_js_unsupported, 0);
+    assert_eq!(counters.token_only_promoted, 1);
+}
+
 /// `post_process` does NOT need `self_contained: true`. It DOES need an
 /// accompanying `script` (or `script_template`) plus a non-empty source.
 #[test]

@@ -26,7 +26,9 @@
 //! [`JsRuntimeAdapter::post_process`] (script stdout in, suggestions out),
 //! [`JsRuntimeAdapter::script_function`] (returns argv for an engine-side
 //! script invocation), and [`JsRuntimeAdapter::custom`] (returns
-//! suggestions directly via host-API calls).
+//! suggestions directly via host-API calls). `token_only` uses the same
+//! suggestion output shape as `custom`, but asks gc-jsrt to install only
+//! token globals.
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -173,6 +175,25 @@ impl JsRuntimeAdapter {
         log_diagnostics(&generator_id, &output);
         Ok(output)
     }
+
+    /// Run a `token_only` JS source. The body may be either a function
+    /// accepting `(tokens, ctx)` or a direct expression that returns
+    /// suggestions. The runtime installs only `tokens`, `currentToken`, and
+    /// `previousToken`; no host API or Fig namespace is available.
+    pub async fn token_only(
+        &self,
+        source: &str,
+        ctx: JsExecContext,
+        timeout: Duration,
+        generator_id: String,
+    ) -> Result<JsRuntimeOutput, JsRuntimeError> {
+        let worker = self.worker()?;
+        let program = build_token_only_program(source);
+        let input = ctx.into_runtime_input(generator_id.clone(), JsExecutionKind::TokenOnly);
+        let output = worker.evaluate(program, input, timeout).await?;
+        log_diagnostics(&generator_id, &output);
+        Ok(output)
+    }
 }
 
 /// Caller-side shape that captures the host context the engine wants to
@@ -299,6 +320,33 @@ fn build_custom_program(source: &str) -> String {
              searchTerm: typeof searchTerm !== 'undefined' ? searchTerm : '', \
            }}; \
            return __src(__ctx.tokens, executeShellCommand, __ctx); \
+         }})()",
+        src = source,
+    )
+}
+
+/// Construct the wrapper expression for a `token_only` generator.
+///
+/// Converter-promoted sources are commonly original Fig function bodies
+/// (`tokens => ...`), but hand-authored specs may also provide direct
+/// expressions (`tokens.map(...)`). Support both forms without requiring the
+/// converter to rewrite source text.
+fn build_token_only_program(source: &str) -> String {
+    format!(
+        "(function() {{ \
+           const __src = ({src}); \
+           const __ctx = {{ \
+             currentToken: typeof currentToken !== 'undefined' ? currentToken : '', \
+             previousToken: typeof previousToken !== 'undefined' ? previousToken : '', \
+             tokens: typeof tokens !== 'undefined' ? tokens : [], \
+           }}; \
+           if (typeof __src === 'function') {{ \
+             if (__src.length >= 3) {{ \
+               return __src(__ctx.tokens, undefined, __ctx); \
+             }} \
+             return __src(__ctx.tokens, __ctx); \
+           }} \
+           return __src; \
          }})()",
         src = source,
     )
@@ -445,6 +493,23 @@ mod tests {
             program.contains("\"a"),
             "expected encoded stdout literal in program: {program}"
         );
+    }
+
+    #[test]
+    fn build_token_only_program_supports_function_sources() {
+        let program = build_token_only_program("tokens => tokens");
+        assert!(program.contains("const __src = (tokens => tokens);"));
+        assert!(program.contains("typeof __src === 'function'"));
+        assert!(program.contains("if (__src.length >= 3)"));
+        assert!(program.contains("return __src(__ctx.tokens, undefined, __ctx);"));
+        assert!(program.contains("return __src(__ctx.tokens, __ctx);"));
+    }
+
+    #[test]
+    fn build_token_only_program_supports_expression_sources() {
+        let program = build_token_only_program("tokens.map(name => ({ name }))");
+        assert!(program.contains("const __src = (tokens.map(name => ({ name })));"));
+        assert!(program.contains("return __src;"));
     }
 
     /// Pins the perf contract for `worker()`: a burst of N concurrent

@@ -1,16 +1,23 @@
 {
-  "name": "ng",
   "description": "CLI interface for Angular",
+  "name": "ng",
+  "options": [
+    {
+      "description": "View your Angular CLI version",
+      "name": [
+        "--version"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "new",
+      "args": {
+        "name": "name"
+      },
       "description": "Create a new Angular app",
+      "name": "new",
       "options": [
         {
-          "name": [
-            "--create-application"
-          ],
-          "description": "Create a default application?",
           "args": {
             "name": "project",
             "suggestions": [
@@ -21,25 +28,30 @@
                 "name": "false"
               }
             ]
-          }
+          },
+          "description": "Create a default application?",
+          "name": [
+            "--create-application"
+          ]
         }
-      ],
-      "args": {
-        "name": "name"
-      }
+      ]
     },
     {
-      "name": "generate",
+      "args": {
+        "name": "schematic"
+      },
       "description": "Generate new files",
+      "name": "generate",
       "subcommands": [
         {
-          "name": "application",
+          "args": {
+            "description": "Name of the new app",
+            "name": "name"
+          },
           "description": "Generates a new application",
+          "name": "application",
           "options": [
             {
-              "name": [
-                "--style"
-              ],
               "args": {
                 "name": "extension",
                 "suggestions": [
@@ -59,46 +71,45 @@
                     "name": "styl"
                   }
                 ]
-              }
+              },
+              "name": [
+                "--style"
+              ]
             }
-          ],
-          "args": {
-            "name": "name",
-            "description": "Name of the new app"
-          }
+          ]
         },
         {
-          "name": "component",
+          "args": {
+            "description": "Component name",
+            "isOptional": true,
+            "name": "name"
+          },
           "description": "Generate a new component",
+          "name": "component",
           "options": [
             {
-              "name": [
-                "--project"
-              ],
-              "description": "Project name",
               "args": {
                 "generators": [
                   {
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(a){try{let e=JSON.parse(a);return Object.entries(e).map(([t,s])=>({name:t,description:s.projectType}))}catch{}return[]}"
+                    },
+                    "requires_js": true,
                     "script": [
                       "ng",
                       "config",
                       "projects"
-                    ],
-                    "requires_js": true,
-                    "js_runtime": {
-                      "kind": "post_process",
-                      "source": "function(a){try{let e=JSON.parse(a);return Object.entries(e).map(([t,s])=>({name:t,description:s.projectType}))}catch{}return[]}"
-                    }
+                    ]
                   }
                 ]
-              }
+              },
+              "description": "Project name",
+              "name": [
+                "--project"
+              ]
             },
             {
-              "name": [
-                "--change-detection",
-                "-c"
-              ],
-              "description": "The change detection strategy to use",
               "args": {
                 "name": "strategy",
                 "suggestions": [
@@ -109,31 +120,32 @@
                     "name": "OnPush"
                   }
                 ]
-              }
+              },
+              "description": "The change detection strategy to use",
+              "name": [
+                "--change-detection",
+                "-c"
+              ]
             },
             {
+              "args": {
+                "name": "boolean",
+                "suggestions": [
+                  {
+                    "name": "true"
+                  },
+                  {
+                    "name": "false"
+                  }
+                ]
+              },
+              "description": "Add :host block to styles",
               "name": [
                 "--display-block",
                 "-b"
-              ],
-              "description": "Add :host block to styles",
-              "args": {
-                "name": "boolean",
-                "suggestions": [
-                  {
-                    "name": "true"
-                  },
-                  {
-                    "name": "false"
-                  }
-                ]
-              }
+              ]
             },
             {
-              "name": [
-                "--flat"
-              ],
-              "description": "Create at the top level",
               "args": {
                 "name": "boolean",
                 "suggestions": [
@@ -144,71 +156,59 @@
                     "name": "false"
                   }
                 ]
-              }
+              },
+              "description": "Create at the top level",
+              "name": [
+                "--flat"
+              ]
             }
-          ],
-          "args": {
-            "name": "name",
-            "description": "Component name",
-            "isOptional": true
-          }
+          ]
         },
         {
-          "name": "library",
+          "args": {
+            "isOptional": true,
+            "name": "name"
+          },
           "description": "Generates a new library",
-          "args": {
-            "name": "name",
-            "isOptional": true
-          }
+          "name": "library"
         },
         {
-          "name": "class",
+          "args": {
+            "isOptional": true,
+            "name": "name"
+          },
           "description": "Generates a class",
+          "name": "class",
           "options": [
             {
-              "name": [
-                "--project"
-              ],
-              "description": "Project name",
               "args": {
                 "generators": [
                   {
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(a){try{let e=JSON.parse(a);return Object.entries(e).map(([t,s])=>({name:t,description:s.projectType}))}catch{}return[]}"
+                    },
+                    "requires_js": true,
                     "script": [
                       "ng",
                       "config",
                       "projects"
-                    ],
-                    "requires_js": true,
-                    "js_runtime": {
-                      "kind": "post_process",
-                      "source": "function(a){try{let e=JSON.parse(a);return Object.entries(e).map(([t,s])=>({name:t,description:s.projectType}))}catch{}return[]}"
-                    }
+                    ]
                   }
                 ]
-              }
+              },
+              "description": "Project name",
+              "name": [
+                "--project"
+              ]
             }
-          ],
-          "args": {
-            "name": "name",
-            "isOptional": true
-          }
+          ]
         }
-      ],
-      "args": {
-        "name": "schematic"
-      }
+      ]
     },
     {
-      "name": "version",
-      "description": "View your Angular CLI version (update for Angular 14+)"
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--version"
-      ],
-      "description": "View your Angular CLI version"
+      "description": "View your Angular CLI version (update for Angular 14+)",
+      "name": "version"
     }
   ]
 }

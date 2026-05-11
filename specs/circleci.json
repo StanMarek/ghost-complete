@@ -1,51 +1,64 @@
 {
-  "name": "circleci",
   "description": "CircleCI CLI",
+  "name": "circleci",
+  "options": [
+    {
+      "description": "Show help for CircleCI",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Skip update check before every command",
+      "name": [
+        "--skip-update-check"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "completion",
       "description": "Generate shell completion scripts",
+      "name": "completion",
       "subcommands": [
         {
-          "name": "bash",
-          "description": "Generate bash completion scripts"
+          "description": "Generate bash completion scripts",
+          "name": "bash"
         },
         {
-          "name": "zsh",
-          "description": "Generate zsh completion scripts"
+          "description": "Generate zsh completion scripts",
+          "name": "zsh"
         }
       ]
     },
     {
-      "name": "config",
       "description": "Operate on build config files",
+      "name": "config",
       "subcommands": [
         {
-          "name": "pack",
-          "description": "Pack CircleCI config files into a single file"
+          "description": "Pack CircleCI config files into a single file",
+          "name": "pack"
         },
         {
-          "name": "process",
-          "description": "Validate and display extended config"
+          "description": "Validate and display extended config",
+          "name": "process"
         },
         {
-          "name": "validate",
-          "description": "Checks that config is valid"
+          "description": "Checks that config is valid",
+          "name": "validate"
         }
       ]
     },
     {
-      "name": "context",
       "description": "Secure and share environment variables across projects",
+      "name": "context",
       "subcommands": [
         {
-          "name": "create",
-          "description": "Create a new context",
           "args": [
             {
-              "name": "vcs-type",
               "description": "Your VCS provider, can be either 'github' or 'bitbucket'",
               "isOptional": true,
+              "name": "vcs-type",
               "suggestions": [
                 {
                   "name": "github"
@@ -56,23 +69,49 @@
               ]
             },
             {
-              "name": "org-name",
               "description": "The name of your organization",
-              "isOptional": true
+              "isOptional": true,
+              "name": "org-name"
             },
             {
-              "name": "context-name",
-              "description": "The name for your context"
+              "description": "The name for your context",
+              "name": "context-name"
             }
-          ]
+          ],
+          "description": "Create a new context",
+          "name": "create"
         },
         {
-          "name": "delete",
+          "args": [
+            {
+              "description": "Your VCS provider, can be either 'github' or 'bitbucket'",
+              "name": "vcs-type",
+              "suggestions": [
+                {
+                  "name": "github"
+                },
+                {
+                  "name": "bitbucket"
+                }
+              ]
+            },
+            {
+              "description": "The name of your organization",
+              "name": "org-name"
+            },
+            {
+              "description": "The name for your context",
+              "name": "context-name"
+            }
+          ],
           "description": "Delete the named context",
+          "name": "delete"
+        },
+        {
           "args": [
             {
-              "name": "vcs-type",
               "description": "Your VCS provider, can be either 'github' or 'bitbucket'",
+              "name": "vcs-type",
               "suggestions": [
                 {
                   "name": "github"
@@ -83,22 +122,18 @@
               ]
             },
             {
-              "name": "org-name",
-              "description": "The name of your organization"
-            },
-            {
-              "name": "context-name",
-              "description": "The name for your context"
+              "description": "The name of your organization",
+              "name": "org-name"
             }
-          ]
-        },
-        {
-          "name": "list",
+          ],
           "description": "List all contexts",
+          "name": "list"
+        },
+        {
           "args": [
             {
-              "name": "vcs-type",
               "description": "Your VCS provider, can be either 'github' or 'bitbucket'",
+              "name": "vcs-type",
               "suggestions": [
                 {
                   "name": "github"
@@ -109,18 +144,26 @@
               ]
             },
             {
-              "name": "org-name",
-              "description": "The name of your organization"
+              "description": "The name of your organization",
+              "name": "org-name"
+            },
+            {
+              "description": "The name for your context",
+              "name": "context-name"
+            },
+            {
+              "description": "The name of the env variable to remove",
+              "name": "secret name"
             }
-          ]
-        },
-        {
-          "name": "remove-secret",
+          ],
           "description": "Remove environment variable from a context",
+          "name": "remove-secret"
+        },
+        {
           "args": [
             {
-              "name": "vcs-type",
               "description": "Your VCS provider, can be either 'github' or 'bitbucket'",
+              "name": "vcs-type",
               "suggestions": [
                 {
                   "name": "github"
@@ -131,26 +174,22 @@
               ]
             },
             {
-              "name": "org-name",
-              "description": "The name of your organization"
+              "description": "The name of your organization",
+              "name": "org-name"
             },
             {
-              "name": "context-name",
-              "description": "The name for your context"
-            },
-            {
-              "name": "secret name",
-              "description": "The name of the env variable to remove"
+              "description": "The name for your context",
+              "name": "context-name"
             }
-          ]
-        },
-        {
-          "name": "show",
+          ],
           "description": "Show a context",
+          "name": "show"
+        },
+        {
           "args": [
             {
-              "name": "vcs-type",
               "description": "Your VCS provider, can be either 'github' or 'bitbucket'",
+              "name": "vcs-type",
               "suggestions": [
                 {
                   "name": "github"
@@ -161,156 +200,132 @@
               ]
             },
             {
-              "name": "org-name",
-              "description": "The name of your organization"
+              "description": "The name of your organization",
+              "name": "org-name"
             },
             {
-              "name": "context-name",
-              "description": "The name for your context"
+              "description": "The name for your context",
+              "name": "context-name"
+            },
+            {
+              "description": "The name of the env variable to store",
+              "name": "secret name"
             }
-          ]
-        },
-        {
-          "name": "store-secret",
+          ],
           "description": "Store environment variables",
+          "name": "store-secret"
+        }
+      ]
+    },
+    {
+      "description": "Check the status of your CircleCI CLI",
+      "name": "diagnostic"
+    },
+    {
+      "description": "Attempt to follow the project for the current git repo",
+      "name": "follow"
+    },
+    {
+      "description": "Help about any command",
+      "name": "help"
+    },
+    {
+      "description": "Debug jobs on the local machine",
+      "name": "local",
+      "subcommands": [
+        {
+          "description": "Run a job in a container on the local machine",
+          "name": "execute"
+        }
+      ]
+    },
+    {
+      "description": "Operate on namespaces",
+      "name": "namespace",
+      "subcommands": [
+        {
+          "description": "Create a namespace",
+          "name": "create"
+        }
+      ]
+    },
+    {
+      "description": "Open the current project in the browser",
+      "name": "open"
+    },
+    {
+      "description": "Operate on orbs",
+      "name": "orb",
+      "subcommands": [
+        {
           "args": [
             {
-              "name": "vcs-type",
-              "description": "Your VCS provider, can be either 'github' or 'bitbucket'",
-              "suggestions": [
-                {
-                  "name": "github"
-                },
-                {
-                  "name": "bitbucket"
-                }
+              "description": "The namespace and orb to add to a category",
+              "name": "namespace/orb"
+            },
+            {
+              "description": "The name of the category to add the orb to, in quotes",
+              "name": "category name"
+            }
+          ],
+          "description": "Add an orb to a category",
+          "name": "add-to-category"
+        },
+        {
+          "args": {
+            "description": "Create an orb in the specified namespace",
+            "name": "namespace/orb"
+          },
+          "description": "Create an orb in a namespace",
+          "name": "create",
+          "options": [
+            {
+              "description": "Specify that this orb is for private use within your org, unlisted from the public registry",
+              "name": [
+                "--private"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "The namespace and orb to show metadata for",
+            "name": "orb"
+          },
+          "description": "Show metadata of an orb",
+          "name": "info"
+        },
+        {
+          "args": {
+            "description": "The /path/to/myProject-orb",
+            "name": "path"
+          },
+          "description": "Initialize a new orb",
+          "name": "init",
+          "options": [
+            {
+              "description": "Specify that this orb is for private use within your org, unlisted from the public registry",
+              "name": [
+                "--private"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "The namespace used for the orb (i.e. circleci)",
+            "name": "namespace"
+          },
+          "description": "List orbs",
+          "name": "list",
+          "options": [
+            {
+              "description": "Specify that this orb is for private use within your org, unlisted from the public registry",
+              "name": [
+                "--private"
               ]
             },
             {
-              "name": "org-name",
-              "description": "The name of your organization"
-            },
-            {
-              "name": "context-name",
-              "description": "The name for your context"
-            },
-            {
-              "name": "secret name",
-              "description": "The name of the env variable to store"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "diagnostic",
-      "description": "Check the status of your CircleCI CLI"
-    },
-    {
-      "name": "follow",
-      "description": "Attempt to follow the project for the current git repo"
-    },
-    {
-      "name": "help",
-      "description": "Help about any command"
-    },
-    {
-      "name": "local",
-      "description": "Debug jobs on the local machine",
-      "subcommands": [
-        {
-          "name": "execute",
-          "description": "Run a job in a container on the local machine"
-        }
-      ]
-    },
-    {
-      "name": "namespace",
-      "description": "Operate on namespaces",
-      "subcommands": [
-        {
-          "name": "create",
-          "description": "Create a namespace"
-        }
-      ]
-    },
-    {
-      "name": "open",
-      "description": "Open the current project in the browser"
-    },
-    {
-      "name": "orb",
-      "description": "Operate on orbs",
-      "subcommands": [
-        {
-          "name": "add-to-category",
-          "description": "Add an orb to a category",
-          "args": [
-            {
-              "name": "namespace/orb",
-              "description": "The namespace and orb to add to a category"
-            },
-            {
-              "name": "category name",
-              "description": "The name of the category to add the orb to, in quotes"
-            }
-          ]
-        },
-        {
-          "name": "create",
-          "description": "Create an orb in a namespace",
-          "options": [
-            {
-              "name": [
-                "--private"
-              ],
-              "description": "Specify that this orb is for private use within your org, unlisted from the public registry"
-            }
-          ],
-          "args": {
-            "name": "namespace/orb",
-            "description": "Create an orb in the specified namespace"
-          }
-        },
-        {
-          "name": "info",
-          "description": "Show metadata of an orb",
-          "args": {
-            "name": "orb",
-            "description": "The namespace and orb to show metadata for"
-          }
-        },
-        {
-          "name": "init",
-          "description": "Initialize a new orb",
-          "options": [
-            {
-              "name": [
-                "--private"
-              ],
-              "description": "Specify that this orb is for private use within your org, unlisted from the public registry"
-            }
-          ],
-          "args": {
-            "name": "path",
-            "description": "The /path/to/myProject-orb"
-          }
-        },
-        {
-          "name": "list",
-          "description": "List orbs",
-          "options": [
-            {
-              "name": [
-                "--private"
-              ],
-              "description": "Specify that this orb is for private use within your org, unlisted from the public registry"
-            },
-            {
-              "name": [
-                "--sort"
-              ],
-              "description": "Specify the sorting",
               "args": {
                 "suggestions": [
                   {
@@ -323,88 +338,86 @@
                     "name": "orgs"
                   }
                 ]
-              }
+              },
+              "description": "Specify the sorting",
+              "name": [
+                "--sort"
+              ]
             },
             {
+              "description": "Include uncertified orbs",
               "name": [
                 "-u",
                 "--uncertified"
-              ],
-              "description": "Include uncertified orbs"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "List orb categories",
+          "name": "list-categories"
+        },
+        {
+          "args": {
+            "description": "The /path/to/myProject-orb",
+            "name": "path"
+          },
+          "description": "Pack an orb with local scripts",
+          "name": "pack"
+        },
+        {
+          "args": {
+            "description": "The path to your orb (use '-' for STDIN)",
+            "name": "path"
+          },
+          "description": "Validate an orb and print its form after all pre-registration processing is complete",
+          "name": "process"
+        },
+        {
+          "args": [
+            {
+              "description": "The /path/to/myProject-orb",
+              "name": "path"
+            },
+            {
+              "description": "A fully-qualified reference to an orb, i.e. namespace/orb@version",
+              "name": "orb"
             }
           ],
-          "args": {
-            "name": "namespace",
-            "description": "The namespace used for the orb (i.e. circleci)"
-          }
-        },
-        {
-          "name": "list-categories",
-          "description": "List orb categories"
-        },
-        {
-          "name": "pack",
-          "description": "Pack an orb with local scripts",
-          "args": {
-            "name": "path",
-            "description": "The /path/to/myProject-orb"
-          }
-        },
-        {
-          "name": "process",
-          "description": "Validate an orb and print its form after all pre-registration processing is complete",
-          "args": {
-            "name": "path",
-            "description": "The path to your orb (use '-' for STDIN)"
-          }
-        },
-        {
-          "name": "publish",
           "description": "Publish an orb to the registry",
-          "args": [
-            {
-              "name": "path",
-              "description": "The /path/to/myProject-orb"
-            },
-            {
-              "name": "orb",
-              "description": "A fully-qualified reference to an orb, i.e. namespace/orb@version"
-            }
-          ]
+          "name": "publish"
         },
         {
-          "name": "remove-from-category",
+          "args": [
+            {
+              "description": "The namespace and orb to add to a category",
+              "name": "namespace/orb"
+            },
+            {
+              "description": "The name of the category to add the orb to, in quotes",
+              "name": "category name"
+            }
+          ],
           "description": "Remove an orb from a category",
-          "args": [
-            {
-              "name": "namespace/orb",
-              "description": "The namespace and orb to add to a category"
-            },
-            {
-              "name": "category name",
-              "description": "The name of the category to add the orb to, in quotes"
-            }
-          ]
+          "name": "remove-from-category"
         },
         {
-          "name": "source",
-          "description": "Show source code of an orb",
           "args": {
-            "name": "orb",
-            "description": "A fully-qualified reference to an orb, i.e. namespace/orb@version"
-          }
+            "description": "A fully-qualified reference to an orb, i.e. namespace/orb@version",
+            "name": "orb"
+          },
+          "description": "Show source code of an orb",
+          "name": "source"
         },
         {
-          "name": "unlist",
-          "description": "Disable/enable an orb's listing in the registry",
           "args": [
             {
-              "name": "namespace/orb",
-              "description": "The namespace and orb to unlist/list from the registry"
+              "description": "The namespace and orb to unlist/list from the registry",
+              "name": "namespace/orb"
             },
             {
-              "name": "condition",
               "description": "Use either true|false",
+              "name": "condition",
               "suggestions": [
                 {
                   "name": "true"
@@ -414,304 +427,302 @@
                 }
               ]
             }
-          ]
+          ],
+          "description": "Disable/enable an orb's listing in the registry",
+          "name": "unlist"
         },
         {
-          "name": "validate",
-          "description": "Validate an orb.yml",
           "args": {
-            "name": "path",
-            "description": "The /path/to/myProject-orb"
-          }
+            "description": "The /path/to/myProject-orb",
+            "name": "path"
+          },
+          "description": "Validate an orb.yml",
+          "name": "validate"
         }
       ]
     },
     {
-      "name": "policy",
       "description": "Manage security policies",
+      "name": "policy",
       "subcommands": [
         {
-          "name": "decide",
+          "args": {
+            "description": "Policy file or directory path",
+            "name": "path"
+          },
           "description": "Make a decision",
+          "name": "decide",
           "options": [
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to input file, i.e. ./.circleci/config.yml",
               "name": [
                 "--input"
-              ],
-              "description": "Path to input file, i.e. ./.circleci/config.yml",
-              "args": {
-                "name": "string"
-              }
+              ]
             },
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to decision metadata file",
               "name": [
                 "--metafile"
-              ],
-              "description": "Path to decision metadata file",
-              "args": {
-                "name": "string"
-              }
+              ]
             },
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "The id of the policy's owner",
               "name": [
                 "--owner-id"
-              ],
-              "description": "The id of the policy's owner",
-              "args": {
-                "name": "string"
-              }
+              ]
             },
             {
+              "description": "Return non-zero status code for decision resulting in HARD_FAIL",
               "name": [
                 "--strict"
-              ],
-              "description": "Return non-zero status code for decision resulting in HARD_FAIL"
+              ]
             },
             {
-              "name": [
-                "--context"
-              ],
-              "description": "Policy context for decision, default is 'config'",
               "args": {
                 "name": "string"
-              }
+              },
+              "description": "Policy context for decision, default is 'config'",
+              "name": [
+                "--context"
+              ]
             }
-          ],
-          "args": {
-            "name": "path",
-            "description": "Policy file or directory path"
-          }
+          ]
         },
         {
-          "name": "diff",
+          "args": {
+            "description": "Policy file or directory path",
+            "name": "policy_dir_path"
+          },
           "description": "Get diff between local and remote policy bundles",
+          "name": "diff",
           "options": [
             {
-              "name": [
-                "--context"
-              ],
-              "description": "Policy context for decision, default is 'config'",
               "args": {
                 "name": "string"
-              }
+              },
+              "description": "Policy context for decision, default is 'config'",
+              "name": [
+                "--context"
+              ]
             },
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "The id of the policy's owner",
               "name": [
                 "--owner-id"
-              ],
-              "description": "The id of the policy's owner",
-              "args": {
-                "name": "string"
-              }
+              ]
             }
-          ],
-          "args": {
-            "name": "policy_dir_path",
-            "description": "Policy file or directory path"
-          }
+          ]
         },
         {
-          "name": "eval",
+          "args": {
+            "description": "Policy file or directory path",
+            "name": "policy_dir_path"
+          },
           "description": "Perform raw opa evaluation locally",
+          "name": "eval",
           "options": [
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to input file, i.e. ./.circleci/config.yml",
               "name": [
                 "--input"
-              ],
-              "description": "Path to input file, i.e. ./.circleci/config.yml",
-              "args": {
-                "name": "string"
-              }
+              ]
             },
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "Path to decision metadata file",
               "name": [
                 "--metafile"
-              ],
-              "description": "Path to decision metadata file",
-              "args": {
-                "name": "string"
-              }
+              ]
             },
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "Policy decision query, default is 'data'",
               "name": [
                 "--query"
-              ],
-              "description": "Policy decision query, default is 'data'",
-              "args": {
-                "name": "string"
-              }
+              ]
             }
-          ],
-          "args": {
-            "name": "policy_dir_path",
-            "description": "Policy file or directory path"
-          }
+          ]
         },
         {
-          "name": "fetch",
+          "args": {
+            "description": "Name of policy to fetch",
+            "name": "policy name"
+          },
           "description": "Fetch policy bundle (or a single policy)",
+          "name": "fetch",
           "options": [
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "Policy context for decision, default is 'config'",
               "name": [
                 "--context"
-              ],
-              "description": "Policy context for decision, default is 'config'",
-              "args": {
-                "name": "string"
-              }
+              ]
             },
             {
+              "description": "The id of the policy's owner",
               "name": [
                 "--owner-id"
-              ],
-              "description": "The id of the policy's owner"
+              ]
             }
-          ],
-          "args": {
-            "name": "policy name",
-            "description": "Name of policy to fetch"
-          }
+          ]
         },
         {
-          "name": "logs",
+          "args": {
+            "description": "Decision ID to get logs for",
+            "name": "decision ID"
+          },
           "description": "Get policy decision logs / decision log (or policy bundle) by decision ID",
+          "name": "logs",
           "options": [
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "Filter decision logs triggered AFTER this datetime",
               "name": [
                 "--after"
-              ],
-              "description": "Filter decision logs triggered AFTER this datetime",
-              "args": {
-                "name": "string"
-              }
+              ]
             },
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "Filter decision logs triggered BEFORE this datetime",
               "name": [
                 "--before"
-              ],
-              "description": "Filter decision logs triggered BEFORE this datetime",
-              "args": {
-                "name": "string"
-              }
+              ]
             },
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "Filter decision logs based on branch name",
               "name": [
                 "--branch"
-              ],
-              "description": "Filter decision logs based on branch name",
-              "args": {
-                "name": "string"
-              }
+              ]
             },
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "Policy context for decision, default is 'config'",
               "name": [
                 "--context"
-              ],
-              "description": "Policy context for decision, default is 'config'",
-              "args": {
-                "name": "string"
-              }
+              ]
             },
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "The id of the policy's owner",
               "name": [
                 "--owner-id"
-              ],
-              "description": "The id of the policy's owner",
-              "args": {
-                "name": "string"
-              }
+              ]
             },
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "Specify output file name",
               "name": [
                 "--out"
-              ],
-              "description": "Specify output file name",
-              "args": {
-                "name": "string"
-              }
+              ]
             },
             {
+              "description": "Get only the policy bundle for given decisionID",
               "name": [
                 "--policy-bundle"
-              ],
-              "description": "Get only the policy bundle for given decisionID"
+              ]
             },
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "Filter decision logs based on project-id",
               "name": [
                 "--project-id"
-              ],
-              "description": "Filter decision logs based on project-id",
-              "args": {
-                "name": "string"
-              }
+              ]
             },
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "Filter decision logs based on their status",
               "name": [
                 "--status"
-              ],
-              "description": "Filter decision logs based on their status",
-              "args": {
-                "name": "string"
-              }
+              ]
             }
-          ],
-          "args": {
-            "name": "decision ID",
-            "description": "Decision ID to get logs for"
-          }
+          ]
         },
         {
-          "name": "push",
+          "args": {
+            "description": "Policy file or directory path",
+            "name": "policy_dir_path"
+          },
           "description": "Push policy bundle (or a single policy)",
+          "name": "push",
           "options": [
             {
-              "name": [
-                "--context"
-              ],
-              "description": "Policy context for decision, default is 'config'",
               "args": {
                 "name": "string"
-              }
+              },
+              "description": "Policy context for decision, default is 'config'",
+              "name": [
+                "--context"
+              ]
             },
             {
+              "args": {
+                "name": "string"
+              },
+              "description": "The id of the policy's owner",
               "name": [
                 "--owner-id"
-              ],
-              "description": "The id of the policy's owner",
-              "args": {
-                "name": "string"
-              }
+              ]
             },
             {
+              "description": "Removes the prompt",
               "name": [
                 "--no-prompt"
-              ],
-              "description": "Removes the prompt"
+              ]
             }
-          ],
-          "args": {
-            "name": "policy_dir_path",
-            "description": "Policy file or directory path"
-          }
+          ]
         },
         {
-          "name": "settings",
           "description": "Get/set policy decision settings (To read settings: run command without any settings flags)",
+          "name": "settings",
           "options": [
             {
+              "description": "Policy context for decision, default is 'config'",
               "name": [
                 "--context"
-              ],
-              "description": "Policy context for decision, default is 'config'"
+              ]
             },
             {
-              "name": [
-                "--enabled"
-              ],
-              "description": "Enable/disable policy decision evaluation in build pipeline",
               "args": {
-                "name": "boolean",
                 "isOptional": true,
+                "name": "boolean",
                 "suggestions": [
                   {
                     "name": "true"
@@ -720,75 +731,64 @@
                     "name": "false"
                   }
                 ]
-              }
+              },
+              "description": "Enable/disable policy decision evaluation in build pipeline",
+              "name": [
+                "--enabled"
+              ]
             },
             {
-              "name": [
-                "--owner-id"
-              ],
-              "description": "The id of the policy's owner",
               "args": {
                 "name": "string"
-              }
+              },
+              "description": "The id of the policy's owner",
+              "name": [
+                "--owner-id"
+              ]
             }
           ]
         }
       ]
     },
     {
-      "name": "runner",
       "description": "Operate on runners",
+      "name": "runner",
       "subcommands": [
         {
-          "name": "instance",
-          "description": "Operate on runner instances"
+          "description": "Operate on runner instances",
+          "name": "instance"
         },
         {
-          "name": "resource-class",
-          "description": "Operate on runner resource-classes"
+          "description": "Operate on runner resource-classes",
+          "name": "resource-class"
         },
         {
-          "name": "token",
-          "description": "Operate on runner tokens"
+          "description": "Operate on runner tokens",
+          "name": "token"
         }
       ]
     },
     {
-      "name": "setup",
-      "description": "Setup CLI with your credentials"
+      "description": "Setup CLI with your credentials",
+      "name": "setup"
     },
     {
-      "name": "update",
       "description": "Update and switch to new CLI version",
+      "name": "update",
       "subcommands": [
         {
-          "name": "check",
-          "description": "Check for new CLI version"
+          "description": "Check for new CLI version",
+          "name": "check"
         },
         {
-          "name": "install",
-          "description": "Install new CLI version"
+          "description": "Install new CLI version",
+          "name": "install"
         }
       ]
     },
     {
-      "name": "version",
-      "description": "Display CircleCI CLI version"
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Show help for CircleCI"
-    },
-    {
-      "name": [
-        "--skip-update-check"
-      ],
-      "description": "Skip update check before every command"
+      "description": "Display CircleCI CLI version",
+      "name": "version"
     }
   ]
 }

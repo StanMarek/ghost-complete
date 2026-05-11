@@ -1,63 +1,78 @@
 {
-  "name": "newman",
   "description": "Newman is a command-line collection runner for Postman",
+  "name": "newman",
+  "options": [
+    {
+      "description": "Output the version number",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "description": "Display help for command",
+      "name": [
+        "-h",
+        "--help"
+      ],
+      "priority": 49
+    }
+  ],
   "subcommands": [
     {
-      "name": "run",
+      "args": {
+        "name": "collection",
+        "template": "filepaths"
+      },
       "description": "Initiate a Postman Collection run from a given URL or path",
+      "name": "run",
       "options": [
         {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specify a URL or path to a Postman Environment",
           "name": [
             "-e",
             "--environment"
-          ],
-          "description": "Specify a URL or path to a Postman Environment",
+          ]
+        },
+        {
           "args": {
             "name": "path",
             "template": "filepaths"
-          }
-        },
-        {
+          },
+          "description": "Specify a URL or path to a file containing Postman Globals",
           "name": [
             "-g",
             "--globals"
-          ],
-          "description": "Specify a URL or path to a file containing Postman Globals",
-          "args": {
-            "name": "path",
-            "template": "filepaths"
-          }
+          ]
         },
         {
+          "args": {
+            "isOptional": true,
+            "name": "reporters"
+          },
+          "description": "Specify the reporters to use for this run",
           "name": [
             "-r",
             "--reporters"
-          ],
-          "description": "Specify the reporters to use for this run",
-          "args": {
-            "name": "reporters",
-            "isOptional": true
-          }
+          ]
         },
         {
+          "args": {
+            "name": "n"
+          },
+          "description": "Define the number of iterations to run",
           "name": [
             "-n",
             "--iteration-count"
-          ],
-          "description": "Define the number of iterations to run",
-          "args": {
-            "name": "n"
-          }
+          ]
         },
         {
-          "name": [
-            "-d",
-            "--iteration-data"
-          ],
-          "description": "Specify a data file to use for iterations (either JSON or CSV)",
           "args": {
             "name": "path",
-            "template": "filepaths",
             "suggestions": [
               {
                 "name": "JSON"
@@ -65,116 +80,118 @@
               {
                 "name": "CSV"
               }
-            ]
-          }
+            ],
+            "template": "filepaths"
+          },
+          "description": "Specify a data file to use for iterations (either JSON or CSV)",
+          "name": [
+            "-d",
+            "--iteration-data"
+          ]
         },
         {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specify the folder to run from a collection. Can be specified multiple times to run multiple folders",
           "name": [
             "--folder"
-          ],
-          "description": "Specify the folder to run from a collection. Can be specified multiple times to run multiple folders",
-          "args": {
-            "name": "path",
-            "template": "filepaths"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "value"
+          },
+          "description": "Allows the specification of global variables via the command line, in a key=value format",
           "name": [
             "--global-var"
-          ],
-          "description": "Allows the specification of global variables via the command line, in a key=value format",
-          "args": {
-            "name": "value"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "value"
+          },
+          "description": "Allows the specification of environment variables via the command line, in a key=value format",
           "name": [
             "--env-var"
-          ],
-          "description": "Allows the specification of environment variables via the command line, in a key=value format",
-          "args": {
-            "name": "value"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Exports the final environment to a file after completing the run",
           "name": [
             "--export-environment"
-          ],
-          "description": "Exports the final environment to a file after completing the run",
+          ]
+        },
+        {
           "args": {
             "name": "path",
             "template": "filepaths"
-          }
-        },
-        {
+          },
+          "description": "Exports the final globals to a file after completing the run",
           "name": [
             "--export-globals"
-          ],
-          "description": "Exports the final globals to a file after completing the run",
+          ]
+        },
+        {
           "args": {
             "name": "path",
             "template": "filepaths"
-          }
-        },
-        {
+          },
+          "description": "Exports the executed collection to a file after completing the run",
           "name": [
             "--export-collection"
-          ],
-          "description": "Exports the executed collection to a file after completing the run",
-          "args": {
-            "name": "path",
-            "template": "filepaths"
-          }
+          ]
         },
         {
-          "name": [
-            "--postman-api-key"
-          ],
-          "description": "API Key used to load the resources from the Postman API",
           "args": {
             "name": "apiKey"
-          }
+          },
+          "description": "API Key used to load the resources from the Postman API",
+          "name": [
+            "--postman-api-key"
+          ]
         },
         {
+          "args": {
+            "isOptional": true,
+            "name": "modifiers"
+          },
+          "description": "Specify whether or not to gracefully stop a collection run on encountering an error and whether to end the run with an error based on the optional modifier",
           "name": [
             "--bail"
-          ],
-          "description": "Specify whether or not to gracefully stop a collection run on encountering an error and whether to end the run with an error based on the optional modifier",
-          "args": {
-            "name": "modifiers",
-            "isOptional": true
-          }
+          ]
         },
         {
+          "description": "Prevents Newman from automatically following 3XX redirect responses",
           "name": [
             "--ignore-redirects"
-          ],
-          "description": "Prevents Newman from automatically following 3XX redirect responses"
+          ]
         },
         {
+          "description": "Specify whether or not to override the default exit code for the current run",
           "name": [
             "-x",
             "--suppress-exit-code"
-          ],
-          "description": "Specify whether or not to override the default exit code for the current run"
+          ]
         },
         {
+          "description": "Prevents Newman from showing output to CLI",
           "name": [
             "--silent"
-          ],
-          "description": "Prevents Newman from showing output to CLI"
+          ]
         },
         {
+          "description": "Forces Unicode compliant symbols to be replaced by their plain text equivalents",
           "name": [
             "--disable-unicode"
-          ],
-          "description": "Forces Unicode compliant symbols to be replaced by their plain text equivalents"
+          ]
         },
         {
-          "name": [
-            "--color"
-          ],
-          "description": "Enable/Disable colored output (auto|on|off)",
           "args": {
             "name": "value",
             "suggestions": [
@@ -188,185 +205,168 @@
                 "name": "off"
               }
             ]
-          }
+          },
+          "description": "Enable/Disable colored output (auto|on|off)",
+          "name": [
+            "--color"
+          ]
         },
         {
+          "args": {
+            "isOptional": true,
+            "name": "n"
+          },
+          "description": "Specify the extent of delay between requests (milliseconds)",
           "name": [
             "--delay-request"
-          ],
-          "description": "Specify the extent of delay between requests (milliseconds)",
-          "args": {
-            "name": "n",
-            "isOptional": true
-          }
+          ]
         },
         {
+          "args": {
+            "isOptional": true,
+            "name": "n"
+          },
+          "description": "Specify a timeout for collection run (milliseconds)",
           "name": [
             "--timeout"
-          ],
-          "description": "Specify a timeout for collection run (milliseconds)",
-          "args": {
-            "name": "n",
-            "isOptional": true
-          }
+          ]
         },
         {
+          "args": {
+            "isOptional": true,
+            "name": "n"
+          },
+          "description": "Specify a timeout for requests (milliseconds)",
           "name": [
             "--timeout-request"
-          ],
-          "description": "Specify a timeout for requests (milliseconds)",
-          "args": {
-            "name": "n",
-            "isOptional": true
-          }
+          ]
         },
         {
+          "args": {
+            "isOptional": true,
+            "name": "n"
+          },
+          "description": "Specify a timeout for scripts (milliseconds)",
           "name": [
             "--timeout-script"
-          ],
-          "description": "Specify a timeout for scripts (milliseconds)",
-          "args": {
-            "name": "n",
-            "isOptional": true
-          }
+          ]
         },
         {
-          "name": [
-            "--working-dir"
-          ],
-          "description": "Specify the path to the working directory",
           "args": {
             "name": "path",
             "template": "filepaths"
-          }
+          },
+          "description": "Specify the path to the working directory",
+          "name": [
+            "--working-dir"
+          ]
         },
         {
+          "description": "Prevents reading the files situated outside of the working directory",
           "name": [
             "--no-insecure-file-read"
-          ],
-          "description": "Prevents reading the files situated outside of the working directory"
+          ]
         },
         {
+          "description": "Disables SSL validations",
           "name": [
             "-k",
             "--insecure"
-          ],
-          "description": "Disables SSL validations"
+          ]
         },
         {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specify the path to a client certificates configurations (JSON)",
           "name": [
             "--ssl-client-cert-list"
-          ],
-          "description": "Specify the path to a client certificates configurations (JSON)",
+          ]
+        },
+        {
           "args": {
             "name": "path",
             "template": "filepaths"
-          }
-        },
-        {
+          },
+          "description": "Specify the path to a client certificate (PEM)",
           "name": [
             "--ssl-client-cert"
-          ],
-          "description": "Specify the path to a client certificate (PEM)",
+          ]
+        },
+        {
           "args": {
             "name": "path",
             "template": "filepaths"
-          }
-        },
-        {
+          },
+          "description": "Specify the path to a client certificate private key",
           "name": [
             "--ssl-client-key"
-          ],
-          "description": "Specify the path to a client certificate private key",
-          "args": {
-            "name": "path",
-            "template": "filepaths"
-          }
+          ]
         },
         {
-          "name": [
-            "--ssl-client-passphrase"
-          ],
-          "description": "Specify the client certificate passphrase (for protected key)",
           "args": {
             "name": "passphrase"
-          }
+          },
+          "description": "Specify the client certificate passphrase (for protected key)",
+          "name": [
+            "--ssl-client-passphrase"
+          ]
         },
         {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Specify additionally trusted CA certificates (PEM)",
           "name": [
             "--ssl-extra-ca-certs"
-          ],
-          "description": "Specify additionally trusted CA certificates (PEM)",
+          ]
+        },
+        {
           "args": {
             "name": "path",
             "template": "filepaths"
-          }
-        },
-        {
+          },
+          "description": "Specify the path to a custom cookie jar (serialized tough-cookie JSON)",
           "name": [
             "--cookie-jar"
-          ],
-          "description": "Specify the path to a custom cookie jar (serialized tough-cookie JSON)",
+          ]
+        },
+        {
           "args": {
             "name": "path",
             "template": "filepaths"
-          }
-        },
-        {
+          },
+          "description": "Exports the cookie jar to a file after completing the run",
           "name": [
             "--export-cookie-jar"
-          ],
-          "description": "Exports the cookie jar to a file after completing the run",
-          "args": {
-            "name": "path",
-            "template": "filepaths"
-          }
+          ]
         },
         {
+          "description": "Show detailed information of collection run and each request sent",
           "name": [
             "--verbose"
-          ],
-          "description": "Show detailed information of collection run and each request sent"
+          ]
         },
         {
+          "description": "Display help for command",
           "name": [
             "-h",
             "--help"
           ],
-          "description": "Display help for command",
           "priority": 49
         }
-      ],
-      "args": {
-        "name": "collection",
-        "template": "filepaths"
-      }
+      ]
     },
     {
-      "name": "help",
-      "description": "Display help for command",
-      "priority": 49,
       "args": {
+        "isOptional": true,
         "name": "command",
-        "template": "help",
-        "isOptional": true
-      }
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "-v",
-        "--version"
-      ],
-      "description": "Output the version number"
-    },
-    {
-      "name": [
-        "-h",
-        "--help"
-      ],
+        "template": "help"
+      },
       "description": "Display help for command",
+      "name": "help",
       "priority": 49
     }
   ]

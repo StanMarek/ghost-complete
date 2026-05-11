@@ -1,10 +1,10 @@
 {
-  "name": "rbenv",
   "description": "Pick a Ruby version for your application and guarantee that your development environment matches production",
+  "name": "rbenv",
   "subcommands": [
     {
-      "name": "commands",
       "description": "List all available rbenv commands",
+      "name": "commands",
       "options": [
         {
           "name": [
@@ -19,18 +19,7 @@
       ]
     },
     {
-      "name": "global",
-      "description": "Set or show the global Ruby version",
-      "options": [
-        {
-          "name": [
-            "--unset"
-          ]
-        }
-      ],
       "args": {
-        "name": "version",
-        "isOptional": true,
         "generators": [
           {
             "script": [
@@ -43,26 +32,22 @@
               "filter_empty"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "install",
-      "description": "Install a Ruby version using ruby-build",
+        ],
+        "isOptional": true,
+        "name": "version"
+      },
+      "description": "Set or show the global Ruby version",
+      "name": "global",
       "options": [
         {
           "name": [
-            "--version"
-          ],
-          "description": "Show version of ruby-build",
-          "args": {
-            "name": "version",
-            "isOptional": true
-          }
+            "--unset"
+          ]
         }
-      ],
+      ]
+    },
+    {
       "args": {
-        "name": "version",
         "generators": [
           {
             "script": [
@@ -75,23 +60,59 @@
               "filter_empty"
             ]
           }
-        ]
+        ],
+        "name": "version"
       },
+      "description": "Install a Ruby version using ruby-build",
+      "name": "install",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "version"
+          },
+          "description": "Show version of ruby-build",
+          "name": [
+            "--version"
+          ]
+        }
+      ],
       "priority": 92
     },
     {
-      "name": "local",
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "rbenv",
+              "versions",
+              "--bare"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "isOptional": true,
+        "name": "version"
+      },
       "description": "Set or show the local application-specific Ruby version",
+      "name": "local",
       "options": [
         {
           "name": [
             "--unset"
           ]
         }
-      ],
+      ]
+    },
+    {
+      "description": "Rehash rbenv shims (run this after installing executables)",
+      "name": "rehash"
+    },
+    {
       "args": {
-        "name": "version",
-        "isOptional": true,
         "generators": [
           {
             "script": [
@@ -104,63 +125,42 @@
               "filter_empty"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "rehash",
-      "description": "Rehash rbenv shims (run this after installing executables)"
-    },
-    {
-      "name": "shell",
+        ],
+        "isOptional": true,
+        "name": "version"
+      },
       "description": "Set or show the shell-specific Ruby version",
-      "args": {
-        "name": "version",
-        "isOptional": true,
-        "generators": [
-          {
-            "script": [
-              "rbenv",
-              "versions",
-              "--bare"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty"
-            ]
-          }
-        ]
-      }
+      "name": "shell"
     },
     {
-      "name": "uninstall",
       "description": "Uninstall a specific Ruby version",
+      "name": "uninstall",
       "options": [
         {
+          "args": {},
+          "description": "If the version does not exist, do not display an error message",
           "name": [
             "-f"
           ],
-          "description": "If the version does not exist, do not display an error message",
-          "args": {},
           "priority": 20
         }
       ],
       "priority": 78
     },
     {
-      "name": "versions",
-      "description": "List installed Ruby versions"
+      "description": "List installed Ruby versions",
+      "name": "versions"
     },
     {
-      "name": "whence",
-      "description": "List all Ruby versions that contain the given executable"
+      "description": "List all Ruby versions that contain the given executable",
+      "name": "whence"
     },
     {
-      "name": "which",
-      "description": "Display the full path to an executable",
       "args": {
         "name": "command"
-      }
+      },
+      "description": "Display the full path to an executable",
+      "name": "which"
     }
   ]
 }

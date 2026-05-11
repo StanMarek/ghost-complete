@@ -1,158 +1,158 @@
 {
-  "name": "mob",
   "description": "Fast git handover for remote collaboration with mob.sh",
+  "name": "mob",
+  "options": [
+    {
+      "description": "Enable verbose logging",
+      "name": [
+        "--debug"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "start",
+      "args": {
+        "description": "Start a <minutes> timer",
+        "isOptional": true,
+        "name": "minutes"
+      },
       "description": "Start session from base branch in wip branch",
+      "name": "start",
       "options": [
         {
+          "description": "Move uncommitted changes to wip branch",
           "name": [
             "--include-uncommitted-changes",
             "-i"
-          ],
-          "description": "Move uncommitted changes to wip branch"
+          ]
         },
         {
+          "args": {
+            "name": "branch-postfix"
+          },
+          "description": "Set wip branch to 'mob/<base-branch>/<branch-postfix>'",
           "name": [
             "--branch",
             "-b"
-          ],
-          "description": "Set wip branch to 'mob/<base-branch>/<branch-postfix>'",
-          "args": {
-            "name": "branch-postfix"
-          }
+          ]
         }
-      ],
-      "args": {
-        "name": "minutes",
-        "description": "Start a <minutes> timer",
-        "isOptional": true
-      }
+      ]
     },
     {
-      "name": "next",
       "description": "Handover changes in wip branch to next person",
+      "name": "next",
       "options": [
         {
+          "description": "Stay on wip branch (default)",
           "name": [
             "--stay",
             "-s"
-          ],
-          "description": "Stay on wip branch (default)"
+          ]
         },
         {
+          "description": "Return to base branch",
           "name": [
             "--return-to-base-branch",
             "-r"
-          ],
-          "description": "Return to base branch"
+          ]
         },
         {
+          "args": {
+            "name": "commit-message"
+          },
+          "description": "Override commit message",
           "name": [
             "--message",
             "-m"
-          ],
-          "description": "Override commit message",
-          "args": {
-            "name": "commit-message"
-          }
+          ]
         }
       ]
     },
     {
-      "name": "done",
       "description": "Squashes all changes in wip branch to index in base branch",
+      "name": "done",
       "options": [
         {
+          "description": "Squash no commits from wip branch, only merge wip branch",
           "name": [
             "--no-squash"
-          ],
-          "description": "Squash no commits from wip branch, only merge wip branch"
+          ]
         },
         {
+          "description": "Squash all commits from wip branch",
           "name": [
             "--squash"
-          ],
-          "description": "Squash all commits from wip branch"
+          ]
         },
         {
+          "description": "Squash wip commits from wip branch, maintaining manual commits",
           "name": [
             "--squash-wip"
-          ],
-          "description": "Squash wip commits from wip branch, maintaining manual commits"
+          ]
         }
       ]
     },
     {
-      "name": "reset",
       "description": "Removes local and remote wip branch",
+      "name": "reset",
       "options": [
         {
+          "args": {
+            "name": "branch-postfix"
+          },
+          "description": "Set wip branch to 'mob/<base-branch>/<branch-postfix>'",
           "name": [
             "--branch",
             "-b"
-          ],
-          "description": "Set wip branch to 'mob/<base-branch>/<branch-postfix>'",
-          "args": {
-            "name": "branch-postfix"
-          }
+          ]
         }
       ]
     },
     {
-      "name": "clean",
-      "description": "Removes all orphan wip branches"
+      "description": "Removes all orphan wip branches",
+      "name": "clean"
     },
     {
-      "name": "timer",
+      "args": {
+        "name": "minutes"
+      },
       "description": "Start a <minutes> timer",
-      "args": {
-        "name": "minutes"
-      }
+      "name": "timer"
     },
     {
-      "name": "break",
+      "args": {
+        "name": "minutes"
+      },
       "description": "Start a <minutes> break timer",
-      "args": {
-        "name": "minutes"
-      }
+      "name": "break"
     },
     {
-      "name": "status",
-      "description": "Show the status of the current session"
+      "description": "Show the status of the current session",
+      "name": "status"
     },
     {
-      "name": "fetch",
-      "description": "Fetch remote state"
+      "description": "Fetch remote state",
+      "name": "fetch"
     },
     {
-      "name": "branch",
-      "description": "Show remote wip branches"
+      "description": "Show remote wip branches",
+      "name": "branch"
     },
     {
-      "name": "config",
-      "description": "Show all configuration options"
+      "description": "Show all configuration options",
+      "name": "config"
     },
     {
-      "name": "version",
-      "description": "Show the version"
+      "description": "Show the version",
+      "name": "version"
     },
     {
-      "name": "help",
-      "description": "Show help"
+      "description": "Show help",
+      "name": "help"
     },
     {
-      "name": "moo",
-      "description": "Moo!"
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--debug"
-      ],
-      "description": "Enable verbose logging"
+      "description": "Moo!",
+      "name": "moo"
     }
   ]
 }

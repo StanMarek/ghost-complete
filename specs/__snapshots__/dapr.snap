@@ -38,10 +38,6 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "source": "(m,f,T)=>de(this,void 0,void 0,function*(){var u;let{isDangerous:y,currentWorkingDirectory:S,searchTerm:h}=T,D=(u=(0,b.getCurrentInsertedDirectory)(l??S,h,T))!==null&&u!==void 0?u:\"/\";try{let z=yield f({command:\"ls\",args:[\"-1ApL\"],cwd:D}),X=M(z.stdout.split(`\n`),[\".DS_Store\"]),V=[];for(let I of X)if(I){let L=I.endsWith(\"/\")?\"folders\":\"filepaths\";(L===\"filepaths\"&&d!==\"only\"||L===\"folders\"&&d!==\"never\")&&V.push({type:L===\"filepaths\"?\"file\":\"folder\",name:I,insertValue:I,isDangerous:y,context:{templateType:L}})}return k(g(V))}catch{return[]}})"
-            },
             "requires_js": true
           }
         ],
@@ -149,10 +145,6 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "custom",
-                  "source": "(m,f,T)=>de(this,void 0,void 0,function*(){var u;let{isDangerous:y,currentWorkingDirectory:S,searchTerm:h}=T,D=(u=(0,b.getCurrentInsertedDirectory)(l??S,h,T))!==null&&u!==void 0?u:\"/\";try{let z=yield f({command:\"ls\",args:[\"-1ApL\"],cwd:D}),X=M(z.stdout.split(`\n`),[\".DS_Store\"]),V=[];for(let I of X)if(I){let L=I.endsWith(\"/\")?\"folders\":\"filepaths\";(L===\"filepaths\"&&d!==\"only\"||L===\"folders\"&&d!==\"never\")&&V.push({type:L===\"filepaths\"?\"file\":\"folder\",name:I,insertValue:I,isDangerous:y,context:{templateType:L}})}return k(g(V))}catch{return[]}})"
-                },
                 "requires_js": true
               }
             ],
@@ -864,6 +856,7 @@
               {
                 "js_runtime": {
                   "kind": "custom",
+                  "self_contained": true,
                   "source": "async(e,t)=>{let n=[\"-s\",\"-H\",\"Accept: application/json\",\"https://hub.docker.com/v2/namespaces/daprio/repositories/daprd/tags?page_size=100\"],a=()=>t({command:\"curl\",args:n});try{return JSON.parse((await a()).stdout).results.map(i=>({name:i.name,description:`Updated: ${i.last_updated}`}))}catch(r){return console.error({error:r}),[]}}"
                 },
                 "requires_js": true
@@ -1463,10 +1456,6 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "custom",
-                  "source": "(m,f,T)=>de(this,void 0,void 0,function*(){var u;let{isDangerous:y,currentWorkingDirectory:S,searchTerm:h}=T,D=(u=(0,b.getCurrentInsertedDirectory)(l??S,h,T))!==null&&u!==void 0?u:\"/\";try{let z=yield f({command:\"ls\",args:[\"-1ApL\"],cwd:D}),X=M(z.stdout.split(`\n`),[\".DS_Store\"]),V=[];for(let I of X)if(I){let L=I.endsWith(\"/\")?\"folders\":\"filepaths\";(L===\"filepaths\"&&d!==\"only\"||L===\"folders\"&&d!==\"never\")&&V.push({type:L===\"filepaths\"?\"file\":\"folder\",name:I,insertValue:I,isDangerous:y,context:{templateType:L}})}return k(g(V))}catch{return[]}})"
-                },
                 "requires_js": true
               }
             ],
@@ -1618,10 +1607,6 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "custom",
-                  "source": "(m,f,T)=>de(this,void 0,void 0,function*(){var u;let{isDangerous:y,currentWorkingDirectory:S,searchTerm:h}=T,D=(u=(0,b.getCurrentInsertedDirectory)(l??S,h,T))!==null&&u!==void 0?u:\"/\";try{let z=yield f({command:\"ls\",args:[\"-1ApL\"],cwd:D}),X=M(z.stdout.split(`\n`),[\".DS_Store\"]),V=[];for(let I of X)if(I){let L=I.endsWith(\"/\")?\"folders\":\"filepaths\";(L===\"filepaths\"&&d!==\"only\"||L===\"folders\"&&d!==\"never\")&&V.push({type:L===\"filepaths\"?\"file\":\"folder\",name:I,insertValue:I,isDangerous:y,context:{templateType:L}})}return k(g(V))}catch{return[]}})"
-                },
                 "requires_js": true
               }
             ],
@@ -1714,10 +1699,6 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "custom",
-                  "source": "(m,f,T)=>de(this,void 0,void 0,function*(){var u;let{isDangerous:y,currentWorkingDirectory:S,searchTerm:h}=T,D=(u=(0,b.getCurrentInsertedDirectory)(l??S,h,T))!==null&&u!==void 0?u:\"/\";try{let z=yield f({command:\"ls\",args:[\"-1ApL\"],cwd:D}),X=M(z.stdout.split(`\n`),[\".DS_Store\"]),V=[];for(let I of X)if(I){let L=I.endsWith(\"/\")?\"folders\":\"filepaths\";(L===\"filepaths\"&&d!==\"only\"||L===\"folders\"&&d!==\"never\")&&V.push({type:L===\"filepaths\"?\"file\":\"folder\",name:I,insertValue:I,isDangerous:y,context:{templateType:L}})}return k(g(V))}catch{return[]}})"
-                },
                 "requires_js": true
               }
             ],

@@ -1,132 +1,191 @@
 {
-  "name": "minectl",
   "description": "Create Minecraft Server on different cloud provider",
+  "name": "minectl",
+  "options": [
+    {
+      "description": "Set this value to if mincetl is called by a CI system. Enables logging and disables human-readable output rendering (default: false)",
+      "name": [
+        "--headless"
+      ]
+    },
+    {
+      "args": {
+        "name": "log-encoding",
+        "suggestions": [
+          {
+            "name": "console"
+          },
+          {
+            "name": "json"
+          }
+        ]
+      },
+      "description": "Set the log encoding: console|json (default: console)",
+      "name": [
+        "--log-encoding"
+      ]
+    },
+    {
+      "args": {
+        "name": "verbose",
+        "suggestions": [
+          {
+            "name": "debug"
+          },
+          {
+            "name": "info"
+          },
+          {
+            "name": "warn"
+          },
+          {
+            "name": "error"
+          },
+          {
+            "name": "dpanic"
+          },
+          {
+            "name": "panic"
+          },
+          {
+            "name": "fatal"
+          }
+        ]
+      },
+      "description": "Enable verbose logging: debug|info|warn|error|dpanic|panic|fatal",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Display help",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "completion",
       "description": "Generate the autocompletion script for the specified shell",
+      "name": "completion",
       "subcommands": [
         {
-          "name": "bash",
           "description": "Generate the autocompletion script for bash",
+          "name": "bash",
           "options": [
             {
+              "description": "Disable completion descriptions",
               "name": [
                 "--no-descriptions"
-              ],
-              "description": "Disable completion descriptions"
+              ]
             }
           ]
         },
         {
-          "name": "fish",
           "description": "Generate the autocompletion script for fish",
+          "name": "fish",
           "options": [
             {
+              "description": "Disable completion descriptions",
               "name": [
                 "--no-descriptions"
-              ],
-              "description": "Disable completion descriptions"
+              ]
             }
           ]
         },
         {
-          "name": "powershell",
           "description": "Generate the autocompletion script for powershell",
+          "name": "powershell",
           "options": [
             {
+              "description": "Disable completion descriptions",
               "name": [
                 "--no-descriptions"
-              ],
-              "description": "Disable completion descriptions"
+              ]
             }
           ]
         },
         {
-          "name": "zsh",
           "description": "Generate the autocompletion script for zsh",
+          "name": "zsh",
           "options": [
             {
+              "description": "Disable completion descriptions",
               "name": [
                 "--no-descriptions"
-              ],
-              "description": "Disable completion descriptions"
+              ]
             }
           ]
         }
       ]
     },
     {
-      "name": "create",
       "description": "Create an Minecraft Server",
+      "name": "create",
       "options": [
         {
-          "name": [
-            "--filename",
-            "-f"
-          ],
-          "description": "Location of the manifest file",
           "args": {
             "name": "filename",
             "template": [
               "filepaths"
             ]
-          }
+          },
+          "description": "Location of the manifest file",
+          "name": [
+            "--filename",
+            "-f"
+          ]
         },
         {
+          "description": "Wait for Minecraft Server is started",
           "name": [
             "--wait",
             "-w"
-          ],
-          "description": "Wait for Minecraft Server is started"
+          ]
         }
       ]
     },
     {
-      "name": "delete",
       "description": "Delete an Minecraft Server",
+      "name": "delete",
       "options": [
         {
-          "name": [
-            "--filename",
-            "-f"
-          ],
-          "description": "Location of the manifest file",
           "args": {
             "name": "filename",
             "template": [
               "filepaths"
             ]
-          }
+          },
+          "description": "Location of the manifest file",
+          "name": [
+            "--filename",
+            "-f"
+          ]
         },
         {
-          "name": [
-            "--id"
-          ],
-          "description": "Contains the server id",
           "args": {
             "name": "id"
-          }
+          },
+          "description": "Contains the server id",
+          "name": [
+            "--id"
+          ]
         },
         {
+          "description": "Automatically delete the server",
           "name": [
             "--yes",
             "-y"
-          ],
-          "description": "Automatically delete the server"
+          ]
         }
       ]
     },
     {
-      "name": "list",
       "description": "List all Minecraft Server",
+      "name": "list",
       "options": [
         {
-          "name": [
-            "--provider",
-            "-p"
-          ],
-          "description": "The cloud provider - civo|scaleway|do|hetzner|akamai|ovh|equinix|gce|vultr|azure|oci|ionos|aws|vexxhost|multipass|exoscale",
           "args": {
             "name": "provider",
             "suggestions": [
@@ -179,296 +238,237 @@
                 "name": "exoscale"
               }
             ]
-          }
+          },
+          "description": "The cloud provider - civo|scaleway|do|hetzner|akamai|ovh|equinix|gce|vultr|azure|oci|ionos|aws|vexxhost|multipass|exoscale",
+          "name": [
+            "--provider",
+            "-p"
+          ]
         },
         {
+          "args": {
+            "name": "region"
+          },
+          "description": "The region (gce: zone) for your cloud provider - civo|gce",
           "name": [
             "--region",
             "-r"
-          ],
-          "description": "The region (gce: zone) for your cloud provider - civo|gce",
-          "args": {
-            "name": "region"
-          }
+          ]
         }
       ]
     },
     {
-      "name": "plugins",
       "description": "Manage your plugins for a specific server",
+      "name": "plugins",
       "options": [
         {
-          "name": [
-            "--destination",
-            "-d"
-          ],
-          "description": "Plugin destination folder",
           "args": {
             "name": "destination",
             "template": [
               "folders"
             ]
-          }
+          },
+          "description": "Plugin destination folder",
+          "name": [
+            "--destination",
+            "-d"
+          ]
         },
         {
-          "name": [
-            "--filename",
-            "-f"
-          ],
-          "description": "Location of the manifest file",
           "args": {
             "name": "filename",
             "template": [
               "filepaths"
             ]
-          }
+          },
+          "description": "Location of the manifest file",
+          "name": [
+            "--filename",
+            "-f"
+          ]
         },
         {
-          "name": [
-            "--id"
-          ],
-          "description": "Contains the server id",
           "args": {
             "name": "id"
-          }
+          },
+          "description": "Contains the server id",
+          "name": [
+            "--id"
+          ]
         },
         {
-          "name": [
-            "--plugin",
-            "-p"
-          ],
-          "description": "Location of the plugin",
           "args": {
             "name": "plugin",
             "template": [
               "filepaths"
             ]
-          }
+          },
+          "description": "Location of the plugin",
+          "name": [
+            "--plugin",
+            "-p"
+          ]
         },
         {
+          "args": {
+            "name": "ssh-key"
+          },
+          "description": "Specify a specific path for the SSH key",
           "name": [
             "--ssh-key",
             "-k"
-          ],
-          "description": "Specify a specific path for the SSH key",
-          "args": {
-            "name": "ssh-key"
-          }
+          ]
         }
       ]
     },
     {
-      "name": "rcon",
       "description": "RCON client to your Minecraft server",
+      "name": "rcon",
       "options": [
         {
-          "name": [
-            "--filename",
-            "-f"
-          ],
-          "description": "Location of the manifest file",
           "args": {
             "name": "filename",
             "template": [
               "filepaths"
             ]
-          }
+          },
+          "description": "Location of the manifest file",
+          "name": [
+            "--filename",
+            "-f"
+          ]
         },
         {
-          "name": [
-            "--id"
-          ],
-          "description": "Contains the server id",
           "args": {
             "name": "id"
-          }
+          },
+          "description": "Contains the server id",
+          "name": [
+            "--id"
+          ]
         }
       ]
     },
     {
-      "name": "update",
       "description": "Update an Minecraft Server",
+      "name": "update",
       "options": [
         {
-          "name": [
-            "--filename",
-            "-f"
-          ],
-          "description": "Location of the manifest file",
           "args": {
             "name": "filename",
             "template": [
               "filepaths"
             ]
-          }
+          },
+          "description": "Location of the manifest file",
+          "name": [
+            "--filename",
+            "-f"
+          ]
         },
         {
-          "name": [
-            "--id"
-          ],
-          "description": "Contains the server id",
           "args": {
             "name": "id"
-          }
+          },
+          "description": "Contains the server id",
+          "name": [
+            "--id"
+          ]
         },
         {
+          "args": {
+            "name": "ssh-key"
+          },
+          "description": "Specify a specific path for the SSH key",
           "name": [
             "--ssh-key",
             "-k"
-          ],
-          "description": "Specify a specific path for the SSH key",
-          "args": {
-            "name": "ssh-key"
-          }
+          ]
         }
       ]
     },
     {
-      "name": "version",
-      "description": "Display the clients version information"
+      "description": "Display the clients version information",
+      "name": "version"
     },
     {
-      "name": "wizard",
       "description": "Calls the minectl wizard to create interactively a minectl 🗺 config",
+      "name": "wizard",
       "options": [
         {
-          "name": [
-            "--output",
-            "-o"
-          ],
-          "description": "Output folder for the configuration file for minectl 🗺 (default: ~/.minectl)",
           "args": {
             "name": "output",
             "template": [
               "folders"
             ]
-          }
+          },
+          "description": "Output folder for the configuration file for minectl 🗺 (default: ~/.minectl)",
+          "name": [
+            "--output",
+            "-o"
+          ]
         }
       ]
     },
     {
-      "name": "help",
       "description": "Help about any command",
+      "name": "help",
       "subcommands": [
         {
-          "name": "completion",
           "description": "Generate the autocompletion script for the specified shell",
+          "name": "completion",
           "subcommands": [
             {
-              "name": "bash",
-              "description": "Generate the autocompletion script for bash"
+              "description": "Generate the autocompletion script for bash",
+              "name": "bash"
             },
             {
-              "name": "fish",
-              "description": "Generate the autocompletion script for fish"
+              "description": "Generate the autocompletion script for fish",
+              "name": "fish"
             },
             {
-              "name": "powershell",
-              "description": "Generate the autocompletion script for powershell"
+              "description": "Generate the autocompletion script for powershell",
+              "name": "powershell"
             },
             {
-              "name": "zsh",
-              "description": "Generate the autocompletion script for zsh"
+              "description": "Generate the autocompletion script for zsh",
+              "name": "zsh"
             }
           ]
         },
         {
-          "name": "create",
-          "description": "Create an Minecraft Server"
+          "description": "Create an Minecraft Server",
+          "name": "create"
         },
         {
-          "name": "delete",
-          "description": "Delete an Minecraft Server"
+          "description": "Delete an Minecraft Server",
+          "name": "delete"
         },
         {
-          "name": "list",
-          "description": "List all Minecraft Server"
+          "description": "List all Minecraft Server",
+          "name": "list"
         },
         {
-          "name": "plugins",
-          "description": "Manage your plugins for a specific server"
+          "description": "Manage your plugins for a specific server",
+          "name": "plugins"
         },
         {
-          "name": "rcon",
-          "description": "RCON client to your Minecraft server"
+          "description": "RCON client to your Minecraft server",
+          "name": "rcon"
         },
         {
-          "name": "update",
-          "description": "Update an Minecraft Server"
+          "description": "Update an Minecraft Server",
+          "name": "update"
         },
         {
-          "name": "version",
-          "description": "Display the clients version information"
+          "description": "Display the clients version information",
+          "name": "version"
         },
         {
-          "name": "wizard",
-          "description": "Calls the minectl wizard to create interactively a minectl 🗺 config"
+          "description": "Calls the minectl wizard to create interactively a minectl 🗺 config",
+          "name": "wizard"
         }
       ]
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--headless"
-      ],
-      "description": "Set this value to if mincetl is called by a CI system. Enables logging and disables human-readable output rendering (default: false)"
-    },
-    {
-      "name": [
-        "--log-encoding"
-      ],
-      "description": "Set the log encoding: console|json (default: console)",
-      "args": {
-        "name": "log-encoding",
-        "suggestions": [
-          {
-            "name": "console"
-          },
-          {
-            "name": "json"
-          }
-        ]
-      }
-    },
-    {
-      "name": [
-        "--verbose"
-      ],
-      "description": "Enable verbose logging: debug|info|warn|error|dpanic|panic|fatal",
-      "args": {
-        "name": "verbose",
-        "suggestions": [
-          {
-            "name": "debug"
-          },
-          {
-            "name": "info"
-          },
-          {
-            "name": "warn"
-          },
-          {
-            "name": "error"
-          },
-          {
-            "name": "dpanic"
-          },
-          {
-            "name": "panic"
-          },
-          {
-            "name": "fatal"
-          }
-        ]
-      }
-    },
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Display help"
     }
   ]
 }

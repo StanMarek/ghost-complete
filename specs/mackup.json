@@ -1,24 +1,57 @@
 {
-  "name": "mackup",
   "description": "Mackup",
+  "name": "mackup",
+  "options": [
+    {
+      "description": "Show help",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Force every question asked to be answered with 'Yes'",
+      "name": [
+        "--force",
+        "-f"
+      ]
+    },
+    {
+      "description": "Allow mackup to be run as superuser",
+      "name": [
+        "--root",
+        "-r"
+      ]
+    },
+    {
+      "description": "Show steps without executing",
+      "name": [
+        "--dry-run",
+        "-n"
+      ]
+    },
+    {
+      "description": "Show version",
+      "name": [
+        "--version"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "list",
-      "description": "List all the supported mackup applications"
+      "description": "List all the supported mackup applications",
+      "name": "list"
     },
     {
-      "name": "backup",
-      "description": "Sync your conf files to your synced storage"
+      "description": "Sync your conf files to your synced storage",
+      "name": "backup"
     },
     {
-      "name": "restore",
-      "description": "Link the conf files already in your synced storage on your system"
+      "description": "Link the conf files already in your synced storage on your system",
+      "name": "restore"
     },
     {
-      "name": "show",
-      "description": "Show the current configuration",
       "args": {
-        "name": "application",
         "generators": [
           {
             "script": [
@@ -30,48 +63,15 @@
               "filter_empty"
             ]
           }
-        ]
-      }
+        ],
+        "name": "application"
+      },
+      "description": "Show the current configuration",
+      "name": "show"
     },
     {
-      "name": "uninstall",
-      "description": "Reset everything as it was before using Mackup"
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Show help"
-    },
-    {
-      "name": [
-        "--force",
-        "-f"
-      ],
-      "description": "Force every question asked to be answered with 'Yes'"
-    },
-    {
-      "name": [
-        "--root",
-        "-r"
-      ],
-      "description": "Allow mackup to be run as superuser"
-    },
-    {
-      "name": [
-        "--dry-run",
-        "-n"
-      ],
-      "description": "Show steps without executing"
-    },
-    {
-      "name": [
-        "--version"
-      ],
-      "description": "Show version"
+      "description": "Reset everything as it was before using Mackup",
+      "name": "uninstall"
     }
   ]
 }

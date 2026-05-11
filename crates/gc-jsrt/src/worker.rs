@@ -25,7 +25,7 @@ use rquickjs::{CatchResultExt, Context, Promise, Runtime, Value};
 use tokio::sync::oneshot;
 
 pub use crate::host::MAX_SHELL_CALLS_PER_EVALUATION;
-use crate::host::{install_host_api, HostState};
+use crate::host::{install_host_api, install_token_only_globals, HostState};
 use crate::normalize::normalize_value;
 use crate::sandbox::configure_or_internal;
 use crate::types::{
@@ -278,23 +278,36 @@ fn run_job(
             });
         }
 
-        // Host bindings install unconditionally because the per-job
-        // context is fresh — even PostProcess jobs that never touch them
-        // pay only a few property sets.
-        //
-        // `.catch(&ctx)` consumes the pending JS exception left on the
-        // ctx by inner re-throws (e.g. `install_fig_helpers` re-throws so
-        // the preamble's message/stack survive); the resulting
-        // `CaughtError`'s Display impl embeds that detail into the
-        // user-facing diagnostic instead of the opaque
-        // `rquickjs::Error::Exception` placeholder.
-        if let Err(e) =
-            install_host_api(&ctx, &job.input, host_state.clone(), job.deadline).catch(&ctx)
-        {
-            return JsRuntimeOutput::empty_with(JsDiagnostic {
-                code: JsDiagnosticCode::Exception,
-                message: format!("could not install host API: {e}"),
-            });
+        match job.input.kind {
+            JsExecutionKind::TokenOnly => {
+                if let Err(e) = install_token_only_globals(&ctx, &job.input).catch(&ctx) {
+                    return JsRuntimeOutput::empty_with(JsDiagnostic {
+                        code: JsDiagnosticCode::Exception,
+                        message: format!("could not install token-only globals: {e}"),
+                    });
+                }
+            }
+            _ => {
+                // Host bindings install unconditionally for the existing
+                // variants because the per-job context is fresh — even
+                // PostProcess jobs that never touch them pay only a few
+                // property sets.
+                //
+                // `.catch(&ctx)` consumes the pending JS exception left on
+                // the ctx by inner re-throws (e.g. `install_fig_helpers`
+                // re-throws so the preamble's message/stack survive); the
+                // resulting `CaughtError`'s Display impl embeds that detail
+                // into the user-facing diagnostic instead of the opaque
+                // `rquickjs::Error::Exception` placeholder.
+                if let Err(e) =
+                    install_host_api(&ctx, &job.input, host_state.clone(), job.deadline).catch(&ctx)
+                {
+                    return JsRuntimeOutput::empty_with(JsDiagnostic {
+                        code: JsDiagnosticCode::Exception,
+                        message: format!("could not install host API: {e}"),
+                    });
+                }
+            }
         }
 
         // Evaluate. We accept either a synchronous value or a Promise
@@ -329,7 +342,7 @@ fn run_job(
         };
 
         let mut output = match job.input.kind {
-            JsExecutionKind::PostProcess | JsExecutionKind::Custom => {
+            JsExecutionKind::PostProcess | JsExecutionKind::Custom | JsExecutionKind::TokenOnly => {
                 normalize_value(&ctx, resolved)
             }
             JsExecutionKind::ScriptFunction => normalize_argv(&ctx, resolved),
@@ -632,6 +645,7 @@ fn classify_error(
                 .get::<_, String>("code")
                 .ok()
                 .and_then(|code| diagnostic_code_from_host_error(&code))
+                .or_else(|| diagnostic_code_from_exception_message(&msg))
                 .unwrap_or(JsDiagnosticCode::Exception);
             JsRuntimeOutput::empty_with(JsDiagnostic { code, message: msg })
         }
@@ -668,5 +682,13 @@ fn diagnostic_code_from_host_error(code: &str) -> Option<JsDiagnosticCode> {
         "ShellCommandFailed" => Some(JsDiagnosticCode::ShellCommandFailed),
         "UnsupportedHostApi" => Some(JsDiagnosticCode::UnsupportedHostApi),
         _ => None,
+    }
+}
+
+fn diagnostic_code_from_exception_message(message: &str) -> Option<JsDiagnosticCode> {
+    if message == "out of memory" {
+        Some(JsDiagnosticCode::MemoryExceeded)
+    } else {
+        None
     }
 }

@@ -1,176 +1,171 @@
 {
-  "name": "wscat",
   "description": "Communicate over websocket",
+  "name": "wscat",
   "options": [
     {
-      "name": [
-        "-c",
-        "--connect"
-      ],
-      "description": "Connect to a WebSocket server",
       "args": {
         "name": "url",
         "template": "history"
-      }
+      },
+      "description": "Connect to a WebSocket server",
+      "name": [
+        "-c",
+        "--connect"
+      ]
     },
     {
+      "description": "Output the version number",
       "name": [
         "-V",
         "--version"
-      ],
-      "description": "Output the version number"
+      ]
     },
     {
-      "name": [
-        "--auth"
-      ],
-      "description": "Add basic HTTP authentication header (--connect only)",
       "args": {
         "name": "username:password"
-      }
+      },
+      "description": "Add basic HTTP authentication header (--connect only)",
+      "name": [
+        "--auth"
+      ]
     },
     {
-      "name": [
-        "--ca"
-      ],
-      "description": "Specify a Certificate Authority (--connect only)",
       "args": {
         "name": "ca"
-      }
+      },
+      "description": "Specify a Certificate Authority (--connect only)",
+      "name": [
+        "--ca"
+      ]
     },
     {
-      "name": [
-        "--cert"
-      ],
-      "description": "Specify a Client SSL Certificate (--connect only)",
       "args": {
         "name": "cert"
-      }
+      },
+      "description": "Specify a Client SSL Certificate (--connect only)",
+      "name": [
+        "--cert"
+      ]
     },
     {
-      "name": [
-        "--host"
-      ],
-      "description": "Optional host",
       "args": {
         "name": "host"
-      }
+      },
+      "description": "Optional host",
+      "name": [
+        "--host"
+      ]
     },
     {
-      "name": [
-        "--key"
-      ],
-      "description": "Specify a Client SSL Certificate's key (--connect only)",
       "args": {
         "name": "key"
-      }
+      },
+      "description": "Specify a Client SSL Certificate's key (--connect only)",
+      "name": [
+        "--key"
+      ]
     },
     {
-      "name": [
-        "--max-redirects"
-      ],
-      "description": "Maximum number of redirects allowed (--connect only) (default: 10)",
       "args": {
         "name": "num"
-      }
+      },
+      "description": "Maximum number of redirects allowed (--connect only) (default: 10)",
+      "name": [
+        "--max-redirects"
+      ]
     },
     {
+      "description": "Run without color",
       "name": [
         "--no-color"
-      ],
-      "description": "Run without color"
+      ]
     },
     {
-      "name": [
-        "--passphrase"
-      ],
-      "description": "Specify a Client SSL Certificate Key's passphrase (--connect only). If you don't provide a value, it will be prompted for",
       "args": {
         "name": "passphrase"
-      }
+      },
+      "description": "Specify a Client SSL Certificate Key's passphrase (--connect only). If you don't provide a value, it will be prompted for",
+      "name": [
+        "--passphrase"
+      ]
     },
     {
-      "name": [
-        "--proxy"
-      ],
-      "description": "Connect via a proxy. Proxy must support CONNECT method",
       "args": {
         "name": "[protocol://]host[:port]"
-      }
+      },
+      "description": "Connect via a proxy. Proxy must support CONNECT method",
+      "name": [
+        "--proxy"
+      ]
     },
     {
+      "description": "Enable slash commands for control frames (/ping, /pong, /close [code [, reason]])",
       "name": [
         "--slash"
-      ],
-      "description": "Enable slash commands for control frames (/ping, /pong, /close [code [, reason]])"
+      ]
     },
     {
+      "args": {
+        "name": "header:value"
+      },
+      "description": "Set an HTTP header. Repeat to set multiple (--connect only) (default: [])",
       "name": [
         "-H",
         "--header"
-      ],
-      "description": "Set an HTTP header. Repeat to set multiple (--connect only) (default: [])",
-      "args": {
-        "name": "header:value"
-      }
+      ]
     },
     {
+      "description": "Follow redirects (--connect only)",
       "name": [
         "-L",
         "--location"
-      ],
-      "description": "Follow redirects (--connect only)"
+      ]
     },
     {
+      "args": {
+        "name": "port"
+      },
+      "description": "Listen on port",
       "name": [
         "-l",
         "--listen"
-      ],
-      "description": "Listen on port",
-      "args": {
-        "name": "port"
-      }
+      ]
     },
     {
+      "description": "Do not check for unauthorized certificates",
       "name": [
         "-n",
         "--no-check"
-      ],
-      "description": "Do not check for unauthorized certificates"
+      ]
     },
     {
+      "args": {
+        "name": "origin"
+      },
+      "description": "Optional origin",
       "name": [
         "-o",
         "--origin"
-      ],
-      "description": "Optional origin",
-      "args": {
-        "name": "origin"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "protocol"
+      },
+      "description": "Optional protocol version",
       "name": [
         "-p",
         "--protocol"
-      ],
-      "description": "Optional protocol version",
-      "args": {
-        "name": "protocol"
-      }
+      ]
     },
     {
+      "description": "Print a notification when a ping or pong is received",
       "name": [
         "-P",
         "--show-ping-pong"
-      ],
-      "description": "Print a notification when a ping or pong is received"
+      ]
     },
     {
-      "name": [
-        "-s",
-        "--subprotocol"
-      ],
-      "description": "Optional subprotocol (default: [])",
       "args": {
         "name": "protocol",
         "suggestions": [
@@ -349,34 +344,39 @@
             "name": "v3.penguin-stats.live+proto"
           }
         ]
-      }
+      },
+      "description": "Optional subprotocol (default: [])",
+      "name": [
+        "-s",
+        "--subprotocol"
+      ]
     },
     {
+      "args": {
+        "name": "seconds"
+      },
+      "description": "Wait given seconds after executing command",
       "name": [
         "-w",
         "--wait"
-      ],
-      "description": "Wait given seconds after executing command",
-      "args": {
-        "name": "seconds"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "command"
+      },
+      "description": "Execute command after connecting",
       "name": [
         "-x",
         "--execute"
-      ],
-      "description": "Execute command after connecting",
-      "args": {
-        "name": "command"
-      }
+      ]
     },
     {
+      "description": "Display help for command",
       "name": [
         "-h",
         "--help"
-      ],
-      "description": "Display help for command"
+      ]
     }
   ]
 }

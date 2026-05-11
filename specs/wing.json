@@ -2,84 +2,84 @@
   "name": "wing",
   "subcommands": [
     {
-      "name": "run",
+      "args": {
+        "description": "Executable .wx file",
+        "name": "executable"
+      },
       "description": "Runs a Wing executable in the Wing Console",
+      "name": "run",
       "options": [
         {
+          "description": "Display help for command",
           "name": [
             "-h",
             "--help"
           ],
-          "description": "Display help for command",
-          "priority": 49
-        }
-      ],
-      "args": {
-        "name": "executable",
-        "description": "Executable .wx file"
-      }
-    },
-    {
-      "name": "compile",
-      "description": "Compiles a Wing program",
-      "options": [
-        {
-          "name": [
-            "-o",
-            "--out-dir"
-          ],
-          "description": "Output directory",
-          "args": {
-            "name": "out-dir"
-          }
-        },
-        {
-          "name": [
-            "-t",
-            "--target"
-          ],
-          "description": "Target platform (options: 'tf-aws', 'sim')",
-          "args": {
-            "name": "target"
-          }
-        },
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Display help for command",
-          "priority": 49
-        }
-      ],
-      "args": {
-        "name": "entrypoint",
-        "description": "Program .w entrypoint"
-      }
-    },
-    {
-      "name": "upgrade",
-      "description": "Upgrades the Wing toolchain to the latest version",
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Display help for command",
           "priority": 49
         }
       ]
     },
     {
-      "name": "help",
-      "description": "Display help for command",
-      "priority": 49,
       "args": {
+        "description": "Program .w entrypoint",
+        "name": "entrypoint"
+      },
+      "description": "Compiles a Wing program",
+      "name": "compile",
+      "options": [
+        {
+          "args": {
+            "name": "out-dir"
+          },
+          "description": "Output directory",
+          "name": [
+            "-o",
+            "--out-dir"
+          ]
+        },
+        {
+          "args": {
+            "name": "target"
+          },
+          "description": "Target platform (options: 'tf-aws', 'sim')",
+          "name": [
+            "-t",
+            "--target"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "priority": 49
+        }
+      ]
+    },
+    {
+      "description": "Upgrades the Wing toolchain to the latest version",
+      "name": "upgrade",
+      "options": [
+        {
+          "description": "Display help for command",
+          "name": [
+            "-h",
+            "--help"
+          ],
+          "priority": 49
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
         "name": "command",
-        "template": "help",
-        "isOptional": true
-      }
+        "template": "help"
+      },
+      "description": "Display help for command",
+      "name": "help",
+      "priority": 49
     }
   ]
 }

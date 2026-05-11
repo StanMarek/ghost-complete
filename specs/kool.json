@@ -1,412 +1,395 @@
 {
-  "name": "kool",
   "description": "Cloud and docker environments made easy",
+  "name": "kool",
+  "options": [
+    {
+      "description": "Increases output verbosity",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Help for kool",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "create",
-      "description": "Create a new project using a preset",
-      "options": [
+      "args": [
         {
-          "name": [
-            "--verbose"
-          ],
-          "description": "Increases output verbosity"
+          "description": "Preset that will be used to create the project",
+          "name": "preset"
         },
         {
+          "description": "Folder where the project will be created",
+          "name": "folder",
+          "template": "folders"
+        }
+      ],
+      "description": "Create a new project using a preset",
+      "name": "create",
+      "options": [
+        {
+          "description": "Increases output verbosity",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Help for create",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Help for create"
-        }
-      ],
-      "args": [
-        {
-          "name": "preset",
-          "description": "Preset that will be used to create the project"
-        },
-        {
-          "name": "folder",
-          "description": "Folder where the project will be created",
-          "template": "folders"
+          ]
         }
       ]
     },
     {
-      "name": "deploy",
       "description": "Deploy a local application to a Kool Cloud environment",
+      "name": "deploy",
+      "options": [
+        {
+          "description": "Increases output verbosity",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Help for deploy",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ],
       "subcommands": [
         {
-          "name": "destroy",
           "description": "Destroy an environment deployed to Kool Cloud",
+          "name": "destroy",
           "options": [
             {
+              "description": "Increases output verbosity",
               "name": [
                 "--verbose"
-              ],
-              "description": "Increases output verbosity"
+              ]
             },
             {
+              "description": "Help for destroy",
               "name": [
                 "--help",
                 "-h"
-              ],
-              "description": "Help for destroy"
+              ]
             }
           ]
         },
         {
-          "name": "exec",
           "description": "Execute a command inside a running service container deployed to Kool Cloud",
+          "name": "exec",
           "options": [
             {
+              "description": "Increases output verbosity",
               "name": [
                 "--verbose"
-              ],
-              "description": "Increases output verbosity"
+              ]
             },
             {
+              "args": {
+                "name": "container"
+              },
+              "description": "Container target",
               "name": [
                 "--container",
                 "-c"
-              ],
-              "description": "Container target",
-              "args": {
-                "name": "container"
-              }
+              ]
             },
             {
+              "description": "Help for exec",
               "name": [
                 "--help",
                 "-h"
-              ],
-              "description": "Help for exec"
+              ]
             }
           ]
         },
         {
-          "name": "logs",
           "description": "See the logs of running service container deployed to Kool Cloud",
+          "name": "logs",
           "options": [
             {
+              "description": "Increases output verbosity",
               "name": [
                 "--verbose"
-              ],
-              "description": "Increases output verbosity"
+              ]
             },
             {
+              "args": {
+                "name": "container"
+              },
+              "description": "Container target",
               "name": [
                 "--container",
                 "-c"
-              ],
-              "description": "Container target",
-              "args": {
-                "name": "container"
-              }
+              ]
             },
             {
+              "description": "Follow log output",
               "name": [
                 "--follow",
                 "-f"
-              ],
-              "description": "Follow log output"
+              ]
             },
             {
+              "args": {
+                "name": "tail"
+              },
+              "description": "Number of lines to show from the end of the logs for each container. A value equal to 0 will show all lines",
               "name": [
                 "--tail",
                 "-t"
-              ],
-              "description": "Number of lines to show from the end of the logs for each container. A value equal to 0 will show all lines",
-              "args": {
-                "name": "tail"
-              }
+              ]
             },
             {
+              "description": "Help for logs",
               "name": [
                 "--help",
                 "-h"
-              ],
-              "description": "Help for logs"
+              ]
             }
           ]
         }
-      ],
-      "options": [
-        {
-          "name": [
-            "--verbose"
-          ],
-          "description": "Increases output verbosity"
-        },
-        {
-          "name": [
-            "--help",
-            "-h"
-          ],
-          "description": "Help for deploy"
-        }
       ]
     },
     {
-      "name": "docker",
-      "description": "Create a new container (a powered up 'docker run')",
-      "options": [
+      "args": [
         {
-          "name": [
-            "--verbose"
-          ],
-          "description": "Increases output verbosity"
+          "description": "Docker image",
+          "name": "image"
         },
         {
+          "description": "Command to execute inside the container",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "command"
+        }
+      ],
+      "description": "Create a new container (a powered up 'docker run')",
+      "name": "docker",
+      "options": [
+        {
+          "description": "Increases output verbosity",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "args": {
+            "name": "env"
+          },
+          "description": "Environment variables",
           "name": [
             "--env",
             "-e"
-          ],
-          "description": "Environment variables",
-          "args": {
-            "name": "env"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "network"
+          },
+          "description": "Connect a container to a network",
           "name": [
             "--network",
             "-n"
-          ],
-          "description": "Connect a container to a network",
-          "args": {
-            "name": "network"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "publish"
+          },
+          "description": "Publish a container's port(s) to the host",
           "name": [
             "--publish",
             "-p"
-          ],
-          "description": "Publish a container's port(s) to the host",
-          "args": {
-            "name": "publish"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "volume"
+          },
+          "description": "Bind mount a volume",
           "name": [
             "--volume",
             "-v"
-          ],
-          "description": "Bind mount a volume",
-          "args": {
-            "name": "volume"
-          }
+          ]
         },
         {
+          "description": "Help for docker",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Help for docker"
-        }
-      ],
-      "args": [
-        {
-          "name": "image",
-          "description": "Docker image"
-        },
-        {
-          "name": "command",
-          "description": "Command to execute inside the container",
-          "isVariadic": true,
-          "isOptional": true
+          ]
         }
       ]
     },
     {
-      "name": "exec",
-      "description": "Execute a command inside a running service container",
-      "options": [
+      "args": [
         {
-          "name": [
-            "--verbose"
-          ],
-          "description": "Increases output verbosity"
+          "description": "Service you want to execute a command",
+          "name": "service"
         },
         {
+          "description": "Command to execute inside the container",
+          "isVariadic": true,
+          "name": "command"
+        }
+      ],
+      "description": "Execute a command inside a running service container",
+      "name": "exec",
+      "options": [
+        {
+          "description": "Increases output verbosity",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Detached mode: Run command in the background",
           "name": [
             "--detach",
             "-d"
-          ],
-          "description": "Detached mode: Run command in the background"
+          ]
         },
         {
+          "args": {
+            "name": "env"
+          },
+          "description": "Environment variables",
           "name": [
             "--env",
             "-e"
-          ],
-          "description": "Environment variables",
-          "args": {
-            "name": "env"
-          }
+          ]
         },
         {
+          "description": "Help for exec",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Help for exec"
-        }
-      ],
-      "args": [
-        {
-          "name": "service",
-          "description": "Service you want to execute a command"
-        },
-        {
-          "name": "command",
-          "description": "Command to execute inside the container",
-          "isVariadic": true
+          ]
         }
       ]
     },
     {
-      "name": "info",
       "description": "Print out information about the local environment",
+      "name": "info",
       "options": [
         {
+          "description": "Increases output verbosity",
           "name": [
             "--verbose"
-          ],
-          "description": "Increases output verbosity"
+          ]
         },
         {
+          "description": "Help for info",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Help for info"
+          ]
         }
       ]
     },
     {
-      "name": "logs",
+      "args": {
+        "description": "Service to get logs from",
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "service"
+      },
       "description": "Display log output from running service containers",
+      "name": "logs",
       "options": [
         {
+          "description": "Increases output verbosity",
           "name": [
             "--verbose"
-          ],
-          "description": "Increases output verbosity"
+          ]
         },
         {
+          "description": "Follow log output",
           "name": [
             "--follow",
             "-f"
-          ],
-          "description": "Follow log output"
+          ]
         },
         {
+          "args": {
+            "name": "tail"
+          },
+          "description": "Number of lines to show from the end of the logs for each container. A value equal to 0 will show all lines",
           "name": [
             "--tail",
             "-t"
-          ],
-          "description": "Number of lines to show from the end of the logs for each container. A value equal to 0 will show all lines",
-          "args": {
-            "name": "tail"
-          }
+          ]
         },
         {
+          "description": "Help for logs",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Help for logs"
+          ]
         }
-      ],
-      "args": {
-        "name": "service",
-        "description": "Service to get logs from",
-        "isVariadic": true,
-        "isOptional": true
-      }
+      ]
     },
     {
-      "name": "preset",
+      "args": {
+        "description": "Preset that will be used to configure the project",
+        "name": "preset"
+      },
       "description": "Install configuration files customized for Kool in the current directory",
+      "name": "preset",
       "options": [
         {
+          "description": "Increases output verbosity",
           "name": [
             "--verbose"
-          ],
-          "description": "Increases output verbosity"
+          ]
         },
         {
+          "description": "Help for preset",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Help for preset"
+          ]
         }
-      ],
-      "args": {
-        "name": "preset",
-        "description": "Preset that will be used to configure the project"
-      }
+      ]
     },
     {
-      "name": "recipe",
+      "args": {
+        "description": "Recipe that will be used to add configuration",
+        "name": "recipe"
+      },
       "description": "Adds configuration for some recipe in the current work directory",
+      "name": "recipe",
       "options": [
         {
+          "description": "Increases output verbosity",
           "name": [
             "--verbose"
-          ],
-          "description": "Increases output verbosity"
+          ]
         },
         {
+          "description": "Help for recipe",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Help for recipe"
+          ]
         }
-      ],
-      "args": {
-        "name": "recipe",
-        "description": "Recipe that will be used to add configuration"
-      }
+      ]
     },
     {
-      "name": "restart",
-      "description": "Restart running service containers (the same as 'kool stop' followed by 'kool start')",
-      "options": [
-        {
-          "name": [
-            "--verbose"
-          ],
-          "description": "Increases output verbosity"
-        },
-        {
-          "name": [
-            "--purge"
-          ],
-          "description": "Remove all persistent data from volume mounts on containers"
-        },
-        {
-          "name": [
-            "--rebuild"
-          ],
-          "description": "Updates and builds service's images"
-        },
-        {
-          "name": [
-            "--help",
-            "-h"
-          ],
-          "description": "Help for restart"
-        }
-      ],
       "args": {
-        "name": "service",
         "description": "Service you want to restart",
-        "isVariadic": true,
-        "isOptional": true,
         "generators": [
           {
             "script": [
@@ -419,39 +402,43 @@
               "filter_empty"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "run",
-      "description": "Execute a script defined in kool.yml",
+        ],
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "service"
+      },
+      "description": "Restart running service containers (the same as 'kool stop' followed by 'kool start')",
+      "name": "restart",
       "options": [
         {
+          "description": "Increases output verbosity",
           "name": [
             "--verbose"
-          ],
-          "description": "Increases output verbosity"
+          ]
         },
         {
+          "description": "Remove all persistent data from volume mounts on containers",
           "name": [
-            "--env",
-            "-e"
-          ],
-          "description": "Environment variables",
-          "args": {
-            "name": "env"
-          }
+            "--purge"
+          ]
         },
         {
+          "description": "Updates and builds service's images",
+          "name": [
+            "--rebuild"
+          ]
+        },
+        {
+          "description": "Help for restart",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Help for run"
+          ]
         }
-      ],
+      ]
+    },
+    {
       "args": {
-        "name": "script",
         "description": "Script to be executed",
         "generators": [
           {
@@ -466,183 +453,185 @@
               "trim"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "self-update",
-      "description": "Update kool to the latest version",
+        ],
+        "name": "script"
+      },
+      "description": "Execute a script defined in kool.yml",
+      "name": "run",
       "options": [
         {
+          "description": "Increases output verbosity",
           "name": [
             "--verbose"
-          ],
-          "description": "Increases output verbosity"
+          ]
         },
         {
+          "args": {
+            "name": "env"
+          },
+          "description": "Environment variables",
+          "name": [
+            "--env",
+            "-e"
+          ]
+        },
+        {
+          "description": "Help for run",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Help for self-update"
+          ]
         }
       ]
     },
     {
-      "name": "share",
-      "description": "Live share your local environment on the Internet using an HTTP tunnel",
+      "description": "Update kool to the latest version",
+      "name": "self-update",
       "options": [
         {
+          "description": "Increases output verbosity",
           "name": [
             "--verbose"
-          ],
-          "description": "Increases output verbosity"
+          ]
         },
         {
+          "description": "Help for self-update",
           "name": [
-            "--port"
-          ],
-          "description": "The port from the target service that should be shared. If not provided, it will default to port 80",
+            "--help",
+            "-h"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Live share your local environment on the Internet using an HTTP tunnel",
+      "name": "share",
+      "options": [
+        {
+          "description": "Increases output verbosity",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
           "args": {
             "name": "port"
-          }
+          },
+          "description": "The port from the target service that should be shared. If not provided, it will default to port 80",
+          "name": [
+            "--port"
+          ]
         },
         {
-          "name": [
-            "--service"
-          ],
-          "description": "The name of the local service container you want to share",
           "args": {
             "name": "service"
-          }
+          },
+          "description": "The name of the local service container you want to share",
+          "name": [
+            "--service"
+          ]
         },
         {
-          "name": [
-            "--subdomain"
-          ],
-          "description": "The subdomain used to generate your public https://subdomain.kool.live URL",
           "args": {
             "name": "subdomain"
-          }
+          },
+          "description": "The subdomain used to generate your public https://subdomain.kool.live URL",
+          "name": [
+            "--subdomain"
+          ]
         },
         {
+          "description": "Help for share",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Help for share"
+          ]
         }
       ]
     },
     {
-      "name": "start",
+      "args": {
+        "description": "Service you want to start",
+        "generators": [
+          {
+            "script": [
+              "docker-compose",
+              "config",
+              "--services"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "service"
+      },
       "description": "Start service containers defined in docker-compose.yml",
+      "name": "start",
       "options": [
         {
+          "description": "Increases output verbosity",
           "name": [
             "--verbose"
-          ],
-          "description": "Increases output verbosity"
+          ]
         },
         {
+          "description": "Start containers in foreground mode",
           "name": [
             "--foreground",
             "-f"
-          ],
-          "description": "Start containers in foreground mode"
+          ]
         },
         {
-          "name": [
-            "--profile"
-          ],
-          "description": "Specify a profile to enable",
           "args": {
             "name": "profile"
-          }
+          },
+          "description": "Specify a profile to enable",
+          "name": [
+            "--profile"
+          ]
         },
         {
+          "description": "Updates and builds service's images",
           "name": [
             "--rebuild",
             "-b"
-          ],
-          "description": "Updates and builds service's images"
+          ]
         },
         {
+          "description": "Help for start",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Help for start"
-        }
-      ],
-      "args": {
-        "name": "service",
-        "description": "Service you want to start",
-        "isVariadic": true,
-        "isOptional": true,
-        "generators": [
-          {
-            "script": [
-              "docker-compose",
-              "config",
-              "--services"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "name": "status",
-      "description": "Show the status of all service containers",
-      "options": [
-        {
-          "name": [
-            "--verbose"
-          ],
-          "description": "Increases output verbosity"
-        },
-        {
-          "name": [
-            "--help",
-            "-h"
-          ],
-          "description": "Help for status"
+          ]
         }
       ]
     },
     {
-      "name": "stop",
-      "description": "Stop and destroy running service containers",
+      "description": "Show the status of all service containers",
+      "name": "status",
       "options": [
         {
+          "description": "Increases output verbosity",
           "name": [
             "--verbose"
-          ],
-          "description": "Increases output verbosity"
+          ]
         },
         {
-          "name": [
-            "--purge"
-          ],
-          "description": "Remove all persistent data from volume mounts on containers"
-        },
-        {
+          "description": "Help for status",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Help for stop"
+          ]
         }
-      ],
+      ]
+    },
+    {
       "args": {
-        "name": "service",
         "description": "Service you want to stop",
-        "isVariadic": true,
-        "isOptional": true,
         "generators": [
           {
             "script": [
@@ -655,23 +644,34 @@
               "filter_empty"
             ]
           }
-        ]
-      }
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--verbose"
-      ],
-      "description": "Increases output verbosity"
-    },
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Help for kool"
+        ],
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "service"
+      },
+      "description": "Stop and destroy running service containers",
+      "name": "stop",
+      "options": [
+        {
+          "description": "Increases output verbosity",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Remove all persistent data from volume mounts on containers",
+          "name": [
+            "--purge"
+          ]
+        },
+        {
+          "description": "Help for stop",
+          "name": [
+            "--help",
+            "-h"
+          ]
+        }
+      ]
     }
   ]
 }

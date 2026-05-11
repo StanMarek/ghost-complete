@@ -1,37 +1,32 @@
 {
-  "name": "progressline",
   "description": "⏳Track commands progress in a compact one-line format",
+  "name": "progressline",
   "options": [
     {
+      "description": "Show help for progressline",
       "name": [
         "--help",
         "-h"
-      ],
-      "description": "Show help for progressline"
+      ]
     },
     {
+      "description": "Log all lines above the progress line",
       "name": [
         "--log-all",
         "-a"
-      ],
-      "description": "Log all lines above the progress line"
+      ]
     },
     {
+      "args": {
+        "name": "text"
+      },
+      "description": "Set static text to display instead of the latest stdin data",
       "name": [
         "--static-text",
         "-t"
-      ],
-      "description": "Set static text to display instead of the latest stdin data",
-      "args": {
-        "name": "text"
-      }
+      ]
     },
     {
-      "name": [
-        "--activity-style",
-        "-s"
-      ],
-      "description": "Set style of the activity indicator",
       "args": {
         "name": "style",
         "suggestions": [
@@ -45,28 +40,33 @@
             "name": "snake"
           }
         ]
-      }
+      },
+      "description": "Set style of the activity indicator",
+      "name": [
+        "--activity-style",
+        "-s"
+      ]
     },
     {
-      "name": [
-        "--original-log-path",
-        "-l"
-      ],
-      "description": "Save the original log to a file",
       "args": {
         "name": "path",
         "template": "filepaths"
-      }
+      },
+      "description": "Save the original log to a file",
+      "name": [
+        "--original-log-path",
+        "-l"
+      ]
     },
     {
+      "args": {
+        "name": "regex"
+      },
+      "description": "Log above progress line lines matching the given regular expressions",
       "name": [
         "--log-matches",
         "-m"
-      ],
-      "description": "Log above progress line lines matching the given regular expressions",
-      "args": {
-        "name": "regex"
-      }
+      ]
     }
   ]
 }

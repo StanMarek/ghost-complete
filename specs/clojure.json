@@ -1,192 +1,188 @@
 {
-  "name": "clojure",
   "description": "Use the Clojure tools to run Clojure programs on the JVM, start a REPL, or invoke a specific function with data",
+  "name": "clojure",
   "options": [
     {
+      "description": "Use concatenated aliases to modify classpath",
       "name": [
         "-A"
-      ],
-      "description": "Use concatenated aliases to modify classpath"
+      ]
     },
     {
+      "args": [
+        {
+          "description": "An alias to refer to its function or a qualified function",
+          "isOptional": true,
+          "name": "a/fn"
+        },
+        {
+          "description": "A list of key-value arguments to merge with the exec-args",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "kvs"
+        },
+        {
+          "description": "Map to merge with the :exec-args map, taking precedence over kvs",
+          "isOptional": true,
+          "name": "kv-map"
+        }
+      ],
       "name": [
         "-X"
-      ],
-      "args": [
-        {
-          "name": "a/fn",
-          "description": "An alias to refer to its function or a qualified function",
-          "isOptional": true
-        },
-        {
-          "name": "kvs",
-          "description": "A list of key-value arguments to merge with the exec-args",
-          "isVariadic": true,
-          "isOptional": true
-        },
-        {
-          "name": "kv-map",
-          "description": "Map to merge with the :exec-args map, taking precedence over kvs",
-          "isOptional": true
-        }
       ]
     },
     {
-      "name": [
-        "-T"
+      "args": [
+        {
+          "description": "An alias to refer to its function or a qualified function",
+          "isOptional": true,
+          "name": "a/fn"
+        },
+        {
+          "description": "A list of key-value arguments to merge with the exec-args",
+          "isOptional": true,
+          "isVariadic": true,
+          "name": "kvs"
+        },
+        {
+          "description": "Map to merge with the :exec-args map, taking precedence over kvs",
+          "isOptional": true,
+          "name": "kv-map"
+        }
       ],
       "description": "Invoke tool by name or via aliases ala -X",
-      "args": [
-        {
-          "name": "a/fn",
-          "description": "An alias to refer to its function or a qualified function",
-          "isOptional": true
-        },
-        {
-          "name": "kvs",
-          "description": "A list of key-value arguments to merge with the exec-args",
-          "isVariadic": true,
-          "isOptional": true
-        },
-        {
-          "name": "kv-map",
-          "description": "Map to merge with the :exec-args map, taking precedence over kvs",
-          "isOptional": true
-        }
+      "name": [
+        "-T"
       ]
     },
     {
+      "args": {
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "args"
+      },
+      "description": "Use concatenated aliases to modify classpath or supply main opts",
       "name": [
         "-M"
-      ],
-      "description": "Use concatenated aliases to modify classpath or supply main opts",
-      "args": {
-        "name": "args",
-        "isVariadic": true,
-        "isOptional": true
-      }
+      ]
     },
     {
+      "description": "Prepare deps - download libs, cache classpath, but don't exec",
       "name": [
         "-P"
-      ],
-      "description": "Prepare deps - download libs, cache classpath, but don't exec"
+      ]
     },
     {
+      "description": "Pass opt through in java_opts",
       "name": [
         "-J"
-      ],
-      "description": "Pass opt through in java_opts"
+      ]
     },
     {
+      "args": {
+        "description": "The deps data in edn",
+        "name": "edn"
+      },
+      "description": "Pass the deps data on the command line",
       "name": [
         "-Sdeps"
-      ],
-      "description": "Pass the deps data on the command line",
-      "args": {
-        "name": "edn",
-        "description": "The deps data in edn"
-      }
+      ]
     },
     {
+      "description": "Compute classpath and echo to stdout only",
       "name": [
         "-Spath"
-      ],
-      "description": "Compute classpath and echo to stdout only"
+      ]
     },
     {
+      "args": {
+        "description": "The classpath to use",
+        "name": "cp"
+      },
+      "description": "Use specified classpath instead of cached or computed one",
       "name": [
         "-Scp"
-      ],
-      "description": "Use specified classpath instead of cached or computed one",
-      "args": {
-        "name": "cp",
-        "description": "The classpath to use"
-      }
+      ]
     },
     {
+      "description": "Print environment and command parsing information as data",
       "name": [
         "-Sdescribe"
-      ],
-      "description": "Print environment and command parsing information as data"
+      ]
     },
     {
+      "description": "Ignore classpath cache and force recomputation",
       "name": [
         "-Sforce"
-      ],
-      "description": "Ignore classpath cache and force recomputation"
+      ]
     },
     {
+      "description": "Generate (or update) pom.xml with deps and paths",
       "name": [
         "-Spom"
-      ],
-      "description": "Generate (or update) pom.xml with deps and paths"
+      ]
     },
     {
+      "description": "Ignore the ~/.clojure/deps.edn config file",
       "name": [
         "-Srepro"
-      ],
-      "description": "Ignore the ~/.clojure/deps.edn config file"
+      ]
     },
     {
+      "description": "Set the number of threads to use when downloading dependencies",
       "name": [
         "-Sthreads"
-      ],
-      "description": "Set the number of threads to use when downloading dependencies"
+      ]
     },
     {
+      "description": "Write a trace.edn file that traces deps expansion",
       "name": [
         "-Strace"
-      ],
-      "description": "Write a trace.edn file that traces deps expansion"
+      ]
     },
     {
+      "description": "Print dependency tree",
       "name": [
         "-Stree"
-      ],
-      "description": "Print dependency tree"
+      ]
     },
     {
+      "description": "Print all path locations",
       "name": [
         "-Sverbose"
-      ],
-      "description": "Print all path locations"
+      ]
     },
     {
+      "description": "Print the Clojure CLI version",
       "name": [
         "-version",
         "--version"
-      ],
-      "description": "Print the Clojure CLI version"
+      ]
     },
     {
+      "args": {
+        "name": "path"
+      },
+      "description": "Load a file or resource",
       "name": [
         "-i",
         "--init"
-      ],
-      "description": "Load a file or resource",
-      "args": {
-        "name": "path"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "string"
+      },
+      "description": "Evaluate expressions in string; print non-nil values",
       "name": [
         "-e",
         "--eval"
-      ],
-      "description": "Evaluate expressions in string; print non-nil values",
-      "args": {
-        "name": "string"
-      }
+      ]
     },
     {
-      "name": [
-        "--report"
-      ],
-      "description": "Report uncaught exceptions",
       "args": {
-        "name": "target",
         "description": "Where to report",
+        "name": "target",
         "suggestions": [
           {
             "name": "file"
@@ -198,40 +194,44 @@
             "name": "none"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Report uncaught exceptions",
       "name": [
-        "-m",
-        "--main"
-      ],
-      "description": "Call the -main function from a namespace with args",
-      "args": [
-        {
-          "name": "ns-name",
-          "description": "The namespace of the -main function"
-        },
-        {
-          "name": "args",
-          "description": "The arguments to pass to the -main function",
-          "isVariadic": true
-        }
+        "--report"
       ]
     },
     {
+      "args": [
+        {
+          "description": "The namespace of the -main function",
+          "name": "ns-name"
+        },
+        {
+          "description": "The arguments to pass to the -main function",
+          "isVariadic": true,
+          "name": "args"
+        }
+      ],
+      "description": "Call the -main function from a namespace with args",
+      "name": [
+        "-m",
+        "--main"
+      ]
+    },
+    {
+      "description": "Run a REPL",
       "name": [
         "-r",
         "--repl"
-      ],
-      "description": "Run a REPL"
+      ]
     },
     {
+      "description": "Show help for clojure",
       "name": [
         "-h",
         "-?",
         "--help"
-      ],
-      "description": "Show help for clojure"
+      ]
     }
   ]
 }

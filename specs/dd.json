@@ -1,136 +1,137 @@
 {
-  "name": "dd",
   "description": "Convert and copy a file",
+  "name": "dd",
   "options": [
     {
+      "args": {
+        "name": "size"
+      },
+      "description": "Set input and output block size",
       "name": [
         "bs"
-      ],
-      "description": "Set input and output block size",
-      "args": {
-        "name": "size"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "size"
+      },
+      "description": "Set the conversion record size",
       "name": [
         "cbs"
-      ],
-      "description": "Set the conversion record size",
-      "args": {
-        "name": "size"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "number"
+      },
+      "description": "Copy this many input blocks",
       "name": [
         "count"
-      ],
-      "description": "Copy this many input blocks",
-      "args": {
-        "name": "number"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "number"
+      },
+      "description": "Copy this many files before terminating",
       "name": [
         "files"
-      ],
-      "description": "Copy this many files before terminating",
-      "args": {
-        "name": "number"
-      }
+      ]
     },
     {
-      "name": [
-        "ibs"
-      ],
-      "description": "Set the input block size",
       "args": {
         "name": "size"
-      }
+      },
+      "description": "Set the input block size",
+      "name": [
+        "ibs"
+      ]
     },
     {
+      "args": {
+        "name": "file",
+        "template": "filepaths"
+      },
+      "description": "Read an input file instead of stdin",
       "name": [
         "if"
       ],
-      "description": "Read an input file instead of stdin",
-      "priority": 60,
+      "priority": 60
+    },
+    {
+      "args": {
+        "name": "blocks"
+      },
+      "description": "Seek this many blocks on the input file",
+      "name": [
+        "iseek"
+      ]
+    },
+    {
+      "args": {
+        "name": "size"
+      },
+      "description": "Set the output block size",
+      "name": [
+        "obs"
+      ]
+    },
+    {
       "args": {
         "name": "file",
         "template": "filepaths"
-      }
-    },
-    {
-      "name": [
-        "iseek"
-      ],
-      "description": "Seek this many blocks on the input file",
-      "args": {
-        "name": "blocks"
-      }
-    },
-    {
-      "name": [
-        "obs"
-      ],
-      "description": "Set the output block size",
-      "args": {
-        "name": "size"
-      }
-    },
-    {
+      },
+      "description": "Write to an output file instead of stdout",
       "name": [
         "of"
       ],
-      "description": "Write to an output file instead of stdout",
-      "priority": 59,
-      "args": {
-        "name": "file",
-        "template": "filepaths"
-      }
+      "priority": 59
     },
     {
+      "args": {
+        "name": "blocks"
+      },
+      "description": "Seek this many blocks on the output file",
       "name": [
         "oseek"
-      ],
-      "description": "Seek this many blocks on the output file",
-      "args": {
-        "name": "blocks"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "blocks"
+      },
+      "description": "Seek this many blocks from the beginning of the output before copying",
       "name": [
         "seek"
-      ],
-      "description": "Seek this many blocks from the beginning of the output before copying",
-      "args": {
-        "name": "blocks"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "blocks"
+      },
+      "description": "Skip this many blocks from the beginning of the input before copying",
       "name": [
         "skip"
-      ],
-      "description": "Skip this many blocks from the beginning of the input before copying",
-      "args": {
-        "name": "blocks"
-      }
+      ]
     },
     {
-      "name": [
-        "conv"
-      ],
-      "description": "Convert input data (comma-separated list)",
       "args": {
-        "name": "value",
         "generators": [
           {
-            "requires_js": true,
             "js_runtime": {
-              "kind": "custom",
+              "kind": "token_only",
+              "self_contained": false,
               "source": "async()=>e"
-            }
+            },
+            "requires_js": true
           }
-        ]
-      }
+        ],
+        "name": "value"
+      },
+      "description": "Convert input data (comma-separated list)",
+      "name": [
+        "conv"
+      ]
     }
   ]
 }

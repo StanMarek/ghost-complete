@@ -399,7 +399,7 @@ describe('processGenerator js_runtime emission', () => {
   // the runtime fallback paths get exercised. The native-map lookup keys on
   // (specName, script[]) so a synthetic name can't accidentally hit a rule.
 
-  it('_custom emits js_runtime.kind = "custom" only for self-contained sources', () => {
+  it('_custom emits js_runtime.kind = "custom" for self-contained sources', () => {
     const gen = {
       _custom: true,
       _customSource: 'async (tokens, executeShellCommand, ctx) => [{ name: tokens[0] || ctx.searchTerm }]',
@@ -416,7 +416,7 @@ describe('processGenerator js_runtime emission', () => {
     assert.equal(out.js_source, undefined);
   });
 
-  it('_scriptFunction emits js_runtime.kind = "script_function" only for self-contained sources', () => {
+  it('_scriptFunction emits js_runtime.kind = "script_function" for self-contained sources', () => {
     const gen = {
       _scriptFunction: true,
       _scriptSource: '(ctx) => ["echo", "hello"]',
@@ -431,25 +431,33 @@ describe('processGenerator js_runtime emission', () => {
     assert.equal(out.js_source, undefined);
   });
 
-  it('_custom with closure-dependent helpers remains unsupported requires_js', () => {
+  it('_custom with closure-dependent helpers emits token_only', () => {
     const gen = {
       _custom: true,
       _customSource: 'async (tokens) => ue(tokens).map(v.getCurrentInsertedDirectory)',
     };
     const out = processGenerator(gen, '__js_runtime_test_spec__');
     assert.equal(out.requires_js, true);
-    assert.equal(out.js_runtime, undefined);
+    assert.deepStrictEqual(out.js_runtime, {
+      kind: 'token_only',
+      source: 'async (tokens) => ue(tokens).map(v.getCurrentInsertedDirectory)',
+      self_contained: false,
+    });
     assert.equal(out.js_source, undefined);
   });
 
-  it('_scriptFunction with closure-dependent helpers remains unsupported requires_js', () => {
+  it('_scriptFunction with closure-dependent helpers emits token_only', () => {
     const gen = {
       _scriptFunction: true,
       _scriptSource: '(tokens) => ge(tokens, v.getCurrentInsertedDirectory)',
     };
     const out = processGenerator(gen, '__js_runtime_test_spec__');
     assert.equal(out.requires_js, true);
-    assert.equal(out.js_runtime, undefined);
+    assert.deepStrictEqual(out.js_runtime, {
+      kind: 'token_only',
+      source: '(tokens) => ge(tokens, v.getCurrentInsertedDirectory)',
+      self_contained: false,
+    });
     assert.equal(out.js_source, undefined);
   });
 

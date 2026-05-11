@@ -1,69 +1,68 @@
 {
   "name": "playwright",
+  "options": [
+    {
+      "description": "Output the version number",
+      "name": [
+        "--version",
+        "-V"
+      ]
+    },
+    {
+      "description": "Display help for command",
+      "name": [
+        "--help",
+        "-h"
+      ],
+      "priority": 1
+    }
+  ],
   "subcommands": [
     {
-      "name": "test",
-      "description": "Run tests with Playwright Test",
-      "options": [
-        {
-          "name": [
-            "-g"
-          ],
-          "description": "Run the test with the title",
-          "args": {
-            "name": "title"
-          }
-        },
-        {
-          "name": [
-            "--headed"
-          ],
-          "description": "Run tests in headed browsers"
-        },
-        {
-          "name": [
-            "--help",
-            "-h"
-          ],
-          "description": "Display help for command",
-          "priority": 1
-        }
-      ],
       "args": {
-        "name": "tests",
         "description": "Test files to run",
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "tests",
         "template": [
           "filepaths",
           "folders"
-        ],
-        "isVariadic": true,
-        "isOptional": true
-      }
-    },
-    {
-      "name": "install",
-      "description": "Running without arguments will install default browsers",
+        ]
+      },
+      "description": "Run tests with Playwright Test",
+      "name": "test",
       "options": [
         {
+          "args": {
+            "name": "title"
+          },
+          "description": "Run the test with the title",
           "name": [
-            "--with-deps"
-          ],
-          "description": "Install system dependencies for browsers"
+            "-g"
+          ]
         },
         {
+          "description": "Run tests in headed browsers",
+          "name": [
+            "--headed"
+          ]
+        },
+        {
+          "description": "Display help for command",
           "name": [
             "--help",
             "-h"
           ],
-          "description": "Display help for command",
           "priority": 1
         }
-      ],
+      ]
+    },
+    {
       "args": {
-        "name": "browsers",
         "description": "Browser to install",
-        "isVariadic": true,
         "isOptional": true,
+        "isVariadic": true,
+        "name": "browsers",
         "suggestions": [
           {
             "name": "chromium"
@@ -90,24 +89,25 @@
             "name": "webkit"
           }
         ]
-      }
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--version",
-        "-V"
-      ],
-      "description": "Output the version number"
-    },
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Display help for command",
-      "priority": 1
+      },
+      "description": "Running without arguments will install default browsers",
+      "name": "install",
+      "options": [
+        {
+          "description": "Install system dependencies for browsers",
+          "name": [
+            "--with-deps"
+          ]
+        },
+        {
+          "description": "Display help for command",
+          "name": [
+            "--help",
+            "-h"
+          ],
+          "priority": 1
+        }
+      ]
     }
   ]
 }

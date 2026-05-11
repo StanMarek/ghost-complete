@@ -1,13 +1,12 @@
 {
-  "name": "sips",
+  "args": {
+    "name": "file",
+    "template": "filepaths"
+  },
   "description": "Scriptable image processing system",
+  "name": "sips",
   "options": [
     {
-      "name": [
-        "-g",
-        "--getProperty"
-      ],
-      "description": "Output the property value for key to stdout",
       "args": {
         "name": "key",
         "suggestions": [
@@ -117,14 +116,14 @@
             "name": "md5"
           }
         ]
-      }
+      },
+      "description": "Output the property value for key to stdout",
+      "name": [
+        "-g",
+        "--getProperty"
+      ]
     },
     {
-      "name": [
-        "-s",
-        "--setProperty"
-      ],
-      "description": "Set a property value for key to value",
       "args": [
         {
           "name": "key",
@@ -239,14 +238,14 @@
         {
           "name": "value"
         }
+      ],
+      "description": "Set a property value for key to value",
+      "name": [
+        "-s",
+        "--setProperty"
       ]
     },
     {
-      "name": [
-        "-d",
-        "--deleteProperty"
-      ],
-      "description": "Remove a property value for key",
       "args": {
         "name": "key",
         "suggestions": [
@@ -356,14 +355,14 @@
             "name": "md5"
           }
         ]
-      }
+      },
+      "description": "Remove a property value for key",
+      "name": [
+        "-d",
+        "--deleteProperty"
+      ]
     },
     {
-      "name": [
-        "-X",
-        "--extractTag"
-      ],
-      "description": "Extract a profile tag element to tagFile",
       "args": [
         {
           "name": "tag"
@@ -371,38 +370,39 @@
         {
           "name": "tagFile"
         }
+      ],
+      "description": "Extract a profile tag element to tagFile",
+      "name": [
+        "-X",
+        "--extractTag"
       ]
     },
     {
+      "description": "Verify any profile problems and log output to stdout",
       "name": [
         "--verify"
-      ],
-      "description": "Verify any profile problems and log output to stdout"
+      ]
     },
     {
+      "args": {
+        "name": "profile"
+      },
+      "description": "Get the embedded profile from image and write it to profile",
       "name": [
         "-x",
         "--extractProfile"
-      ],
-      "description": "Get the embedded profile from image and write it to profile",
-      "args": {
-        "name": "profile"
-      }
+      ]
     },
     {
-      "name": [
-        "--deleteTag"
-      ],
-      "description": "Remove the tag element from a profile",
       "args": {
         "name": "tag"
-      }
+      },
+      "description": "Remove the tag element from a profile",
+      "name": [
+        "--deleteTag"
+      ]
     },
     {
-      "name": [
-        "--copyTag"
-      ],
-      "description": "Copy the srcTag element of a profile to dstTag",
       "args": [
         {
           "name": "srcTag"
@@ -410,13 +410,13 @@
         {
           "name": "dstTag"
         }
+      ],
+      "description": "Copy the srcTag element of a profile to dstTag",
+      "name": [
+        "--copyTag"
       ]
     },
     {
-      "name": [
-        "--loadTag"
-      ],
-      "description": "Set the tag element of a profile to the contents of tagFile",
       "args": [
         {
           "name": "tag"
@@ -425,50 +425,49 @@
           "name": "tagFile",
           "template": "filepaths"
         }
+      ],
+      "description": "Set the tag element of a profile to the contents of tagFile",
+      "name": [
+        "--loadTag"
       ]
     },
     {
+      "description": "Repair any profile problems and log output to stdout",
       "name": [
         "--repair"
-      ],
-      "description": "Repair any profile problems and log output to stdout"
+      ]
     },
     {
+      "args": {
+        "name": "profile"
+      },
+      "description": "Embed profile in image",
       "name": [
         "-e",
         "--embedProfile"
-      ],
-      "description": "Embed profile in image",
-      "args": {
-        "name": "profile"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "profile"
+      },
+      "description": "Embed profile in image only if image doesn't have a profile",
       "name": [
         "-E",
         "--embedProfileIfNone"
-      ],
-      "description": "Embed profile in image only if image doesn't have a profile",
-      "args": {
-        "name": "profile"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "profile"
+      },
+      "description": "Color match image to profile",
       "name": [
         "-m",
         "--matchTo"
-      ],
-      "description": "Color match image to profile",
-      "args": {
-        "name": "profile"
-      }
+      ]
     },
     {
-      "name": [
-        "-M",
-        "--matchToWithIntent"
-      ],
-      "description": "Color match image to profile with rendering intent perceptual | relative | saturation | absolute",
       "args": [
         {
           "name": "profile"
@@ -490,28 +489,29 @@
             }
           ]
         }
+      ],
+      "description": "Color match image to profile with rendering intent perceptual | relative | saturation | absolute",
+      "name": [
+        "-M",
+        "--matchToWithIntent"
       ]
     },
     {
+      "description": "Delete color management properties in TIFF, PNG, and EXIF dictionaries",
       "name": [
         "--deleteColorManagementProperties"
-      ],
-      "description": "Delete color management properties in TIFF, PNG, and EXIF dictionaries"
+      ]
     },
     {
+      "args": {
+        "name": "degreesCW"
+      },
       "name": [
         "-r",
         "--rotate"
-      ],
-      "args": {
-        "name": "degreesCW"
-      }
+      ]
     },
     {
-      "name": [
-        "-f",
-        "--flip"
-      ],
       "args": {
         "name": "axis",
         "suggestions": [
@@ -522,14 +522,28 @@
             "name": "vertical"
           }
         ]
-      }
+      },
+      "name": [
+        "-f",
+        "--flip"
+      ]
     },
     {
+      "args": [
+        {
+          "name": "pixelsH"
+        },
+        {
+          "name": "pixelsW"
+        }
+      ],
+      "description": "Crop image to fit specified size",
       "name": [
         "-c",
         "--cropToHeightWidth"
-      ],
-      "description": "Crop image to fit specified size",
+      ]
+    },
+    {
       "args": [
         {
           "name": "pixelsH"
@@ -537,14 +551,23 @@
         {
           "name": "pixelsW"
         }
-      ]
-    },
-    {
+      ],
+      "description": "Pad image with pixels to fit specified size",
       "name": [
         "-p",
         "--padToHeightWidth"
-      ],
-      "description": "Pad image with pixels to fit specified size",
+      ]
+    },
+    {
+      "args": {
+        "name": "hexcolor"
+      },
+      "description": "Use this color when padding.  White=FFFFFF, Red=FF0000, Default=Black=000000",
+      "name": [
+        "-padColor"
+      ]
+    },
+    {
       "args": [
         {
           "name": "pixelsH"
@@ -552,113 +575,90 @@
         {
           "name": "pixelsW"
         }
-      ]
-    },
-    {
-      "name": [
-        "-padColor"
       ],
-      "description": "Use this color when padding.  White=FFFFFF, Red=FF0000, Default=Black=000000",
-      "args": {
-        "name": "hexcolor"
-      }
-    },
-    {
+      "description": "Resample image at specified size. Image apsect ratio may be altered",
       "name": [
         "-z",
         "--resampleHeightWidth"
-      ],
-      "description": "Resample image at specified size. Image apsect ratio may be altered",
-      "args": [
-        {
-          "name": "pixelsH"
-        },
-        {
-          "name": "pixelsW"
-        }
       ]
     },
     {
-      "name": [
-        "--resampleWidth"
-      ],
-      "description": "Resample image to specified width",
       "args": {
         "name": "pixelsW"
-      }
+      },
+      "description": "Resample image to specified width",
+      "name": [
+        "--resampleWidth"
+      ]
     },
     {
-      "name": [
-        "--resampleHeight"
-      ],
-      "description": "Resample image to specified height",
       "args": {
         "name": "pixelsH"
-      }
+      },
+      "description": "Resample image to specified height",
+      "name": [
+        "--resampleHeight"
+      ]
     },
     {
+      "args": {
+        "name": "pixelsWH"
+      },
+      "description": "Resample image so height and width aren't greater than specified size",
       "name": [
         "-Z",
         "--resampleHeightWidthMax"
-      ],
-      "description": "Resample image so height and width aren't greater than specified size",
-      "args": {
-        "name": "pixelsWH"
-      }
+      ]
     },
     {
-      "name": [
-        "-i",
-        "--addIcon"
-      ],
-      "description": "Add a Finder icon to image file",
       "args": {
         "name": "icon",
         "template": "filepaths"
-      }
+      },
+      "description": "Add a Finder icon to image file",
+      "name": [
+        "-i",
+        "--addIcon"
+      ]
     },
     {
+      "description": "Enable debugging output",
       "name": [
         "--debug"
-      ],
-      "description": "Enable debugging output"
+      ]
     },
     {
+      "description": "Show help",
       "name": [
         "-h",
         "--help"
-      ],
-      "description": "Show help"
+      ]
     },
     {
+      "description": "Show help for properties",
       "name": [
         "-H",
         "--helpProperties"
-      ],
-      "description": "Show help for properties"
+      ]
     },
     {
+      "description": "Generate man pages",
       "name": [
         "--man"
-      ],
-      "description": "Generate man pages"
+      ]
     },
     {
+      "description": "Show the version",
       "name": [
         "-v",
         "--version"
-      ],
-      "description": "Show the version"
+      ]
     },
     {
+      "description": "Show the read/write formats",
       "name": [
         "--formats"
-      ],
-      "description": "Show the read/write formats"
+      ]
     }
-  ],
-  "args": {
-    "name": "file",
-    "template": "filepaths"
-  }
+  ]
 }

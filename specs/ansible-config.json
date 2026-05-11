@@ -1,53 +1,69 @@
 {
-  "name": "ansible-config",
   "description": "View ansible configuration",
+  "name": "ansible-config",
+  "options": [
+    {
+      "description": "Shows version number, config file location, module search path, module location, executable location and exit",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Show help and exit",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "list",
+      "args": {
+        "description": "Specific plugin to target, requires type of plugin to be set",
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "args"
+      },
       "description": "List and output available configs",
+      "name": "list",
       "options": [
         {
+          "description": "Show help and exit",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Show help and exit"
+          ]
         },
         {
+          "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)",
           "name": [
             "--verbose"
-          ],
-          "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)"
+          ]
         },
         {
+          "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)",
           "name": [
             "-v"
-          ],
-          "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)"
+          ]
         },
         {
-          "name": [
-            "--config",
-            "-c"
-          ],
-          "description": "Path to configuration file, defaults to first file found in precedence",
           "args": {
-            "name": "CONFIG_FILE",
             "description": "Path to configuration file",
+            "name": "CONFIG_FILE",
             "template": [
               "filepaths"
             ]
-          }
+          },
+          "description": "Path to configuration file, defaults to first file found in precedence",
+          "name": [
+            "--config",
+            "-c"
+          ]
         },
         {
-          "name": [
-            "--type",
-            "-t"
-          ],
-          "description": "Filter down to a specific plugin type",
           "args": {
-            "name": "TYPE",
             "description": "Plugin type",
+            "name": "TYPE",
             "suggestions": [
               {
                 "name": "all"
@@ -89,69 +105,69 @@
                 "name": "vars"
               }
             ]
-          }
+          },
+          "description": "Filter down to a specific plugin type",
+          "name": [
+            "--type",
+            "-t"
+          ]
         }
-      ],
-      "args": {
-        "name": "args",
-        "description": "Specific plugin to target, requires type of plugin to be set",
-        "isVariadic": true,
-        "isOptional": true
-      }
+      ]
     },
     {
-      "name": "dump",
+      "args": {
+        "description": "Specific plugin to target, requires type of plugin to be set",
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "args"
+      },
       "description": "Shows the current settings, merges ansible.cfg if specified",
+      "name": "dump",
       "options": [
         {
+          "description": "Show help and exit",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Show help and exit"
+          ]
         },
         {
+          "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)",
           "name": [
             "--verbose"
-          ],
-          "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)"
+          ]
         },
         {
+          "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)",
           "name": [
             "-v"
-          ],
-          "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)"
+          ]
         },
         {
+          "description": "Only show configurations that have changed from the default",
           "name": [
             "--only-changed",
             "--changed-only"
-          ],
-          "description": "Only show configurations that have changed from the default"
+          ]
         },
         {
-          "name": [
-            "--config",
-            "-c"
-          ],
-          "description": "Path to configuration file, defaults to first file found in precedence",
           "args": {
-            "name": "CONFIG_FILE",
             "description": "Path to configuration file",
+            "name": "CONFIG_FILE",
             "template": [
               "filepaths"
             ]
-          }
+          },
+          "description": "Path to configuration file, defaults to first file found in precedence",
+          "name": [
+            "--config",
+            "-c"
+          ]
         },
         {
-          "name": [
-            "--type",
-            "-t"
-          ],
-          "description": "Filter down to a specific plugin type",
           "args": {
-            "name": "TYPE",
             "description": "Plugin type",
+            "name": "TYPE",
             "suggestions": [
               {
                 "name": "all"
@@ -193,62 +209,62 @@
                 "name": "vars"
               }
             ]
-          }
+          },
+          "description": "Filter down to a specific plugin type",
+          "name": [
+            "--type",
+            "-t"
+          ]
         }
-      ],
-      "args": {
-        "name": "args",
-        "description": "Specific plugin to target, requires type of plugin to be set",
-        "isVariadic": true,
-        "isOptional": true
-      }
+      ]
     },
     {
-      "name": "view",
+      "args": {
+        "description": "Specific plugin to target, requires type of plugin to be set",
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "args"
+      },
       "description": "Displays the current config file",
+      "name": "view",
       "options": [
         {
+          "description": "Show help and exit",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Show help and exit"
+          ]
         },
         {
+          "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)",
           "name": [
             "--verbose"
-          ],
-          "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)"
+          ]
         },
         {
+          "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)",
           "name": [
             "-v"
-          ],
-          "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)"
+          ]
         },
         {
-          "name": [
-            "--config",
-            "-c"
-          ],
-          "description": "Path to configuration file, defaults to first file found in precedence",
           "args": {
-            "name": "CONFIG_FILE",
             "description": "Path to configuration file",
+            "name": "CONFIG_FILE",
             "template": [
               "filepaths"
             ]
-          }
+          },
+          "description": "Path to configuration file, defaults to first file found in precedence",
+          "name": [
+            "--config",
+            "-c"
+          ]
         },
         {
-          "name": [
-            "--type",
-            "-t"
-          ],
-          "description": "Filter down to a specific plugin type",
           "args": {
-            "name": "TYPE",
             "description": "Plugin type",
+            "name": "TYPE",
             "suggestions": [
               {
                 "name": "all"
@@ -290,55 +306,55 @@
                 "name": "vars"
               }
             ]
-          }
+          },
+          "description": "Filter down to a specific plugin type",
+          "name": [
+            "--type",
+            "-t"
+          ]
         }
-      ],
-      "args": {
-        "name": "args",
-        "description": "Specific plugin to target, requires type of plugin to be set",
-        "isVariadic": true,
-        "isOptional": true
-      }
+      ]
     },
     {
-      "name": "init",
+      "args": {
+        "description": "Specific plugin to target, requires type of plugin to be set",
+        "isOptional": true,
+        "isVariadic": true,
+        "name": "args"
+      },
       "description": "Initializes a new config file (to stdout)",
+      "name": "init",
       "options": [
         {
+          "description": "Show help and exit",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Show help and exit"
+          ]
         },
         {
+          "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)",
           "name": [
             "--verbose"
-          ],
-          "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)"
+          ]
         },
         {
+          "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)",
           "name": [
             "-v"
-          ],
-          "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)"
+          ]
         },
         {
+          "description": "Prefixes all entries with a comment character to disable them",
           "name": [
             "--disabled"
-          ],
-          "description": "Prefixes all entries with a comment character to disable them"
+          ]
         },
         {
-          "name": [
-            "--format",
-            "-f"
-          ],
-          "description": "Output format for init",
           "args": {
-            "name": "FORMAT",
             "description": "Output format",
             "isOptional": true,
+            "name": "FORMAT",
             "suggestions": [
               {
                 "name": "ini"
@@ -350,31 +366,31 @@
                 "name": "vars"
               }
             ]
-          }
+          },
+          "description": "Output format for init",
+          "name": [
+            "--format",
+            "-f"
+          ]
         },
         {
-          "name": [
-            "--config",
-            "-c"
-          ],
-          "description": "Path to configuration file, defaults to first file found in precedence",
           "args": {
-            "name": "CONFIG_FILE",
             "description": "Path to configuration file",
+            "name": "CONFIG_FILE",
             "template": [
               "filepaths"
             ]
-          }
+          },
+          "description": "Path to configuration file, defaults to first file found in precedence",
+          "name": [
+            "--config",
+            "-c"
+          ]
         },
         {
-          "name": [
-            "--type",
-            "-t"
-          ],
-          "description": "Filter down to a specific plugin type",
           "args": {
-            "name": "TYPE",
             "description": "Plugin type",
+            "name": "TYPE",
             "suggestions": [
               {
                 "name": "all"
@@ -416,30 +432,14 @@
                 "name": "vars"
               }
             ]
-          }
+          },
+          "description": "Filter down to a specific plugin type",
+          "name": [
+            "--type",
+            "-t"
+          ]
         }
-      ],
-      "args": {
-        "name": "args",
-        "description": "Specific plugin to target, requires type of plugin to be set",
-        "isVariadic": true,
-        "isOptional": true
-      }
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--version"
-      ],
-      "description": "Shows version number, config file location, module search path, module location, executable location and exit"
-    },
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Show help and exit"
+      ]
     }
   ]
 }

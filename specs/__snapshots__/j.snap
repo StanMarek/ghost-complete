@@ -5,6 +5,7 @@
       {
         "js_runtime": {
           "kind": "custom",
+          "self_contained": true,
           "source": "async(r,s,c)=>{let{stdout:p}=await s({command:\"cat\",args:[`${c.environmentVariables.HOME}/Library/autojump/autojump.txt`]}),m=p.split(`\n`).map(t=>{let[e,i]=t.split(\"\t\");return{weight:Number(e),dir:i}}),n=r.slice(1,r.length-1);return m.filter(({dir:t})=>n.every(e=>t.includes(e))).map(({weight:t,dir:e})=>{let i=e.split(\"/\"),a=i[i.length-1];if(!n.includes(a))return{name:a,description:e,priority:75+t}})}"
         },
         "requires_js": true
@@ -14,7 +15,7 @@
     "name": "directory"
   },
   "description": "A faster way to navigate your filesystem",
-  "name": "j",
+  "name": "autojump",
   "options": [
     {
       "description": "Show the help message and exit",

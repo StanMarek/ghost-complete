@@ -3,7 +3,8 @@
     "generators": [
       {
         "js_runtime": {
-          "kind": "custom",
+          "kind": "token_only",
+          "self_contained": false,
           "source": "async(s,e,c)=>{let{stdout:l}=await e({command:\"ls\",args:[\"-Al\",...[p,m,r,a,i,g].map(t=>t.replace(/^~/,c.environmentVariables.HOME))]});return l.split(`\n`).filter(t=>o.test(t)).map(t=>({name:t.split(\" \").at(-1).slice(0,-3),description:\"Tldr page\",icon:\"fig://icon?type=string\"}))}"
         },
         "requires_js": true

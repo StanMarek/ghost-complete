@@ -1,5 +1,5 @@
 {
-  "name": "kubecolor",
+  "name": "kubectl",
   "options": [
     {
       "args": {
@@ -123,7 +123,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
               },
               "requires_js": true
@@ -624,7 +625,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
                   },
                   "requires_js": true
@@ -636,7 +638,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
                   },
                   "requires_js": true
@@ -844,7 +847,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
                   },
                   "requires_js": true
@@ -856,7 +860,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
                   },
                   "requires_js": true
@@ -984,6 +989,7 @@
               {
                 "js_runtime": {
                   "kind": "script_function",
+                  "self_contained": true,
                   "source": "r=>{let i=r.findIndex(o=>o===\"pods\"||o.includes(\"pods/\")||o===\"pod\"||o.includes(\"pod/\"));return[\"kubectl\",\"get\",r[i].includes(\"/\")?r[i]:`${r[i]} + ${r[i+1]}`,\"-o\",\"json\"]}"
                 },
                 "requires_js": true
@@ -1059,7 +1065,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
                   },
                   "requires_js": true
@@ -1071,7 +1078,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
                   },
                   "requires_js": true
@@ -1252,7 +1260,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
               },
               "requires_js": true
@@ -1264,7 +1273,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
               },
               "requires_js": true
@@ -1762,6 +1772,7 @@
               {
                 "js_runtime": {
                   "kind": "script_function",
+                  "self_contained": true,
                   "source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-clusters\"]:[\"kubectl\",\"config\",\"get-clusters\"]}"
                 },
                 "requires_js": true
@@ -1778,6 +1789,7 @@
               {
                 "js_runtime": {
                   "kind": "script_function",
+                  "self_contained": true,
                   "source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-contexts\",\"-o\",\"name\"]:[\"kubectl\",\"config\",\"get-contexts\",\"-o\",\"name\"]}"
                 },
                 "requires_js": true
@@ -1798,6 +1810,7 @@
               {
                 "js_runtime": {
                   "kind": "script_function",
+                  "self_contained": true,
                   "source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-contexts\",\"-o\",\"name\"]:[\"kubectl\",\"config\",\"get-contexts\",\"-o\",\"name\"]}"
                 },
                 "requires_js": true
@@ -1868,6 +1881,7 @@
                 {
                   "js_runtime": {
                     "kind": "script_function",
+                    "self_contained": true,
                     "source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-contexts\",\"-o\",\"name\"]:[\"kubectl\",\"config\",\"get-contexts\",\"-o\",\"name\"]}"
                   },
                   "requires_js": true
@@ -1965,6 +1979,7 @@
               {
                 "js_runtime": {
                   "kind": "script_function",
+                  "self_contained": true,
                   "source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-contexts\",\"-o\",\"name\"]:[\"kubectl\",\"config\",\"get-contexts\",\"-o\",\"name\"]}"
                 },
                 "requires_js": true
@@ -2013,6 +2028,7 @@
               {
                 "js_runtime": {
                   "kind": "script_function",
+                  "self_contained": true,
                   "source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-clusters\"]:[\"kubectl\",\"config\",\"get-clusters\"]}"
                 },
                 "requires_js": true
@@ -2143,6 +2159,7 @@
               {
                 "js_runtime": {
                   "kind": "script_function",
+                  "self_contained": true,
                   "source": "function(r){let i=r.indexOf(\"--kubeconfig\");return i!==-1?[\"kubectl\",\"config\",`--kubeconfig=${r[i+1]}`,\"get-contexts\",\"-o\",\"name\"]:[\"kubectl\",\"config\",\"get-contexts\",\"-o\",\"name\"]}"
                 },
                 "requires_js": true
@@ -3476,7 +3493,8 @@
                 "generators": [
                   {
                     "js_runtime": {
-                      "kind": "script_function",
+                      "kind": "token_only",
+                      "self_contained": false,
                       "source": "()=>n.typeWithoutName(\"cronjob\")"
                     },
                     "requires_js": true
@@ -4235,7 +4253,8 @@
                 "generators": [
                   {
                     "js_runtime": {
-                      "kind": "script_function",
+                      "kind": "token_only",
+                      "self_contained": false,
                       "source": "()=>n.typeWithoutName(\"roles\")"
                     },
                     "requires_js": true
@@ -5226,7 +5245,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
               },
               "requires_js": true
@@ -5238,7 +5258,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
               },
               "requires_js": true
@@ -5429,7 +5450,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
               },
               "requires_js": true
@@ -5441,7 +5463,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
               },
               "requires_js": true
@@ -5679,7 +5702,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
               },
               "requires_js": true
@@ -5691,7 +5715,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
               },
               "requires_js": true
@@ -5863,6 +5888,7 @@
               {
                 "js_runtime": {
                   "kind": "script_function",
+                  "self_contained": true,
                   "source": "r=>{let i=r.findIndex(o=>o===\"pods\"||o.includes(\"pods/\")||o===\"pod\"||o.includes(\"pod/\"));return[\"kubectl\",\"get\",r[i].includes(\"/\")?r[i]:`${r[i]} + ${r[i+1]}`,\"-o\",\"json\"]}"
                 },
                 "requires_js": true
@@ -5944,7 +5970,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
               },
               "requires_js": true
@@ -5956,7 +5983,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
               },
               "requires_js": true
@@ -6210,7 +6238,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
               },
               "requires_js": true
@@ -6222,7 +6251,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
               },
               "requires_js": true
@@ -6533,7 +6563,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
               },
               "requires_js": true
@@ -6545,7 +6576,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
               },
               "requires_js": true
@@ -6719,7 +6751,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
               },
               "requires_js": true
@@ -6731,7 +6764,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
               },
               "requires_js": true
@@ -6854,7 +6888,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
               },
               "requires_js": true
@@ -6866,7 +6901,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
               },
               "requires_js": true
@@ -7031,7 +7067,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
               },
               "requires_js": true
@@ -7043,7 +7080,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
               },
               "requires_js": true
@@ -8271,7 +8309,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
               },
               "requires_js": true
@@ -8283,7 +8322,8 @@
           "generators": [
             {
               "js_runtime": {
-                "kind": "script_function",
+                "kind": "token_only",
+                "self_contained": false,
                 "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
               },
               "requires_js": true
@@ -8457,7 +8497,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
                   },
                   "requires_js": true
@@ -8469,7 +8510,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
                   },
                   "requires_js": true
@@ -8670,7 +8712,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
                   },
                   "requires_js": true
@@ -8682,7 +8725,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
                   },
                   "requires_js": true
@@ -8834,7 +8878,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
                   },
                   "requires_js": true
@@ -8846,7 +8891,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
                   },
                   "requires_js": true
@@ -9016,7 +9062,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
                   },
                   "requires_js": true
@@ -9028,7 +9075,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
                   },
                   "requires_js": true
@@ -9179,7 +9227,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
                   },
                   "requires_js": true
@@ -9191,7 +9240,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
                   },
                   "requires_js": true
@@ -9331,7 +9381,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-1];return i.includes(\"/\")?n.typeWithoutName(i.substring(0,i.indexOf(\"/\"))):n.types}"
                   },
                   "requires_js": true
@@ -9343,7 +9394,8 @@
               "generators": [
                 {
                   "js_runtime": {
-                    "kind": "script_function",
+                    "kind": "token_only",
+                    "self_contained": false,
                     "source": "function(r){let i=r[r.length-2];return n.typeWithoutName(i)}"
                   },
                   "requires_js": true

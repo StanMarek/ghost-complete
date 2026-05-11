@@ -4,10 +4,6 @@
       "description": "R script to run",
       "generators": [
         {
-          "js_runtime": {
-            "kind": "custom",
-            "source": "(p,v,b)=>ce(this,void 0,void 0,function*(){var d;let{isDangerous:_,currentWorkingDirectory:O,searchTerm:h}=b,w=(d=(0,y.getCurrentInsertedDirectory)(c??O,h,b))!==null&&d!==void 0?d:\"/\";try{let E=yield v({command:\"ls\",args:[\"-1ApL\"],cwd:w}),X=W(E.stdout.split(`\n`),[\".DS_Store\"]),P=[];for(let V of X)if(V){let F=V.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&u!==\"only\"||F===\"folders\"&&u!==\"never\")&&P.push({type:F===\"filepaths\"?\"file\":\"folder\",name:V,insertValue:V,isDangerous:_,context:{templateType:F}})}return S(g(P))}catch{return[]}})"
-          },
           "requires_js": true
         }
       ],

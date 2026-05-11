@@ -123,6 +123,10 @@ pub enum JsExecutionKind {
     /// binding and returns suggestions directly. May spawn 0–N child
     /// processes during evaluation.
     Custom,
+    /// JS receives only token-related globals and returns suggestions
+    /// directly. No Fig host API, shell binding, cwd, env, or helper
+    /// preamble is installed.
+    TokenOnly,
 }
 
 /// Input handed to a JS evaluation job.
@@ -192,7 +196,8 @@ impl std::fmt::Debug for JsRuntimeInput {
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum JsRuntimeOutputPayload {
     /// Normalised suggestions ready for fuzzy ranking. Produced by
-    /// [`JsExecutionKind::PostProcess`] and [`JsExecutionKind::Custom`].
+    /// [`JsExecutionKind::PostProcess`], [`JsExecutionKind::Custom`],
+    /// and [`JsExecutionKind::TokenOnly`].
     Suggestions(Vec<JsSuggestion>),
     /// Resolved argv from a [`JsExecutionKind::ScriptFunction`] job. The
     /// engine spawns the resulting argv as a regular script generator.

@@ -4,7 +4,8 @@
       "generators": [
         {
           "js_runtime": {
-            "kind": "custom",
+            "kind": "token_only",
+            "self_contained": false,
             "source": "async(e,i,t)=>{let{stdout:a}=await i({command:\"cat\",args:[`${t.environmentVariables.HOME}/.ssh/known_hosts`]});return a.split(`\n`).map(n=>{let s=u.exec(n);if(s)return String(s)}).filter((n,s,o)=>n&&o.indexOf(n)===s).map(n=>({name:(e[1].endsWith(\"@\")?e[1]:\"\")+n,description:\"SSH host\"}))}"
           },
           "requires_js": true
@@ -12,6 +13,7 @@
         {
           "js_runtime": {
             "kind": "custom",
+            "self_contained": true,
             "source": "async(e,i,t)=>(await c(\"config\",i,t.environmentVariables.HOME,\"~/.ssh\")).filter(n=>n.trim().toLowerCase().startsWith(\"host \")&&!n.includes(\"*\")).map(n=>({name:n.split(\" \")[1],description:\"SSH host\",priority:90}))"
           },
           "requires_js": true
@@ -31,7 +33,8 @@
       "generators": [
         {
           "js_runtime": {
-            "kind": "custom",
+            "kind": "token_only",
+            "self_contained": false,
             "source": "async(e,i,t)=>{let{stdout:a}=await i({command:\"cat\",args:[`${t.environmentVariables.HOME}/.ssh/known_hosts`]});return a.split(`\n`).map(n=>{let s=u.exec(n);if(s)return String(s)}).filter((n,s,o)=>n&&o.indexOf(n)===s).map(n=>({name:(e[1].endsWith(\"@\")?e[1]:\"\")+n,description:\"SSH host\"}))}"
           },
           "requires_js": true
@@ -39,6 +42,7 @@
         {
           "js_runtime": {
             "kind": "custom",
+            "self_contained": true,
             "source": "async(e,i,t)=>(await c(\"config\",i,t.environmentVariables.HOME,\"~/.ssh\")).filter(n=>n.trim().toLowerCase().startsWith(\"host \")&&!n.includes(\"*\")).map(n=>({name:n.split(\" \")[1],description:\"SSH host\",priority:90}))"
           },
           "requires_js": true

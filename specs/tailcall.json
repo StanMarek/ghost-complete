@@ -1,28 +1,29 @@
 {
-  "name": "tailcall",
   "description": "TailCall CLI for managing and optimizing GraphQL configurations",
+  "name": "tailcall",
   "subcommands": [
     {
-      "name": "check",
+      "args": {
+        "isVariadic": true,
+        "name": "FILE_PATHS",
+        "template": "filepaths"
+      },
       "description": "Validate a composition spec",
+      "name": "check",
       "options": [
         {
+          "description": "Detect N+1 issues",
           "name": [
             "--n-plus-one-queries"
-          ],
-          "description": "Detect N+1 issues"
+          ]
         },
         {
+          "description": "Display the schema of the composition spec",
           "name": [
             "--schema"
-          ],
-          "description": "Display the schema of the composition spec"
+          ]
         },
         {
-          "name": [
-            "--format"
-          ],
-          "description": "Change the format of the input file",
           "args": {
             "suggestions": [
               {
@@ -41,42 +42,41 @@
                 "name": "json"
               }
             ]
-          }
+          },
+          "description": "Change the format of the input file",
+          "name": [
+            "--format"
+          ]
         }
-      ],
-      "args": {
-        "name": "FILE_PATHS",
-        "template": "filepaths",
-        "isVariadic": true
-      }
+      ]
     },
     {
-      "name": "start",
-      "description": "Launch the GraphQL Server for the specific configuration",
       "args": {
+        "isVariadic": true,
         "name": "PATHS",
         "template": [
           "filepaths",
           "folders"
-        ],
-        "isVariadic": true
-      }
+        ]
+      },
+      "description": "Launch the GraphQL Server for the specific configuration",
+      "name": "start"
     },
     {
-      "name": "init",
-      "description": "Bootstrap a new TailCall project",
       "args": {
         "name": "FILE_PATH",
         "template": "folders"
-      }
+      },
+      "description": "Bootstrap a new TailCall project",
+      "name": "init"
     },
     {
-      "name": "gen",
-      "description": "Generate GraphQL configurations from various sources",
       "args": {
         "name": "CONFIG_FILE",
         "template": "filepaths"
-      }
+      },
+      "description": "Generate GraphQL configurations from various sources",
+      "name": "gen"
     }
   ]
 }

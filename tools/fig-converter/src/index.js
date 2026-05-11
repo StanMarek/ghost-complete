@@ -42,6 +42,7 @@ import { convertSpec } from './static-converter.js';
 import { matchPostProcess } from './post-process-matcher.js';
 import { matchNativeFromJsSource, matchNativeGenerator } from './native-map.js';
 import { analyzeGenerator } from './ast-analyzer.js';
+import { analyzeTokenOnly } from './token-only-analyzer.js';
 import { stringifySorted } from './serialize.js';
 
 /**
@@ -296,6 +297,12 @@ function buildSelfContainedJsRuntime(kind, source) {
   return { kind, source, self_contained: true };
 }
 
+function buildTokenOnlyJsRuntime(source) {
+  const analysis = analyzeTokenOnly(source);
+  if (!analysis.token_only) return null;
+  return { kind: 'token_only', source, self_contained: false };
+}
+
 /**
  * Process a single generator through the conversion pipeline.
  *
@@ -334,11 +341,14 @@ export function processGenerator(gen, specName) {
       if (gen.cache) result.cache = gen.cache;
       return result;
     }
-    // Function sources produced by Function.prototype.toString() can close
-    // over bundled/minified helpers; QuickJS evaluates in a fresh host
-    // context, so unresolved free identifiers must remain unsupported.
+    // Preserve the older self-contained path first so proven Custom
+    // generators keep their host API and helper preamble semantics. TokenOnly
+    // is the fallback for bodies that failed that proof but do not reference
+    // host capabilities.
     const result = { requires_js: true };
-    const runtime = buildSelfContainedJsRuntime('custom', gen._customSource);
+    const runtime =
+      buildSelfContainedJsRuntime('custom', gen._customSource) ??
+      buildTokenOnlyJsRuntime(gen._customSource);
     if (runtime) {
       result.js_runtime = runtime;
     }
@@ -356,11 +366,12 @@ export function processGenerator(gen, specName) {
       if (gen.cache) result.cache = gen.cache;
       return result;
     }
-    // Only attach the source when it has no converter/bundler helper
-    // dependencies — closures over external helpers cannot resolve in the
-    // fresh QuickJS context.
+    // Preserve proven ScriptFunction behaviour first. TokenOnly is only the
+    // host-API-free fallback for bodies that would otherwise be stripped.
     const result = { requires_js: true };
-    const runtime = buildSelfContainedJsRuntime('script_function', gen._scriptSource);
+    const runtime =
+      buildSelfContainedJsRuntime('script_function', gen._scriptSource) ??
+      buildTokenOnlyJsRuntime(gen._scriptSource);
     if (runtime) {
       result.js_runtime = runtime;
     }
@@ -533,6 +544,7 @@ function collectStats(spec) {
     nativeGenerators: 0,
     transformGenerators: 0,
     requiresJsGenerators: 0,
+    tokenOnlyGenerators: 0,
   };
 
   function walk(obj) {
@@ -566,7 +578,10 @@ function collectStats(spec) {
         stats.generators++;
         if (gen.type) stats.nativeGenerators++;
         else if (gen.transforms) stats.transformGenerators++;
-        else if (gen.requires_js) stats.requiresJsGenerators++;
+        else if (gen.requires_js) {
+          stats.requiresJsGenerators++;
+          if (gen.js_runtime?.kind === 'token_only') stats.tokenOnlyGenerators++;
+        }
       }
     }
   }
@@ -586,7 +601,12 @@ function collectStats(spec) {
 export async function listSpecNames() {
   const entries = await readdir(BUILD_DIR);
   return entries
-    .filter(f => f.endsWith('.js') && !f.startsWith('@') && !f.startsWith('.'))
+    .filter(f =>
+      f.endsWith('.js') &&
+      !f.startsWith('@') &&
+      !f.startsWith('.') &&
+      f !== 'index.js'
+    )
     .map(f => f.replace(/\.js$/, ''))
     .sort();
 }
@@ -605,6 +625,7 @@ function makeEmptyTotals() {
     nativeGenerators: 0,
     transformGenerators: 0,
     requiresJsGenerators: 0,
+    tokenOnlyGenerators: 0,
   };
 }
 
@@ -689,6 +710,7 @@ export async function runConversionBatch({
       totals.nativeGenerators += stats.nativeGenerators;
       totals.transformGenerators += stats.transformGenerators;
       totals.requiresJsGenerators += stats.requiresJsGenerators;
+      totals.tokenOnlyGenerators += stats.tokenOnlyGenerators;
     } catch (err) {
       errors.push({ spec: specName, error: err.message });
       totals.failed++;
@@ -722,6 +744,9 @@ function printSummary(totals, errors) {
   console.log(`  Native (Rust):    ${totals.nativeGenerators}`);
   console.log(`  Transform:        ${totals.transformGenerators}`);
   console.log(`  Requires JS:      ${totals.requiresJsGenerators}`);
+  if (totals.tokenOnlyGenerators > 0) {
+    console.log(`  TokenOnly:        ${totals.tokenOnlyGenerators}`);
+  }
 
   if (errors.length > 0) {
     console.log(`\n--- Errors (${errors.length}) ---`);
@@ -732,6 +757,10 @@ function printSummary(totals, errors) {
       console.log(`  ... and ${errors.length - 20} more`);
     }
   }
+}
+
+function printTokenOnlyReport(totals) {
+  console.log(`TokenOnly promoted: ${totals.tokenOnlyGenerators}`);
 }
 
 async function removeCorpusHash(outputDir) {
@@ -985,6 +1014,7 @@ async function main() {
       // back-compat / debugging only — CI's corpus-hash gate assumes ON.
       deterministic: { type: 'boolean', default: true },
       'no-deterministic': { type: 'boolean' },
+      'report-token-only': { type: 'boolean' },
     },
   });
 
@@ -993,11 +1023,13 @@ async function main() {
   const isWorker = values['batch-worker'] || false;
   // `--no-deterministic` overrides the default-on `--deterministic`.
   const deterministic = !values['no-deterministic'] && values.deterministic !== false;
+  const reportTokenOnly = values['report-token-only'] || false;
 
   if (!outputDir && !isDryRun) {
     console.error(
       'Usage: node src/index.js --output <dir> [--specs name1,name2] [--dry-run]\n' +
-      '                          [--batch-size N] [--deterministic|--no-deterministic]\n' +
+      '                          [--batch-size N] [--report-token-only]\n' +
+      '                          [--deterministic|--no-deterministic]\n' +
       '                          (default: --deterministic)',
     );
     process.exit(1);
@@ -1061,6 +1093,7 @@ async function main() {
       deterministic,
     });
     printSummary(totals, errors);
+    if (reportTokenOnly) printTokenOnlyReport(totals);
     if (await exitOnConversionFailure(totals, errors, outputDir, isDryRun)) {
       return;
     }
@@ -1097,6 +1130,7 @@ async function main() {
   }
 
   printSummary(aggregateTotals, aggregateErrors);
+  if (reportTokenOnly) printTokenOnlyReport(aggregateTotals);
   if (await exitOnConversionFailure(aggregateTotals, aggregateErrors, outputDir, isDryRun)) {
     return;
   }

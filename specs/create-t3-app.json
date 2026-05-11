@@ -1,153 +1,153 @@
 {
-  "name": "create-t3-app",
+  "args": {
+    "description": "The name of the application, as well as the name of the directory to create",
+    "isOptional": true,
+    "name": "dir",
+    "template": "folders"
+  },
   "description": "A CLI for creating web applications with the t3 stack",
+  "name": "create-t3-app",
   "options": [
     {
+      "description": "Explicitly tell the CLI to not initialize a new git repo in the project (default: false)",
       "name": [
         "--noGit"
-      ],
-      "description": "Explicitly tell the CLI to not initialize a new git repo in the project (default: false)"
+      ]
     },
     {
+      "description": "Explicitly tell the CLI to not run the package manager's install command (default: false)",
       "name": [
         "--noInstall"
-      ],
-      "description": "Explicitly tell the CLI to not run the package manager's install command (default: false)"
+      ]
     },
     {
+      "description": "Bypass the CLI and use all default options to bootstrap a new t3-app (default: false)",
       "name": [
         "-y",
         "--default"
       ],
-      "description": "Bypass the CLI and use all default options to bootstrap a new t3-app (default: false)",
       "priority": 76
     },
     {
+      "description": "Boolean value if we're running in CI (default: false)",
       "name": [
         "--CI"
       ],
-      "description": "Boolean value if we're running in CI (default: false)",
       "priority": 49
     },
     {
+      "args": {
+        "name": "boolean",
+        "suggestions": [
+          {
+            "description": "Install Tailwind CSS",
+            "name": "true"
+          },
+          {
+            "description": "Do not install Tailwind CSS",
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Experimental: Boolean value if we should install Tailwind CSS. Must be used in conjunction with `--CI`",
       "name": [
         "--tailwind"
       ],
-      "description": "Experimental: Boolean value if we should install Tailwind CSS. Must be used in conjunction with `--CI`",
-      "priority": 49,
+      "priority": 49
+    },
+    {
       "args": {
         "name": "boolean",
         "suggestions": [
           {
-            "name": "true",
-            "description": "Install Tailwind CSS"
+            "description": "Install NextAuth.js",
+            "name": "true"
           },
           {
-            "name": "false",
-            "description": "Do not install Tailwind CSS"
+            "description": "Do not install NextAuth.js",
+            "name": "false"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Experimental: Boolean value if we should install NextAuth.js. Must be used in conjunction with `--CI`",
       "name": [
         "--nextAuth"
       ],
-      "description": "Experimental: Boolean value if we should install NextAuth.js. Must be used in conjunction with `--CI`",
-      "priority": 49,
+      "priority": 49
+    },
+    {
       "args": {
         "name": "boolean",
         "suggestions": [
           {
-            "name": "true",
-            "description": "Install NextAuth.js"
+            "description": "Install Prisma",
+            "name": "true"
           },
           {
-            "name": "false",
-            "description": "Do not install NextAuth.js"
+            "description": "Do not install Prisma",
+            "name": "false"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Experimental: Boolean value if we should install Prisma. Must be used in conjunction with `--CI`",
       "name": [
         "--prisma"
       ],
-      "description": "Experimental: Boolean value if we should install Prisma. Must be used in conjunction with `--CI`",
-      "priority": 49,
+      "priority": 49
+    },
+    {
       "args": {
         "name": "boolean",
         "suggestions": [
           {
-            "name": "true",
-            "description": "Install Prisma"
+            "description": "Install tRPC",
+            "name": "true"
           },
           {
-            "name": "false",
-            "description": "Do not install Prisma"
+            "description": "Do not install tRPC",
+            "name": "false"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Experimental: Boolean value if we should install tRPC. Must be used in conjunction with `--CI`",
       "name": [
         "--trpc"
       ],
-      "description": "Experimental: Boolean value if we should install tRPC. Must be used in conjunction with `--CI`",
-      "priority": 49,
-      "args": {
-        "name": "boolean",
-        "suggestions": [
-          {
-            "name": "true",
-            "description": "Install tRPC"
-          },
-          {
-            "name": "false",
-            "description": "Do not install tRPC"
-          }
-        ]
-      }
+      "priority": 49
     },
     {
-      "name": [
-        "-i",
-        "--import-alias"
-      ],
-      "description": "Explicitly tell the CLI to use a custom import alias",
       "args": {
         "name": "alias",
         "suggestions": [
           {
-            "name": "~/",
-            "description": "Use the ~/ alias"
+            "description": "Use the ~/ alias",
+            "name": "~/"
           },
           {
-            "name": "@/",
-            "description": "Use the @/ alias"
+            "description": "Use the @/ alias",
+            "name": "@/"
           }
         ]
-      }
+      },
+      "description": "Explicitly tell the CLI to use a custom import alias",
+      "name": [
+        "-i",
+        "--import-alias"
+      ]
     },
     {
+      "description": "Display the version number",
       "name": [
         "-v",
         "--version"
-      ],
-      "description": "Display the version number"
+      ]
     },
     {
+      "description": "Display help for command",
       "name": [
         "--help",
         "-h"
-      ],
-      "description": "Display help for command"
+      ]
     }
-  ],
-  "args": {
-    "name": "dir",
-    "description": "The name of the application, as well as the name of the directory to create",
-    "template": "folders",
-    "isOptional": true
-  }
+  ]
 }

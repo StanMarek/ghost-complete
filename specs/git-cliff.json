@@ -1,181 +1,196 @@
 {
-  "name": "git-cliff",
+  "args": {
+    "description": "Sets the commit range to process",
+    "generators": [
+      {
+        "js_runtime": {
+          "kind": "post_process",
+          "source": "(e,c)=>{if(e.startsWith(\"fatal:\"))return[];(e.startsWith(\"warning:\")||e.startsWith(\"error:\"))&&(e=e.slice(e.indexOf(`\n`)+1));let i=c.pop();return[...e.split(`\n`).map(t=>{let n=t.indexOf(\" \"),s=t.slice(0,n);return{name:s,insertValue:s+(i?.includes(\"..\")?\"\":\"..\"),icon:\"fig://icon?type=node\",description:t.slice(n+1),priority:1}}),{name:\"HEAD\",insertValue:\"HEAD\"+(i?.includes(\"..\")?\"\":\"..\"),icon:\"fig://icon?type=node\",description:\"The current commit\",priority:5}]}"
+        },
+        "requires_js": true,
+        "script": [
+          "git",
+          "rev-list",
+          "--all",
+          "--oneline",
+          "--abbrev-commit"
+        ]
+      }
+    ],
+    "name": "range"
+  },
   "description": "A highly customizable changelog generator ⛰️",
+  "name": "git-cliff",
   "options": [
     {
+      "description": "Increases the logging verbosity",
       "name": [
         "--verbose",
         "-v"
       ],
-      "description": "Increases the logging verbosity",
       "priority": 1
     },
     {
+      "description": "Writes the default configuration file to cliff.toml",
       "name": [
         "--init",
         "-i"
-      ],
-      "description": "Writes the default configuration file to cliff.toml"
+      ]
     },
     {
+      "description": "Processes the commits starting from the latest tag",
       "name": [
         "--latest",
         "-l"
-      ],
-      "description": "Processes the commits starting from the latest tag"
+      ]
     },
     {
+      "description": "Processes the commits that belong to the current tag",
       "name": [
         "--current"
-      ],
-      "description": "Processes the commits that belong to the current tag"
+      ]
     },
     {
+      "description": "Processes the commits that do not belong to a tag",
       "name": [
         "--unreleased",
         "-u"
-      ],
-      "description": "Processes the commits that do not belong to a tag"
+      ]
     },
     {
+      "description": "Sorts the tags chronologically",
       "name": [
         "--date-order"
-      ],
-      "description": "Sorts the tags chronologically"
+      ]
     },
     {
+      "description": "Prints changelog context as JSON",
       "name": [
         "--context"
-      ],
-      "description": "Prints changelog context as JSON"
+      ]
     },
     {
+      "description": "Prints help information",
       "name": [
         "--help",
         "-h"
       ],
-      "description": "Prints help information",
       "priority": 1
     },
     {
+      "description": "Prints version information",
       "name": [
         "--version",
         "-V"
       ],
-      "description": "Prints version information",
       "priority": 1
     },
     {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Sets the configuration file",
       "name": [
         "--config",
         "-c"
-      ],
-      "description": "Sets the configuration file",
-      "args": {
-        "name": "path",
-        "template": "filepaths"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "path",
+        "template": "folders"
+      },
+      "description": "Sets the working directory",
       "name": [
         "--workdir",
         "-w"
-      ],
-      "description": "Sets the working directory",
+      ]
+    },
+    {
       "args": {
         "name": "path",
         "template": "folders"
-      }
-    },
-    {
+      },
+      "description": "Sets the git repository",
       "name": [
         "--repository",
         "-r"
-      ],
-      "description": "Sets the git repository",
-      "args": {
-        "name": "path",
-        "template": "folders"
-      }
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "pattern"
+      },
+      "description": "Sets the path to include related commits",
       "name": [
         "--include-path"
-      ],
-      "description": "Sets the path to include related commits",
-      "args": {
-        "name": "pattern",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "pattern"
+      },
+      "description": "Sets the path to exclude related commits",
       "name": [
         "--exclude-path"
-      ],
-      "description": "Sets the path to exclude related commits",
-      "args": {
-        "name": "pattern",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "msg"
+      },
+      "description": "Sets custom commit messages to include in the changelog",
       "name": [
         "--with-commit"
-      ],
-      "description": "Sets custom commit messages to include in the changelog",
-      "args": {
-        "name": "msg",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Prepends entries to the given changelog file",
       "name": [
         "--prepend",
         "-p"
-      ],
-      "description": "Prepends entries to the given changelog file",
+      ]
+    },
+    {
       "args": {
         "name": "path",
         "template": "filepaths"
-      }
-    },
-    {
+      },
+      "description": "Writes output to the given file",
       "name": [
         "--output",
         "-o"
-      ],
-      "description": "Writes output to the given file",
-      "args": {
-        "name": "path",
-        "template": "filepaths"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "tag"
+      },
+      "description": "Sets the tag for the latest version",
       "name": [
         "--tag",
         "-t"
-      ],
-      "description": "Sets the tag for the latest version",
-      "args": {
-        "name": "tag"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "template"
+      },
+      "description": "Sets the template for the changelog body",
       "name": [
         "--body",
         "-b"
-      ],
-      "description": "Sets the template for the changelog body",
-      "args": {
-        "name": "template"
-      }
+      ]
     },
     {
-      "name": [
-        "--strip",
-        "-s"
-      ],
-      "description": "Strips the given parts from the changelog",
       "args": {
         "name": "part",
         "suggestions": [
@@ -189,13 +204,14 @@
             "name": "all"
           }
         ]
-      }
+      },
+      "description": "Strips the given parts from the changelog",
+      "name": [
+        "--strip",
+        "-s"
+      ]
     },
     {
-      "name": [
-        "--sort"
-      ],
-      "description": "Sets sorting of the commits inside sections",
       "args": {
         "name": "sort",
         "suggestions": [
@@ -206,27 +222,11 @@
             "name": "newest"
           }
         ]
-      }
+      },
+      "description": "Sets sorting of the commits inside sections",
+      "name": [
+        "--sort"
+      ]
     }
-  ],
-  "args": {
-    "name": "range",
-    "description": "Sets the commit range to process",
-    "generators": [
-      {
-        "script": [
-          "git",
-          "rev-list",
-          "--all",
-          "--oneline",
-          "--abbrev-commit"
-        ],
-        "requires_js": true,
-        "js_runtime": {
-          "kind": "post_process",
-          "source": "(e,c)=>{if(e.startsWith(\"fatal:\"))return[];(e.startsWith(\"warning:\")||e.startsWith(\"error:\"))&&(e=e.slice(e.indexOf(`\n`)+1));let i=c.pop();return[...e.split(`\n`).map(t=>{let n=t.indexOf(\" \"),s=t.slice(0,n);return{name:s,insertValue:s+(i?.includes(\"..\")?\"\":\"..\"),icon:\"fig://icon?type=node\",description:t.slice(n+1),priority:1}}),{name:\"HEAD\",insertValue:\"HEAD\"+(i?.includes(\"..\")?\"\":\"..\"),icon:\"fig://icon?type=node\",description:\"The current commit\",priority:5}]}"
-        }
-      }
-    ]
-  }
+  ]
 }

@@ -1,33 +1,33 @@
 {
-  "name": "black",
+  "args": {
+    "isVariadic": true,
+    "name": "file or directory",
+    "template": "filepaths"
+  },
   "description": "Python code formatter",
+  "name": "black",
   "options": [
     {
+      "args": {
+        "name": "string"
+      },
+      "description": "Format the code passed in as a string",
       "name": [
         "--code",
         "-c"
-      ],
-      "description": "Format the code passed in as a string",
-      "args": {
-        "name": "string"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "line length"
+      },
+      "description": "How many characters per line to allow",
       "name": [
         "--line-length",
         "-l"
-      ],
-      "description": "How many characters per line to allow",
-      "args": {
-        "name": "line length"
-      }
+      ]
     },
     {
-      "name": [
-        "--target-version",
-        "-t"
-      ],
-      "description": "Python versions that should be supported",
       "args": {
         "name": "python version",
         "suggestions": [
@@ -56,25 +56,26 @@
             "name": "py310"
           }
         ]
-      }
+      },
+      "description": "Python versions that should be supported",
+      "name": [
+        "--target-version",
+        "-t"
+      ]
     },
     {
+      "description": "Format all input files regardless of file extension",
       "name": [
         "--pyi"
-      ],
-      "description": "Format all input files regardless of file extension"
+      ]
     },
     {
+      "description": "Format all input files like Jupyter Notebooks regardless of file extension",
       "name": [
         "--ipynb"
-      ],
-      "description": "Format all input files like Jupyter Notebooks regardless of file extension"
+      ]
     },
     {
-      "name": [
-        "--python-cell-magics"
-      ],
-      "description": "Add the given magic to the list of known python-magics",
       "args": {
         "name": "python-magic",
         "suggestions": [
@@ -100,73 +101,75 @@
             "name": "capture"
           }
         ]
-      }
+      },
+      "description": "Add the given magic to the list of known python-magics",
+      "name": [
+        "--python-cell-magics"
+      ]
     },
     {
+      "description": "Don't normalize string quotes or prefixes",
       "name": [
         "--skip-string-normalization",
         "-S"
-      ],
-      "description": "Don't normalize string quotes or prefixes"
+      ]
     },
     {
+      "description": "Don't use trailing commas as a reason to split lines",
       "name": [
         "--skip-magic-trailing-comma",
         "-C"
-      ],
-      "description": "Don't use trailing commas as a reason to split lines"
+      ]
     },
     {
+      "description": "Enable potentially disruptive style changes",
       "name": [
         "--preview"
-      ],
-      "description": "Enable potentially disruptive style changes"
+      ]
     },
     {
+      "description": "Don't write the files back, just return the status",
       "name": [
         "--check"
-      ],
-      "description": "Don't write the files back, just return the status"
+      ]
     },
     {
+      "description": "Don't write the files back, just output a diff for each file on stdout",
       "name": [
         "--diff"
-      ],
-      "description": "Don't write the files back, just output a diff for each file on stdout"
+      ]
     },
     {
+      "description": "Show colored diff",
       "name": [
         "--color"
-      ],
-      "description": "Show colored diff"
+      ]
     },
     {
+      "description": "Show uncolored diff",
       "name": [
         "--no-color"
-      ],
-      "description": "Show uncolored diff"
+      ]
     },
     {
+      "description": "Skip temporary sanity checks",
       "name": [
         "--fast"
-      ],
-      "description": "Skip temporary sanity checks"
+      ]
     },
     {
+      "description": "Run temporary sanity checks",
       "name": [
         "--safe"
-      ],
-      "description": "Run temporary sanity checks"
+      ]
     },
     {
-      "name": [
-        "--required-version"
-      ],
-      "description": "Require a specific version of Black",
       "args": {
-        "name": "version",
         "generators": [
           {
+            "cache": {
+              "ttl_seconds": 172800
+            },
             "script": [
               "gh",
               "release",
@@ -177,111 +180,108 @@
             "transforms": [
               "split_lines",
               "filter_empty"
-            ],
-            "cache": {
-              "ttl_seconds": 172800
-            }
+            ]
           }
-        ]
-      }
+        ],
+        "name": "version"
+      },
+      "description": "Require a specific version of Black",
+      "name": [
+        "--required-version"
+      ]
     },
     {
+      "args": {
+        "name": "Regex"
+      },
+      "description": "Regex that matches files and directories that should be included on recursive searches",
       "name": [
         "--include"
-      ],
-      "description": "Regex that matches files and directories that should be included on recursive searches",
-      "args": {
-        "name": "Regex"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "Regex"
+      },
+      "description": "Regex that matches files and directories that should be excluded on recursive searches",
       "name": [
         "--exclude"
-      ],
-      "description": "Regex that matches files and directories that should be excluded on recursive searches",
-      "args": {
-        "name": "Regex"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "Regex"
+      },
+      "description": "Additional exlusions",
       "name": [
         "--extend-exclude"
-      ],
-      "description": "Additional exlusions",
-      "args": {
-        "name": "Regex"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "Regex"
+      },
+      "description": "Exlude matching files and folders even when passed explicitly",
       "name": [
         "--force-exclude"
-      ],
-      "description": "Exlude matching files and folders even when passed explicitly",
-      "args": {
-        "name": "Regex"
-      }
+      ]
     },
     {
-      "name": [
-        "--stdin-filename"
-      ],
-      "description": "The name of the file when passing it through stdin",
       "args": {
         "name": "file",
         "template": "filepaths"
-      }
+      },
+      "description": "The name of the file when passing it through stdin",
+      "name": [
+        "--stdin-filename"
+      ]
     },
     {
+      "args": {
+        "name": "integer"
+      },
+      "description": "Number of parallel workers",
       "name": [
         "--workers",
         "-W"
-      ],
-      "description": "Number of parallel workers",
-      "args": {
-        "name": "integer"
-      }
+      ]
     },
     {
+      "description": "Don't emit non-error messages to stderr",
       "name": [
         "--quiet",
         "-q"
-      ],
-      "description": "Don't emit non-error messages to stderr"
+      ]
     },
     {
+      "description": "Also emit messages about files that were not changed or were ignored due to exclusion patterns",
       "name": [
         "--verbose",
         "-v"
-      ],
-      "description": "Also emit messages about files that were not changed or were ignored due to exclusion patterns"
+      ]
     },
     {
+      "description": "Show the version",
       "name": [
         "--version"
-      ],
-      "description": "Show the version"
+      ]
     },
     {
-      "name": [
-        "--config"
-      ],
-      "description": "Read configuration from filepath",
       "args": {
         "name": "file",
         "template": "filepaths"
-      }
+      },
+      "description": "Read configuration from filepath",
+      "name": [
+        "--config"
+      ]
     },
     {
+      "description": "Show usage information",
       "name": [
         "--help",
         "-h"
-      ],
-      "description": "Show usage information"
+      ]
     }
-  ],
-  "args": {
-    "name": "file or directory",
-    "template": "filepaths",
-    "isVariadic": true
-  }
+  ]
 }

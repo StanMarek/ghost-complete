@@ -1,131 +1,138 @@
 {
-  "name": "pageres",
+  "args": [
+    {
+      "isVariadic": true,
+      "name": "url | filepath",
+      "template": "filepaths"
+    },
+    {
+      "isVariadic": true,
+      "name": "resolution"
+    }
+  ],
   "description": "Capture website screenshots",
+  "name": "pageres",
   "options": [
     {
+      "description": "Verbose output to see errors if you need to troubleshoot",
       "name": [
         "--verbose",
         "-v"
-      ],
-      "description": "Verbose output to see errors if you need to troubleshoot"
+      ]
     },
     {
+      "description": "Crop to the set height",
       "name": [
         "--crop",
         "-c"
-      ],
-      "description": "Crop to the set height"
+      ]
     },
     {
+      "args": {
+        "name": "time"
+      },
+      "description": "Delay screenshot capture",
       "name": [
         "--delay",
         "-d"
-      ],
-      "description": "Delay screenshot capture",
-      "args": {
-        "name": "time"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "--filename='<%= date %> - <%= url %>'",
+        "name": "template"
+      },
+      "description": "Custom filename",
       "name": [
         "--filename"
-      ],
-      "description": "Custom filename",
-      "args": {
-        "name": "template",
-        "description": "--filename='<%= date %> - <%= url %>'"
-      }
+      ]
     },
     {
+      "description": "Overwrite destination file if it exists. Defaults to appending (n) to the file name if --overwrite is not set",
       "name": [
         "--overwrite"
-      ],
-      "description": "Overwrite destination file if it exists. Defaults to appending (n) to the file name if --overwrite is not set"
+      ]
     },
     {
+      "args": {
+        "name": "element"
+      },
+      "description": "Capture DOM element",
       "name": [
         "--selector"
-      ],
-      "description": "Capture DOM element",
-      "args": {
-        "name": "element"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "element"
+      },
+      "description": "Hide DOM element. Can be set multiple times",
       "name": [
         "--hide"
-      ],
-      "description": "Hide DOM element. Can be set multiple times",
-      "args": {
-        "name": "element"
-      }
+      ]
     },
     {
+      "description": "Override a global crop option within a group",
       "name": [
         "--no-crop"
-      ],
-      "description": "Override a global crop option within a group"
+      ]
     },
     {
-      "name": [
-        "--css"
-      ],
-      "description": "Apply custom CSS to the webpage. Specify some CSS or the path to a CSS file",
       "args": {
         "name": "string",
         "template": "filepaths"
-      }
+      },
+      "description": "Apply custom CSS to the webpage. Specify some CSS or the path to a CSS file",
+      "name": [
+        "--css"
+      ]
     },
     {
-      "name": [
-        "--cookie"
-      ],
-      "description": "Browser cookie. Can be set multiple times",
       "args": {
         "name": "cookie"
-      }
+      },
+      "description": "Browser cookie. Can be set multiple times",
+      "name": [
+        "--cookie"
+      ]
     },
     {
-      "name": [
-        "--header"
-      ],
-      "description": "Custom HTTP request header. Can be set multiple times",
       "args": {
         "name": "header"
-      }
+      },
+      "description": "Custom HTTP request header. Can be set multiple times",
+      "name": [
+        "--header"
+      ]
     },
     {
-      "name": [
-        "--username"
-      ],
-      "description": "Username for HTTP auth",
       "args": {
         "name": "username"
-      }
+      },
+      "description": "Username for HTTP auth",
+      "name": [
+        "--username"
+      ]
     },
     {
-      "name": [
-        "--password"
-      ],
-      "description": "Password for HTTP auth",
       "args": {
         "name": "password"
-      }
+      },
+      "description": "Password for HTTP auth",
+      "name": [
+        "--password"
+      ]
     },
     {
-      "name": [
-        "--scale"
-      ],
-      "description": "Scale webpage n of times",
       "args": {
         "name": "number"
-      }
+      },
+      "description": "Scale webpage n of times",
+      "name": [
+        "--scale"
+      ]
     },
     {
-      "name": [
-        "--format"
-      ],
-      "description": "Image format. Either png (default) or jpg",
       "args": {
         "name": "format",
         "suggestions": [
@@ -136,39 +143,32 @@
             "name": "jpg"
           }
         ]
-      }
+      },
+      "description": "Image format. Either png (default) or jpg",
+      "name": [
+        "--format"
+      ]
     },
     {
-      "name": [
-        "--user-agent"
-      ],
-      "description": "Custom user agent",
       "args": {
         "name": "string"
-      }
+      },
+      "description": "Custom user agent",
+      "name": [
+        "--user-agent"
+      ]
     },
     {
+      "description": "Set background color to transparent instead of white if no background is set",
       "name": [
         "--transparent"
-      ],
-      "description": "Set background color to transparent instead of white if no background is set"
+      ]
     },
     {
+      "description": "Emulate preference of dark color scheme",
       "name": [
         "--darkMode"
-      ],
-      "description": "Emulate preference of dark color scheme"
-    }
-  ],
-  "args": [
-    {
-      "name": "url | filepath",
-      "template": "filepaths",
-      "isVariadic": true
-    },
-    {
-      "name": "resolution",
-      "isVariadic": true
+      ]
     }
   ]
 }

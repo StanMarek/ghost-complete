@@ -198,7 +198,7 @@ Like script generators, but with token interpolation. `{current_token}` is repla
 
 #### JS-backed generators (`requires_js`)
 
-Some Fig specs contain generators that require JavaScript execution. All three `js_runtime.kind` variants execute via [`gc-jsrt`](../crates/gc-jsrt/) — a bounded QuickJS evaluator running on a dedicated worker thread. See [`docs/JS_RUNTIME.md`](./JS_RUNTIME.md) for the runtime model (sandbox, host API, resource caps, kill switch).
+Some Fig specs contain generators that require JavaScript execution. All `js_runtime.kind` variants execute via [`gc-jsrt`](../crates/gc-jsrt/) — a bounded QuickJS evaluator running on a dedicated worker thread. See [`docs/JS_RUNTIME.md`](./JS_RUNTIME.md) for the runtime model (sandbox, host API, resource caps, kill switch).
 
 ```json
 {
@@ -216,16 +216,30 @@ Some Fig specs contain generators that require JavaScript execution. All three `
 | `post_process`    | Run `script` (or `script_template`) as a normal script generator, then pass stdout through the JS function in `js_runtime.source`. The function returns the suggestion list. | Active. |
 | `script_function` | Evaluate `js_runtime.source` to produce an `argv`, spawn that argv, then parse stdout with the generator transforms or default line splitting. | Active. |
 | `custom`          | No script — `js_runtime.source` is an async function that returns suggestions directly (the Fig `custom: async () => [...]` shape). | Active. |
+| `token_only`      | Evaluate `js_runtime.source` with only `tokens`, `currentToken`, and `previousToken` installed. It returns suggestions directly and cannot access `fig`, `__ghost`, cwd/env, or `executeShellCommand`. | Active. |
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `kind` | string | Yes | One of `post_process`, `script_function`, `custom` (see table above). |
-| `source` | string | Yes | The JS function source. For `post_process` it receives stdout and returns suggestions; for `custom` it returns suggestions directly; for `script_function` its evaluation yields the argv to spawn. |
+| `kind` | string | Yes | One of `post_process`, `script_function`, `custom`, `token_only` (see table above). |
+| `source` | string | Yes | The JS function source or expression. For `post_process` it receives stdout and returns suggestions; for `custom` it returns suggestions directly; for `script_function` its evaluation yields the argv to spawn; for `token_only` it may be a direct expression or a function receiving `(tokens, ctx)`. |
 | `timeout_ms` | integer | No | Per-generator override of the global JS execution timeout. |
 | `allow_shell_command` | boolean | No | Default `false`. Currently effective only for `custom` generators that call the host `executeShellCommand` binding with a shell string. `script_function` generators return argv for the engine to spawn and are not given a shell runner. Required only for explicitly-audited shipped specs. |
-| `self_contained` | boolean | No | Default `false`. Required for `script_function` and `custom` dispatch; the converter sets it only after proving the source has no unresolved helper/module bindings. |
+| `self_contained` | boolean | No | Default `false`. Required for `script_function` and `custom` dispatch; the converter sets it only after proving the source has no unresolved helper/module bindings. Not required for `token_only`, because that runtime exposes no host API. |
 
-The converter populates `js_runtime` for `post_process` bodies the matcher cannot lower to declarative transforms. For Fig `script: (...) => [...]` and `custom: async () => [...]` sources, it emits `js_runtime` only when static analysis proves the function is self-contained; closure-dependent bodies remain `requires_js` without runtime metadata and are skipped. The runtime can be disabled wholesale via `[suggest.providers] js_runtime = false` in `config.toml`; in that mode static portions (subcommands, options) of `requires_js` specs continue to work and the JS-backed generators silently no-op.
+Example `token_only` generator:
+
+```json
+{
+  "requires_js": true,
+  "js_runtime": {
+    "kind": "token_only",
+    "self_contained": false,
+    "source": "(tokens, ctx) => ctx.previousToken === 'get' ? ['pods', 'services'].map(name => ({ name })) : []"
+  }
+}
+```
+
+The converter populates `js_runtime` for `post_process` bodies the matcher cannot lower to declarative transforms. For Fig `script: (...) => [...]` and `custom: async () => [...]` sources, it emits `script_function` / `custom` only when static analysis proves the function is self-contained; closure-dependent bodies that are host-API-free are promoted to `token_only`, and the rest remain `requires_js` without runtime metadata and are skipped. The runtime can be disabled wholesale via `[suggest.providers] js_runtime = false` in `config.toml`; in that mode static portions (subcommands, options) of `requires_js` specs continue to work and the JS-backed generators silently no-op.
 
 #### Available Templates
 

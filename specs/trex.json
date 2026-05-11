@@ -1,201 +1,201 @@
 {
-  "name": "trex",
   "description": "Advanced package management for deno, based on import_map.json",
+  "name": "trex",
+  "options": [
+    {
+      "description": "Print help info",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    },
+    {
+      "description": "Print version",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "description": "Install a package from a custom URL source, eg: React=https://dev.jspm.io/react/index.js",
+        "name": "custom package"
+      },
+      "description": "Install custom package",
+      "name": [
+        "-c",
+        "--custom"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "i",
       "description": "Install a package",
+      "name": "i",
       "options": [
         {
+          "args": {
+            "description": "Deno.land package name",
+            "name": "package name"
+          },
+          "description": "Install package from deno.land",
           "name": [
             "-m",
             "--map"
-          ],
-          "description": "Install package from deno.land",
-          "args": {
-            "name": "package name",
-            "description": "Deno.land package name"
-          }
+          ]
         },
         {
+          "args": {
+            "description": "Nest.land package name",
+            "name": "package name"
+          },
+          "description": "Install package from nest.land",
           "name": [
             "-n",
             "--nest"
-          ],
-          "description": "Install package from nest.land",
-          "args": {
-            "name": "package name",
-            "description": "Nest.land package name"
-          }
+          ]
         },
         {
+          "args": [
+            {
+              "description": "[user]/[repo or repo@tag/branch]/[path/to/file]",
+              "name": "repository"
+            },
+            {
+              "description": "Prefered package alias",
+              "name": "Package Name"
+            }
+          ],
+          "description": "Install package from some repository",
           "name": [
             "-p",
             "--pkg"
-          ],
-          "description": "Install package from some repository",
-          "args": [
-            {
-              "name": "repository",
-              "description": "[user]/[repo or repo@tag/branch]/[path/to/file]"
-            },
-            {
-              "name": "Package Name",
-              "description": "Prefered package alias"
-            }
           ]
         }
       ]
     },
     {
-      "name": "delete",
-      "description": "Delete a package",
       "args": {
-        "name": "package name",
         "generators": [
           {
-            "script": [
-              "cat",
-              "import_map.json"
-            ],
-            "requires_js": true,
             "js_runtime": {
               "kind": "post_process",
               "source": "function(n){if(n)try{let e=JSON.parse(n);if(e.imports)return Object.entries(e.imports).map(([t,a])=>({name:t,icon:\"\\u{1F996}\",description:a}))}catch{return[]}return[]}"
-            }
+            },
+            "requires_js": true,
+            "script": [
+              "cat",
+              "import_map.json"
+            ]
           }
-        ]
-      }
+        ],
+        "name": "package name"
+      },
+      "description": "Delete a package",
+      "name": "delete"
     },
     {
-      "name": "upgrade",
       "description": "Upgrade trex",
+      "name": "upgrade",
       "options": [
         {
+          "description": "Install from dev branch",
           "name": [
             "--canary"
-          ],
-          "description": "Install from dev branch"
+          ]
         }
       ]
     },
     {
-      "name": "tree",
-      "description": "View dependency tree"
+      "description": "View dependency tree",
+      "name": "tree"
     },
     {
-      "name": "run",
-      "description": "Run a script alias in a file run.json",
-      "options": [
-        {
-          "name": [
-            "-w",
-            "--watch"
-          ],
-          "description": "Use reboot script alias protocol (rsap)"
-        },
-        {
-          "name": [
-            "-wv"
-          ],
-          "description": "Verbose output in --watch mode (rsap)"
-        }
-      ],
       "args": {
-        "name": "script alias",
         "generators": [
           {
-            "script": [
-              "cat",
-              "run.json"
-            ],
-            "requires_js": true,
             "js_runtime": {
               "kind": "post_process",
               "source": "function(n){if(n)try{let e=JSON.parse(n);if(e.scripts)return Object.entries(e.scripts).map(([t,a])=>({name:t,icon:\"\\u{1F680}\",description:\"trex script\"}))}catch{return[]}return[]}"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "purge",
-      "description": "Remove a package or url from cache",
-      "args": {
-        "name": "package | url",
-        "generators": [
-          {
+            },
+            "requires_js": true,
             "script": [
               "cat",
-              "import_map.json"
-            ],
-            "requires_js": true,
+              "run.json"
+            ]
+          }
+        ],
+        "name": "script alias"
+      },
+      "description": "Run a script alias in a file run.json",
+      "name": "run",
+      "options": [
+        {
+          "description": "Use reboot script alias protocol (rsap)",
+          "name": [
+            "-w",
+            "--watch"
+          ]
+        },
+        {
+          "description": "Verbose output in --watch mode (rsap)",
+          "name": [
+            "-wv"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "generators": [
+          {
             "js_runtime": {
               "kind": "post_process",
               "source": "function(n){if(n)try{let e=JSON.parse(n);if(e.imports)return Object.entries(e.imports).map(([t,a])=>({name:t,icon:\"\\u{1F996}\",description:a}))}catch{return[]}return[]}"
-            }
+            },
+            "requires_js": true,
+            "script": [
+              "cat",
+              "import_map.json"
+            ]
           }
-        ]
-      }
+        ],
+        "name": "package | url"
+      },
+      "description": "Remove a package or url from cache",
+      "name": "purge"
     },
     {
-      "name": "ls",
-      "description": "Shows the list of installed packages"
+      "description": "Shows the list of installed packages",
+      "name": "ls"
     },
     {
-      "name": "exec",
-      "description": "Execute a cli tool with out install then",
-      "options": [
-        {
-          "name": [
-            "--perms"
-          ],
-          "description": "Specify cli permisions"
-        }
-      ],
       "args": {
         "name": "cli tool"
-      }
-    },
-    {
-      "name": "check",
-      "description": "Check deno.land [std/x] dependencies updates",
+      },
+      "description": "Execute a cli tool with out install then",
+      "name": "exec",
       "options": [
         {
+          "description": "Specify cli permisions",
+          "name": [
+            "--perms"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Check deno.land [std/x] dependencies updates",
+      "name": "check",
+      "options": [
+        {
+          "description": "Update outdated dependencies",
           "name": [
             "-f",
             "--fix"
-          ],
-          "description": "Update outdated dependencies"
+          ]
         }
       ]
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "-h",
-        "--help"
-      ],
-      "description": "Print help info"
-    },
-    {
-      "name": [
-        "-v",
-        "--version"
-      ],
-      "description": "Print version"
-    },
-    {
-      "name": [
-        "-c",
-        "--custom"
-      ],
-      "description": "Install custom package",
-      "args": {
-        "name": "custom package",
-        "description": "Install a package from a custom URL source, eg: React=https://dev.jspm.io/react/index.js"
-      }
     }
   ]
 }

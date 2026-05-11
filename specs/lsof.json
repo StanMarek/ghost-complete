@@ -1,288 +1,292 @@
 {
-  "name": "lsof",
+  "args": {
+    "description": "Select named files or files on named file systems",
+    "isOptional": true,
+    "isVariadic": true,
+    "name": "names",
+    "template": [
+      "folders"
+    ]
+  },
   "description": "List open files",
+  "name": "lsof",
   "options": [
     {
+      "description": "Help",
       "name": [
         "-?",
         "-h",
         "--help"
-      ],
-      "description": "Help"
+      ]
     },
     {
+      "description": "Apply AND to the selections (defaults to OR)",
       "name": [
         "-a"
-      ],
-      "description": "Apply AND to the selections (defaults to OR)"
+      ]
     },
     {
+      "description": "Avoid kernel blocks",
       "name": [
         "-b"
-      ],
-      "description": "Avoid kernel blocks"
+      ]
     },
     {
-      "name": [
-        "-c"
-      ],
-      "description": "Select the listing of files for processes executing a command",
       "args": {
         "name": "string or regexp (optional ending with /i /b /x)"
-      }
+      },
+      "description": "Select the listing of files for processes executing a command",
+      "name": [
+        "-c"
+      ]
     },
     {
-      "name": [
-        "+c"
-      ],
-      "description": "COMMAND width (9)",
       "args": {
         "name": "number"
-      }
+      },
+      "description": "COMMAND width (9)",
+      "name": [
+        "+c"
+      ]
     },
     {
+      "args": {
+        "name": "file",
+        "template": [
+          "folders"
+        ]
+      },
+      "description": "Search for all open instances/files/directories of directory",
       "name": [
         "+d"
-      ],
-      "description": "Search for all open instances/files/directories of directory",
-      "args": {
-        "name": "file",
-        "template": [
-          "folders"
-        ]
-      }
+      ]
     },
     {
-      "name": [
-        "-d"
-      ],
-      "description": "Specify a list of file descriptors (FDs) to exclude from or include in the output listing",
       "args": {
         "name": "File descriptor number"
-      }
+      },
+      "description": "Specify a list of file descriptors (FDs) to exclude from or include in the output listing",
+      "name": [
+        "-d"
+      ]
     },
     {
-      "name": [
-        "+D"
-      ],
-      "description": "Search tree for all open instances/files/directories of directory. *SLOW?*",
       "args": {
         "name": "file",
         "template": [
           "folders"
         ]
-      }
+      },
+      "description": "Search tree for all open instances/files/directories of directory. *SLOW?*",
+      "name": [
+        "+D"
+      ]
     },
     {
+      "args": {
+        "isOptional": true,
+        "name": "flags",
+        "suggestions": [
+          {
+            "description": "File structure use count",
+            "name": "c"
+          },
+          {
+            "description": "File flag abbreviations",
+            "name": "g"
+          },
+          {
+            "description": "File flags in hexadecimal",
+            "name": "G"
+          }
+        ]
+      },
+      "description": "Enable path name arguments to be interpreted",
       "name": [
         "+f"
-      ],
-      "description": "Enable path name arguments to be interpreted",
-      "args": {
-        "name": "flags",
-        "isOptional": true,
-        "suggestions": [
-          {
-            "name": "c",
-            "description": "File structure use count"
-          },
-          {
-            "name": "g",
-            "description": "File flag abbreviations"
-          },
-          {
-            "name": "G",
-            "description": "File flags in hexadecimal"
-          }
-        ]
-      }
+      ]
     },
     {
+      "args": {
+        "name": "flags",
+        "suggestions": [
+          {
+            "description": "File structure use count",
+            "name": "c"
+          },
+          {
+            "description": "File flag abbreviations",
+            "name": "g"
+          },
+          {
+            "description": "File flags in hexadecimal",
+            "name": "G"
+          }
+        ]
+      },
+      "description": "Inhibit path name arguments to be interpreted",
       "name": [
         "-f"
-      ],
-      "description": "Inhibit path name arguments to be interpreted",
-      "args": {
-        "name": "flags",
-        "suggestions": [
-          {
-            "name": "c",
-            "description": "File structure use count"
-          },
-          {
-            "name": "g",
-            "description": "File flag abbreviations"
-          },
-          {
-            "name": "G",
-            "description": "File flags in hexadecimal"
-          }
-        ]
-      }
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "options",
+        "suggestions": [
+          {
+            "description": "Access: r = read; w = write; u = read/write",
+            "name": "a"
+          },
+          {
+            "description": "Command name",
+            "name": "c"
+          },
+          {
+            "description": "File struct share count",
+            "name": "C"
+          },
+          {
+            "description": "Device character code",
+            "name": "d"
+          },
+          {
+            "description": "Major/minor device number as 0x<hex>",
+            "name": "D"
+          },
+          {
+            "description": "File descriptor (always selected)",
+            "name": "f"
+          },
+          {
+            "description": "File flaGs",
+            "name": "G"
+          },
+          {
+            "description": "Inode number",
+            "name": "i"
+          },
+          {
+            "description": "Link count",
+            "name": "k"
+          },
+          {
+            "description": "Task ID (TID)",
+            "name": "K"
+          },
+          {
+            "description": "Lock: r/R = read; w/W = write; u = read/write",
+            "name": "l"
+          },
+          {
+            "description": "Login name",
+            "name": "L"
+          },
+          {
+            "description": "Marker between repeated output",
+            "name": "m"
+          },
+          {
+            "description": "Task comMand name",
+            "name": "M"
+          },
+          {
+            "description": "Comment, name, Internet addresses",
+            "name": "n"
+          },
+          {
+            "description": "File offset as 0t<dec> or 0x<hex>",
+            "name": "o"
+          },
+          {
+            "description": "Process ID (PID)",
+            "name": "p"
+          },
+          {
+            "description": "Process group ID (PGID)",
+            "name": "g"
+          },
+          {
+            "description": "Protocol name",
+            "name": "P"
+          },
+          {
+            "description": "Raw device number as 0x<hex>",
+            "name": "r"
+          },
+          {
+            "description": "PaRent PID",
+            "name": "R"
+          },
+          {
+            "description": "File size",
+            "name": "s"
+          },
+          {
+            "description": "Stream module and device names",
+            "name": "S"
+          },
+          {
+            "description": "File type",
+            "name": "t"
+          },
+          {
+            "description": "TCP/TPI info",
+            "name": "T"
+          },
+          {
+            "description": "User ID (UID)",
+            "name": "u"
+          },
+          {
+            "description": "(zero) use NUL field terminator instead of N",
+            "name": "0"
+          }
+        ]
+      },
+      "description": "Select fields to output",
       "name": [
         "-F"
-      ],
-      "description": "Select fields to output",
-      "args": {
-        "name": "options",
-        "isVariadic": true,
-        "suggestions": [
-          {
-            "name": "a",
-            "description": "Access: r = read; w = write; u = read/write"
-          },
-          {
-            "name": "c",
-            "description": "Command name"
-          },
-          {
-            "name": "C",
-            "description": "File struct share count"
-          },
-          {
-            "name": "d",
-            "description": "Device character code"
-          },
-          {
-            "name": "D",
-            "description": "Major/minor device number as 0x<hex>"
-          },
-          {
-            "name": "f",
-            "description": "File descriptor (always selected)"
-          },
-          {
-            "name": "G",
-            "description": "File flaGs"
-          },
-          {
-            "name": "i",
-            "description": "Inode number"
-          },
-          {
-            "name": "k",
-            "description": "Link count"
-          },
-          {
-            "name": "K",
-            "description": "Task ID (TID)"
-          },
-          {
-            "name": "l",
-            "description": "Lock: r/R = read; w/W = write; u = read/write"
-          },
-          {
-            "name": "L",
-            "description": "Login name"
-          },
-          {
-            "name": "m",
-            "description": "Marker between repeated output"
-          },
-          {
-            "name": "M",
-            "description": "Task comMand name"
-          },
-          {
-            "name": "n",
-            "description": "Comment, name, Internet addresses"
-          },
-          {
-            "name": "o",
-            "description": "File offset as 0t<dec> or 0x<hex>"
-          },
-          {
-            "name": "p",
-            "description": "Process ID (PID)"
-          },
-          {
-            "name": "g",
-            "description": "Process group ID (PGID)"
-          },
-          {
-            "name": "P",
-            "description": "Protocol name"
-          },
-          {
-            "name": "r",
-            "description": "Raw device number as 0x<hex>"
-          },
-          {
-            "name": "R",
-            "description": "PaRent PID"
-          },
-          {
-            "name": "s",
-            "description": "File size"
-          },
-          {
-            "name": "S",
-            "description": "Stream module and device names"
-          },
-          {
-            "name": "t",
-            "description": "File type"
-          },
-          {
-            "name": "T",
-            "description": "TCP/TPI info"
-          },
-          {
-            "name": "u",
-            "description": "User ID (UID)"
-          },
-          {
-            "name": "0",
-            "description": "(zero) use NUL field terminator instead of N"
-          }
-        ]
-      }
+      ]
     },
     {
+      "description": "Show fields for -F",
       "name": [
         "-F?"
-      ],
-      "description": "Show fields for -F"
+      ]
     },
     {
+      "args": {
+        "description": "Process Group ID (comma separated)",
+        "name": "PGID"
+      },
+      "description": "Exclude or select by process group IDs (PGID)",
       "name": [
         "-g"
-      ],
-      "description": "Exclude or select by process group IDs (PGID)",
-      "args": {
-        "name": "PGID",
-        "description": "Process Group ID (comma separated)"
-      }
+      ]
     },
     {
-      "name": [
-        "-i"
-      ],
-      "description": "Selects files by [46][protocol][@hostname|hostaddr][:service|port]",
       "args": {
-        "name": "options",
         "generators": [
           {
-            "script": [
-              "echo"
-            ],
-            "requires_js": true,
             "js_runtime": {
               "kind": "post_process",
               "source": "function(){return[\"4\",\"6\"].map(e=>({name:e}))}"
-            }
-          },
-          {
+            },
+            "requires_js": true,
             "script": [
               "echo"
-            ],
-            "requires_js": true,
+            ]
+          },
+          {
             "js_runtime": {
               "kind": "post_process",
               "source": "function(r,e){let s=[\"tcp\",\"udp\",\"TCP\",\"UDP\"],i=e[1].match(/^(-i[46])/)||e[2]&&e[2].match(/^[46]/),t=i&&i.length>0?i[1]:\"\";return s.map(n=>({name:t+n}))}"
-            }
+            },
+            "requires_js": true,
+            "script": [
+              "echo"
+            ]
           },
           {
             "script": [
@@ -292,254 +296,254 @@
               "split_lines",
               "filter_empty",
               {
-                "type": "regex_extract",
+                "name": 1,
                 "pattern": "inet\\b",
-                "name": 1
+                "type": "regex_extract"
               }
             ]
           },
           {
-            "script": [
-              "echo"
-            ],
-            "requires_js": true,
             "js_runtime": {
               "kind": "post_process",
               "source": "function(r,e){let s=[\"http\",\"https\",\"who\",\"time\"],i=\":\";e[1].match(\":[^:]*\")?i=e[1]:e[2]&&e[2].match(\":[^:]+\")&&(i=e[2]);let t=i.split(\":\")[0]+\":\";return s.map(o=>({name:t+o}))}"
-            }
+            },
+            "requires_js": true,
+            "script": [
+              "echo"
+            ]
           }
-        ]
-      }
+        ],
+        "name": "options"
+      },
+      "description": "Selects files by [46][protocol][@hostname|hostaddr][:service|port]",
+      "name": [
+        "-i"
+      ]
     },
     {
+      "description": "Inhibit conversion of user IDs to login names",
       "name": [
         "-l"
-      ],
-      "description": "Inhibit conversion of user IDs to login names"
+      ]
     },
     {
+      "args": {
+        "isOptional": true,
+        "name": "number"
+      },
+      "description": "Enable listing of file link counts",
       "name": [
         "+L"
-      ],
-      "description": "Enable listing of file link counts",
-      "args": {
-        "name": "number",
-        "isOptional": true
-      }
+      ]
     },
     {
+      "args": {
+        "isOptional": true,
+        "name": "number"
+      },
+      "description": "Disable listing of file link counts",
       "name": [
         "-L"
-      ],
-      "description": "Disable listing of file link counts",
-      "args": {
-        "name": "number",
-        "isOptional": true
-      }
+      ]
     },
     {
+      "description": "Enable portMap registration",
       "name": [
         "+M"
-      ],
-      "description": "Enable portMap registration"
+      ]
     },
     {
+      "description": "Disable portMap registration",
       "name": [
         "-M"
-      ],
-      "description": "Disable portMap registration"
+      ]
     },
     {
+      "description": "No host names",
       "name": [
         "-n"
-      ],
-      "description": "No host names"
+      ]
     },
     {
+      "description": "Select NFS files",
       "name": [
         "-N"
-      ],
-      "description": "Select NFS files"
+      ]
     },
     {
+      "description": "List file offset",
       "name": [
         "-o"
-      ],
-      "description": "List file offset"
+      ]
     },
     {
+      "description": "No overhead *RISKY*",
       "name": [
         "-O"
-      ],
-      "description": "No overhead *RISKY*"
+      ]
     },
     {
+      "args": {
+        "description": "PIDs to select or exclude ( with ^)",
+        "name": "PIDs"
+      },
+      "description": "Exclude or select process identification numbers (PIDs)",
       "name": [
         "-p"
-      ],
-      "description": "Exclude or select process identification numbers (PIDs)",
-      "args": {
-        "name": "PIDs",
-        "description": "PIDs to select or exclude ( with ^)"
-      }
+      ]
     },
     {
+      "description": "No port names",
       "name": [
         "-P"
-      ],
-      "description": "No port names"
+      ]
     },
     {
+      "args": {
+        "description": "Time per repeat",
+        "name": "time (seconds)"
+      },
+      "description": "Repeat every t seconds (15) until no files",
       "name": [
         "+r"
-      ],
-      "description": "Repeat every t seconds (15) until no files",
-      "args": {
-        "name": "time (seconds)",
-        "description": "Time per repeat"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "Time per repeat",
+        "name": "time (seconds)"
+      },
+      "description": "Repeat every t seconds (15) forever",
       "name": [
         "-r"
-      ],
-      "description": "Repeat every t seconds (15) forever",
-      "args": {
-        "name": "time (seconds)",
-        "description": "Time per repeat"
-      }
+      ]
     },
     {
+      "description": "List parent PID",
       "name": [
         "-R"
-      ],
-      "description": "List parent PID"
+      ]
     },
     {
+      "args": {
+        "isOptional": true,
+        "name": "protocol:state"
+      },
+      "description": "List file size or exclude/select protocol",
       "name": [
         "-s"
-      ],
-      "description": "List file size or exclude/select protocol",
-      "args": {
-        "name": "protocol:state",
-        "isOptional": true
-      }
+      ]
     },
     {
+      "args": {
+        "isOptional": true,
+        "name": "timeout (seconds)"
+      },
+      "description": "Stat timeout in seconds (lstat/readlink/stat)",
       "name": [
         "-S"
-      ],
-      "description": "Stat timeout in seconds (lstat/readlink/stat)",
-      "args": {
-        "name": "timeout (seconds)",
-        "isOptional": true
-      }
+      ]
     },
     {
-      "name": [
-        "-T"
-      ],
-      "description": "Disable TCP/TPI info",
       "args": {
         "name": "info",
         "suggestions": [
           {
-            "name": "f",
-            "description": "Selects reporting of socket options/states/values and tcp flag values"
+            "description": "Selects reporting of socket options/states/values and tcp flag values",
+            "name": "f"
           },
           {
-            "name": "q",
-            "description": "Selects queue length reporting"
+            "description": "Selects queue length reporting",
+            "name": "q"
           },
           {
-            "name": "s",
-            "description": "Selects connection state reporting"
+            "description": "Selects connection state reporting",
+            "name": "s"
           },
           {
-            "name": "w",
-            "description": "Selects window size reporting"
+            "description": "Selects window size reporting",
+            "name": "w"
+          },
+          {
+            "description": "Disables info",
+            "name": ""
           }
         ]
-      }
+      },
+      "description": "Disable TCP/TPI info",
+      "name": [
+        "-T"
+      ]
     },
     {
+      "description": "Specify terse listing",
       "name": [
         "-t"
-      ],
-      "description": "Specify terse listing"
+      ]
     },
     {
-      "name": [
-        "-u"
-      ],
-      "description": "Exclude/select login|UID set",
       "args": {
         "name": "UIDs"
-      }
+      },
+      "description": "Exclude/select login|UID set",
+      "name": [
+        "-u"
+      ]
     },
     {
+      "description": "Select Unix socket",
       "name": [
         "-U"
-      ],
-      "description": "Select Unix socket"
+      ]
     },
     {
+      "description": "List version info",
       "name": [
         "-v"
-      ],
-      "description": "List version info"
+      ]
     },
     {
+      "description": "Verbose search",
       "name": [
         "-V"
-      ],
-      "description": "Verbose search"
+      ]
     },
     {
+      "description": "Enable warnings",
       "name": [
         "+w"
-      ],
-      "description": "Enable warnings"
+      ]
     },
     {
+      "description": "Disable warnings",
       "name": [
         "-w"
-      ],
-      "description": "Disable warnings"
+      ]
     },
     {
-      "name": [
-        "-x"
-      ],
-      "description": "Cross over +d|+D File systems or symbolic links",
       "args": {
         "name": "cross-over option",
         "suggestions": [
           {
-            "name": "f",
-            "description": "File system mount point cross-over processing"
+            "description": "File system mount point cross-over processing",
+            "name": "f"
           },
           {
-            "name": "l",
-            "description": "Symbolic link cross-over processing"
+            "description": "Symbolic link cross-over processing",
+            "name": "l"
           }
         ]
-      }
+      },
+      "description": "Cross over +d|+D File systems or symbolic links",
+      "name": [
+        "-x"
+      ]
     },
     {
+      "description": "File descriptor table only",
       "name": [
         "-X"
-      ],
-      "description": "File descriptor table only"
+      ]
     }
-  ],
-  "args": {
-    "name": "names",
-    "description": "Select named files or files on named file systems",
-    "template": [
-      "folders"
-    ],
-    "isVariadic": true,
-    "isOptional": true
-  }
+  ]
 }
