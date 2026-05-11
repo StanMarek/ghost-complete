@@ -87,6 +87,15 @@ function unresolvedLoadSpecMessage(targetName, specName, visited) {
   return `unresolved loadSpec target "${targetName}" while resolving "${specName}" (${loadPath})`;
 }
 
+const KNOWN_MISSING_LOAD_SPECS = new Set([
+  'gcloud\0gcloud/alpha',
+  'gcloud\0gcloud/beta',
+]);
+
+function isKnownMissingLoadSpec(specName, targetName) {
+  return KNOWN_MISSING_LOAD_SPECS.has(`${specName}\0${targetName}`);
+}
+
 /**
  * Resolve loadSpec references by inlining the referenced sub-spec.
  * Walks the converted spec tree and replaces _loadSpec markers with actual content.
@@ -147,6 +156,13 @@ export async function resolveLoadSpecs(spec, specName, visited = new Set([specNa
             }
 
             if (!loaded || typeof loaded !== 'object') {
+              if (isKnownMissingLoadSpec(specName, targetName)) {
+                console.warn(
+                  `[converter] known missing loadSpec target "${targetName}" while resolving "${specName}"; keeping static subcommand`
+                );
+                await resolveLoadSpecs(sub, specName, visited, loader);
+                continue;
+              }
               throw new Error(unresolvedLoadSpecMessage(targetName, specName, visited));
             }
 
@@ -681,7 +697,15 @@ async function removeCorpusHash(outputDir) {
 
 async function exitOnConversionFailure(totals, errors, outputDir, dryRun) {
   if ((totals.failed ?? 0) === 0 && errors.length === 0) {
-    return false;
+    if ((totals.converted ?? 0) > 0) {
+      return false;
+    }
+    console.error('Conversion produced 0 specs; refusing to write corpus hash.');
+    if (outputDir && !dryRun) {
+      await removeCorpusHash(outputDir);
+    }
+    process.exitCode = 1;
+    return true;
   }
 
   const failed = Math.max(totals.failed ?? 0, errors.length);
@@ -881,6 +905,10 @@ export async function writeCorpusHash(outputDir) {
     return ra < rb ? -1 : ra > rb ? 1 : 0;
   });
 
+  if (files.length === 0) {
+    throw new Error(`Refusing to write corpus hash for empty corpus: ${outputDir}`);
+  }
+
   const hash = createHash('sha256');
   for (const file of files) {
     const rel = relative(outputDir, file).split(sep).join('/');
@@ -943,7 +971,7 @@ async function main() {
   // sorted too so any consumer (snapshot tests, hash recompute) sees the
   // same iteration order regardless of how the user typed the list.
   let specNames;
-  if (values.specs) {
+  if (values.specs !== undefined) {
     specNames = values.specs.split(',').map((s) => s.trim()).filter(Boolean).sort();
   } else {
     specNames = await listSpecNames();

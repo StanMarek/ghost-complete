@@ -149,6 +149,19 @@ describe('stringifySorted', () => {
 });
 
 describe('writeCorpusHash', () => {
+  it('rejects an empty corpus before writing corpus-hash.txt', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'fig-determinism-'));
+    try {
+      await assert.rejects(
+        () => writeCorpusHash(dir),
+        /Refusing to write corpus hash for empty corpus/,
+      );
+      await assertHashFileMissing(dir);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it('produces a stable SHA-256 across 5 fresh tempdirs with the same fixture', async () => {
     const hashes = new Set();
 
@@ -304,6 +317,28 @@ describe('converter CLI failure handling', () => {
       );
       assert.match(result.stdout, /Failed:\s+1/);
       assert.match(result.stdout, /this_spec_does_not_exist_xyz/);
+      await assertHashFileMissing(dir);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('exits non-zero and skips corpus hash when no specs are requested', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'fig-determinism-'));
+    try {
+      const result = await runConverter([
+        '--output',
+        dir,
+        '--specs',
+        ',',
+      ]);
+
+      assert.equal(
+        result.code,
+        1,
+        `expected converter to fail on empty --specs list\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+      );
+      assert.match(result.stderr, /Conversion produced 0 specs/);
       await assertHashFileMissing(dir);
     } finally {
       await rm(dir, { recursive: true, force: true });

@@ -24,7 +24,7 @@ enum JsRuntimeWarningKind {
     /// `js_runtime` is present but `source` is empty/whitespace — the
     /// converter kept the wrapper but dropped the body.
     EmptySource,
-    /// `kind: post_process` without an accompanying `script` /
+    /// `kind: post_process` without a non-empty `script` /
     /// `script_template` — the engine has no shell stdout to feed into the
     /// post-processor.
     PostProcessMissingScript,
@@ -41,7 +41,7 @@ impl JsRuntimeWarningKind {
             Self::MissingMetadata => "requires_js=true without js_runtime metadata",
             Self::EmptySource => "requires_js=true with empty js_runtime.source",
             Self::PostProcessMissingScript => {
-                "requires_js=true with kind=post_process but no accompanying script/script_template"
+                "requires_js=true with kind=post_process but no non-empty script/script_template"
             }
             Self::MissingSelfContained => {
                 "requires_js=true with kind=script_function/custom but self_contained!=true"
@@ -55,7 +55,7 @@ impl JsRuntimeWarningKind {
 /// `is_supported_script_generator` predicate (and
 /// `doctor::count_missing_js_runtime_in_spec`) so the three surfaces
 /// agree on what counts as a converter regression. The four classes —
-/// missing metadata, empty source, `post_process` without
+/// missing metadata, empty source, `post_process` without non-empty
 /// `script`/`script_template`, and `script_function`/`custom` without
 /// `self_contained: true` — are tagged via [`JsRuntimeWarningKind`] so
 /// the operator can disambiguate the defect from the warning text alone.
@@ -65,6 +65,13 @@ impl JsRuntimeWarningKind {
 /// gate documented at `docs/ci-gates.md`.
 fn collect_missing_js_runtime_warnings(spec: &CompletionSpec) -> Vec<String> {
     let mut warnings = Vec::new();
+    fn has_non_empty_script_or_template(g: &GeneratorSpec) -> bool {
+        g.script.as_ref().is_some_and(|script| !script.is_empty())
+            || g.script_template
+                .as_ref()
+                .is_some_and(|template| !template.is_empty())
+    }
+
     fn classify(g: &GeneratorSpec) -> Option<JsRuntimeWarningKind> {
         if !g.requires_js {
             return None;
@@ -77,8 +84,8 @@ fn collect_missing_js_runtime_warnings(spec: &CompletionSpec) -> Vec<String> {
                 }
                 // Mirror gc-suggest::engine::is_supported_script_generator:
                 // post_process is dispatchable iff an accompanying
-                // `script` / `script_template` is present (the engine
-                // has shell stdout to feed into the post-processor).
+                // `script` / `script_template` argv is non-empty (the
+                // engine has shell stdout to feed into the post-processor).
                 // script_function/custom additionally require
                 // `self_contained:true`. Without those guarantees the
                 // engine refuses to dispatch — so `--strict` must surface
@@ -86,7 +93,7 @@ fn collect_missing_js_runtime_warnings(spec: &CompletionSpec) -> Vec<String> {
                 // light while doctor + engine drop the generator.
                 match rt.kind {
                     JsRuntimeKind::PostProcess => {
-                        if g.script.is_none() && g.script_template.is_none() {
+                        if !has_non_empty_script_or_template(g) {
                             Some(JsRuntimeWarningKind::PostProcessMissingScript)
                         } else {
                             None
@@ -1232,7 +1239,7 @@ mod tests {
     }
 
     /// Regression guard for sf-iter4-1: a `post_process` generator
-    /// without an accompanying `script` / `script_template` cannot be
+    /// without a non-empty `script` / `script_template` cannot be
     /// dispatched (the engine has no shell stdout to feed into the
     /// post-processor). `--strict` must surface it — symmetric to the
     /// doctor's `doctor_fails_when_post_process_lacks_script` test.
@@ -1470,6 +1477,28 @@ mod tests {
             (
                 "pp-no-script",
                 r#"{
+                    "requires_js": true,
+                    "js_runtime": {"kind":"post_process","source":"out=>[]"}
+                }"#,
+                false,
+            ),
+            // Unsupported: post_process with an empty script argv is as
+            // undispatchable as a missing script.
+            (
+                "pp-empty-script",
+                r#"{
+                    "script": [],
+                    "requires_js": true,
+                    "js_runtime": {"kind":"post_process","source":"out=>[]"}
+                }"#,
+                false,
+            ),
+            // Unsupported: post_process with an empty script_template
+            // argv gives the engine no stdout source to post-process.
+            (
+                "pp-empty-script-template",
+                r#"{
+                    "script_template": [],
                     "requires_js": true,
                     "js_runtime": {"kind":"post_process","source":"out=>[]"}
                 }"#,

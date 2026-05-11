@@ -901,6 +901,31 @@ impl SuggestionEngine {
         Ok(fuzzy::rank(query, all, MAX_DYNAMIC_CANDIDATES))
     }
 
+    /// Resolve each provider resolution independently and preserve the
+    /// per-kind result boundary for callers that need provider-specific
+    /// success/error reporting.
+    ///
+    /// Unlike [`Self::resolve_providers`], this does not aggregate or swallow
+    /// per-provider errors. It still applies each [`ProviderResolution`]'s
+    /// params map to a cloned [`ProviderCtx`] before dispatching, so callers
+    /// do not need to duplicate that overlay logic.
+    pub async fn resolve_provider_kinds(
+        &self,
+        resolutions: &[ProviderResolution],
+        ctx: &ProviderCtx,
+        query: &str,
+    ) -> Vec<(ProviderKind, Result<Vec<Suggestion>>)> {
+        let mut out = Vec::with_capacity(resolutions.len());
+        for resolution in resolutions {
+            let dispatch_ctx = ctx.for_resolution(resolution);
+            let res = self
+                .resolve_provider_kind(resolution.kind, &dispatch_ctx, query)
+                .await;
+            out.push((resolution.kind, res));
+        }
+        out
+    }
+
     /// Per-kind variant of [`Self::resolve_git`] that surfaces errors instead of swallowing.
     pub async fn resolve_git_kind(
         &self,
@@ -917,9 +942,8 @@ impl SuggestionEngine {
 
     /// Per-kind variant of [`Self::resolve_providers`] that surfaces errors instead of logging-and-swallowing.
     /// The supplied `ctx` is forwarded as-is; callers that need to
-    /// override `ctx.params` for a single dispatch should clone the
-    /// ctx beforehand and overwrite the `params` field, mirroring the
-    /// per-resolution clone inside [`Self::resolve_providers`].
+    /// apply [`ProviderResolution`] params across multiple independent
+    /// dispatches should use [`Self::resolve_provider_kinds`].
     pub async fn resolve_provider_kind(
         &self,
         kind: ProviderKind,
@@ -2835,6 +2859,57 @@ mod tests {
         let texts: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
 
         assert_eq!(texts, ["provider=first", "shared=one", "provider=second"]);
+    }
+
+    #[tokio::test]
+    async fn test_resolve_provider_kinds_threads_params_per_resolution() {
+        let engine = make_engine();
+        let ctx = crate::providers::ProviderCtx {
+            cwd: Path::new("/tmp").to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+            params: std::sync::Arc::new(std::collections::BTreeMap::from([(
+                "base".to_string(),
+                "must-not-leak".to_string(),
+            )])),
+        };
+        let first = ProviderResolution {
+            kind: ProviderKind::TestEchoParams,
+            params: std::sync::Arc::new(std::collections::BTreeMap::from([
+                ("provider".to_string(), "first".to_string()),
+                ("shared".to_string(), "one".to_string()),
+            ])),
+        };
+        let second = ProviderResolution {
+            kind: ProviderKind::TestEchoParams,
+            params: std::sync::Arc::new(std::collections::BTreeMap::from([(
+                "provider".to_string(),
+                "second".to_string(),
+            )])),
+        };
+
+        let results = engine
+            .resolve_provider_kinds(&[first, second], &ctx, "")
+            .await;
+        let texts: Vec<Vec<&str>> = results
+            .iter()
+            .map(|(_kind, result)| {
+                result
+                    .as_ref()
+                    .unwrap()
+                    .iter()
+                    .map(|s| s.text.as_str())
+                    .collect()
+            })
+            .collect();
+
+        assert_eq!(
+            texts,
+            [
+                vec!["provider=first", "shared=one"],
+                vec!["provider=second"]
+            ]
+        );
     }
 
     #[tokio::test]

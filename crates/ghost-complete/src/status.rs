@@ -560,7 +560,7 @@ fn scan_resolved_specs(
     let requires_js_generators_total = file_scan.requires_js_generators_total;
     // Classify every requires_js generator on disk into supported /
     // unsupported buckets. `post_process` requires non-empty source plus
-    // an accompanying script/script_template; `script_function` and
+    // a non-empty script/script_template argv; `script_function` and
     // `custom` require non-empty source.
     let requires_js_generators_supported = file_scan.requires_js_generators_supported;
     let requires_js_generators_unsupported =

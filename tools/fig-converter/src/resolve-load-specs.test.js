@@ -219,6 +219,56 @@ describe('resolveLoadSpecs cycle guard', () => {
     );
   });
 
+  it('keeps static gcloud alpha/beta subcommands for known missing upstream loadSpecs', async () => {
+    const rawGcloud = {
+      name: 'gcloud',
+      subcommands: [
+        {
+          name: 'alpha',
+          description: 'Alpha versions of gcloud commands',
+          loadSpec: 'gcloud/alpha',
+        },
+        {
+          name: 'beta',
+          description: 'Beta versions of gcloud commands',
+          loadSpec: 'gcloud/beta',
+        },
+        {
+          name: 'config',
+          loadSpec: 'gcloud/config',
+        },
+      ],
+    };
+    const rawConfig = {
+      name: 'config',
+      subcommands: [{ name: 'set', description: 'Set a property' }],
+    };
+    const intermediate = convertSpec(rawGcloud);
+    const loader = makeLoader({ gcloud: rawGcloud, 'gcloud/config': rawConfig });
+
+    const result = await resolveLoadSpecs(intermediate, 'gcloud', new Set(['gcloud']), loader);
+
+    assert.equal(warnCapture.warnings.length, 2);
+    assert.match(warnCapture.warnings[0], /known missing loadSpec target "gcloud\/alpha"/);
+    assert.match(warnCapture.warnings[1], /known missing loadSpec target "gcloud\/beta"/);
+
+    const alpha = result.subcommands.find((s) => s.name === 'alpha');
+    assert.ok(alpha);
+    assert.equal(alpha.description, 'Alpha versions of gcloud commands');
+    assert.equal(alpha._loadSpec, undefined);
+    assert.equal(alpha.subcommands, undefined);
+
+    const beta = result.subcommands.find((s) => s.name === 'beta');
+    assert.ok(beta);
+    assert.equal(beta.description, 'Beta versions of gcloud commands');
+    assert.equal(beta._loadSpec, undefined);
+    assert.equal(beta.subcommands, undefined);
+
+    const config = result.subcommands.find((s) => s.name === 'config');
+    assert.ok(config);
+    assert.deepStrictEqual(config.subcommands, [{ name: 'set', description: 'Set a property' }]);
+  });
+
   it('rejects unresolved object-form loadSpec targets', async () => {
     const rawA = {
       name: 'A',

@@ -17,7 +17,7 @@
 // exercising the determinism contract — see ci.yml).
 
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -34,13 +34,54 @@ const { values } = parseArgs({
     },
 });
 
+const requestedSpecs =
+    values.specs === undefined
+        ? null
+        : [...new Set(values.specs.split(',').map((s) => s.trim()).filter(Boolean))].sort();
+
+function countJsonSpecs(dir) {
+    let count = 0;
+    const queue = [dir];
+    while (queue.length > 0) {
+        const current = queue.shift();
+        for (const entry of readdirSync(current, { withFileTypes: true })) {
+            const path = join(current, entry.name);
+            if (entry.isDirectory()) {
+                queue.push(path);
+            } else if (entry.isFile() && entry.name.endsWith('.json')) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
+function assertConvertedSpecCount(dir, label) {
+    const actual = countJsonSpecs(dir);
+    if (requestedSpecs === null) {
+        if (actual === 0) {
+            throw new Error(`[corpus-hash] ${label}: converter emitted no JSON specs`);
+        }
+        return;
+    }
+
+    if (requestedSpecs.length === 0) {
+        throw new Error(`[corpus-hash] ${label}: --specs requested no specs`);
+    }
+    if (actual !== requestedSpecs.length) {
+        throw new Error(
+            `[corpus-hash] ${label}: converter emitted ${actual} JSON spec(s), expected ${requestedSpecs.length}`,
+        );
+    }
+}
+
 function runConverter(outDir) {
     const args = [
         CONVERTER,
         `--output=${outDir}`,
         '--deterministic',
     ];
-    if (values.specs) {
+    if (values.specs !== undefined) {
         args.push(`--specs=${values.specs}`);
     }
     if (values['batch-size']) {
@@ -63,8 +104,10 @@ function main() {
 
         process.stderr.write(`[corpus-hash] run 1 -> ${dir1}\n`);
         runConverter(dir1);
+        assertConvertedSpecCount(dir1, 'run 1');
         process.stderr.write(`[corpus-hash] run 2 -> ${dir2}\n`);
         runConverter(dir2);
+        assertConvertedSpecCount(dir2, 'run 2');
 
         const h1 = readFileSync(join(dir1, 'corpus-hash.txt'), 'utf8').trim();
         const h2 = readFileSync(join(dir2, 'corpus-hash.txt'), 'utf8').trim();

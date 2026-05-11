@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { convertSingleSpec, listSpecNames, cleanGenerator, processGenerator, runConversionBatch } from './index.js';
+import { stringifySorted } from './serialize.js';
 
 describe('listSpecNames', () => {
   it('returns an array of spec names', async () => {
@@ -577,6 +578,43 @@ describe('runConversionBatch', () => {
     assert.equal(totals.failed, 1);
     assert.equal(errors.length, 1);
     assert.equal(errors[0].spec, 'this_spec_does_not_exist_xyz');
+  });
+
+  it('writes canonical sorted-key JSON bytes in deterministic mode', async () => {
+    const deterministicDir = await mkdtemp(join(tmpdir(), 'gc-convert-det-'));
+    const nonDeterministicDir = await mkdtemp(join(tmpdir(), 'gc-convert-nondet-'));
+    try {
+      const deterministic = await runConversionBatch({
+        specNames: ['cat'],
+        outputDir: deterministicDir,
+        dryRun: false,
+        deterministic: true,
+      });
+      assert.deepStrictEqual(deterministic.errors, []);
+      assert.equal(deterministic.totals.converted, 1);
+
+      const raw = await readFile(join(deterministicDir, 'cat.json'), 'utf8');
+      assert.equal(raw, stringifySorted(JSON.parse(raw), 2) + '\n');
+
+      const nonDeterministic = await runConversionBatch({
+        specNames: ['cat'],
+        outputDir: nonDeterministicDir,
+        dryRun: false,
+        deterministic: false,
+      });
+      assert.deepStrictEqual(nonDeterministic.errors, []);
+      assert.equal(nonDeterministic.totals.converted, 1);
+
+      const plainRaw = await readFile(join(nonDeterministicDir, 'cat.json'), 'utf8');
+      assert.notEqual(
+        raw,
+        plainRaw,
+        'fixture must distinguish sorted-key emission from plain JSON.stringify output',
+      );
+    } finally {
+      await rm(deterministicDir, { recursive: true, force: true });
+      await rm(nonDeterministicDir, { recursive: true, force: true });
+    }
   });
 });
 

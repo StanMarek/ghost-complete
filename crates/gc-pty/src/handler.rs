@@ -1813,9 +1813,9 @@ impl InputHandler {
             // every keystroke, and no current provider reads `ctx.env`,
             // so the collected map would be dead weight on the hot path.
             let env = Arc::new(build_env_snapshot(!provider_generators.is_empty()));
-            // Base provider ctx; per-resolution params replace the
-            // empty default below when dispatching individual
-            // providers via `resolve_provider_kind`.
+            // Base provider ctx; `resolve_provider_kinds` overlays
+            // per-resolution params onto cloned contexts before
+            // dispatching each provider.
             let provider_ctx = Arc::new(gc_suggest::providers::ProviderCtx {
                 cwd: cwd.clone(),
                 env,
@@ -1843,15 +1843,13 @@ impl InputHandler {
             let provider_resolutions = provider_generators.clone();
             let provider_ctx_for_fut = Arc::clone(&provider_ctx);
             let provider_fut = async move {
-                let mut out = Vec::with_capacity(provider_resolutions.len());
-                for resolution in provider_resolutions {
-                    let dispatch_ctx = provider_ctx_for_fut.for_resolution(&resolution);
-                    let res = provider_engine
-                        .resolve_provider_kind(resolution.kind, &dispatch_ctx, &provider_query)
-                        .await;
-                    out.push((resolution.kind, res));
-                }
-                out
+                provider_engine
+                    .resolve_provider_kinds(
+                        &provider_resolutions,
+                        &provider_ctx_for_fut,
+                        &provider_query,
+                    )
+                    .await
             };
             let (script_res, git_results, provider_results) = tokio::join!(
                 engine.run_generators(&script_generators, &ctx, &cwd, timeout),
