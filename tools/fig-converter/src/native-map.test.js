@@ -8,6 +8,7 @@ const ARDUINO_FQBN_POSTPROCESS = "t=>{try{return JSON.parse(t).filter(i=>i.match
 const ARDUINO_PORT_POSTPROCESS = "t=>{try{return JSON.parse(t).filter(i=>i.matching_boards).map(i=>({name:i.port.address,description:`${i.matching_boards[0].name} port connection`}))}catch{return[]}}";
 const CARGO_WORKSPACE_POSTPROCESS = 'e=>JSON.parse(e).packages.map(a=>({icon:"pkg",name:a.name,description:a.version}))';
 const CARGO_DEPENDENCY_POSTPROCESS = 'e=>{let t=JSON.parse(e),i=le(t).flatMap(n=>n.dependencies).map(n=>({name:n.name,description:n.req}));return[...new Map(i.map(n=>[n.name,n])).values()]}';
+const CARGO_TARGET_BIN_POSTPROCESS = 'e=>JSON.parse(e).packages.flatMap(p=>p.targets).filter(t=>t.kind.includes("bin")).map(t=>({name:t.name}))';
 
 describe('matchNativeGenerator', () => {
   it('maps git branch to git_branches', () => {
@@ -26,7 +27,7 @@ describe('matchNativeGenerator', () => {
   });
 
   it('returns null for unmapped commands', () => {
-    const result = matchNativeGenerator('brew', ['brew', 'list', '-1']);
+    const result = matchNativeGenerator('brew', ['brew', 'outdated']);
     assert.equal(result, null);
   });
 
@@ -211,6 +212,17 @@ describe('matchNativeGenerator', () => {
     );
   });
 
+  it('maps cargo metadata target projections to cargo_targets with kind params', () => {
+    assert.deepStrictEqual(
+      matchNativeGenerator(
+        'cargo',
+        ['cargo', 'metadata', '--format-version', '1', '--no-deps'],
+        CARGO_TARGET_BIN_POSTPROCESS,
+      ),
+      { type: 'cargo_targets', params: { kind: 'bin' } },
+    );
+  });
+
   it('maps npm bash-c with package.json post-process to npm_scripts', () => {
     // Real-world post-process snippet copied from the pre-regen npm spec
     // — projects `package.json#scripts` into Fig suggestions.
@@ -222,6 +234,75 @@ describe('matchNativeGenerator', () => {
         npmPostProcess,
       ),
       { type: 'npm_scripts' },
+    );
+  });
+
+  it('maps npm package dependency projectors to npm_local providers', () => {
+    const depsPostProcess = 'async function(n,s){let{stdout:p}=await s({command:"cat",args:["package.json"]}),t=JSON.parse(p),r=t.dependencies??{};return Object.keys(r).map(d=>({name:d}))}';
+    const devDepsPostProcess = 'async function(n,s){let{stdout:p}=await s({command:"cat",args:["package.json"]}),t=JSON.parse(p),r=t.devDependencies??{};return Object.keys(r).map(d=>({name:d}))}';
+    const allDepsPostProcess = 'async function(n,s){let{stdout:p}=await s({command:"cat",args:["package.json"]}),t=JSON.parse(p),r=t.dependencies??{},h=t.devDependencies,g=t.optionalDependencies??{};return Object.assign(r,h,g),Object.keys(r).map(d=>({name:d}))}';
+
+    assert.deepStrictEqual(
+      matchNativeGenerator('npm', ['npm', 'prefix'], depsPostProcess),
+      { type: 'npm_dependencies' },
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator('npm', ['npm', 'prefix'], devDepsPostProcess),
+      { type: 'npm_dev_dependencies' },
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator('npm', ['npm', 'prefix'], allDepsPostProcess),
+      { type: 'npm_all_dependencies' },
+    );
+  });
+
+  it('maps container and cluster tool scripts to native provider types', () => {
+    assert.deepStrictEqual(
+      matchNativeGenerator('docker', ['docker', 'images', '--format', '{{json .}}']),
+      { type: 'docker_images' },
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator('podman', ['podman', 'ps', '--format', '{{json .}}']),
+      { type: 'docker_containers', params: { binary: 'podman' } },
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator('docker', ['docker', 'network', 'list', '--format', '{{json .}}']),
+      { type: 'docker_networks' },
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator('podman', ['podman', 'volume', 'list', '--format', '{{json .}}']),
+      { type: 'docker_volumes', params: { binary: 'podman' } },
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator('kubectl', ['kubectl', 'api-resources', '-o', 'name']),
+      { type: 'k8s_resources' },
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator('kubecolor', ['kubectl', 'get', 'pods', '-o', 'json']),
+      { type: 'k8s_pods' },
+    );
+  });
+
+  it('maps small system tools to native provider types', () => {
+    assert.deepStrictEqual(
+      matchNativeGenerator('tmux', ['tmux', 'list-sessions', '-F', '#{session_name}']),
+      { type: 'tmux_sessions' },
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator('tmux', ['tmux', 'ls', '-F', '#{session_name}']),
+      { type: 'tmux_sessions' },
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator('systemctl', ['systemctl', 'list-units', '--all']),
+      { type: 'systemd_units' },
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator('brew', ['brew', 'list', '--formula']),
+      { type: 'brew_formulae_installed' },
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator('dscl', ['dscl', '.', 'list', '/Users']),
+      { type: 'dscl_users' },
     );
   });
 
@@ -263,6 +344,18 @@ describe('matchNativeFromJsSource', () => {
     assert.deepStrictEqual(
       matchNativeFromJsSource('make', makeJsSource),
       { type: 'makefile_targets' },
+    );
+  });
+
+  it('maps kubectl context script functions to k8s_contexts', () => {
+    const contextJsSource = 'function(tokens){return ["kubectl","config","get-contexts","-o","name"]}';
+    assert.deepStrictEqual(
+      matchNativeFromJsSource('kubectl', contextJsSource),
+      { type: 'k8s_contexts' },
+    );
+    assert.deepStrictEqual(
+      matchNativeFromJsSource('kubecolor', contextJsSource),
+      { type: 'k8s_contexts' },
     );
   });
 

@@ -44,11 +44,21 @@ use crate::types::Suggestion;
 
 pub mod ansible_doc;
 pub mod arduino_cli;
+pub mod brew;
+pub mod cargo_metadata;
+pub mod docker;
+pub mod dscl_principals;
+pub mod kubectl;
 pub mod local_project;
 pub mod macos_defaults;
 pub mod mamba;
 pub mod multipass;
+pub mod npm_local;
 pub mod pandoc;
+pub mod systemd_units;
+pub mod tmux_state;
+pub mod util;
+pub mod version_probe;
 
 /// Context passed to every provider's `generate` call. Owned by the
 /// engine; providers receive it by reference so the shared env map is
@@ -179,6 +189,11 @@ impl ProviderCtx {
         }
         hasher.finish()
     }
+
+    /// Return an environment value captured for this completion request.
+    pub fn env(&self, name: &str) -> Option<&str> {
+        self.env.get(name).map(String::as_str)
+    }
 }
 
 /// Async source of `Suggestion`s driven by a `{"type": "<name>"}`
@@ -233,9 +248,42 @@ pub enum ProviderKind {
     /// manifest has no `[workspace]` table — keeps `cargo run -p
     /// <NAME>` completing in single-package crates.
     CargoWorkspaceMembers,
+    /// Target names from `cargo metadata --format-version 1 --no-deps`,
+    /// filtered by `ctx.params["kind"]` (`bin`, `example`, `test`,
+    /// `bench`, or `lib`).
+    CargoTargets,
+    /// Feature names from the active package in `cargo metadata
+    /// --format-version 1 --no-deps`.
+    CargoFeatures,
     /// `defaults domains`, splitting the single-line comma-separated
     /// output into individual macOS preference domain identifiers.
     DefaultsDomains,
+    /// Docker image references from `docker images --format '{{json .}}'`.
+    DockerImages,
+    /// Docker containers from `docker ps -a --format '{{json .}}'`.
+    DockerContainers,
+    /// Running Docker containers from `docker ps --filter status=running`.
+    DockerRunningContainers,
+    /// Docker networks from `docker network ls`.
+    DockerNetworks,
+    /// Docker volumes from `docker volume ls`.
+    DockerVolumes,
+    /// macOS directory-service user principals from `dscl . list /Users`.
+    DsclUsers,
+    /// macOS directory-service group principals from `dscl . list /Groups`.
+    DsclGroups,
+    /// Kubernetes resource type names from `kubectl api-resources`.
+    K8sResources,
+    /// Kubernetes pod names from `kubectl get pods -o json`.
+    K8sPods,
+    /// Kubernetes namespace names from `kubectl get namespaces -o json`.
+    K8sNamespaces,
+    /// Kubernetes contexts from `kubectl config get-contexts -o name`.
+    K8sContexts,
+    /// Kubernetes node names from `kubectl get nodes -o json`.
+    K8sNodes,
+    /// Kubernetes service names from `kubectl get services -o json`.
+    K8sServices,
     /// Targets parsed from the nearest ancestor
     /// `GNUmakefile`/`makefile`/`Makefile`. Hand-parsed (no `make -qp`
     /// shellout). Filters meta targets, pattern rules, and
@@ -255,6 +303,14 @@ pub enum ProviderKind {
     /// 120 characters. Does not honour `package.json#fig.scripts`
     /// overrides — that's a v2 concern.
     NpmScripts,
+    /// Keys of `package.json#dependencies` from the nearest ancestor
+    /// `package.json`.
+    NpmDependencies,
+    /// Keys of `package.json#devDependencies` from the nearest ancestor
+    /// `package.json`.
+    NpmDevDependencies,
+    /// Union of `package.json#dependencies` and `#devDependencies`.
+    NpmAllDependencies,
     /// Multipass instances excluding rows in the `Deleted` state.
     MultipassListNotDeleted,
     /// Multipass instances only in the `Deleted` state.
@@ -269,6 +325,26 @@ pub enum ProviderKind {
     /// `pandoc --list-output-formats`, emitting one format identifier
     /// per non-empty line.
     PandocOutputFormats,
+    /// tmux sessions from `tmux list-sessions`.
+    TmuxSessions,
+    /// tmux windows from `tmux list-windows`.
+    TmuxWindows,
+    /// tmux panes from `tmux list-panes`.
+    TmuxPanes,
+    /// tmux clients from `tmux list-clients`.
+    TmuxClients,
+    /// systemd units from `systemctl list-units`.
+    SystemdUnits,
+    /// user-scoped systemd units.
+    SystemdUserUnits,
+    /// active systemd units.
+    SystemdActiveUnits,
+    /// installed Homebrew formulae.
+    BrewFormulaeInstalled,
+    /// installed Homebrew casks.
+    BrewCasksInstalled,
+    /// searchable Homebrew formulae, capped for popup latency.
+    BrewFormulaeSearchable,
     /// Test-only provider that echoes `ProviderCtx::params` into
     /// suggestions so engine-boundary tests can prove per-resolution
     /// params reached dispatch.
@@ -289,7 +365,25 @@ impl ProviderKind {
         ProviderKind::ArduinoCliBoards,
         ProviderKind::ArduinoCliPorts,
         ProviderKind::CargoWorkspaceMembers,
+        ProviderKind::CargoFeatures,
+        ProviderKind::CargoTargets,
+        ProviderKind::BrewCasksInstalled,
+        ProviderKind::BrewFormulaeInstalled,
+        ProviderKind::BrewFormulaeSearchable,
         ProviderKind::DefaultsDomains,
+        ProviderKind::DockerContainers,
+        ProviderKind::DockerImages,
+        ProviderKind::DockerNetworks,
+        ProviderKind::DockerRunningContainers,
+        ProviderKind::DockerVolumes,
+        ProviderKind::DsclGroups,
+        ProviderKind::DsclUsers,
+        ProviderKind::K8sContexts,
+        ProviderKind::K8sNamespaces,
+        ProviderKind::K8sNodes,
+        ProviderKind::K8sPods,
+        ProviderKind::K8sResources,
+        ProviderKind::K8sServices,
         ProviderKind::MakefileTargets,
         ProviderKind::MambaEnvs,
         ProviderKind::MultipassList,
@@ -297,9 +391,19 @@ impl ProviderKind {
         ProviderKind::MultipassListDeleted,
         ProviderKind::MultipassListRunning,
         ProviderKind::MultipassListStopped,
+        ProviderKind::NpmAllDependencies,
+        ProviderKind::NpmDependencies,
+        ProviderKind::NpmDevDependencies,
         ProviderKind::NpmScripts,
         ProviderKind::PandocInputFormats,
         ProviderKind::PandocOutputFormats,
+        ProviderKind::SystemdActiveUnits,
+        ProviderKind::SystemdUnits,
+        ProviderKind::SystemdUserUnits,
+        ProviderKind::TmuxClients,
+        ProviderKind::TmuxPanes,
+        ProviderKind::TmuxSessions,
+        ProviderKind::TmuxWindows,
     ];
 
     /// The stable `"type"` string for this provider — the same string
@@ -314,7 +418,25 @@ impl ProviderKind {
             Self::ArduinoCliBoards => "arduino_cli_boards",
             Self::ArduinoCliPorts => "arduino_cli_ports",
             Self::CargoWorkspaceMembers => "cargo_workspace_members",
+            Self::CargoTargets => "cargo_targets",
+            Self::CargoFeatures => "cargo_features",
+            Self::BrewCasksInstalled => "brew_casks_installed",
+            Self::BrewFormulaeInstalled => "brew_formulae_installed",
+            Self::BrewFormulaeSearchable => "brew_formulae_searchable",
             Self::DefaultsDomains => "defaults_domains",
+            Self::DockerContainers => "docker_containers",
+            Self::DockerImages => "docker_images",
+            Self::DockerNetworks => "docker_networks",
+            Self::DockerRunningContainers => "docker_running_containers",
+            Self::DockerVolumes => "docker_volumes",
+            Self::DsclGroups => "dscl_groups",
+            Self::DsclUsers => "dscl_users",
+            Self::K8sContexts => "k8s_contexts",
+            Self::K8sNamespaces => "k8s_namespaces",
+            Self::K8sNodes => "k8s_nodes",
+            Self::K8sPods => "k8s_pods",
+            Self::K8sResources => "k8s_resources",
+            Self::K8sServices => "k8s_services",
             Self::MakefileTargets => "makefile_targets",
             Self::MambaEnvs => "mamba_envs",
             Self::MultipassList => "multipass_list",
@@ -322,9 +444,19 @@ impl ProviderKind {
             Self::MultipassListDeleted => "multipass_list_deleted",
             Self::MultipassListRunning => "multipass_list_running",
             Self::MultipassListStopped => "multipass_list_stopped",
+            Self::NpmAllDependencies => "npm_all_dependencies",
+            Self::NpmDependencies => "npm_dependencies",
+            Self::NpmDevDependencies => "npm_dev_dependencies",
             Self::NpmScripts => "npm_scripts",
             Self::PandocInputFormats => "pandoc_input_formats",
             Self::PandocOutputFormats => "pandoc_output_formats",
+            Self::SystemdActiveUnits => "systemd_active_units",
+            Self::SystemdUnits => "systemd_units",
+            Self::SystemdUserUnits => "systemd_user_units",
+            Self::TmuxClients => "tmux_clients",
+            Self::TmuxPanes => "tmux_panes",
+            Self::TmuxSessions => "tmux_sessions",
+            Self::TmuxWindows => "tmux_windows",
             #[cfg(test)]
             Self::TestEchoParams => "__test_echo_params",
         }
@@ -409,7 +541,27 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
                 .generate(ctx)
                 .await
         }
+        ProviderKind::CargoTargets => cargo_metadata::CargoTargets.generate(ctx).await,
+        ProviderKind::CargoFeatures => cargo_metadata::CargoFeatures.generate(ctx).await,
+        ProviderKind::BrewCasksInstalled => brew::BrewCasksInstalled.generate(ctx).await,
+        ProviderKind::BrewFormulaeInstalled => brew::BrewFormulaeInstalled.generate(ctx).await,
+        ProviderKind::BrewFormulaeSearchable => brew::BrewFormulaeSearchable.generate(ctx).await,
         ProviderKind::DefaultsDomains => macos_defaults::DefaultsDomains.generate(ctx).await,
+        ProviderKind::DockerContainers => docker::DockerContainers.generate(ctx).await,
+        ProviderKind::DockerImages => docker::DockerImages.generate(ctx).await,
+        ProviderKind::DockerNetworks => docker::DockerNetworks.generate(ctx).await,
+        ProviderKind::DockerRunningContainers => {
+            docker::DockerRunningContainers.generate(ctx).await
+        }
+        ProviderKind::DockerVolumes => docker::DockerVolumes.generate(ctx).await,
+        ProviderKind::DsclGroups => dscl_principals::DsclGroups.generate(ctx).await,
+        ProviderKind::DsclUsers => dscl_principals::DsclUsers.generate(ctx).await,
+        ProviderKind::K8sContexts => kubectl::K8sContexts.generate(ctx).await,
+        ProviderKind::K8sNamespaces => kubectl::K8sNamespaces.generate(ctx).await,
+        ProviderKind::K8sNodes => kubectl::K8sNodes.generate(ctx).await,
+        ProviderKind::K8sPods => kubectl::K8sPods.generate(ctx).await,
+        ProviderKind::K8sResources => kubectl::K8sResources.generate(ctx).await,
+        ProviderKind::K8sServices => kubectl::K8sServices.generate(ctx).await,
         ProviderKind::MakefileTargets => {
             local_project::makefile::MakefileTargets.generate(ctx).await
         }
@@ -435,9 +587,19 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
                 .generate_with_filter(ctx, multipass::MultipassInstanceFilter::Stopped)
                 .await
         }
+        ProviderKind::NpmAllDependencies => npm_local::NpmAllDependencies.generate(ctx).await,
+        ProviderKind::NpmDependencies => npm_local::NpmDependencies.generate(ctx).await,
+        ProviderKind::NpmDevDependencies => npm_local::NpmDevDependencies.generate(ctx).await,
         ProviderKind::NpmScripts => local_project::npm_scripts::NpmScripts.generate(ctx).await,
         ProviderKind::PandocInputFormats => pandoc::PandocInputFormats.generate(ctx).await,
         ProviderKind::PandocOutputFormats => pandoc::PandocOutputFormats.generate(ctx).await,
+        ProviderKind::SystemdActiveUnits => systemd_units::SystemdActiveUnits.generate(ctx).await,
+        ProviderKind::SystemdUnits => systemd_units::SystemdUnits.generate(ctx).await,
+        ProviderKind::SystemdUserUnits => systemd_units::SystemdUserUnits.generate(ctx).await,
+        ProviderKind::TmuxClients => tmux_state::TmuxClients.generate(ctx).await,
+        ProviderKind::TmuxPanes => tmux_state::TmuxPanes.generate(ctx).await,
+        ProviderKind::TmuxSessions => tmux_state::TmuxSessions.generate(ctx).await,
+        ProviderKind::TmuxWindows => tmux_state::TmuxWindows.generate(ctx).await,
         #[cfg(test)]
         ProviderKind::TestEchoParams => Ok(ctx
             .params
@@ -489,8 +651,77 @@ mod tests {
             Some(ProviderKind::CargoWorkspaceMembers)
         );
         assert_eq!(
+            kind_from_type_str("cargo_targets"),
+            Some(ProviderKind::CargoTargets)
+        );
+        assert_eq!(
+            kind_from_type_str("cargo_features"),
+            Some(ProviderKind::CargoFeatures)
+        );
+        assert_eq!(
+            kind_from_type_str("brew_casks_installed"),
+            Some(ProviderKind::BrewCasksInstalled)
+        );
+        assert_eq!(
+            kind_from_type_str("brew_formulae_installed"),
+            Some(ProviderKind::BrewFormulaeInstalled)
+        );
+        assert_eq!(
+            kind_from_type_str("brew_formulae_searchable"),
+            Some(ProviderKind::BrewFormulaeSearchable)
+        );
+        assert_eq!(
             kind_from_type_str("defaults_domains"),
             Some(ProviderKind::DefaultsDomains)
+        );
+        assert_eq!(
+            kind_from_type_str("docker_containers"),
+            Some(ProviderKind::DockerContainers)
+        );
+        assert_eq!(
+            kind_from_type_str("docker_images"),
+            Some(ProviderKind::DockerImages)
+        );
+        assert_eq!(
+            kind_from_type_str("docker_networks"),
+            Some(ProviderKind::DockerNetworks)
+        );
+        assert_eq!(
+            kind_from_type_str("docker_running_containers"),
+            Some(ProviderKind::DockerRunningContainers)
+        );
+        assert_eq!(
+            kind_from_type_str("docker_volumes"),
+            Some(ProviderKind::DockerVolumes)
+        );
+        assert_eq!(
+            kind_from_type_str("dscl_groups"),
+            Some(ProviderKind::DsclGroups)
+        );
+        assert_eq!(
+            kind_from_type_str("dscl_users"),
+            Some(ProviderKind::DsclUsers)
+        );
+        assert_eq!(
+            kind_from_type_str("k8s_contexts"),
+            Some(ProviderKind::K8sContexts)
+        );
+        assert_eq!(
+            kind_from_type_str("k8s_namespaces"),
+            Some(ProviderKind::K8sNamespaces)
+        );
+        assert_eq!(
+            kind_from_type_str("k8s_nodes"),
+            Some(ProviderKind::K8sNodes)
+        );
+        assert_eq!(kind_from_type_str("k8s_pods"), Some(ProviderKind::K8sPods));
+        assert_eq!(
+            kind_from_type_str("k8s_resources"),
+            Some(ProviderKind::K8sResources)
+        );
+        assert_eq!(
+            kind_from_type_str("k8s_services"),
+            Some(ProviderKind::K8sServices)
         );
         assert_eq!(
             kind_from_type_str("makefile_targets"),
@@ -525,12 +756,52 @@ mod tests {
             Some(ProviderKind::MultipassListStopped)
         );
         assert_eq!(
+            kind_from_type_str("npm_all_dependencies"),
+            Some(ProviderKind::NpmAllDependencies)
+        );
+        assert_eq!(
+            kind_from_type_str("npm_dependencies"),
+            Some(ProviderKind::NpmDependencies)
+        );
+        assert_eq!(
+            kind_from_type_str("npm_dev_dependencies"),
+            Some(ProviderKind::NpmDevDependencies)
+        );
+        assert_eq!(
             kind_from_type_str("pandoc_input_formats"),
             Some(ProviderKind::PandocInputFormats)
         );
         assert_eq!(
             kind_from_type_str("pandoc_output_formats"),
             Some(ProviderKind::PandocOutputFormats)
+        );
+        assert_eq!(
+            kind_from_type_str("systemd_active_units"),
+            Some(ProviderKind::SystemdActiveUnits)
+        );
+        assert_eq!(
+            kind_from_type_str("systemd_units"),
+            Some(ProviderKind::SystemdUnits)
+        );
+        assert_eq!(
+            kind_from_type_str("systemd_user_units"),
+            Some(ProviderKind::SystemdUserUnits)
+        );
+        assert_eq!(
+            kind_from_type_str("tmux_clients"),
+            Some(ProviderKind::TmuxClients)
+        );
+        assert_eq!(
+            kind_from_type_str("tmux_panes"),
+            Some(ProviderKind::TmuxPanes)
+        );
+        assert_eq!(
+            kind_from_type_str("tmux_sessions"),
+            Some(ProviderKind::TmuxSessions)
+        );
+        assert_eq!(
+            kind_from_type_str("tmux_windows"),
+            Some(ProviderKind::TmuxWindows)
         );
     }
 
@@ -632,6 +903,22 @@ mod tests {
             Ok(_) => panic!("relative cwd should be rejected"),
             Err(CtxError::RelativeCwd(p)) => assert_eq!(p, PathBuf::from("relative/dir")),
         }
+    }
+
+    #[test]
+    fn test_provider_ctx_env_returns_string_slice() {
+        let ctx = ProviderCtx {
+            cwd: PathBuf::from("/tmp"),
+            env: Arc::new(HashMap::from([(
+                "KUBECONFIG".to_string(),
+                "/tmp/kubeconfig".to_string(),
+            )])),
+            current_token: String::new(),
+            params: Arc::new(BTreeMap::new()),
+        };
+
+        assert_eq!(ctx.env("KUBECONFIG"), Some("/tmp/kubeconfig"));
+        assert_eq!(ctx.env("MISSING"), None);
     }
 
     #[tokio::test]

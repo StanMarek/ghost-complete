@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Binary-size CI gate now records `size.txt` as a workflow artifact and
   honours a `binary-size-allow-delta` PR label that lifts the per-PR
   delta budget from 2 MB to 5 MB.
+- Native completion migration - Phase 5 (ux-14): native tool providers for
+  Cargo, npm, Docker/Podman, kubectl, tmux, systemd, Homebrew, and macOS
+  directory-service principals. The scoped regenerated corpus now reports 621
+  native Rust generators, `status --json` exposes per-provider counts under
+  `counters.native_provider_counts`, and the schema is bumped to 1.10.
 
 ### Changed
 

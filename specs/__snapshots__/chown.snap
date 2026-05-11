@@ -3,12 +3,10 @@
     {
       "generators": [
         {
-          "js_runtime": {
-            "kind": "custom",
-            "self_contained": true,
-            "source": "async function(n,r){let i=n.find(e=>e.includes(\":\")),o=n.find(e=>/^-.*n.*/.test(e)),s;if(i){let{stdout:e}=await r({command:\"bash\",args:[\"-c\",\"dscl . -list /Groups PrimaryGroupID | tr -s ' '| sort -r\"]});s=e}else{let{stdout:e}=await r({command:\"bash\",args:[\"-c\",\"dscl . -list /Users UniqueID | tr -s ' '| sort -r\"]});s=e}return s.split(`\n`).map(e=>e.split(\" \")).map(e=>({name:o?e[1]:e[0],description:i?`Group - ${o?e[0]:`gid: ${e[1]}`}`:`User - ${o?e[0]:`uid: ${e[1]}`}`,icon:i?\"\\u{1F465}\":\"\\u{1F464}\",priority:90}))}"
-          },
-          "requires_js": true
+          "type": "dscl_users"
+        },
+        {
+          "type": "dscl_groups"
         }
       ],
       "name": "owner[:group] or :group"

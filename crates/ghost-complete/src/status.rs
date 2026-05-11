@@ -1077,7 +1077,9 @@ fn run_status_inner_with_trend(
 /// 1.9 — adds top-level
 ///       `requires_js_generators_static_extracted`, mirroring
 ///       `counters.static_extracted_subprocess` for ux-11.
-const STATUS_SCHEMA_VERSION: &str = "1.9";
+/// 1.10 — adds `counters.native_provider_counts`, a per-provider
+///        breakdown of native provider generator occurrences for ux-14.
+const STATUS_SCHEMA_VERSION: &str = "1.10";
 
 /// The shape emitted by `ghost-complete status --json`. Defining this as a
 /// `#[derive(Serialize)]` struct rather than inline `json!` macros fails
@@ -1531,6 +1533,54 @@ mod tests {
             counters["requires_js_unsupported"].as_u64().unwrap(),
             unsupported
         );
+    }
+
+    #[test]
+    fn status_json_reports_native_provider_counts() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        std::fs::write(
+            spec_dir.join("native-counts.json"),
+            r#"{
+                "name": "native-counts",
+                "args": [{
+                    "name": "target",
+                    "generators": [
+                        {"type": "npm_scripts"},
+                        {"type": "ansible_doc_modules"},
+                        {"type": "git_branches"}
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        let parsed: serde_json::Value = serde_json::from_slice(&out).unwrap();
+
+        assert_eq!(parsed["schema_version"], "1.10");
+        assert_eq!(
+            parsed["counters"]["native_provider_dispatched"]
+                .as_u64()
+                .unwrap(),
+            2
+        );
+        assert_eq!(
+            parsed["counters"]["native_provider_counts"]["npm_scripts"]
+                .as_u64()
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            parsed["counters"]["native_provider_counts"]["ansible_doc_modules"]
+                .as_u64()
+                .unwrap(),
+            1
+        );
+        assert!(parsed["counters"]["native_provider_counts"]["git_branches"].is_null());
     }
 
     fn render_specs_status_for_test(
@@ -2359,7 +2409,7 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.9");
+        assert_eq!(parsed["schema_version"], "1.10");
         assert!(
             parsed["spec_counts"].is_object(),
             "spec_counts must be an object"
@@ -2554,7 +2604,7 @@ mod tests {
 
         // Current schema surfaces every command and generator counter as
         // a numeric value.
-        assert_eq!(parsed["schema_version"], "1.9");
+        assert_eq!(parsed["schema_version"], "1.10");
         let counts = &parsed["spec_counts"];
         assert_eq!(
             counts["commands_addressable"].as_u64().unwrap(),
@@ -2668,7 +2718,7 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.9");
+        assert_eq!(parsed["schema_version"], "1.10");
         let counters = &parsed["counters"];
         assert!(counters.is_object(), "counters must be a top-level object");
 
@@ -2755,7 +2805,7 @@ mod tests {
         let parsed: serde_json::Value =
             serde_json::from_str(&String::from_utf8_lossy(&out)).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.9");
+        assert_eq!(parsed["schema_version"], "1.10");
         assert!(parsed["requires_js_generators_lowered_to_transforms"].is_number());
         assert_eq!(
             parsed["requires_js_generators_lowered_to_transforms"]
@@ -2805,7 +2855,7 @@ mod tests {
         let parsed: serde_json::Value =
             serde_json::from_str(&String::from_utf8_lossy(&out)).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.9");
+        assert_eq!(parsed["schema_version"], "1.10");
         assert_eq!(
             parsed["requires_js_generators_static_extracted"]
                 .as_u64()
@@ -3387,7 +3437,7 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.9");
+        assert_eq!(parsed["schema_version"], "1.10");
         let details = parsed["spec_counts"]["command_alias_conflict_details"]
             .as_array()
             .expect("command_alias_conflict_details must be an array");

@@ -78,6 +78,43 @@ A subset of providers do not shell out at all — they parse a project file in t
 | `npm_scripts` | `package.json` | `bash -c "until [[ -f package.json ]]..."` script with a JS post-processor that projects `scripts` keys |
 | `cargo_workspace_members` | `Cargo.toml` (nearest ancestor with `[workspace]`, falls back to nearest `Cargo.toml` for single-package crates) | `cargo metadata --format-version 1 --no-deps` invocation that JSON-parses to extract `packages[].name` |
 
+### ux-14 tool providers
+
+Phase 5 adds typed providers for CLI state that was previously fetched through
+Fig JS generators. The scoped regenerated corpus now contains 621 native Rust
+generator entries, including 448 dispatched through the provider registry.
+
+| Type string | Provider file | Source | Notes |
+|---|---|---|---|
+| `cargo_targets` | `cargo_metadata.rs` | `cargo metadata --format-version 1 --no-deps` | Reads `params.kind` (`bin`, `example`, `test`, `bench`, `lib`). |
+| `cargo_features` | `cargo_metadata.rs` | `cargo metadata --format-version 1 --no-deps` | Features for the active package. |
+| `npm_dependencies` | `npm_local.rs` | nearest `package.json` | Keys of `dependencies`. |
+| `npm_dev_dependencies` | `npm_local.rs` | nearest `package.json` | Keys of `devDependencies`. |
+| `npm_all_dependencies` | `npm_local.rs` | nearest `package.json` | Union of dependency fields used by npm remove flows. |
+| `docker_images` | `docker.rs` | `docker images --format '{{json .}}'` | Supports `params.binary = "podman"`. |
+| `docker_containers` | `docker.rs` | `docker ps --all --format '{{json .}}'` | Supports Docker and Podman specs. |
+| `docker_running_containers` | `docker.rs` | `docker ps --filter status=running --format '{{json .}}'` | Used by stop/kill-style flows. |
+| `docker_networks` | `docker.rs` | `docker network ls --format '{{json .}}'` | Network names and IDs. |
+| `docker_volumes` | `docker.rs` | `docker volume ls --format '{{json .}}'` | Volume names. |
+| `k8s_resources` | `kubectl.rs` | `kubectl api-resources` | JSON/name output with legacy text fallback. |
+| `k8s_contexts` | `kubectl.rs` | `kubectl config get-contexts -o name` | Honors `KUBECONFIG`. |
+| `k8s_pods` | `kubectl.rs` | `kubectl get pods -o json` | Cluster state with short TTL. |
+| `k8s_namespaces` | `kubectl.rs` | `kubectl get namespaces -o json` | Namespace names. |
+| `k8s_nodes` | `kubectl.rs` | `kubectl get nodes -o json` | Node names. |
+| `k8s_services` | `kubectl.rs` | `kubectl get services -o json` | Service names. |
+| `tmux_sessions` | `tmux_state.rs` | `tmux list-sessions -F ...` | Skips when `TMUX` is unset. |
+| `tmux_windows` | `tmux_state.rs` | `tmux list-windows -a -F ...` | Session/window targets. |
+| `tmux_panes` | `tmux_state.rs` | `tmux list-panes -a -F ...` | Pane targets. |
+| `tmux_clients` | `tmux_state.rs` | `tmux list-clients -F ...` | Client targets. |
+| `systemd_units` | `systemd_units.rs` | `systemctl list-units -o json --all --full` | Falls back to text on old systemd. |
+| `systemd_user_units` | `systemd_units.rs` | `systemctl list-units ... --user` | User unit scope. |
+| `systemd_active_units` | `systemd_units.rs` | `systemctl list-units ...` | Filters active units. |
+| `brew_formulae_installed` | `brew.rs` | `brew list --formula` | Installed formulae. |
+| `brew_casks_installed` | `brew.rs` | `brew list --cask` | Installed casks. |
+| `brew_formulae_searchable` | `brew.rs` | `brew search` | Searchable formulae, capped in provider code. |
+| `dscl_users` | `dscl_principals.rs` | `dscl . list /Users` | Filters system users unless opted in. |
+| `dscl_groups` | `dscl_principals.rs` | `dscl . list /Groups` | Filters system groups unless opted in. |
+
 ### When to add a new local-project provider
 
 The pattern is a fit when:

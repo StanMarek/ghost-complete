@@ -605,18 +605,7 @@
             "description": "Image to import",
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "docker",
-                  "image",
-                  "ls",
-                  "--format",
-                  "{{.Repository}}:{{.Tag}}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty"
-                ]
+                "type": "docker_images"
               }
             ],
             "name": "image"

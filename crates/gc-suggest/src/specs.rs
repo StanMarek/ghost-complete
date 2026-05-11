@@ -1699,6 +1699,15 @@ fn accumulate_counters_from_generators(
         if gen.static_extracted_subprocess {
             counters.static_extracted_subprocess += 1;
         }
+        if let Some(gen_type) = gen.generator_type.as_deref() {
+            if providers::kind_from_type_str(gen_type).is_some() {
+                counters.native_provider_dispatched += 1;
+                *counters
+                    .native_provider_counts
+                    .entry(gen_type.to_string())
+                    .or_insert(0) += 1;
+            }
+        }
         if !gen.requires_js {
             continue;
         }
@@ -2228,9 +2237,10 @@ pub struct SpecResolutionCounters {
     /// Generators dispatched through a typed AWS SDK call. Reserved for
     /// the AWS-SDK migration; stays at zero today.
     pub aws_sdk_dispatched: usize,
-    /// Generators dispatched through a native tool provider. Reserved
-    /// for the native-tool-provider migration; stays at zero today.
+    /// Generators dispatched through a native tool provider.
     pub native_provider_dispatched: usize,
+    /// Native provider generators grouped by provider type string.
+    pub native_provider_counts: BTreeMap<String, usize>,
 }
 
 pub struct SpecResolution {
@@ -3736,10 +3746,12 @@ mod tests {
         // intentionally leaves subprocess/network/host-API shapes without
         // runtime metadata so they remain skipped instead of being
         // mis-promoted to TokenOnly. ux-10b lowers many previous
-        // postProcess generators to native transforms, so they are tracked
-        // separately from the remaining requires_js runtime population.
-        const MIN_REQUIRES_JS_WITH_RUNTIME: usize = 2_450;
-        const MIN_LOWERED_TO_TRANSFORMS: usize = 1_400;
+        // postProcess generators to native transforms, and ux-14 replaces
+        // selected JS-backed tool completions with native providers, so both
+        // are tracked separately from the remaining requires_js runtime
+        // population.
+        const MIN_REQUIRES_JS_WITH_RUNTIME: usize = 2_380;
+        const MIN_LOWERED_TO_TRANSFORMS: usize = 1_360;
         const EXPECTED_UNSUPPORTED_WITHOUT_RUNTIME: usize = 295;
 
         fn count(v: &serde_json::Value) -> (usize, usize, usize, usize) {
@@ -4506,24 +4518,8 @@ mod tests {
         // and silently produce zero completions — no user-visible
         // error, just a broken provider. This test is the regression
         // guard for that class of drop.
-        let provider_types: &[&str] = &[
-            "ansible_doc_modules",
-            "arduino_cli_boards",
-            "arduino_cli_ports",
-            "cargo_workspace_members",
-            "defaults_domains",
-            "makefile_targets",
-            "mamba_envs",
-            "multipass_list",
-            "multipass_list_not_deleted",
-            "multipass_list_deleted",
-            "multipass_list_running",
-            "multipass_list_stopped",
-            "npm_scripts",
-            "pandoc_input_formats",
-            "pandoc_output_formats",
-        ];
-        for type_str in provider_types {
+        for kind in providers::ProviderKind::ALL {
+            let type_str = kind.type_str();
             let spec_json = format!(
                 r#"{{
                     "name": "test-provider-{type_str}",
@@ -4621,6 +4617,35 @@ mod tests {
             ("script_kind".to_string(), "build".to_string()),
         ]);
         assert_eq!(res.provider_generators[0].params.as_ref(), &expected);
+    }
+
+    #[test]
+    fn test_counters_count_native_provider_generators_by_type() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "test-native-provider-counters",
+                "args": [{
+                    "name": "target",
+                    "generators": [
+                        {"type": "npm_scripts"},
+                        {"type": "cargo_targets", "params": {"kind": "bin"}},
+                        {"type": "git_branches"}
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let mut counters = SpecResolutionCounters::default();
+
+        accumulate_counters_from_spec(&spec, &mut counters);
+
+        assert_eq!(counters.native_provider_dispatched, 2);
+        assert_eq!(counters.native_provider_counts.get("npm_scripts"), Some(&1));
+        assert_eq!(
+            counters.native_provider_counts.get("cargo_targets"),
+            Some(&1)
+        );
+        assert_eq!(counters.native_provider_counts.get("git_branches"), None);
     }
 
     #[test]
@@ -6241,7 +6266,7 @@ mod tests {
         let conflicts = store.conflicts();
         assert_eq!(
             conflicts.len(),
-            6,
+            7,
             "embedded corpus alias conflicts changed: {conflicts:?}"
         );
         let seen: std::collections::BTreeSet<_> = conflicts
@@ -6262,6 +6287,7 @@ mod tests {
         let expected = std::collections::BTreeSet::from([
             ("autojump", "j", "name_matches_other_stem"),
             ("broot", "br", "name_matches_other_stem"),
+            ("git", "hub", "name_matches_other_stem"),
             ("kubectl", "kubecolor", "name_matches_other_stem"),
             ("ns", "nativescript", "name_matches_other_stem"),
             ("ns", "tns", "name_matches_other_stem"),
