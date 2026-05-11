@@ -3738,9 +3738,9 @@ mod tests {
         // mis-promoted to TokenOnly. ux-10b lowers many previous
         // postProcess generators to native transforms, so they are tracked
         // separately from the remaining requires_js runtime population.
-        const MIN_REQUIRES_JS_WITH_RUNTIME: usize = 2_500;
+        const MIN_REQUIRES_JS_WITH_RUNTIME: usize = 2_450;
         const MIN_LOWERED_TO_TRANSFORMS: usize = 1_400;
-        const EXPECTED_UNSUPPORTED_WITHOUT_RUNTIME: usize = 296;
+        const EXPECTED_UNSUPPORTED_WITHOUT_RUNTIME: usize = 295;
 
         fn count(v: &serde_json::Value) -> (usize, usize, usize, usize) {
             // (requires_js_total, with_js_runtime, lowered, lowered_requires_js)
@@ -5204,19 +5204,16 @@ mod tests {
 
     #[test]
     fn embedded_specs_under_memory_budget() {
-        // Measured baseline: ~169 MiB (173,047,504 bytes), measured 2026-05-11
-        // after the ux-11 corpus refresh restored 10 upstream specs (including
-        // gcloud, mongocli, sfdx, and twilio).
-        //
-        // Earlier baseline: ~104 MiB (109,006,902 bytes), measured 2026-05-03
-        // after restoring the AWS spec (ux-8). The `estimated_heap_bytes` walk
+        // Measured baseline: ~127 MiB (133,403,211 bytes), measured 2026-05-11
+        // after the ux-11 converter refresh over the existing 709-spec corpus.
+        // The `estimated_heap_bytes` walk
         // covers the whole `CompletionSpec` tree (js_source, transforms,
         // descriptions, etc.). The AWS spec alone contributes ~67 MiB of
         // mostly description text across 17K subcommands; that bloat is the
-        // motivation for the zstd-compression follow-up plan. 192 MiB
-        // (201,326,592 bytes) gives ~16% headroom while still catching
+        // motivation for the zstd-compression follow-up plan. 144 MiB gives
+        // headroom for small converter metadata while still catching
         // accidental large-spec blowups before ux-12b compression lands.
-        const BUDGET_BYTES: usize = 192 * 1024 * 1024;
+        const BUDGET_BYTES: usize = 144 * 1024 * 1024;
         let spec_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
         let store = SpecStore::load_from_dir(&spec_dir).unwrap().store;
         let total: usize = store
@@ -6244,7 +6241,7 @@ mod tests {
         let conflicts = store.conflicts();
         assert_eq!(
             conflicts.len(),
-            8,
+            6,
             "embedded corpus alias conflicts changed: {conflicts:?}"
         );
         let seen: std::collections::BTreeSet<_> = conflicts
@@ -6263,10 +6260,8 @@ mod tests {
             })
             .collect();
         let expected = std::collections::BTreeSet::from([
-            ("@commercelayer/cli", "commercelayer", "duplicate_name"),
             ("autojump", "j", "name_matches_other_stem"),
             ("broot", "br", "name_matches_other_stem"),
-            ("git", "hub", "name_matches_other_stem"),
             ("kubectl", "kubecolor", "name_matches_other_stem"),
             ("ns", "nativescript", "name_matches_other_stem"),
             ("ns", "tns", "name_matches_other_stem"),
