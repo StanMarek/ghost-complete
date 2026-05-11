@@ -724,8 +724,8 @@ struct JsClassCounts {
 /// - `total` increments for every `requires_js: true` occurrence.
 /// - `supported` increments when the generator carries supportable
 ///   `js_runtime` metadata. The class-specific fields
-///   (`post_process` / `script_function` / `custom`) are mutually exclusive
-///   counters that sum to `supported`.
+///   (`post_process` / `script_function` / `custom` / `token_only`) are
+///   mutually exclusive counters that sum to `supported`.
 ///
 /// This is the doctor/status-side mirror of the runtime classification in
 /// `gc_suggest::specs::collect_generators` — keeping them in sync is a
@@ -2579,11 +2579,14 @@ mod tests {
         );
     }
 
-    /// Schema 1.6 adds a top-level `counters` block carrying
-    /// [`gc_suggest::SpecResolutionCounters`]. Pin the eight expected
-    /// fields and the populated-vs-zero contract: the first three fields
-    /// match the structured walk over the SpecStore; the five
-    /// migration-future fields stay at zero until ux-10..14 land.
+    /// Top-level `counters` block carries [`gc_suggest::SpecResolutionCounters`].
+    /// Pin the eight expected fields and the populated-vs-zero contract:
+    /// the first three fields (total / supported / unsupported) match the
+    /// structured walk over the SpecStore; `token_only_promoted` is
+    /// populated today; the remaining four migration-future fields
+    /// (`lowered_to_transforms`, `static_extracted_subprocess`,
+    /// `aws_sdk_dispatched`, `native_provider_dispatched`) stay at zero
+    /// until the matching converter migrations land.
     #[test]
     fn status_json_includes_counters_block() {
         let tmp = tempfile::TempDir::new().unwrap();
