@@ -273,7 +273,7 @@ function buildSelfContainedJsRuntime(kind, source) {
   const analysis = analyzeGenerator(source);
   if (analysis.parse_error) return null;
   // Free identifiers normally disqualify a body — they would throw
-  // ReferenceError in the sandbox. The runtime now installs pure-JS
+  // ReferenceError in the sandbox. The runtime installs pure-JS
   // definitions for Fig's minified helpers in every job (see
   // crates/gc-jsrt/src/helpers.js), so free refs whose names are
   // entirely covered by that preamble are safe to preserve.

@@ -649,9 +649,10 @@ async fn aws_iam_attach_role_policy_role_name_returns_role_suggestions() {
     assert_eq!(
         names,
         ["AdminRole", "ReadOnly"],
-        "`aws iam attach-role-policy --role-name <Tab>` body no longer \
-         produces role suggestions. The helper `l` preamble in \
-         gc-jsrt/src/helpers.js is the source of truth."
+        "`aws iam attach-role-policy --role-name <Tab>` body did not \
+         produce role suggestions — the helper preamble may have \
+         regressed. The helper `l` preamble in gc-jsrt/src/helpers.js \
+         is the source of truth."
     );
 }
 

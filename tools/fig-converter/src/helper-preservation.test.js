@@ -127,6 +127,13 @@ describe('known-helpers.json', () => {
       // Match `globalScope.<name> = ...` with any whitespace around `=`.
       // Name is a single lower-case letter per the schema test above, so
       // a literal substring check is sufficient and unambiguous.
+      //
+      // NOTE: this regex is coupled to the current `globalScope.<name> = ...`
+      // binding pattern in helpers.js. If that wrapper is refactored (e.g. to
+      // `Object.assign(globalScope, {...})` or a loop), update this regex; the
+      // 6 user-workflow goldens in crates/gc-suggest/tests/js_post_process_dispatch.rs
+      // validate the runtime behavior independently and will catch a true
+      // binding regression.
       const re = new RegExp(`\\bglobalScope\\.${name}\\s*=`);
       assert.match(
         helpersSrc,

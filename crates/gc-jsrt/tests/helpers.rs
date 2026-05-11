@@ -249,6 +249,38 @@ async fn helper_f_accepts_preparsed_document_object() {
     );
 }
 
+#[tokio::test]
+async fn helper_f_skips_role_with_malformed_document_and_keeps_going() {
+    // The `f` helper's defining defensive property: when one role's
+    // AssumeRolePolicyDocument fails to decode/parse (truncated percent
+    // escape, garbage payload, etc.), the helper `continue`s to the next
+    // role rather than aborting the whole filter. A regression that
+    // replaced `continue` with `return []` or a throw would silently
+    // strip ALL roles whenever a single malformed document appears in
+    // the response — exactly the kind of partial-data scenario that
+    // surfaces during eventual-consistency windows.
+    //
+    // Fixture: two roles. The first has a non-percent-encoded garbage
+    // string in AssumeRolePolicyDocument (decodes fine, then JSON.parse
+    // throws). The second has a well-formed eks trust policy. The
+    // helper must skip the first and surface the second.
+    let worker = JsWorker::spawn().expect("spawn worker");
+    let trust_doc_eks = r#"{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"eks.amazonaws.com"},"Action":"sts:AssumeRole"}]}"#;
+    let stdout = format!(
+        r#"{{"Roles":[{{"RoleName":"BrokenRole","AssumeRolePolicyDocument":"not%20json%20at%20all"}},{{"RoleName":"EksRole","AssumeRolePolicyDocument":"{}"}}]}}"#,
+        percent_encode(trust_doc_eks),
+    );
+    let body = r#"t=>f(t,"eks.amazonaws.com")"#;
+    let out = run(&worker, &post_process_program(body, &stdout)).await;
+    let names: Vec<_> = out.suggestions().iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(
+        names,
+        ["EksRole"],
+        "f must skip the role with the malformed AssumeRolePolicyDocument and continue to the next role, not abort the whole filter; diagnostics: {:?}",
+        out.diagnostics
+    );
+}
+
 // --- listExtract: defensive null / coercion paths -------------------------
 
 #[tokio::test]

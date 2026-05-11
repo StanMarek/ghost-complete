@@ -10,18 +10,23 @@
 //
 // Helpers are pure — no host APIs (no executeShellCommand, no fetch,
 // no fig.*). They only use built-in JS: JSON.parse, decodeURIComponent,
-// Array methods, and property access. Behaviour derived empirically
-// from the call sites in specs/aws.json.
+// Array methods, and property access.
 //
 // Derivation: read off the bundle in
-// tools/fig-converter/node_modules/@withfig/autocomplete/build/aws/*.js.
-// Refresh helpers.js whenever the upstream bundle changes shape.
+// tools/fig-converter/node_modules/@withfig/autocomplete/build/aws/*.js
+// to recover the helper bodies; cross-checked against the call sites in
+// specs/aws.json to confirm shapes. Refresh helpers.js whenever the
+// upstream bundle changes shape.
 //
 // Shapes:
 //   l(stdout, "Field", "Sub")  -> [{name: String(row[Sub])}] for row in stdout.Field where row[Sub] != null
 //   l(stdout, "Field")          -> [{name: String(x)}] for x in stdout.Field where x != null
-//   p, c, d, h                  -> bound at install time to the same listExtract implementation as l
-//                                   (independent bindings; the bundler renames per sub-spec)
+//   p, c, d, h                  -> aliases for l. The upstream minifier
+//                                   picks a different letter per sub-spec,
+//                                   so we install all five names to one
+//                                   shared listExtract implementation; any
+//                                   AWS sub-spec that calls one of these
+//                                   resolves to the same body.
 //   f(stdout, "principalDomain")
 //      filters Roles whose AssumeRolePolicyDocument permits the given
 //      Principal.Service. Used by `aws iam list-roles` bodies.
