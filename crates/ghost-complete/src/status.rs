@@ -810,15 +810,7 @@ fn supported_kind(map: &serde_json::Map<String, serde_json::Value>) -> Option<Su
 
     match kind {
         "post_process" => {
-            let has_script = map
-                .get("script")
-                .map(|v| v.is_array() || v.is_string())
-                .unwrap_or(false);
-            let has_template = map
-                .get("script_template")
-                .map(|v| v.is_array() || v.is_string())
-                .unwrap_or(false);
-            if (has_script || has_template) && source_non_empty {
+            if has_non_empty_raw_script_or_template(map) && source_non_empty {
                 Some(SupportedKind::PostProcess)
             } else {
                 None
@@ -830,6 +822,17 @@ fn supported_kind(map: &serde_json::Map<String, serde_json::Value>) -> Option<Su
         "custom" if source_non_empty && self_contained_true => Some(SupportedKind::Custom),
         _ => None,
     }
+}
+
+fn has_non_empty_raw_script_or_template(map: &serde_json::Map<String, serde_json::Value>) -> bool {
+    ["script", "script_template"]
+        .into_iter()
+        .filter_map(|key| map.get(key))
+        .any(|value| match value {
+            serde_json::Value::Array(parts) => !parts.is_empty(),
+            serde_json::Value::String(script) => !script.trim().is_empty(),
+            _ => false,
+        })
 }
 
 /// Inner implementation that writes its report to `out` instead of stdout,
@@ -3247,6 +3250,61 @@ mod tests {
         assert_eq!(by["post_process"].as_u64().unwrap(), 1);
         assert_eq!(by["script_function"].as_u64().unwrap(), 1);
         assert_eq!(by["custom"].as_u64().unwrap(), 1);
+    }
+
+    #[test]
+    fn status_json_counts_empty_post_process_argv_as_unsupported() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        std::fs::write(
+            spec_dir.join("empty-script.json"),
+            r#"{"name":"empty-script","args":[{"name":"x","generators":[{
+                "script": [],
+                "requires_js": true,
+                "js_runtime": {"kind":"post_process","source":"out => out.split('\n')"}
+            }]}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            spec_dir.join("empty-template.json"),
+            r#"{"name":"empty-template","args":[{"name":"x","generators":[{
+                "script_template": [],
+                "requires_js": true,
+                "js_runtime": {"kind":"post_process","source":"out => out.split('\n')"}
+            }]}]}"#,
+        )
+        .unwrap();
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        let parsed: serde_json::Value =
+            serde_json::from_str(&String::from_utf8_lossy(&out)).unwrap();
+
+        let counts = &parsed["spec_counts"];
+        assert_eq!(counts["requires_js_generators_total"].as_u64().unwrap(), 2);
+        assert_eq!(
+            counts["requires_js_generators_supported"].as_u64().unwrap(),
+            0
+        );
+        assert_eq!(
+            counts["requires_js_generators_unsupported"]
+                .as_u64()
+                .unwrap(),
+            2
+        );
+        assert_eq!(
+            counts["requires_js_generators_supported_by_kind"]["post_process"]
+                .as_u64()
+                .unwrap(),
+            0
+        );
+
+        let counters = &parsed["counters"];
+        assert_eq!(counters["requires_js_total"].as_u64().unwrap(), 2);
+        assert_eq!(counters["requires_js_supported"].as_u64().unwrap(), 0);
+        assert_eq!(counters["requires_js_unsupported"].as_u64().unwrap(), 2);
     }
 
     /// Regression guard for code-1: the engine

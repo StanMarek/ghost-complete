@@ -18,7 +18,7 @@ Seven CI gates live in `.github/workflows/ci.yml`: binary size, snapshot diff, f
 
 1. **Recorded size artifact** — every CI run writes `size.txt` (single integer, bytes, with trailing newline — same format as [`benchmarks/binary-size-baseline.txt`](../benchmarks/binary-size-baseline.txt)) and uploads it as the `ghost-complete-size` workflow artifact. PR reviewers and the release author can download the artifact from the run summary page to see the exact byte count without re-running the job. The size is computed with `wc -c` rather than `du -b` because BSD `du` on `macos-latest` runners has no `-b` flag.
 2. **Absolute ceiling (110 MB)** — the binary must not exceed 110 MB. Raising it requires an explicit plan amendment. The ceiling moved from 30 MB to 110 MB in `ux-8` to admit the AWS completion spec; zstd-compressing embedded specs (a separate plan) is the principled reclaim path that should drop the binary back near the original ceiling.
-3. **Per-phase delta budget (default +2 MB, label override +5 MB)** — the binary must not have grown by more than the delta budget since the size recorded in [`benchmarks/binary-size-baseline.txt`](../benchmarks/binary-size-baseline.txt). The default budget is `PHASE_BUDGET` (`2MB`). On `pull_request` events, applying the **`binary-size-allow-delta`** label raises the budget to `LABEL_OVERRIDE_BUDGET` (`5MB`) for that PR only — the gate's "Pick delta budget" step inspects `github.event.pull_request.labels` and emits the override decision in the job log. Pushes to `master` always use the strict 2 MB budget (no PR labels to read). The label is the explicit acknowledgement that a PR is expected to grow the binary; without it, growth >2 MB fails the gate. Update the baseline file in the same PR (see "Baseline maintenance" below) once the change is justified — the override is for the merge, not for permanent tolerance. Create the label one-time via `gh label create binary-size-allow-delta --description "Raise binary-size delta budget from 2MB to 5MB for this PR" --color FBCA04`; the gate fails closed (strict 2 MB) if the label is missing.
+3. **Per-phase delta budget (default +2 MB, label override +5 MB)** — the binary must not have grown by more than the delta budget since the size recorded in [`benchmarks/binary-size-baseline.txt`](../benchmarks/binary-size-baseline.txt). The default budget is `PHASE_BUDGET` (`2MB`). On `pull_request` events, applying the **`binary-size-allow-delta`** label raises the budget to `LABEL_OVERRIDE_BUDGET` (`5MB`) for that PR only — the gate's "Pick delta budget" step inspects `github.event.pull_request.labels` and emits the override decision in the job log. Pushes to trunk branches (`master` or `main`) always use the strict 2 MB budget (no PR labels to read). The label is the explicit acknowledgement that a PR is expected to grow the binary; without it, growth >2 MB fails the gate. Update the baseline file in the same PR (see "Baseline maintenance" below) once the change is justified — the override is for the merge, not for permanent tolerance. Create the label one-time via `gh label create binary-size-allow-delta --description "Raise binary-size delta budget from 2MB to 5MB for this PR" --color FBCA04`; the gate fails closed (strict 2 MB) if the label is missing.
 
 **Stripping note.** The release profile sets `strip = "symbols"`. The size measurement in this gate reflects the stripped binary, and [`benchmarks/binary-size-baseline.txt`](../benchmarks/binary-size-baseline.txt) is captured from the same stripped build — baseline and live measurement use the same shape. Toggling `strip` off would invalidate the baseline.
 
@@ -106,7 +106,7 @@ cd tools/fig-converter && npm run oracle:changed
 **YAML keys:** `corpus-hash-gate`, `corpus-hash-gate-master`
 **Trigger:** the PR job runs after `check` on `pull_request` events and uses a path filter so the expensive converter steps only run when `tools/fig-converter/**` changes. The full-corpus job runs after `check` only on pushes to `master` or `main`; it is not a PR check.
 
-**Purpose:** verifies that deterministic fig-converter output is reproducible. The PR gate runs `check-corpus-hash.mjs` twice over a representative spec subset, then runs `src/determinism.test.js`. The trunk-push gate runs the same hash check across the full corpus. Both hash checks depend on the converter exiting non-zero for any per-spec conversion failure, so CI cannot accept two matching hashes from a partial or empty corpus.
+**Purpose:** verifies that deterministic fig-converter output is reproducible. The PR gate runs `check-corpus-hash.mjs` twice over a representative spec subset, then runs the fig-converter package test suite, including `src/determinism.test.js`. The trunk-push gate runs the same hash check across the full corpus. Both hash checks depend on the converter exiting non-zero for any per-spec conversion failure, so CI cannot accept two matching hashes from a partial or empty corpus.
 
 **Failure modes:**
 
@@ -121,7 +121,7 @@ cd tools/fig-converter && npm run oracle:changed
 ```bash
 node tools/fig-converter/scripts/check-corpus-hash.mjs --specs git,docker,kubectl,brew,cargo,make,npm,ls
 node tools/fig-converter/scripts/check-corpus-hash.mjs
-cd tools/fig-converter && node --test src/determinism.test.js
+cd tools/fig-converter && npm test
 ```
 
 ---
@@ -243,7 +243,7 @@ The 30 MB ceiling was set during the requires-js-specs initiative as the target 
 
 **"When should I apply the `binary-size-allow-delta` label?"**
 
-Only when a PR is *expected* to grow the binary by more than 2 MB and the growth is reviewed and justified — for example, restoring a previously-pruned spec, adding a new built-in provider with substantial static data, or opting into a new compile-time feature. The label raises the delta gate from 2 MB to 5 MB for that PR. The 110 MB absolute ceiling still applies; the label cannot override it. Pushes to master always use the strict 2 MB budget (no PR labels to read), so the label only affects the PR build that introduces the change. Update [`benchmarks/binary-size-baseline.txt`](../benchmarks/binary-size-baseline.txt) in the same PR — the override exists to admit a single justified jump, not to live with permanent slack.
+Only when a PR is *expected* to grow the binary by more than 2 MB and the growth is reviewed and justified — for example, restoring a previously-pruned spec, adding a new built-in provider with substantial static data, or opting into a new compile-time feature. The label raises the delta gate from 2 MB to 5 MB for that PR. The 110 MB absolute ceiling still applies; the label cannot override it. Pushes to trunk branches (`master` or `main`) always use the strict 2 MB budget (no PR labels to read), so the label only affects the PR build that introduces the change. Update [`benchmarks/binary-size-baseline.txt`](../benchmarks/binary-size-baseline.txt) in the same PR — the override exists to admit a single justified jump, not to live with permanent slack.
 
 **"Can I skip a gate on a specific PR?"**
 

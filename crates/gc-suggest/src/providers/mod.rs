@@ -78,9 +78,9 @@ pub struct ProviderCtx {
     /// be empty when the trigger fires on a space after a subcommand.
     pub current_token: String,
     /// Generator-spec parameters resolved from the spec's `params`
-    /// field. Empty for providers that do not consume them. Stable key
-    /// order via `BTreeMap` so cache keys via [`Self::params_hash`] are
-    /// deterministic across runs.
+    /// field. Empty for providers that do not consume them. `BTreeMap`
+    /// gives deterministic iteration order; [`Self::params_hash`] is
+    /// suitable only for in-process cache keys.
     ///
     /// Read by spec-driven providers (e.g. the planned `AwsSdk`
     /// provider in ux-13/14). Existing native providers ignore this
@@ -149,6 +149,18 @@ impl ProviderCtx {
             env,
             current_token,
             params: Arc::new(BTreeMap::new()),
+        }
+    }
+
+    /// Clone this context for a single provider resolution, replacing
+    /// only `params` with the map declared on that resolution's source
+    /// generator.
+    pub fn for_resolution(&self, resolution: &ProviderResolution) -> Self {
+        Self {
+            cwd: self.cwd.clone(),
+            env: Arc::clone(&self.env),
+            current_token: self.current_token.clone(),
+            params: Arc::clone(&resolution.params),
         }
     }
 
@@ -323,8 +335,8 @@ impl ProviderKind {
 ///
 /// `params` lives behind an `Arc<BTreeMap<...>>` so cloning the
 /// resolution is a refcount bump on the keystroke hot path. Stable
-/// `BTreeMap` iteration order is what makes
-/// [`ProviderCtx::params_hash`] usable as a cache key.
+/// `BTreeMap` iteration order gives deterministic hashing input;
+/// [`ProviderCtx::params_hash`] remains an in-process cache key only.
 #[derive(Debug, Clone)]
 pub struct ProviderResolution {
     pub kind: ProviderKind,
@@ -521,6 +533,52 @@ mod tests {
         assert!(ctx.env.is_empty());
         assert!(ctx.current_token.is_empty());
         assert!(ctx.params.is_empty());
+    }
+
+    #[test]
+    fn test_provider_ctx_for_resolution_overlays_each_params_map() {
+        let env = Arc::new(HashMap::from([(
+            "SHELL".to_string(),
+            "/bin/zsh".to_string(),
+        )]));
+        let base_params = Arc::new(BTreeMap::from([(
+            "base".to_string(),
+            "must-not-leak".to_string(),
+        )]));
+        let base = ProviderCtx {
+            cwd: PathBuf::from("/tmp/project"),
+            env: Arc::clone(&env),
+            current_token: "tar".to_string(),
+            params: base_params,
+        };
+        let first = ProviderResolution {
+            kind: ProviderKind::NpmScripts,
+            params: Arc::new(BTreeMap::from([(
+                "package_manager".to_string(),
+                "pnpm".to_string(),
+            )])),
+        };
+        let second = ProviderResolution {
+            kind: ProviderKind::CargoWorkspaceMembers,
+            params: Arc::new(BTreeMap::from([(
+                "workspace".to_string(),
+                "members".to_string(),
+            )])),
+        };
+
+        let first_ctx = base.for_resolution(&first);
+        let second_ctx = base.for_resolution(&second);
+
+        assert_eq!(first_ctx.cwd, base.cwd);
+        assert_eq!(second_ctx.cwd, base.cwd);
+        assert!(Arc::ptr_eq(&first_ctx.env, &env));
+        assert!(Arc::ptr_eq(&second_ctx.env, &env));
+        assert_eq!(first_ctx.current_token, "tar");
+        assert_eq!(second_ctx.current_token, "tar");
+        assert!(Arc::ptr_eq(&first_ctx.params, &first.params));
+        assert!(Arc::ptr_eq(&second_ctx.params, &second.params));
+        assert_eq!(first_ctx.params.as_ref(), first.params.as_ref());
+        assert_eq!(second_ctx.params.as_ref(), second.params.as_ref());
     }
 
     #[test]

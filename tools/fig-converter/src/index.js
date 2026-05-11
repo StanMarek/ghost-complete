@@ -31,7 +31,7 @@
  *   stderr. See §3 of docs/phase-minus-1-followups.md.
  */
 
-import { readdir, readFile, mkdir, writeFile } from 'node:fs/promises';
+import { readdir, readFile, mkdir, rm, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join, basename, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -660,7 +660,11 @@ function printSummary(totals, errors) {
   }
 }
 
-function exitOnConversionFailure(totals, errors) {
+async function removeCorpusHash(outputDir) {
+  await rm(join(outputDir, 'corpus-hash.txt'), { force: true });
+}
+
+async function exitOnConversionFailure(totals, errors, outputDir, dryRun) {
   if ((totals.failed ?? 0) === 0 && errors.length === 0) {
     return false;
   }
@@ -669,6 +673,9 @@ function exitOnConversionFailure(totals, errors) {
   console.error(
     `Conversion failed for ${failed} spec${failed === 1 ? '' : 's'}; refusing to write corpus hash.`
   );
+  if (outputDir && !dryRun) {
+    await removeCorpusHash(outputDir);
+  }
   process.exitCode = 1;
   return true;
 }
@@ -820,10 +827,10 @@ function runWorkerBatch({ batch, outputDir, dryRun, heapMb, deterministic }) {
 }
 
 /**
- * Compute the SHA-256 of every emitted spec under `outputDir`, hashing the
- * concatenation of file contents in sorted-relative-path order. Writes the
- * result as a single line of hex digest + newline to
- * `<outputDir>/corpus-hash.txt` and returns the digest.
+ * Compute the SHA-256 of every emitted spec under `outputDir`, hashing each
+ * normalized relative path and file length before its contents in
+ * sorted-relative-path order. Writes the result as a single line of hex
+ * digest + newline to `<outputDir>/corpus-hash.txt` and returns the digest.
  *
  * Sort is on the spec's POSIX-style relative path (e.g. `aws/s3.json`)
  * so the order is OS-independent — Windows backslashes are normalised
@@ -861,7 +868,12 @@ export async function writeCorpusHash(outputDir) {
 
   const hash = createHash('sha256');
   for (const file of files) {
+    const rel = relative(outputDir, file).split(sep).join('/');
     const buf = await readFile(file);
+    hash.update(
+      `${Buffer.byteLength(rel, 'utf8')}\0${rel}\0${buf.length}\0`,
+      'utf8',
+    );
     hash.update(buf);
   }
   const digest = hash.digest('hex');
@@ -907,6 +919,9 @@ async function main() {
 
   if (outputDir) {
     await mkdir(outputDir, { recursive: true });
+    if (!isDryRun) {
+      await removeCorpusHash(outputDir);
+    }
   }
 
   // Determine which specs to process. User-supplied --specs lists are
@@ -960,7 +975,7 @@ async function main() {
       deterministic,
     });
     printSummary(totals, errors);
-    if (exitOnConversionFailure(totals, errors)) {
+    if (await exitOnConversionFailure(totals, errors, outputDir, isDryRun)) {
       return;
     }
     if (deterministic && outputDir && !isDryRun) {
@@ -996,7 +1011,7 @@ async function main() {
   }
 
   printSummary(aggregateTotals, aggregateErrors);
-  if (exitOnConversionFailure(aggregateTotals, aggregateErrors)) {
+  if (await exitOnConversionFailure(aggregateTotals, aggregateErrors, outputDir, isDryRun)) {
     return;
   }
   if (deterministic && outputDir && !isDryRun) {

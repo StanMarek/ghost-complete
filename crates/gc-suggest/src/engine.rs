@@ -887,18 +887,7 @@ impl SuggestionEngine {
         }
         let mut all = Vec::new();
         for resolution in resolutions {
-            // Per-resolution ctx clone with `params` overwritten from
-            // the spec-declared values. Native providers ignore
-            // `params`; spec-driven providers read it. The other ctx
-            // fields (cwd, env, current_token) are shared via the
-            // existing `Arc`s — only the `params` `Arc` pointer is
-            // swapped per call, which is essentially free.
-            let dispatch_ctx = ProviderCtx {
-                cwd: ctx.cwd.clone(),
-                env: Arc::clone(&ctx.env),
-                current_token: ctx.current_token.clone(),
-                params: Arc::clone(&resolution.params),
-            };
+            let dispatch_ctx = ctx.for_resolution(resolution);
             match providers::resolve(resolution.kind, &dispatch_ctx).await {
                 Ok(suggestions) => all.extend(suggestions),
                 Err(e) => {
@@ -1468,7 +1457,7 @@ fn is_supported_script_generator(gen: &GeneratorSpec) -> bool {
         // missing — the engine would otherwise build a JS program that
         // surfaces a SyntaxError diagnostic on every keystroke.
         Some(rt) if rt.kind == JsRuntimeKind::PostProcess => {
-            (gen.script.is_some() || gen.script_template.is_some()) && !rt.source.trim().is_empty()
+            has_non_empty_script_or_template(gen) && !rt.source.trim().is_empty()
         }
         Some(rt)
             if matches!(
@@ -1480,6 +1469,14 @@ fn is_supported_script_generator(gen: &GeneratorSpec) -> bool {
         }
         _ => false,
     }
+}
+
+fn has_non_empty_script_or_template(gen: &GeneratorSpec) -> bool {
+    gen.script.as_ref().is_some_and(|script| !script.is_empty())
+        || gen
+            .script_template
+            .as_ref()
+            .is_some_and(|template| !template.is_empty())
 }
 
 /// Filter a generator slice through [`is_supported_script_generator`]
@@ -2910,6 +2907,41 @@ mod tests {
         let ctx = make_ctx(Some("test"), vec!["arg1"], "", 2);
         let argv = super::resolve_script_argv(&gen, &ctx);
         assert_eq!(argv, vec!["cmd", "arg1"]);
+    }
+
+    #[test]
+    fn test_post_process_requires_non_empty_script_argv() {
+        use crate::specs::{JsRuntimeKind, JsRuntimeSpec};
+
+        let runtime = Arc::new(JsRuntimeSpec {
+            kind: JsRuntimeKind::PostProcess,
+            source: "out => out.split('\\n')".to_string(),
+            timeout_ms: None,
+            allow_shell_command: false,
+            self_contained: false,
+        });
+        let empty_script = crate::specs::GeneratorSpec {
+            generator_type: None,
+            script: Some(vec![]),
+            script_template: None,
+            transforms: vec![],
+            cache: None,
+            requires_js: true,
+            js_source: None,
+            js_runtime: Some(Arc::clone(&runtime)),
+            corrected_in: None,
+            template: None,
+            params: std::collections::BTreeMap::new(),
+        };
+        let empty_template = crate::specs::GeneratorSpec {
+            script: None,
+            script_template: Some(vec![]),
+            js_runtime: Some(runtime),
+            ..empty_script.clone()
+        };
+
+        assert!(!super::is_supported_script_generator(&empty_script));
+        assert!(!super::is_supported_script_generator(&empty_template));
     }
 
     #[test]

@@ -1725,20 +1725,13 @@ fn accumulate_counters_from_generators(
 /// rule, kept in lockstep by convention:
 ///
 /// 1. This helper (the structured-walk counter source).
-/// 2. [`collect_generators`] at load time. Its inline match is
-///    *slightly looser* — it accepts a `post_process` generator with an
-///    empty `source` as long as a script is present — but the engine's
-///    runtime hot-path filter
-///    [`engine::is_supported_script_generator`] re-applies the
-///    non-empty-source check at dispatch time, so observable runtime
-///    behaviour is identical to this predicate.
+/// 2. [`collect_generators`] at load time.
 /// 3. [`engine::is_supported_script_generator`] (hot-path filter).
 ///
 /// Routing (2) and (3) through this single helper would make it a
 /// literal single source of truth instead of a "by convention" one.
-/// That is intentionally a follow-up — the runtime semantic change is
-/// out of scope for the ux-9b precursor (purely additive) and is
-/// deferred to a future PR.
+/// That is intentionally a follow-up so the hot-path modules can keep
+/// their dependencies narrow.
 ///
 /// Drift between the structured walk here and the raw-JSON walker
 /// `supported_kind` is enforced by the corpus-invariant integration
@@ -1754,13 +1747,20 @@ pub(crate) fn is_requires_js_supported(gen: &GeneratorSpec) -> bool {
     };
     match runtime.kind {
         JsRuntimeKind::PostProcess => {
-            let has_script = gen.script.is_some() || gen.script_template.is_some();
-            has_script && !runtime.source.trim().is_empty()
+            has_non_empty_script_or_template(gen) && !runtime.source.trim().is_empty()
         }
         JsRuntimeKind::ScriptFunction | JsRuntimeKind::Custom => {
             runtime.self_contained && !runtime.source.trim().is_empty()
         }
     }
+}
+
+fn has_non_empty_script_or_template(gen: &GeneratorSpec) -> bool {
+    gen.script.as_ref().is_some_and(|script| !script.is_empty())
+        || gen
+            .script_template
+            .as_ref()
+            .is_some_and(|template| !template.is_empty())
 }
 
 /// Header-only struct used by [`shallow_parse_name`] to extract just
@@ -2594,19 +2594,7 @@ fn collect_generators(
             // `js_runtime`, no source, or custom/script_function source that
             // was not proven self-contained stay skipped — there is nothing
             // safe to dispatch.
-            let supported = match gen.js_runtime.as_ref().map(|rt| &rt.kind) {
-                Some(JsRuntimeKind::PostProcess) => {
-                    // Post-process still requires an accompanying script;
-                    // a JS body that can't see stdout has no input.
-                    gen.script.is_some() || gen.script_template.is_some()
-                }
-                Some(JsRuntimeKind::ScriptFunction) | Some(JsRuntimeKind::Custom) => gen
-                    .js_runtime
-                    .as_ref()
-                    .is_some_and(|rt| rt.self_contained && !rt.source.trim().is_empty()),
-                None => false,
-            };
-            if !supported {
+            if !is_requires_js_supported(gen) {
                 tracing::info!(
                     kind = ?gen.js_runtime.as_ref().map(|rt| &rt.kind),
                     has_script = gen.script.is_some(),
@@ -4559,6 +4547,87 @@ mod tests {
             ("script_kind".to_string(), "build".to_string()),
         ]);
         assert_eq!(res.provider_generators[0].params.as_ref(), &expected);
+    }
+
+    #[test]
+    fn test_post_process_empty_script_vectors_are_unsupported() {
+        for json in [
+            r#"{
+                "script": [],
+                "requires_js": true,
+                "js_runtime": {
+                    "kind": "post_process",
+                    "source": "out => out.split('\n')"
+                }
+            }"#,
+            r#"{
+                "script_template": [],
+                "requires_js": true,
+                "js_runtime": {
+                    "kind": "post_process",
+                    "source": "out => out.split('\n')"
+                }
+            }"#,
+        ] {
+            let gen: GeneratorSpec = serde_json::from_str(json).unwrap();
+
+            assert!(
+                !is_requires_js_supported(&gen),
+                "empty script/script_template argv must not count as supported: {gen:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_resolve_spec_skips_empty_post_process_script_vectors() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "test-empty-post-process",
+                "args": [{
+                    "name": "target",
+                    "generators": [
+                        {
+                            "script": [],
+                            "requires_js": true,
+                            "js_runtime": {
+                                "kind": "post_process",
+                                "source": "out => out.split('\n')"
+                            }
+                        },
+                        {
+                            "script_template": [],
+                            "requires_js": true,
+                            "js_runtime": {
+                                "kind": "post_process",
+                                "source": "out => out.split('\n')"
+                            }
+                        }
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("test-empty-post-process".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+
+        let res = resolve_spec(&spec, &ctx);
+
+        assert!(
+            res.script_generators.is_empty(),
+            "empty argv post_process generators must be skipped, got {:?}",
+            res.script_generators
+        );
     }
 
     #[test]

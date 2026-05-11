@@ -249,6 +249,41 @@ describe('writeCorpusHash', () => {
       await rm(dirB, { recursive: true, force: true });
     }
   });
+
+  it('hash changes when identical content moves to a different relative path', async () => {
+    const dirA = await mkdtemp(join(tmpdir(), 'fig-determinism-'));
+    const dirB = await mkdtemp(join(tmpdir(), 'fig-determinism-'));
+    try {
+      const content = stringifySorted({ name: 'same-content' }, 2) + '\n';
+      await writeFile(join(dirA, 'alpha.json'), content);
+      await writeFile(join(dirB, 'beta.json'), content);
+
+      const a = await writeCorpusHash(dirA);
+      const b = await writeCorpusHash(dirB);
+      assert.notEqual(a, b, 'hash should include normalized relative paths');
+    } finally {
+      await rm(dirA, { recursive: true, force: true });
+      await rm(dirB, { recursive: true, force: true });
+    }
+  });
+
+  it('frames file boundaries with content lengths', async () => {
+    const dirA = await mkdtemp(join(tmpdir(), 'fig-determinism-'));
+    const dirB = await mkdtemp(join(tmpdir(), 'fig-determinism-'));
+    try {
+      await writeFile(join(dirA, 'a.json'), 'ab');
+      await writeFile(join(dirA, 'b.json'), 'c');
+      await writeFile(join(dirB, 'a.json'), 'a');
+      await writeFile(join(dirB, 'b.json'), 'bc');
+
+      const a = await writeCorpusHash(dirA);
+      const b = await writeCorpusHash(dirB);
+      assert.notEqual(a, b, 'hash should include per-file content lengths');
+    } finally {
+      await rm(dirA, { recursive: true, force: true });
+      await rm(dirB, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('converter CLI failure handling', () => {
@@ -269,6 +304,66 @@ describe('converter CLI failure handling', () => {
       );
       assert.match(result.stdout, /Failed:\s+1/);
       assert.match(result.stdout, /this_spec_does_not_exist_xyz/);
+      await assertHashFileMissing(dir);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('removes a stale corpus hash when conversion fails', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'fig-determinism-'));
+    try {
+      await writeFile(join(dir, 'corpus-hash.txt'), 'stale\n');
+
+      const result = await runConverter([
+        '--output',
+        dir,
+        '--specs',
+        'this_spec_does_not_exist_xyz',
+      ]);
+
+      assert.equal(
+        result.code,
+        1,
+        `expected converter to fail on invalid --specs entry\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+      );
+      await assertHashFileMissing(dir);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('removes a stale corpus hash for non-deterministic conversions', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'fig-determinism-'));
+    try {
+      const deterministicResult = await runConverter([
+        '--output',
+        dir,
+        '--specs',
+        'echo',
+      ]);
+      assert.equal(
+        deterministicResult.code,
+        0,
+        `expected deterministic conversion to succeed\nstdout:\n${deterministicResult.stdout}\nstderr:\n${deterministicResult.stderr}`,
+      );
+      assert.match(
+        await readFile(join(dir, 'corpus-hash.txt'), 'utf8'),
+        /^[0-9a-f]{64}\n$/,
+      );
+
+      const nonDeterministicResult = await runConverter([
+        '--output',
+        dir,
+        '--specs',
+        'echo',
+        '--no-deterministic',
+      ]);
+      assert.equal(
+        nonDeterministicResult.code,
+        0,
+        `expected non-deterministic conversion to succeed\nstdout:\n${nonDeterministicResult.stdout}\nstderr:\n${nonDeterministicResult.stderr}`,
+      );
       await assertHashFileMissing(dir);
     } finally {
       await rm(dir, { recursive: true, force: true });

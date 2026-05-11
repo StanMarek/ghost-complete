@@ -1845,15 +1845,7 @@ impl InputHandler {
             let provider_fut = async move {
                 let mut out = Vec::with_capacity(provider_resolutions.len());
                 for resolution in provider_resolutions {
-                    // Per-dispatch ctx clone with `params` overwritten
-                    // from the spec-declared values. Mirrors the
-                    // logic in `SuggestionEngine::resolve_providers`.
-                    let dispatch_ctx = gc_suggest::providers::ProviderCtx {
-                        cwd: provider_ctx_for_fut.cwd.clone(),
-                        env: Arc::clone(&provider_ctx_for_fut.env),
-                        current_token: provider_ctx_for_fut.current_token.clone(),
-                        params: Arc::clone(&resolution.params),
-                    };
+                    let dispatch_ctx = provider_ctx_for_fut.for_resolution(&resolution);
                     let res = provider_engine
                         .resolve_provider_kind(resolution.kind, &dispatch_ctx, &provider_query)
                         .await;
