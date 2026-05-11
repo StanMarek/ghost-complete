@@ -119,6 +119,7 @@ fn script_function_generator(source: &str) -> Arc<GeneratorSpec> {
         transforms: Vec::new(),
         cache: None,
         lowered_from_requires_js: false,
+        static_extracted_subprocess: false,
         requires_js: true,
         js_source: None,
         js_runtime: Some(Arc::new(JsRuntimeSpec {
@@ -142,6 +143,7 @@ fn custom_generator(source: &str) -> Arc<GeneratorSpec> {
         transforms: Vec::new(),
         cache: None,
         lowered_from_requires_js: false,
+        static_extracted_subprocess: false,
         requires_js: true,
         js_source: None,
         js_runtime: Some(Arc::new(JsRuntimeSpec {
@@ -165,6 +167,7 @@ fn token_only_generator(source: &str, self_contained: bool) -> Arc<GeneratorSpec
         transforms: Vec::new(),
         cache: None,
         lowered_from_requires_js: false,
+        static_extracted_subprocess: false,
         requires_js: true,
         js_source: None,
         js_runtime: Some(Arc::new(JsRuntimeSpec {
@@ -188,6 +191,7 @@ fn token_only_generator_with_timeout(source: &str, timeout_ms: u64) -> Arc<Gener
         transforms: Vec::new(),
         cache: None,
         lowered_from_requires_js: false,
+        static_extracted_subprocess: false,
         requires_js: true,
         js_source: None,
         js_runtime: Some(Arc::new(JsRuntimeSpec {
@@ -211,6 +215,7 @@ fn custom_generator_with_shell_string(source: &str) -> Arc<GeneratorSpec> {
         transforms: Vec::new(),
         cache: None,
         lowered_from_requires_js: false,
+        static_extracted_subprocess: false,
         requires_js: true,
         js_source: None,
         js_runtime: Some(Arc::new(JsRuntimeSpec {
@@ -237,6 +242,7 @@ fn cached_custom_generator(source: &str) -> Arc<GeneratorSpec> {
             cache_by_directory: false,
         }),
         lowered_from_requires_js: false,
+        static_extracted_subprocess: false,
         requires_js: true,
         js_source: None,
         js_runtime: Some(Arc::new(JsRuntimeSpec {
@@ -263,6 +269,7 @@ fn cached_token_only_generator(source: &str) -> Arc<GeneratorSpec> {
             cache_by_directory: false,
         }),
         lowered_from_requires_js: false,
+        static_extracted_subprocess: false,
         requires_js: true,
         js_source: None,
         js_runtime: Some(Arc::new(JsRuntimeSpec {
@@ -289,6 +296,7 @@ fn cached_token_only_generator_by_directory(source: &str) -> Arc<GeneratorSpec> 
             cache_by_directory: true,
         }),
         lowered_from_requires_js: false,
+        static_extracted_subprocess: false,
         requires_js: true,
         js_source: None,
         js_runtime: Some(Arc::new(JsRuntimeSpec {
@@ -1130,6 +1138,7 @@ async fn supported_count_lifts_to_full_corpus() {
             transforms: Vec::new(),
             cache: None,
             lowered_from_requires_js: false,
+            static_extracted_subprocess: false,
             requires_js: true,
             js_source: None,
             js_runtime: Some(Arc::new(JsRuntimeSpec {

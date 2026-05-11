@@ -5981,6 +5981,7 @@ mod tests {
             cache: None,
             requires_js: kind.is_some(),
             lowered_from_requires_js: false,
+            static_extracted_subprocess: false,
             js_source: None,
             js_runtime: kind.map(|kind| {
                 std::sync::Arc::new(gc_suggest::specs::JsRuntimeSpec {
@@ -6037,6 +6038,7 @@ mod tests {
             cache: None,
             requires_js: false,
             lowered_from_requires_js: false,
+            static_extracted_subprocess: false,
             js_source: None,
             js_runtime: None,
             corrected_in: None,
@@ -6061,6 +6063,7 @@ mod tests {
             cache: None,
             requires_js: false,
             lowered_from_requires_js: false,
+            static_extracted_subprocess: false,
             js_source: None,
             js_runtime: None,
             corrected_in: None,

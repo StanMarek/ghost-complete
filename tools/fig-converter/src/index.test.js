@@ -47,6 +47,33 @@ describe('convertSingleSpec', () => {
     assert.equal(result.spec.name, 'cat');
   });
 
+  it('keeps cd on the native folders template', async () => {
+    const result = await convertSingleSpec('cd');
+    assert.ok(result);
+    assert.deepStrictEqual(result.spec.args, {
+      name: 'directory',
+      template: 'folders',
+    });
+  });
+
+  it('preserves audited cargo priorities after upstream conversion', async () => {
+    const result = await convertSingleSpec('cargo');
+    assert.ok(result);
+    const run = result.spec.subcommands.find((sub) => sub.name === 'run');
+    const add = result.spec.subcommands.find((sub) => sub.name === 'add');
+    assert.equal(run?.priority, 92);
+    assert.equal(add?.priority, 90);
+  });
+
+  it('preserves aws profile directory cache ttl', async () => {
+    const result = await convertSingleSpec('aws');
+    assert.ok(result);
+    const profile = result.spec.options.find((opt) => opt.name.includes('--profile'));
+    const cache = profile?.args?.generators?.[0]?.cache;
+    assert.equal(cache?.cache_by_directory, true);
+    assert.equal(cache?.ttl_seconds, 300);
+  });
+
   it('returns null for nonexistent spec', async () => {
     const result = await convertSingleSpec('this_spec_does_not_exist_xyz');
     assert.equal(result, null);
@@ -481,6 +508,25 @@ describe('processGenerator js_runtime emission', () => {
     assert.equal(out.js_source, undefined);
   });
 
+  it('_custom literal subprocess extractor emits native script transforms with static marker', () => {
+    const gen = {
+      _custom: true,
+      _customSource: `async (tokens, runShell) => {
+        const { stdout } = await runShell({ command: "apt", args: ["list"] });
+        return stdout.split("\\n").filter(Boolean).map((line) => ({ name: line.trim() }));
+      }`,
+      cache: { ttl_seconds: 60 },
+    };
+    const out = processGenerator(gen, '__js_runtime_test_spec__');
+    assert.deepStrictEqual(out.script, ['apt', 'list']);
+    assert.deepStrictEqual(out.transforms, ['split_lines', 'filter_empty', 'trim']);
+    assert.deepStrictEqual(out.cache, { ttl_seconds: 60 });
+    assert.equal(out._static_extracted_subprocess, true);
+    assert.equal(out.requires_js, undefined);
+    assert.equal(out.js_runtime, undefined);
+    assert.equal(out.js_source, undefined);
+  });
+
   it('native-map match still beats js_runtime fallback (no js_runtime emitted)', () => {
     // git branch is a canonical native-map hit. The output must be the bare
     // native generator with no js_runtime, no requires_js, no js_source.
@@ -588,6 +634,23 @@ describe('runConversionBatch', () => {
     assert.equal(totals.failed, 1);
     assert.equal(errors.length, 1);
     assert.equal(errors[0].spec, 'this_spec_does_not_exist_xyz');
+  });
+
+  it('returns decline diagnostics when requested', async () => {
+    const { totals, errors, declines } = await runConversionBatch({
+      specNames: ['npm'],
+      outputDir: null,
+      dryRun: true,
+      reportDeclines: true,
+    });
+
+    assert.equal(totals.converted, 1);
+    assert.deepStrictEqual(errors, []);
+    assert.ok(Array.isArray(declines), 'declines must be an array');
+    assert.ok(
+      declines.some((entry) => entry.spec === 'npm' && typeof entry.reason === 'string'),
+      `expected at least one npm decline diagnostic, got ${JSON.stringify(declines.slice(0, 5))}`,
+    );
   });
 
   it('writes canonical sorted-key JSON bytes in deterministic mode', async () => {

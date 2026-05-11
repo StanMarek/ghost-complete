@@ -140,12 +140,16 @@
         "description": "The package you want to install",
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
-            },
-            "requires_js": true
+            "_static_extracted_subprocess": true,
+            "script": [
+              "apt",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
           },
           {
             "requires_js": true
@@ -416,12 +420,16 @@
         "description": "The package you want to show",
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
-            },
-            "requires_js": true
+            "_static_extracted_subprocess": true,
+            "script": [
+              "apt",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
           }
         ],
         "name": "package"
@@ -434,12 +442,16 @@
         "description": "The package you want to satisfy",
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
-            },
-            "requires_js": true
+            "_static_extracted_subprocess": true,
+            "script": [
+              "apt",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
           }
         ],
         "isVariadic": true,
@@ -530,12 +542,16 @@
         "description": "The package you want to get source files for",
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
-            },
-            "requires_js": true
+            "_static_extracted_subprocess": true,
+            "script": [
+              "apt",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
           }
         ],
         "isVariadic": true,
@@ -604,12 +620,16 @@
         "description": "The package you want to build dependencies for",
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
-            },
-            "requires_js": true
+            "_static_extracted_subprocess": true,
+            "script": [
+              "apt",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
           }
         ],
         "name": "package"
@@ -671,12 +691,16 @@
         "description": "The package you want to download",
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
-            },
-            "requires_js": true
+            "_static_extracted_subprocess": true,
+            "script": [
+              "apt",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
           }
         ],
         "name": "package"
@@ -754,12 +778,16 @@
         "description": "The package you want to show the changelog for",
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e[e.length-1];if(n.length===0)return[];let{stdout:a}=await t({command:\"apt\",args:[\"list\"]});return a.trim().split(`\n`).filter(i=>i.startsWith(n)).map(i=>i.replace(/\\/.*/,\"\")).map(i=>({name:i,description:\"Package\",icon:\"\\u{1F4E6}\",priority:50}))}"
-            },
-            "requires_js": true
+            "_static_extracted_subprocess": true,
+            "script": [
+              "apt",
+              "list"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
           }
         ],
         "isVariadic": true,

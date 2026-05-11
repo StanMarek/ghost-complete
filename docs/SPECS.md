@@ -126,7 +126,8 @@ with `schema_version: "1.0"` and one row per release. Each row records:
   `commands_(fully|partially|non)functional`,
   `requires_js_generators_(total|supported|unsupported)`,
   `requires_js_generators_token_only`,
-  `requires_js_generators_lowered_to_transforms`, and
+  `requires_js_generators_lowered_to_transforms`,
+  `requires_js_generators_static_extracted`, and
   `command_alias_conflicts`. See `docs/COMPLETION_SPEC.md` for the
   classification rules. `requires_js_generators_supported` is broken down
   per `js_runtime.kind` (`post_process`, `script_function`, `custom`,
