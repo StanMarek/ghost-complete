@@ -686,8 +686,8 @@ struct RuntimeMetadataCounts {
 ///   * missing `js_runtime` metadata entirely, OR
 ///   * `js_runtime.source` is empty/whitespace, OR
 ///   * `js_runtime.kind` is `post_process` AND neither `script` nor
-///     `script_template` is attached (the engine has no shell stdout
-///     to feed into the post-processor),
+///     `script_template` has a non-empty argv (the engine has no shell
+///     stdout to feed into the post-processor),
 ///   * `js_runtime.kind` is `script_function` / `custom` AND
 ///     `self_contained != true`.
 ///
@@ -706,6 +706,13 @@ fn count_runtime_metadata_issues_in_spec(spec: &CompletionSpec) -> RuntimeMetada
         UnsupportedUnproven,
     }
 
+    fn has_non_empty_script_or_template(g: &GeneratorSpec) -> bool {
+        g.script.as_ref().is_some_and(|script| !script.is_empty())
+            || g.script_template
+                .as_ref()
+                .is_some_and(|template| !template.is_empty())
+    }
+
     fn issue(g: &GeneratorSpec) -> Option<Issue> {
         if !g.requires_js {
             return None;
@@ -718,7 +725,7 @@ fn count_runtime_metadata_issues_in_spec(spec: &CompletionSpec) -> RuntimeMetada
                 }
                 match rt.kind {
                     JsRuntimeKind::PostProcess => {
-                        if g.script.is_none() && g.script_template.is_none() {
+                        if !has_non_empty_script_or_template(g) {
                             Some(Issue::Malformed)
                         } else {
                             None
@@ -866,7 +873,7 @@ fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> C
     CheckResult::fail(format!(
         "Embedded specs: {total} requires_js generator(s) across {spec_count} spec(s) cannot be \
          dispatched (missing js_runtime metadata, empty `js_runtime.source`, `post_process` kind \
-         without an accompanying `script`/`script_template`). Indicates an incomplete converter \
+         without a non-empty `script`/`script_template`). Indicates an incomplete converter \
          regen or a hand-edited spec. Affected: {preview_str}{tail}"
     ))
 }
@@ -1934,6 +1941,58 @@ mod tests {
         assert!(
             result.message.contains("pp_no_script"),
             "must name affected spec: {}",
+            result.message
+        );
+    }
+
+    #[test]
+    fn doctor_fails_when_post_process_script_argv_is_empty() {
+        let (store, _dir) = store_from_json_fixtures(&[
+            (
+                "pp_empty_script.json",
+                r#"{
+                    "name": "pp_empty_script",
+                    "args": [{
+                        "name": "x",
+                        "generators": [{
+                            "script": [],
+                            "requires_js": true,
+                            "js_runtime": {
+                                "kind": "post_process",
+                                "source": "out => out.split('\n')"
+                            }
+                        }]
+                    }]
+                }"#,
+            ),
+            (
+                "pp_empty_template.json",
+                r#"{
+                    "name": "pp_empty_template",
+                    "args": [{
+                        "name": "x",
+                        "generators": [{
+                            "script_template": [],
+                            "requires_js": true,
+                            "js_runtime": {
+                                "kind": "post_process",
+                                "source": "out => out.split('\n')"
+                            }
+                        }]
+                    }]
+                }"#,
+            ),
+        ]);
+        let result = check_embedded_runtime_metadata_for_store(&store);
+        assert!(
+            matches!(result.severity, Severity::Fail),
+            "post_process with empty script/script_template argv must Fail, got: {}",
+            result.message
+        );
+        assert!(
+            result.message.contains("pp_empty_script")
+                && result.message.contains("pp_empty_template"),
+            "must name affected specs: {}",
             result.message
         );
     }

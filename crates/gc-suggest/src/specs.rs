@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, OnceLock, RwLock};
@@ -8,7 +8,7 @@ use anyhow::{Context, Result};
 use serde::Deserialize;
 
 use crate::priority::Priority;
-use crate::providers::{self, ProviderKind};
+use crate::providers::{self, ProviderResolution};
 use crate::transform::Transform;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 use gc_buffer::CommandContext;
@@ -534,6 +534,15 @@ pub struct GeneratorSpec {
     /// or ["filepaths", "folders"]). Treated the same as `ArgSpec.template`.
     #[serde(default, deserialize_with = "deserialize_template")]
     pub template: Option<String>,
+    /// Generator-spec parameters surfaced to spec-driven providers via
+    /// [`crate::providers::ProviderCtx::params`]. Empty for generators
+    /// that don't declare any (the overwhelming majority today).
+    /// Populated when ux-13/14 providers (e.g. AWS SDK) need
+    /// structured selection (service, region, profile) at dispatch
+    /// time. Stable key order via [`BTreeMap`] so cache keys derived
+    /// via `ProviderCtx::params_hash()` are deterministic across runs.
+    #[serde(default)]
+    pub params: BTreeMap<String, String>,
 }
 
 /// Sentinel `source_dir` value used to label embedded specs in
@@ -1584,6 +1593,174 @@ impl SpecStore {
     pub fn canonical_paths(&self) -> Vec<(String, PathBuf)> {
         self.filesystem_paths()
     }
+
+    /// Corpus-wide [`SpecResolutionCounters`] across every loaded spec.
+    ///
+    /// Walks the resolved-entry set (one entry per alias after lazy
+    /// fallback resolution) and visits every [`GeneratorSpec`] reachable
+    /// from each [`CompletionSpec`] (args, options, recursive
+    /// subcommands). For each `requires_js` generator:
+    ///   - `requires_js_total` increments unconditionally;
+    ///   - `requires_js_supported` increments when [`is_requires_js_supported`]
+    ///     returns true (post_process+script with non-empty source, OR
+    ///     script_function/custom with non-empty source AND
+    ///     `self_contained: true`);
+    ///   - `requires_js_unsupported` increments otherwise.
+    ///
+    /// The supported predicate intentionally matches the runtime dispatch
+    /// gate inside `collect_generators` and the raw-JSON walker in
+    /// `ghost-complete::status::scan_spec_files`, so the schema-1.6
+    /// `counters.requires_js_supported` agrees byte-for-byte with the
+    /// legacy `spec_counts.requires_js_generators_supported` against the
+    /// embedded corpus (~1944 supported / ~1697 unsupported / ~3641 total
+    /// at v0.13).
+    ///
+    /// The five migration-future fields stay at zero in this PR — they are
+    /// populated by ux-10/11/12/13/14 once the converter starts emitting
+    /// the corresponding metadata.
+    ///
+    /// This force-loads every entry through [`Self::resolved_entries`], so
+    /// it is a diagnostic call (not a hot path). The trade-off is documented
+    /// because computing counters at corpus-load time requires materializing
+    /// every spec — for the embedded corpus this is the same parse work
+    /// `status` already performs to answer the legacy `spec_counts` block.
+    pub fn counters(&self) -> SpecResolutionCounters {
+        let mut counters = SpecResolutionCounters::default();
+        for entry in self.resolved_entries() {
+            if let Some(spec) = entry.spec() {
+                accumulate_counters_from_spec(&spec, &mut counters);
+            }
+        }
+        counters
+    }
+}
+
+fn accumulate_counters_from_spec(spec: &CompletionSpec, counters: &mut SpecResolutionCounters) {
+    accumulate_counters_from_args(&spec.args, counters);
+    accumulate_counters_from_options(&spec.options, counters);
+    accumulate_counters_from_subcommands(&spec.subcommands, counters);
+}
+
+fn accumulate_counters_from_subcommands(
+    subs: &[SubcommandSpec],
+    counters: &mut SpecResolutionCounters,
+) {
+    for sub in subs {
+        accumulate_counters_from_args(&sub.args, counters);
+        accumulate_counters_from_options(&sub.options, counters);
+        accumulate_counters_from_subcommands(&sub.subcommands, counters);
+    }
+}
+
+fn accumulate_counters_from_options(opts: &[OptionSpec], counters: &mut SpecResolutionCounters) {
+    for opt in opts {
+        if let Some(arg) = opt.args.as_ref() {
+            accumulate_counters_from_arg(arg, counters);
+        }
+        for arg in &opt.extra_args {
+            accumulate_counters_from_arg(arg, counters);
+        }
+    }
+}
+
+fn accumulate_counters_from_args(args: &[ArgSpec], counters: &mut SpecResolutionCounters) {
+    for arg in args {
+        accumulate_counters_from_arg(arg, counters);
+    }
+}
+
+fn accumulate_counters_from_arg(arg: &ArgSpec, counters: &mut SpecResolutionCounters) {
+    accumulate_counters_from_generators(&arg.generators, counters);
+}
+
+fn accumulate_counters_from_generators(
+    gens: &[GeneratorSpec],
+    counters: &mut SpecResolutionCounters,
+) {
+    for gen in gens {
+        if !gen.requires_js {
+            continue;
+        }
+        counters.requires_js_total += 1;
+        if is_requires_js_supported(gen) {
+            counters.requires_js_supported += 1;
+        } else {
+            counters.requires_js_unsupported += 1;
+        }
+    }
+}
+
+/// Canonical predicate deciding whether a `requires_js: true` generator
+/// can actually be dispatched by the runtime. Mirrors the legacy
+/// raw-JSON walker `supported_kind` in
+/// `crates/ghost-complete/src/status.rs` — the structured-walk
+/// counterpart used by [`SpecResolutionCounters`] (published from
+/// [`SpecStore::counters`]) so the schema-1.6 `counters` block agrees
+/// byte-for-byte with the legacy `spec_counts` block in
+/// `ghost-complete status --json`.
+///
+/// The three supported shapes are:
+///
+/// - `kind == post_process` with `(script || script_template)` AND a
+///   non-empty `source`. `self_contained` is intentionally NOT required:
+///   post-process bodies only see stdout from the spawned child, not
+///   bundler-helper closures, so the converter does not have to prove
+///   them self-contained.
+/// - `kind == script_function` with a non-empty `source` AND
+///   `self_contained == true`. The latter is the converter's proof that
+///   the JS body does not close over `__exports__` /
+///   `__webpack_require__` / similar bundler bindings the QuickJS host
+///   refuses to install.
+/// - `kind == custom` with the same `source` + `self_contained`
+///   requirements as `script_function`.
+///
+/// A `requires_js: true` generator that does NOT match one of these
+/// three shapes (missing `js_runtime`, empty `source`, missing script,
+/// or `self_contained: false` on a `script_function`/`custom`) is
+/// classified as unsupported.
+///
+/// # Predicate alignment across the engine
+///
+/// Today there are three predicates encoding the same supported-shape
+/// rule, kept in lockstep by convention:
+///
+/// 1. This helper (the structured-walk counter source).
+/// 2. [`collect_generators`] at load time.
+/// 3. [`engine::is_supported_script_generator`] (hot-path filter).
+///
+/// Routing (2) and (3) through this single helper would make it a
+/// literal single source of truth instead of a "by convention" one.
+/// That is intentionally a follow-up so the hot-path modules can keep
+/// their dependencies narrow.
+///
+/// Drift between the structured walk here and the raw-JSON walker
+/// `supported_kind` is enforced by the corpus-invariant integration
+/// test `corpus_counters_match_legacy_walker_against_embedded_corpus`
+/// in `crates/ghost-complete/src/status.rs` — the load-bearing pin
+/// future maintainers should consult before changing either side.
+pub(crate) fn is_requires_js_supported(gen: &GeneratorSpec) -> bool {
+    if !gen.requires_js {
+        return false;
+    }
+    let Some(runtime) = gen.js_runtime.as_ref() else {
+        return false;
+    };
+    match runtime.kind {
+        JsRuntimeKind::PostProcess => {
+            has_non_empty_script_or_template(gen) && !runtime.source.trim().is_empty()
+        }
+        JsRuntimeKind::ScriptFunction | JsRuntimeKind::Custom => {
+            runtime.self_contained && !runtime.source.trim().is_empty()
+        }
+    }
+}
+
+fn has_non_empty_script_or_template(gen: &GeneratorSpec) -> bool {
+    gen.script.as_ref().is_some_and(|script| !script.is_empty())
+        || gen
+            .script_template
+            .as_ref()
+            .is_some_and(|template| !template.is_empty())
 }
 
 /// Header-only struct used by [`shallow_parse_name`] to extract just
@@ -1985,6 +2162,38 @@ pub fn parse_spec_checked_and_sanitized(contents: &str) -> Result<CompletionSpec
     Ok(spec)
 }
 
+/// Corpus-wide structural counters for the loaded [`SpecStore`].
+///
+/// These complement the per-call [`SpecResolution`] (which describes a
+/// single keystroke's dispatch outcome) with diagnostic totals over every
+/// generator reachable from every loaded spec. Surfaced through
+/// [`SpecStore::counters`] and the `counters` block of `ghost-complete
+/// status --json`. The five migration-future fields stay at zero today and
+/// are populated by ux-10 (lowering JS bodies to native transforms),
+/// ux-11 (subprocess-driven JS lifting), ux-12 (token-only sandbox),
+/// ux-13 (AWS SDK dispatch), and ux-14 (native tool providers).
+#[derive(Debug, Default, Clone, serde::Serialize)]
+pub struct SpecResolutionCounters {
+    /// Total `requires_js` generators in the corpus.
+    pub requires_js_total: usize,
+    /// Generators that load and dispatch successfully today.
+    pub requires_js_supported: usize,
+    /// Generators that load but skip at dispatch time.
+    pub requires_js_unsupported: usize,
+    /// Generators where the converter lowered a JS body to a native
+    /// transform pipeline (no QuickJS at runtime). Populated by ux-10.
+    pub lowered_to_transforms: usize,
+    /// Generators where the converter lifted a subprocess-driven JS
+    /// body into native script + transforms. Populated by ux-11.
+    pub static_extracted_subprocess: usize,
+    /// Generators promoted into the token-only sandbox. Populated by ux-12.
+    pub token_only_promoted: usize,
+    /// Generators dispatched through a typed AWS SDK call. Populated by ux-13.
+    pub aws_sdk_dispatched: usize,
+    /// Generators dispatched through a native tool provider. Populated by ux-14.
+    pub native_provider_dispatched: usize,
+}
+
 pub struct SpecResolution {
     pub subcommands: Vec<Suggestion>,
     pub options: Vec<Suggestion>,
@@ -2000,7 +2209,15 @@ pub struct SpecResolution {
     /// translate the `"type"` string into `ProviderKind` at spec
     /// resolution time so the engine does not re-parse strings on the
     /// keystroke hot path. See `providers::kind_from_type_str`.
-    pub provider_generators: Vec<ProviderKind>,
+    ///
+    /// Each entry pairs a `ProviderKind` with the [`Arc<BTreeMap>`] of
+    /// `params` declared on the source [`GeneratorSpec`]. The engine
+    /// hands those params to [`crate::providers::ProviderCtx::params`]
+    /// at dispatch time so spec-driven providers (e.g. the planned
+    /// `AwsSdk` provider) can read structured selection without a new
+    /// trait shape. Empty for every provider that does not declare
+    /// `params` — which is every existing one.
+    pub provider_generators: Vec<ProviderResolution>,
     /// `Arc<GeneratorSpec>` rather than `GeneratorSpec`: `collect_generators`
     /// and the downstream `handler::spawn_generators` copy this vec on the
     /// hot path (every resolution + every async spawn). Arc'ing makes each
@@ -2366,7 +2583,7 @@ fn collect_static_suggestions(entries: &[SuggestionEntry], out: &mut Vec<Suggest
 fn collect_generators(
     generators: &[GeneratorSpec],
     native: &mut Vec<String>,
-    provider: &mut Vec<ProviderKind>,
+    provider: &mut Vec<ProviderResolution>,
     script: &mut Vec<Arc<GeneratorSpec>>,
     wants_filepaths: &mut bool,
     wants_folders_only: &mut bool,
@@ -2377,19 +2594,7 @@ fn collect_generators(
             // `js_runtime`, no source, or custom/script_function source that
             // was not proven self-contained stay skipped — there is nothing
             // safe to dispatch.
-            let supported = match gen.js_runtime.as_ref().map(|rt| &rt.kind) {
-                Some(JsRuntimeKind::PostProcess) => {
-                    // Post-process still requires an accompanying script;
-                    // a JS body that can't see stdout has no input.
-                    gen.script.is_some() || gen.script_template.is_some()
-                }
-                Some(JsRuntimeKind::ScriptFunction) | Some(JsRuntimeKind::Custom) => gen
-                    .js_runtime
-                    .as_ref()
-                    .is_some_and(|rt| rt.self_contained && !rt.source.trim().is_empty()),
-                None => false,
-            };
-            if !supported {
+            if !is_requires_js_supported(gen) {
                 tracing::info!(
                     kind = ?gen.js_runtime.as_ref().map(|rt| &rt.kind),
                     has_script = gen.script.is_some(),
@@ -2421,7 +2626,16 @@ fn collect_generators(
                 // The provider IS the implementation; do not also push
                 // onto `native` or fall through to the script branch
                 // below.
-                provider.push(kind);
+                //
+                // Carry the spec's `params` map alongside the kind so
+                // the engine can populate `ProviderCtx::params` at
+                // dispatch. Cloned `BTreeMap` (typically empty) lives
+                // inside an `Arc` so subsequent dispatch is just a
+                // refcount bump.
+                provider.push(ProviderResolution {
+                    kind,
+                    params: Arc::new(gen.params.clone()),
+                });
                 true
             } else if KNOWN_NATIVE_GENERATOR_TYPES.contains(&gen_type.as_str()) {
                 native.push(gen_type.clone());
@@ -2674,9 +2888,21 @@ pub fn estimated_heap_bytes(spec: &CompletionSpec) -> usize {
         // carry the former.
         let js_runtime = g.js_runtime.as_ref().map(|jr| jr.source.len()).unwrap_or(0);
         let tmpl = opt_string_heap(&g.template);
+        let params: usize = g
+            .params
+            .iter()
+            .map(|(key, value)| key.len() + value.len() + std::mem::size_of::<(String, String)>())
+            .sum();
         let transforms_vec = g.transforms.capacity() * std::mem::size_of::<Transform>();
         let transforms_inner: usize = g.transforms.iter().map(transform_heap).sum();
-        gt + script + script_tmpl + js + js_runtime + tmpl + transforms_vec + transforms_inner
+        gt + script
+            + script_tmpl
+            + js
+            + js_runtime
+            + tmpl
+            + params
+            + transforms_vec
+            + transforms_inner
     }
     fn arg_spec_heap(arg: &ArgSpec) -> usize {
         let name = opt_string_heap(&arg.name);
@@ -4266,10 +4492,142 @@ mod tests {
             let expected_kind = providers::kind_from_type_str(type_str)
                 .unwrap_or_else(|| panic!("kind_from_type_str({type_str:?}) returned None"));
             assert_eq!(
-                res.provider_generators[0], expected_kind,
+                res.provider_generators[0].kind, expected_kind,
                 "wrong ProviderKind variant for {type_str:?}"
             );
+            assert!(
+                res.provider_generators[0].params.is_empty(),
+                "provider {type_str:?} must default to empty params; got {:?}",
+                res.provider_generators[0].params
+            );
         }
+    }
+
+    #[test]
+    fn test_resolve_spec_carries_provider_params_to_provider_resolution() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "test-provider-params",
+                "args": [{
+                    "name": "target",
+                    "generators": [{
+                        "type": "npm_scripts",
+                        "params": {
+                            "package_manager": "pnpm",
+                            "script_kind": "build"
+                        }
+                    }]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("test-provider-params".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let res = resolve_spec(&spec, &ctx);
+
+        assert_eq!(res.provider_generators.len(), 1);
+        assert_eq!(
+            res.provider_generators[0].kind,
+            providers::ProviderKind::NpmScripts
+        );
+
+        let expected = BTreeMap::from([
+            ("package_manager".to_string(), "pnpm".to_string()),
+            ("script_kind".to_string(), "build".to_string()),
+        ]);
+        assert_eq!(res.provider_generators[0].params.as_ref(), &expected);
+    }
+
+    #[test]
+    fn test_post_process_empty_script_vectors_are_unsupported() {
+        for json in [
+            r#"{
+                "script": [],
+                "requires_js": true,
+                "js_runtime": {
+                    "kind": "post_process",
+                    "source": "out => out.split('\n')"
+                }
+            }"#,
+            r#"{
+                "script_template": [],
+                "requires_js": true,
+                "js_runtime": {
+                    "kind": "post_process",
+                    "source": "out => out.split('\n')"
+                }
+            }"#,
+        ] {
+            let gen: GeneratorSpec = serde_json::from_str(json).unwrap();
+
+            assert!(
+                !is_requires_js_supported(&gen),
+                "empty script/script_template argv must not count as supported: {gen:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_resolve_spec_skips_empty_post_process_script_vectors() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "test-empty-post-process",
+                "args": [{
+                    "name": "target",
+                    "generators": [
+                        {
+                            "script": [],
+                            "requires_js": true,
+                            "js_runtime": {
+                                "kind": "post_process",
+                                "source": "out => out.split('\n')"
+                            }
+                        },
+                        {
+                            "script_template": [],
+                            "requires_js": true,
+                            "js_runtime": {
+                                "kind": "post_process",
+                                "source": "out => out.split('\n')"
+                            }
+                        }
+                    ]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("test-empty-post-process".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+
+        let res = resolve_spec(&spec, &ctx);
+
+        assert!(
+            res.script_generators.is_empty(),
+            "empty argv post_process generators must be skipped, got {:?}",
+            res.script_generators
+        );
     }
 
     #[test]
@@ -4736,6 +5094,37 @@ mod tests {
         assert!(
             warnings.is_empty(),
             "reserved Fig fields must not produce warnings, got: {warnings:?}"
+        );
+    }
+
+    #[test]
+    fn estimated_heap_bytes_counts_generator_params() {
+        let without_params: CompletionSpec = serde_json::from_value(serde_json::json!({
+            "name": "heap-params",
+            "args": [{
+                "name": "target",
+                "generators": [{"type": "npm_scripts"}]
+            }]
+        }))
+        .unwrap();
+        let large_param = "x".repeat(16 * 1024);
+        let with_params: CompletionSpec = serde_json::from_value(serde_json::json!({
+            "name": "heap-params",
+            "args": [{
+                "name": "target",
+                "generators": [{
+                    "type": "npm_scripts",
+                    "params": {"selector": large_param}
+                }]
+            }]
+        }))
+        .unwrap();
+
+        let without = estimated_heap_bytes(&without_params);
+        let with = estimated_heap_bytes(&with_params);
+        assert!(
+            with >= without + 16 * 1024,
+            "params payload should contribute to heap estimate: without={without}, with={with}"
         );
     }
 

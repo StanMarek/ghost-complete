@@ -31,8 +31,9 @@
  *   stderr. See §3 of docs/phase-minus-1-followups.md.
  */
 
-import { readdir, mkdir, writeFile } from 'node:fs/promises';
-import { join, basename, resolve } from 'node:path';
+import { readdir, readFile, mkdir, rm, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { join, basename, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { spawn } from 'node:child_process';
@@ -40,6 +41,7 @@ import { convertSpec } from './static-converter.js';
 import { matchPostProcess } from './post-process-matcher.js';
 import { matchNativeFromJsSource, matchNativeGenerator } from './native-map.js';
 import { analyzeGenerator } from './ast-analyzer.js';
+import { stringifySorted } from './serialize.js';
 
 const BUILD_DIR = join(
   import.meta.dirname,
@@ -78,6 +80,20 @@ async function loadFigSpecWithError(specName) {
 async function loadFigSpec(specName) {
   const { spec } = await loadFigSpecWithError(specName);
   return spec;
+}
+
+function unresolvedLoadSpecMessage(targetName, specName, visited) {
+  const loadPath = [...visited, targetName].join(' -> ');
+  return `unresolved loadSpec target "${targetName}" while resolving "${specName}" (${loadPath})`;
+}
+
+const KNOWN_MISSING_LOAD_SPECS = new Set([
+  'gcloud\0gcloud/alpha',
+  'gcloud\0gcloud/beta',
+]);
+
+function isKnownMissingLoadSpec(specName, targetName) {
+  return KNOWN_MISSING_LOAD_SPECS.has(`${specName}\0${targetName}`);
 }
 
 /**
@@ -130,22 +146,39 @@ export async function resolveLoadSpecs(spec, specName, visited = new Set([specNa
               `[converter] loadSpec cycle detected in "${specName}": "${cyclePath}" already resolved; skipping to avoid infinite recursion`
             );
           } else {
-            const loaded = await loader(targetName);
-            if (loaded) {
-              const converted = convertSpec(loaded);
-              // Merge the loaded spec into this subcommand
-              if (converted.subcommands) sub.subcommands = converted.subcommands;
-              if (converted.options) sub.options = converted.options;
-              if (converted.args) sub.args = converted.args;
-
-              // Descend into the freshly-inlined sub-spec with a forked
-              // visited set so sibling loadSpecs to the same target don't
-              // false-positive on each other.
-              const nextVisited = new Set(visited);
-              nextVisited.add(targetName);
-              await resolveLoadSpecs(sub, specName, nextVisited, loader);
-              continue;
+            let loaded;
+            try {
+              loaded = await loader(targetName);
+            } catch (err) {
+              const message = unresolvedLoadSpecMessage(targetName, specName, visited);
+              const detail = err && err.message ? err.message : String(err);
+              throw new Error(`${message}: ${detail}`, { cause: err });
             }
+
+            if (!loaded || typeof loaded !== 'object') {
+              if (isKnownMissingLoadSpec(specName, targetName)) {
+                console.warn(
+                  `[converter] known missing loadSpec target "${targetName}" while resolving "${specName}"; keeping static subcommand`
+                );
+                await resolveLoadSpecs(sub, specName, visited, loader);
+                continue;
+              }
+              throw new Error(unresolvedLoadSpecMessage(targetName, specName, visited));
+            }
+
+            const converted = convertSpec(loaded);
+            // Merge the loaded spec into this subcommand
+            if (converted.subcommands) sub.subcommands = converted.subcommands;
+            if (converted.options) sub.options = converted.options;
+            if (converted.args) sub.args = converted.args;
+
+            // Descend into the freshly-inlined sub-spec with a forked
+            // visited set so sibling loadSpecs to the same target don't
+            // false-positive on each other.
+            const nextVisited = new Set(visited);
+            nextVisited.add(targetName);
+            await resolveLoadSpecs(sub, specName, nextVisited, loader);
+            continue;
           }
         }
       }
@@ -501,12 +534,18 @@ function collectStats(spec) {
 
 /**
  * Get the list of all available spec names.
+ *
+ * The result is sorted lexicographically (on JS string code points) so
+ * batch dispatch order is deterministic across runs and OSes — `readdir`'s
+ * traversal order is filesystem-dependent on macOS and Linux. Determinism
+ * here is load-bearing for the corpus-hash gate.
  */
 export async function listSpecNames() {
   const entries = await readdir(BUILD_DIR);
   return entries
     .filter(f => f.endsWith('.js') && !f.startsWith('@') && !f.startsWith('.'))
-    .map(f => f.replace(/\.js$/, ''));
+    .map(f => f.replace(/\.js$/, ''))
+    .sort();
 }
 
 /**
@@ -537,9 +576,18 @@ function makeEmptyTotals() {
  * @param {string[]} opts.specNames
  * @param {string|null} opts.outputDir - Absolute path, or null for dry run.
  * @param {boolean} [opts.dryRun=false]
+ * @param {boolean} [opts.deterministic=true] - Emit each spec via
+ *   `stringifySorted` (sorted object keys) so two runs over the same input
+ *   produce byte-identical files. Pass `false` only for back-compat /
+ *   debugging; CI's corpus-hash gate assumes deterministic mode.
  * @returns {Promise<{totals: object, errors: Array<{spec: string, error: string}>}>}
  */
-export async function runConversionBatch({ specNames, outputDir, dryRun = false }) {
+export async function runConversionBatch({
+  specNames,
+  outputDir,
+  dryRun = false,
+  deterministic = true,
+}) {
   const totals = makeEmptyTotals();
   const errors = [];
 
@@ -582,7 +630,13 @@ export async function runConversionBatch({ specNames, outputDir, dryRun = false 
         if (dir !== outputDir) {
           await mkdir(dir, { recursive: true });
         }
-        await writeFile(outputPath, JSON.stringify(spec, null, 2) + '\n');
+        // Canonical (sorted-key) emission so two runs over the same input
+        // produce byte-identical output — gated by the determinism mode.
+        // See `src/serialize.js` and `scripts/check-corpus-hash.mjs`.
+        const serialized = deterministic
+          ? stringifySorted(spec, 2)
+          : JSON.stringify(spec, null, 2);
+        await writeFile(outputPath, serialized + '\n');
       }
 
       totals.converted++;
@@ -637,6 +691,34 @@ function printSummary(totals, errors) {
   }
 }
 
+async function removeCorpusHash(outputDir) {
+  await rm(join(outputDir, 'corpus-hash.txt'), { force: true });
+}
+
+async function exitOnConversionFailure(totals, errors, outputDir, dryRun) {
+  if ((totals.failed ?? 0) === 0 && errors.length === 0) {
+    if ((totals.converted ?? 0) > 0) {
+      return false;
+    }
+    console.error('Conversion produced 0 specs; refusing to write corpus hash.');
+    if (outputDir && !dryRun) {
+      await removeCorpusHash(outputDir);
+    }
+    process.exitCode = 1;
+    return true;
+  }
+
+  const failed = Math.max(totals.failed ?? 0, errors.length);
+  console.error(
+    `Conversion failed for ${failed} spec${failed === 1 ? '' : 's'}; refusing to write corpus hash.`
+  );
+  if (outputDir && !dryRun) {
+    await removeCorpusHash(outputDir);
+  }
+  process.exitCode = 1;
+  return true;
+}
+
 /**
  * Split an array into contiguous batches of up to `size` elements. Last
  * batch may be smaller. `size` is assumed ≥ 1 (caller validates).
@@ -657,7 +739,7 @@ function chunk(arr, size) {
  * reported as failed, and up to 500 chars of stderr tail are forwarded to
  * this process's stderr for operator context.
  */
-function runWorkerBatch({ batch, outputDir, dryRun, heapMb }) {
+function runWorkerBatch({ batch, outputDir, dryRun, heapMb, deterministic }) {
   return new Promise((resolvePromise) => {
     // Use `--flag=value` form for string args so values that happen to start
     // with `-` (e.g. the `-` spec from @withfig/autocomplete) or paths with
@@ -674,6 +756,11 @@ function runWorkerBatch({ batch, outputDir, dryRun, heapMb }) {
     }
     if (dryRun) {
       args.push('--dry-run');
+    }
+    // Forward the determinism mode to the worker — `--deterministic` is
+    // default-on, so we only need to emit `--no-deterministic` when off.
+    if (!deterministic) {
+      args.push('--no-deterministic');
     }
 
     const child = spawn(process.execPath, args, {
@@ -778,6 +865,65 @@ function runWorkerBatch({ batch, outputDir, dryRun, heapMb }) {
   });
 }
 
+/**
+ * Compute the SHA-256 of every emitted spec under `outputDir`, hashing each
+ * normalized relative path and file length before its contents in
+ * sorted-relative-path order. Writes the result as a single line of hex
+ * digest + newline to `<outputDir>/corpus-hash.txt` and returns the digest.
+ *
+ * Sort is on the spec's POSIX-style relative path (e.g. `aws/s3.json`)
+ * so the order is OS-independent — Windows backslashes are normalised
+ * before sorting. The hash file itself is excluded from the digest.
+ *
+ * @param {string} outputDir - Absolute path to the corpus directory.
+ * @returns {Promise<string>} The hex SHA-256 digest.
+ */
+export async function writeCorpusHash(outputDir) {
+  // Walk the corpus tree to collect every *.json spec file. We avoid
+  // blowing the stack on large trees by iterating with an explicit queue.
+  /** @type {string[]} */
+  const files = [];
+  /** @type {string[]} */
+  const queue = [outputDir];
+  while (queue.length > 0) {
+    const dir = queue.shift();
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const e of entries) {
+      const full = join(dir, e.name);
+      if (e.isDirectory()) {
+        queue.push(full);
+      } else if (e.isFile() && e.name.endsWith('.json')) {
+        files.push(full);
+      }
+    }
+  }
+
+  // Sort by POSIX-style relative path so order is OS-independent.
+  files.sort((a, b) => {
+    const ra = relative(outputDir, a).split(sep).join('/');
+    const rb = relative(outputDir, b).split(sep).join('/');
+    return ra < rb ? -1 : ra > rb ? 1 : 0;
+  });
+
+  if (files.length === 0) {
+    throw new Error(`Refusing to write corpus hash for empty corpus: ${outputDir}`);
+  }
+
+  const hash = createHash('sha256');
+  for (const file of files) {
+    const rel = relative(outputDir, file).split(sep).join('/');
+    const buf = await readFile(file);
+    hash.update(
+      `${Buffer.byteLength(rel, 'utf8')}\0${rel}\0${buf.length}\0`,
+      'utf8',
+    );
+    hash.update(buf);
+  }
+  const digest = hash.digest('hex');
+  await writeFile(join(outputDir, 'corpus-hash.txt'), digest + '\n');
+  return digest;
+}
+
 // --- CLI entry point ---
 
 async function main() {
@@ -788,26 +934,45 @@ async function main() {
       'dry-run': { type: 'boolean' },
       'batch-size': { type: 'string' },
       'batch-worker': { type: 'boolean' },
+      // Determinism mode (default ON). When set, every spec is emitted via
+      // `stringifySorted` (sorted object keys), the input file list is
+      // sorted before dispatch, and the orchestrator writes
+      // `<output>/corpus-hash.txt` after the corpus is complete.
+      // `--no-deterministic` opts back to legacy `JSON.stringify` for
+      // back-compat / debugging only — CI's corpus-hash gate assumes ON.
+      deterministic: { type: 'boolean', default: true },
+      'no-deterministic': { type: 'boolean' },
     },
   });
 
   const outputDir = values.output ? resolve(values.output) : null;
   const isDryRun = values['dry-run'] || false;
   const isWorker = values['batch-worker'] || false;
+  // `--no-deterministic` overrides the default-on `--deterministic`.
+  const deterministic = !values['no-deterministic'] && values.deterministic !== false;
 
   if (!outputDir && !isDryRun) {
-    console.error('Usage: node src/index.js --output <dir> [--specs name1,name2] [--dry-run] [--batch-size N]');
+    console.error(
+      'Usage: node src/index.js --output <dir> [--specs name1,name2] [--dry-run]\n' +
+      '                          [--batch-size N] [--deterministic|--no-deterministic]\n' +
+      '                          (default: --deterministic)',
+    );
     process.exit(1);
   }
 
   if (outputDir) {
     await mkdir(outputDir, { recursive: true });
+    if (!isDryRun) {
+      await removeCorpusHash(outputDir);
+    }
   }
 
-  // Determine which specs to process
+  // Determine which specs to process. User-supplied --specs lists are
+  // sorted too so any consumer (snapshot tests, hash recompute) sees the
+  // same iteration order regardless of how the user typed the list.
   let specNames;
-  if (values.specs) {
-    specNames = values.specs.split(',').map((s) => s.trim()).filter(Boolean);
+  if (values.specs !== undefined) {
+    specNames = values.specs.split(',').map((s) => s.trim()).filter(Boolean).sort();
   } else {
     specNames = await listSpecNames();
   }
@@ -819,6 +984,7 @@ async function main() {
       specNames,
       outputDir,
       dryRun: isDryRun,
+      deterministic,
     });
     // EXACTLY one line of JSON on stdout; nothing else.
     process.stdout.write(JSON.stringify({ totals, errors }) + '\n');
@@ -849,8 +1015,16 @@ async function main() {
       specNames,
       outputDir,
       dryRun: isDryRun,
+      deterministic,
     });
     printSummary(totals, errors);
+    if (await exitOnConversionFailure(totals, errors, outputDir, isDryRun)) {
+      return;
+    }
+    if (deterministic && outputDir && !isDryRun) {
+      const digest = await writeCorpusHash(outputDir);
+      console.log(`Corpus hash:        ${digest}`);
+    }
     return;
   }
 
@@ -873,12 +1047,20 @@ async function main() {
       outputDir,
       dryRun: isDryRun,
       heapMb,
+      deterministic,
     });
     mergeTotals(aggregateTotals, totals);
     for (const e of errors) aggregateErrors.push(e);
   }
 
   printSummary(aggregateTotals, aggregateErrors);
+  if (await exitOnConversionFailure(aggregateTotals, aggregateErrors, outputDir, isDryRun)) {
+    return;
+  }
+  if (deterministic && outputDir && !isDryRun) {
+    const digest = await writeCorpusHash(outputDir);
+    console.log(`Corpus hash:        ${digest}`);
+  }
 }
 
 // Run main only when executed directly (not imported)

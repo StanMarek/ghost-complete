@@ -19,7 +19,7 @@ use crate::history::{HistoryProvider, DEFAULT_MAX_HISTORY_ENTRIES};
 use crate::js_runtime::{JsExecContext, JsRuntimeAdapter};
 use crate::priority;
 use crate::provider::Provider;
-use crate::providers::{self, ProviderCtx, ProviderKind};
+use crate::providers::{self, ProviderCtx, ProviderKind, ProviderResolution};
 use crate::script::{run_script, substitute_template};
 use crate::shell_runner::EngineShellRunner;
 use crate::specs::{self, GeneratorSpec, JsRuntimeKind, JsRuntimeSpec, SpecStore};
@@ -81,9 +81,13 @@ pub struct SyncResult {
     pub git_generators: Vec<git::GitQueryKind>,
     /// Native providers resolved from the spec (e.g. `arduino_cli_boards`).
     /// The caller dispatches these asynchronously via `resolve_providers`.
-    /// Carries pre-resolved `ProviderKind`s so the engine can dispatch
-    /// without re-parsing the `"type"` string on the keystroke hot path.
-    pub provider_generators: Vec<ProviderKind>,
+    /// Carries pre-resolved [`ProviderResolution`] entries — each pairs
+    /// a `ProviderKind` with the `Arc<BTreeMap<String, String>>` of
+    /// generator-spec `params` declared on the source `GeneratorSpec`.
+    /// The engine threads those params into [`ProviderCtx::params`] at
+    /// dispatch time so spec-driven providers can read them without a
+    /// trait-shape change.
+    pub provider_generators: Vec<ProviderResolution>,
 }
 
 impl SyncResult {
@@ -195,7 +199,7 @@ mod sync_result_tests {
             }],
             script_generators: vec![],
             git_generators: vec![],
-            provider_generators: vec![ProviderKind::DefaultsDomains],
+            provider_generators: vec![ProviderKind::DefaultsDomains.into()],
         };
         // top_sync = 30 (Flag), provider_base = 70 (ProviderValue) → 70 > 30 → true
         assert!(result.has_pending_high_priority());
@@ -213,6 +217,7 @@ mod sync_result_tests {
             js_runtime: None,
             corrected_in: None,
             template: None,
+            params: std::collections::BTreeMap::new(),
         })
     }
 
@@ -866,11 +871,11 @@ impl SuggestionEngine {
     /// `Err`.
     pub async fn resolve_providers(
         &self,
-        kinds: &[ProviderKind],
+        resolutions: &[ProviderResolution],
         ctx: &ProviderCtx,
         query: &str,
     ) -> Result<Vec<Suggestion>> {
-        if kinds.is_empty() {
+        if resolutions.is_empty() {
             return Ok(Vec::new());
         }
         if !ctx.cwd.is_absolute() {
@@ -881,11 +886,12 @@ impl SuggestionEngine {
             return Ok(Vec::new());
         }
         let mut all = Vec::new();
-        for &kind in kinds {
-            match providers::resolve(kind, ctx).await {
+        for resolution in resolutions {
+            let dispatch_ctx = ctx.for_resolution(resolution);
+            match providers::resolve(resolution.kind, &dispatch_ctx).await {
                 Ok(suggestions) => all.extend(suggestions),
                 Err(e) => {
-                    tracing::warn!(provider = ?kind, "provider failed: {e}");
+                    tracing::warn!(provider = ?resolution.kind, "provider failed: {e}");
                 }
             }
         }
@@ -893,6 +899,31 @@ impl SuggestionEngine {
             return Ok(all);
         }
         Ok(fuzzy::rank(query, all, MAX_DYNAMIC_CANDIDATES))
+    }
+
+    /// Resolve each provider resolution independently and preserve the
+    /// per-kind result boundary for callers that need provider-specific
+    /// success/error reporting.
+    ///
+    /// Unlike [`Self::resolve_providers`], this does not aggregate or swallow
+    /// per-provider errors. It still applies each [`ProviderResolution`]'s
+    /// params map to a cloned [`ProviderCtx`] before dispatching, so callers
+    /// do not need to duplicate that overlay logic.
+    pub async fn resolve_provider_kinds(
+        &self,
+        resolutions: &[ProviderResolution],
+        ctx: &ProviderCtx,
+        query: &str,
+    ) -> Vec<(ProviderKind, Result<Vec<Suggestion>>)> {
+        let mut out = Vec::with_capacity(resolutions.len());
+        for resolution in resolutions {
+            let dispatch_ctx = ctx.for_resolution(resolution);
+            let res = self
+                .resolve_provider_kind(resolution.kind, &dispatch_ctx, query)
+                .await;
+            out.push((resolution.kind, res));
+        }
+        out
     }
 
     /// Per-kind variant of [`Self::resolve_git`] that surfaces errors instead of swallowing.
@@ -910,6 +941,9 @@ impl SuggestionEngine {
     }
 
     /// Per-kind variant of [`Self::resolve_providers`] that surfaces errors instead of logging-and-swallowing.
+    /// The supplied `ctx` is forwarded as-is; callers that need to
+    /// apply [`ProviderResolution`] params across multiple independent
+    /// dispatches should use [`Self::resolve_provider_kinds`].
     pub async fn resolve_provider_kind(
         &self,
         kind: ProviderKind,
@@ -1447,7 +1481,7 @@ fn is_supported_script_generator(gen: &GeneratorSpec) -> bool {
         // missing — the engine would otherwise build a JS program that
         // surfaces a SyntaxError diagnostic on every keystroke.
         Some(rt) if rt.kind == JsRuntimeKind::PostProcess => {
-            (gen.script.is_some() || gen.script_template.is_some()) && !rt.source.trim().is_empty()
+            has_non_empty_script_or_template(gen) && !rt.source.trim().is_empty()
         }
         Some(rt)
             if matches!(
@@ -1459,6 +1493,14 @@ fn is_supported_script_generator(gen: &GeneratorSpec) -> bool {
         }
         _ => false,
     }
+}
+
+fn has_non_empty_script_or_template(gen: &GeneratorSpec) -> bool {
+    gen.script.as_ref().is_some_and(|script| !script.is_empty())
+        || gen
+            .script_template
+            .as_ref()
+            .is_some_and(|template| !template.is_empty())
 }
 
 /// Filter a generator slice through [`is_supported_script_generator`]
@@ -2730,7 +2772,7 @@ mod tests {
         );
 
         let results = engine
-            .resolve_providers(&[ProviderKind::CargoWorkspaceMembers], &ctx, "")
+            .resolve_providers(&[ProviderKind::CargoWorkspaceMembers.into()], &ctx, "")
             .await
             .unwrap();
 
@@ -2775,11 +2817,99 @@ mod tests {
             cwd: Path::new("/tmp").to_path_buf(),
             env: std::sync::Arc::new(std::collections::HashMap::new()),
             current_token: String::new(),
+            params: std::sync::Arc::new(std::collections::BTreeMap::new()),
         };
         let empty_query = engine.resolve_providers(&[], &ctx, "").await.unwrap();
         assert!(empty_query.is_empty());
         let non_empty_query = engine.resolve_providers(&[], &ctx, "foo").await.unwrap();
         assert!(non_empty_query.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_resolve_providers_threads_params_per_resolution() {
+        let engine = make_engine();
+        let ctx = crate::providers::ProviderCtx {
+            cwd: Path::new("/tmp").to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+            params: std::sync::Arc::new(std::collections::BTreeMap::from([(
+                "base".to_string(),
+                "must-not-leak".to_string(),
+            )])),
+        };
+        let first = ProviderResolution {
+            kind: ProviderKind::TestEchoParams,
+            params: std::sync::Arc::new(std::collections::BTreeMap::from([
+                ("provider".to_string(), "first".to_string()),
+                ("shared".to_string(), "one".to_string()),
+            ])),
+        };
+        let second = ProviderResolution {
+            kind: ProviderKind::TestEchoParams,
+            params: std::sync::Arc::new(std::collections::BTreeMap::from([(
+                "provider".to_string(),
+                "second".to_string(),
+            )])),
+        };
+
+        let results = engine
+            .resolve_providers(&[first, second], &ctx, "")
+            .await
+            .unwrap();
+        let texts: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+
+        assert_eq!(texts, ["provider=first", "shared=one", "provider=second"]);
+    }
+
+    #[tokio::test]
+    async fn test_resolve_provider_kinds_threads_params_per_resolution() {
+        let engine = make_engine();
+        let ctx = crate::providers::ProviderCtx {
+            cwd: Path::new("/tmp").to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+            params: std::sync::Arc::new(std::collections::BTreeMap::from([(
+                "base".to_string(),
+                "must-not-leak".to_string(),
+            )])),
+        };
+        let first = ProviderResolution {
+            kind: ProviderKind::TestEchoParams,
+            params: std::sync::Arc::new(std::collections::BTreeMap::from([
+                ("provider".to_string(), "first".to_string()),
+                ("shared".to_string(), "one".to_string()),
+            ])),
+        };
+        let second = ProviderResolution {
+            kind: ProviderKind::TestEchoParams,
+            params: std::sync::Arc::new(std::collections::BTreeMap::from([(
+                "provider".to_string(),
+                "second".to_string(),
+            )])),
+        };
+
+        let results = engine
+            .resolve_provider_kinds(&[first, second], &ctx, "")
+            .await;
+        let texts: Vec<Vec<&str>> = results
+            .iter()
+            .map(|(_kind, result)| {
+                result
+                    .as_ref()
+                    .unwrap()
+                    .iter()
+                    .map(|s| s.text.as_str())
+                    .collect()
+            })
+            .collect();
+
+        assert_eq!(
+            texts,
+            [
+                vec!["provider=first", "shared=one"],
+                vec!["provider=second"]
+            ]
+        );
     }
 
     #[tokio::test]
@@ -2863,6 +2993,7 @@ mod tests {
             js_runtime: None,
             corrected_in: None,
             template: None,
+            params: std::collections::BTreeMap::new(),
         };
         let ctx = make_ctx(Some("test"), vec![], "", 1);
         let argv = super::resolve_script_argv(&gen, &ctx);
@@ -2882,10 +3013,46 @@ mod tests {
             js_runtime: None,
             corrected_in: None,
             template: None,
+            params: std::collections::BTreeMap::new(),
         };
         let ctx = make_ctx(Some("test"), vec!["arg1"], "", 2);
         let argv = super::resolve_script_argv(&gen, &ctx);
         assert_eq!(argv, vec!["cmd", "arg1"]);
+    }
+
+    #[test]
+    fn test_post_process_requires_non_empty_script_argv() {
+        use crate::specs::{JsRuntimeKind, JsRuntimeSpec};
+
+        let runtime = Arc::new(JsRuntimeSpec {
+            kind: JsRuntimeKind::PostProcess,
+            source: "out => out.split('\\n')".to_string(),
+            timeout_ms: None,
+            allow_shell_command: false,
+            self_contained: false,
+        });
+        let empty_script = crate::specs::GeneratorSpec {
+            generator_type: None,
+            script: Some(vec![]),
+            script_template: None,
+            transforms: vec![],
+            cache: None,
+            requires_js: true,
+            js_source: None,
+            js_runtime: Some(Arc::clone(&runtime)),
+            corrected_in: None,
+            template: None,
+            params: std::collections::BTreeMap::new(),
+        };
+        let empty_template = crate::specs::GeneratorSpec {
+            script: None,
+            script_template: Some(vec![]),
+            js_runtime: Some(runtime),
+            ..empty_script.clone()
+        };
+
+        assert!(!super::is_supported_script_generator(&empty_script));
+        assert!(!super::is_supported_script_generator(&empty_template));
     }
 
     #[test]
@@ -3418,6 +3585,7 @@ mod tests {
             })),
             corrected_in: None,
             template: None,
+            params: std::collections::BTreeMap::new(),
         });
 
         let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;
@@ -3474,6 +3642,7 @@ mod tests {
             js_runtime: None,
             corrected_in: None,
             template: None,
+            params: std::collections::BTreeMap::new(),
         });
 
         let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;

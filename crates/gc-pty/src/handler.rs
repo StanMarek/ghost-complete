@@ -1772,7 +1772,7 @@ impl InputHandler {
         &mut self,
         script_generators: Vec<std::sync::Arc<gc_suggest::specs::GeneratorSpec>>,
         git_generators: Vec<gc_suggest::git::GitQueryKind>,
-        provider_generators: Vec<gc_suggest::providers::ProviderKind>,
+        provider_generators: Vec<gc_suggest::providers::ProviderResolution>,
         ctx: &gc_buffer::CommandContext,
         cwd: &std::path::Path,
     ) {
@@ -1813,10 +1813,14 @@ impl InputHandler {
             // every keystroke, and no current provider reads `ctx.env`,
             // so the collected map would be dead weight on the hot path.
             let env = Arc::new(build_env_snapshot(!provider_generators.is_empty()));
+            // Base provider ctx; `resolve_provider_kinds` overlays
+            // per-resolution params onto cloned contexts before
+            // dispatching each provider.
             let provider_ctx = Arc::new(gc_suggest::providers::ProviderCtx {
                 cwd: cwd.clone(),
                 env,
                 current_token: ctx.current_word.clone(),
+                params: Arc::new(std::collections::BTreeMap::new()),
             });
 
             // Per-kind dispatch so each git/provider failure surfaces with its own ProviderTag.
@@ -1836,17 +1840,16 @@ impl InputHandler {
             };
             let provider_engine = Arc::clone(&engine);
             let provider_query = ctx.current_word.clone();
-            let provider_kinds = provider_generators.clone();
+            let provider_resolutions = provider_generators.clone();
             let provider_ctx_for_fut = Arc::clone(&provider_ctx);
             let provider_fut = async move {
-                let mut out = Vec::with_capacity(provider_kinds.len());
-                for kind in provider_kinds {
-                    let res = provider_engine
-                        .resolve_provider_kind(kind, &provider_ctx_for_fut, &provider_query)
-                        .await;
-                    out.push((kind, res));
-                }
-                out
+                provider_engine
+                    .resolve_provider_kinds(
+                        &provider_resolutions,
+                        &provider_ctx_for_fut,
+                        &provider_query,
+                    )
+                    .await
             };
             let (script_res, git_results, provider_results) = tokio::join!(
                 engine.run_generators(&script_generators, &ctx, &cwd, timeout),
@@ -5989,6 +5992,7 @@ mod tests {
             }),
             corrected_in: None,
             template: None,
+            params: std::collections::BTreeMap::new(),
         }
     }
 
@@ -6035,6 +6039,7 @@ mod tests {
             js_runtime: None,
             corrected_in: None,
             template: None,
+            params: std::collections::BTreeMap::new(),
         };
         assert!(
             generator_depends_on_current_word(&gen),
@@ -6057,6 +6062,7 @@ mod tests {
             js_runtime: None,
             corrected_in: None,
             template: None,
+            params: std::collections::BTreeMap::new(),
         };
         assert!(
             !generator_depends_on_current_word(&gen),

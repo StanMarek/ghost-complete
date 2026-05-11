@@ -125,6 +125,7 @@ fn script_function_generator(source: &str) -> Arc<GeneratorSpec> {
         })),
         corrected_in: None,
         template: None,
+        params: std::collections::BTreeMap::new(),
     })
 }
 
@@ -146,6 +147,7 @@ fn custom_generator(source: &str) -> Arc<GeneratorSpec> {
         })),
         corrected_in: None,
         template: None,
+        params: std::collections::BTreeMap::new(),
     })
 }
 
@@ -167,6 +169,7 @@ fn custom_generator_with_shell_string(source: &str) -> Arc<GeneratorSpec> {
         })),
         corrected_in: None,
         template: None,
+        params: std::collections::BTreeMap::new(),
     })
 }
 
@@ -191,6 +194,7 @@ fn cached_custom_generator(source: &str) -> Arc<GeneratorSpec> {
         })),
         corrected_in: None,
         template: None,
+        params: std::collections::BTreeMap::new(),
     })
 }
 
@@ -640,6 +644,7 @@ async fn supported_count_lifts_to_full_corpus() {
             })),
             corrected_in: None,
             template: None,
+            params: std::collections::BTreeMap::new(),
         }),
         script_function_generator("(t) => ['sh', '-c', 'printf \"sf\\\\n\"']"),
         custom_generator("async () => [{ name: 'cu' }]"),

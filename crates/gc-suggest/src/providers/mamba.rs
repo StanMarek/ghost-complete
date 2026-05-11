@@ -224,6 +224,7 @@ py311                    /opt/conda/envs/py311
             cwd: tmp.path().to_path_buf(),
             env: std::sync::Arc::new(std::collections::HashMap::new()),
             current_token: String::new(),
+            params: std::sync::Arc::new(std::collections::BTreeMap::new()),
         };
         let result = MambaEnvs
             .generate_with_binary(&ctx, "/nonexistent/conda-for-test")
@@ -252,6 +253,7 @@ py311                    /opt/conda/envs/py311
             cwd: tmp.path().to_path_buf(),
             env: std::sync::Arc::new(std::collections::HashMap::new()),
             current_token: String::new(),
+            params: std::sync::Arc::new(std::collections::BTreeMap::new()),
         };
         let result = MambaEnvs.generate(&ctx).await;
         assert!(result.is_ok());

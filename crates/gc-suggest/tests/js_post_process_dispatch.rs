@@ -147,6 +147,7 @@ fn post_process_generator(script: &[&str], source: &str) -> Arc<GeneratorSpec> {
         })),
         corrected_in: None,
         template: None,
+        params: std::collections::BTreeMap::new(),
     })
 }
 
@@ -266,6 +267,7 @@ async fn unsupported_kind_skipped_when_source_empty() {
         })),
         corrected_in: None,
         template: None,
+        params: std::collections::BTreeMap::new(),
     });
 
     let engine = make_engine();
@@ -311,6 +313,7 @@ async fn js_timeout_diagnostic_logged() {
         })),
         corrected_in: None,
         template: None,
+        params: std::collections::BTreeMap::new(),
     });
 
     let engine = make_engine();
@@ -369,6 +372,7 @@ async fn js_exception_diagnostic_logged() {
         })),
         corrected_in: None,
         template: None,
+        params: std::collections::BTreeMap::new(),
     });
 
     let engine = make_engine();
@@ -510,6 +514,7 @@ async fn custom_zero_ttl_skips_cache_insert() {
         })),
         corrected_in: None,
         template: None,
+        params: std::collections::BTreeMap::new(),
     });
 
     let engine = make_engine();
@@ -566,6 +571,7 @@ async fn post_process_ttl_zero_means_no_caching() {
         })),
         corrected_in: None,
         template: None,
+        params: std::collections::BTreeMap::new(),
     });
 
     let engine = make_engine();

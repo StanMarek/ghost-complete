@@ -48,6 +48,7 @@ fn ctx_for(cwd: &Path) -> ProviderCtx {
         cwd: cwd.to_path_buf(),
         env: Arc::new(HashMap::new()),
         current_token: String::new(),
+        params: Arc::new(std::collections::BTreeMap::new()),
     }
 }
 
@@ -61,11 +62,11 @@ fn assert_workspace_spec_routes_provider(buffer: &str, expected: ProviderKind) {
     let ctx = command_ctx(buffer);
     let result = engine.suggest_sync(&ctx, tmp.path(), buffer).unwrap();
 
+    let kinds: Vec<ProviderKind> = result.provider_generators.iter().map(|r| r.kind).collect();
     assert_eq!(
-        result.provider_generators,
+        kinds,
         vec![expected],
-        "{buffer:?} must enqueue {expected:?} through workspace specs; got {:?}",
-        result.provider_generators
+        "{buffer:?} must enqueue {expected:?} through workspace specs; got {kinds:?}"
     );
     assert!(
         result.script_generators.is_empty(),
@@ -104,7 +105,7 @@ async fn make_tab_lists_makefile_targets() {
     let engine = engine();
     let ctx = ctx_for(tmp.path());
     let suggestions = engine
-        .resolve_providers(&[ProviderKind::MakefileTargets], &ctx, "")
+        .resolve_providers(&[ProviderKind::MakefileTargets.into()], &ctx, "")
         .await
         .unwrap();
     let texts: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
@@ -128,7 +129,7 @@ async fn npm_run_tab_lists_package_scripts() {
     let engine = engine();
     let ctx = ctx_for(tmp.path());
     let suggestions = engine
-        .resolve_providers(&[ProviderKind::NpmScripts], &ctx, "")
+        .resolve_providers(&[ProviderKind::NpmScripts.into()], &ctx, "")
         .await
         .unwrap();
     let texts: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
@@ -161,7 +162,7 @@ async fn cargo_run_p_tab_lists_workspace_members() {
     let engine = engine();
     let ctx = ctx_for(tmp.path());
     let suggestions = engine
-        .resolve_providers(&[ProviderKind::CargoWorkspaceMembers], &ctx, "")
+        .resolve_providers(&[ProviderKind::CargoWorkspaceMembers.into()], &ctx, "")
         .await
         .unwrap();
     let texts: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
@@ -181,7 +182,7 @@ async fn cargo_p_in_single_package_crate_lists_one_name() {
     let engine = engine();
     let ctx = ctx_for(tmp.path());
     let suggestions = engine
-        .resolve_providers(&[ProviderKind::CargoWorkspaceMembers], &ctx, "")
+        .resolve_providers(&[ProviderKind::CargoWorkspaceMembers.into()], &ctx, "")
         .await
         .unwrap();
     let texts: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
@@ -198,7 +199,10 @@ async fn missing_files_yield_empty_suggestions_without_panic() {
         ProviderKind::NpmScripts,
         ProviderKind::CargoWorkspaceMembers,
     ] {
-        let result = engine.resolve_providers(&[kind], &ctx, "").await.unwrap();
+        let result = engine
+            .resolve_providers(&[kind.into()], &ctx, "")
+            .await
+            .unwrap();
         assert!(
             result.is_empty(),
             "missing project file for {kind:?} must yield empty result, got {result:?}"
@@ -221,7 +225,7 @@ async fn makefile_targets_invalidate_when_file_changes() {
     let ctx = ctx_for(tmp.path());
 
     let first = engine
-        .resolve_providers(&[ProviderKind::MakefileTargets], &ctx, "")
+        .resolve_providers(&[ProviderKind::MakefileTargets.into()], &ctx, "")
         .await
         .unwrap();
     let texts: Vec<&str> = first.iter().map(|s| s.text.as_str()).collect();
@@ -235,7 +239,7 @@ async fn makefile_targets_invalidate_when_file_changes() {
     filetime::set_file_mtime(&mf, ft).unwrap();
 
     let second = engine
-        .resolve_providers(&[ProviderKind::MakefileTargets], &ctx, "")
+        .resolve_providers(&[ProviderKind::MakefileTargets.into()], &ctx, "")
         .await
         .unwrap();
     let texts: Vec<&str> = second.iter().map(|s| s.text.as_str()).collect();
@@ -256,7 +260,7 @@ async fn fuzzy_query_filters_provider_output() {
     // Non-empty query routes through `fuzzy::rank` — only entries
     // matching `bui` should survive.
     let suggestions = engine
-        .resolve_providers(&[ProviderKind::MakefileTargets], &ctx, "bui")
+        .resolve_providers(&[ProviderKind::MakefileTargets.into()], &ctx, "bui")
         .await
         .unwrap();
     let texts: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();

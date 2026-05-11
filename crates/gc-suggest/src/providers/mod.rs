@@ -34,7 +34,7 @@
 //! enum and awaits the concrete provider directly, which avoids needing
 //! `dyn` at all.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -77,6 +77,15 @@ pub struct ProviderCtx {
     /// The partially-typed token the user is currently completing. May
     /// be empty when the trigger fires on a space after a subcommand.
     pub current_token: String,
+    /// Generator-spec parameters resolved from the spec's `params`
+    /// field. Empty for providers that do not consume them. `BTreeMap`
+    /// gives deterministic iteration order; [`Self::params_hash`] is
+    /// suitable only for in-process cache keys.
+    ///
+    /// Read by spec-driven providers (e.g. the planned `AwsSdk`
+    /// provider in ux-13/14). Existing native providers ignore this
+    /// field; the channel is purely additive.
+    pub params: Arc<BTreeMap<String, String>>,
 }
 
 /// Errors produced when constructing a [`ProviderCtx`] via
@@ -120,6 +129,7 @@ impl ProviderCtx {
             cwd,
             env,
             current_token,
+            params: Arc::new(BTreeMap::new()),
         })
     }
 
@@ -138,7 +148,36 @@ impl ProviderCtx {
             cwd,
             env,
             current_token,
+            params: Arc::new(BTreeMap::new()),
         }
+    }
+
+    /// Clone this context for a single provider resolution, replacing
+    /// only `params` with the map declared on that resolution's source
+    /// generator.
+    pub fn for_resolution(&self, resolution: &ProviderResolution) -> Self {
+        Self {
+            cwd: self.cwd.clone(),
+            env: Arc::clone(&self.env),
+            current_token: self.current_token.clone(),
+            params: Arc::clone(&resolution.params),
+        }
+    }
+
+    /// Stable hash of [`Self::params`] suitable for in-process cache
+    /// keys. `BTreeMap` iteration order is deterministic, and
+    /// [`std::collections::hash_map::DefaultHasher`] is fixed-seed,
+    /// so the result is stable across calls within a process. Cross-
+    /// process stability is NOT guaranteed and not required — this
+    /// hash exists for the in-process generator cache only.
+    pub fn params_hash(&self) -> u64 {
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        for (k, v) in self.params.iter() {
+            k.hash(&mut hasher);
+            v.hash(&mut hasher);
+        }
+        hasher.finish()
     }
 }
 
@@ -230,6 +269,11 @@ pub enum ProviderKind {
     /// `pandoc --list-output-formats`, emitting one format identifier
     /// per non-empty line.
     PandocOutputFormats,
+    /// Test-only provider that echoes `ProviderCtx::params` into
+    /// suggestions so engine-boundary tests can prove per-resolution
+    /// params reached dispatch.
+    #[cfg(test)]
+    TestEchoParams,
 }
 
 impl ProviderKind {
@@ -281,7 +325,46 @@ impl ProviderKind {
             Self::NpmScripts => "npm_scripts",
             Self::PandocInputFormats => "pandoc_input_formats",
             Self::PandocOutputFormats => "pandoc_output_formats",
+            #[cfg(test)]
+            Self::TestEchoParams => "__test_echo_params",
         }
+    }
+}
+
+/// One native provider scheduled by spec resolution, paired with the
+/// `params` map declared on the source [`crate::specs::GeneratorSpec`].
+///
+/// Replaces the bare `Vec<ProviderKind>` carried through
+/// `SpecResolution.provider_generators` so the engine can build a
+/// per-provider [`ProviderCtx`] whose `params` are set to the spec's
+/// declared values. Existing native providers ignore `params`; future
+/// spec-driven providers (`AwsSdk`, etc.) read them via `ctx.params`.
+///
+/// `params` lives behind an `Arc<BTreeMap<...>>` so cloning the
+/// resolution is a refcount bump on the keystroke hot path. Stable
+/// `BTreeMap` iteration order gives deterministic hashing input;
+/// [`ProviderCtx::params_hash`] remains an in-process cache key only.
+#[derive(Debug, Clone)]
+pub struct ProviderResolution {
+    pub kind: ProviderKind,
+    pub params: Arc<BTreeMap<String, String>>,
+}
+
+impl ProviderResolution {
+    /// Convenience constructor for callers that only have a kind on
+    /// hand and don't need to thread params yet — the empty-params
+    /// case stays a one-liner.
+    pub fn from_kind(kind: ProviderKind) -> Self {
+        Self {
+            kind,
+            params: Arc::new(BTreeMap::new()),
+        }
+    }
+}
+
+impl From<ProviderKind> for ProviderResolution {
+    fn from(kind: ProviderKind) -> Self {
+        Self::from_kind(kind)
     }
 }
 
@@ -355,6 +438,15 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
         ProviderKind::NpmScripts => local_project::npm_scripts::NpmScripts.generate(ctx).await,
         ProviderKind::PandocInputFormats => pandoc::PandocInputFormats.generate(ctx).await,
         ProviderKind::PandocOutputFormats => pandoc::PandocOutputFormats.generate(ctx).await,
+        #[cfg(test)]
+        ProviderKind::TestEchoParams => Ok(ctx
+            .params
+            .iter()
+            .map(|(key, value)| Suggestion {
+                text: format!("{key}={value}"),
+                ..Default::default()
+            })
+            .collect()),
     }
 }
 
@@ -451,10 +543,58 @@ mod tests {
             cwd: PathBuf::from("/tmp"),
             env: Arc::new(HashMap::new()),
             current_token: String::new(),
+            params: Arc::new(BTreeMap::new()),
         };
         assert_eq!(ctx.cwd, PathBuf::from("/tmp"));
         assert!(ctx.env.is_empty());
         assert!(ctx.current_token.is_empty());
+        assert!(ctx.params.is_empty());
+    }
+
+    #[test]
+    fn test_provider_ctx_for_resolution_overlays_each_params_map() {
+        let env = Arc::new(HashMap::from([(
+            "SHELL".to_string(),
+            "/bin/zsh".to_string(),
+        )]));
+        let base_params = Arc::new(BTreeMap::from([(
+            "base".to_string(),
+            "must-not-leak".to_string(),
+        )]));
+        let base = ProviderCtx {
+            cwd: PathBuf::from("/tmp/project"),
+            env: Arc::clone(&env),
+            current_token: "tar".to_string(),
+            params: base_params,
+        };
+        let first = ProviderResolution {
+            kind: ProviderKind::NpmScripts,
+            params: Arc::new(BTreeMap::from([(
+                "package_manager".to_string(),
+                "pnpm".to_string(),
+            )])),
+        };
+        let second = ProviderResolution {
+            kind: ProviderKind::CargoWorkspaceMembers,
+            params: Arc::new(BTreeMap::from([(
+                "workspace".to_string(),
+                "members".to_string(),
+            )])),
+        };
+
+        let first_ctx = base.for_resolution(&first);
+        let second_ctx = base.for_resolution(&second);
+
+        assert_eq!(first_ctx.cwd, base.cwd);
+        assert_eq!(second_ctx.cwd, base.cwd);
+        assert!(Arc::ptr_eq(&first_ctx.env, &env));
+        assert!(Arc::ptr_eq(&second_ctx.env, &env));
+        assert_eq!(first_ctx.current_token, "tar");
+        assert_eq!(second_ctx.current_token, "tar");
+        assert!(Arc::ptr_eq(&first_ctx.params, &first.params));
+        assert!(Arc::ptr_eq(&second_ctx.params, &second.params));
+        assert_eq!(first_ctx.params.as_ref(), first.params.as_ref());
+        assert_eq!(second_ctx.params.as_ref(), second.params.as_ref());
     }
 
     #[test]
