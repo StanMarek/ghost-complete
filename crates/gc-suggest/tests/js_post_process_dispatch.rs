@@ -593,3 +593,163 @@ async fn post_process_ttl_zero_means_no_caching() {
         "ttl_seconds=0 must skip caching; got {runs} script runs (contents: {counter_contents:?})"
     );
 }
+
+// ---------------------------------------------------------------------------
+// User-workflow goldens: helper-bearing post_process bodies copied
+// byte-for-byte from specs/aws.json. The QuickJS sandbox must define
+// `l`/`p`/`c`/`d`/`h`/`f` (see crates/gc-jsrt/src/helpers.js) or these bodies
+// throw ReferenceError and the engine produces zero suggestions. The bodies
+// are kept verbatim so a future converter change cannot silently rename a
+// helper without breaking these tests.
+// ---------------------------------------------------------------------------
+
+/// Build a printf shell command that reproduces a fixed JSON document on
+/// stdout. JSON is double-escaped (`"` → `\"`) and `%` is doubled because
+/// `sh -c "printf ..."` passes the format through printf's `%` interpolation.
+fn printf_json_argv(json: &str) -> Vec<String> {
+    let escaped: String = json
+        .chars()
+        .map(|c| match c {
+            '"' => "\\\"".to_string(),
+            '%' => "%%".to_string(),
+            other => other.to_string(),
+        })
+        .collect();
+    vec![
+        "sh".to_string(),
+        "-c".to_string(),
+        format!("printf '%s' \"{escaped}\""),
+    ]
+}
+
+async fn run_post_process_with_canned_stdout(
+    json: &str,
+    body: &str,
+) -> Vec<gc_suggest::types::Suggestion> {
+    let argv = printf_json_argv(json);
+    let script_strs: Vec<&str> = argv.iter().map(String::as_str).collect();
+    let gen = post_process_generator(&script_strs, body);
+    let engine = make_engine();
+    let ctx = make_ctx("aws-test", Vec::new(), "");
+    engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch")
+}
+
+#[tokio::test]
+async fn aws_iam_attach_role_policy_role_name_returns_role_suggestions() {
+    // Mirrors the post_process body for `--role-name` on `iam attach-role-policy`:
+    //   script: ["aws", "iam", "list-roles"]
+    //   body:   function(t){return l(t,"Roles","RoleName")}
+    let stdout = r#"{"Roles":[{"RoleName":"AdminRole","Arn":"arn:aws:iam::111:role/AdminRole"},{"RoleName":"ReadOnly","Arn":"arn:aws:iam::111:role/ReadOnly"}]}"#;
+    let body = r#"function(t){return l(t,"Roles","RoleName")}"#;
+    let results = run_post_process_with_canned_stdout(stdout, body).await;
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(
+        names,
+        ["AdminRole", "ReadOnly"],
+        "`aws iam attach-role-policy --role-name <Tab>` body did not \
+         produce role suggestions — the helper preamble may have \
+         regressed. The helper `l` preamble in gc-jsrt/src/helpers.js \
+         is the source of truth."
+    );
+}
+
+#[tokio::test]
+async fn aws_lambda_invoke_function_name_returns_function_suggestions() {
+    // Mirrors body for `--function-name` on `lambda invoke`:
+    //   script: ["aws", "lambda", "list-functions"]
+    //   body:   function(t){return p(t,"Functions","FunctionName")}
+    let stdout = r#"{"Functions":[{"FunctionName":"alpha"},{"FunctionName":"beta"},{"FunctionName":"gamma"}]}"#;
+    let body = r#"function(t){return p(t,"Functions","FunctionName")}"#;
+    let results = run_post_process_with_canned_stdout(stdout, body).await;
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(names, ["alpha", "beta", "gamma"]);
+}
+
+#[tokio::test]
+async fn aws_cloudformation_create_stack_stack_name_returns_stack_suggestions() {
+    // Mirrors body for `--stack-name` on `cloudformation create-stack`:
+    //   script: ["aws", "cloudformation", "list-stacks"]
+    //   body:   t=>d(t,"StackSummaries","StackName")
+    let stdout = r#"{"StackSummaries":[{"StackName":"prod-vpc","StackStatus":"CREATE_COMPLETE"},{"StackName":"staging-vpc","StackStatus":"UPDATE_COMPLETE"}]}"#;
+    let body = r#"t=>d(t,"StackSummaries","StackName")"#;
+    let results = run_post_process_with_canned_stdout(stdout, body).await;
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(names, ["prod-vpc", "staging-vpc"]);
+}
+
+#[tokio::test]
+async fn aws_cloudwatch_delete_alarms_alarm_names_returns_alarm_suggestions() {
+    // Mirrors body for `--alarm-names` on `cloudwatch delete-alarms`:
+    //   script: ["aws", "cloudwatch", "describe-alarms"]
+    //   body:   t=>c(t,"MetricAlarms","AlarmName")
+    let stdout = r#"{"MetricAlarms":[{"AlarmName":"high-cpu","StateValue":"OK"},{"AlarmName":"low-memory","StateValue":"ALARM"}]}"#;
+    let body = r#"t=>c(t,"MetricAlarms","AlarmName")"#;
+    let results = run_post_process_with_canned_stdout(stdout, body).await;
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(names, ["high-cpu", "low-memory"]);
+}
+
+#[tokio::test]
+async fn aws_ecs_delete_service_cluster_returns_cluster_suggestions() {
+    // Mirrors body for `--cluster` on `ecs delete-service`:
+    //   script: ["aws", "ecs", "list-clusters"]
+    //   body:   t=>h(t,"clusterArns") — 2-arg variant (array of strings)
+    let stdout = r#"{"clusterArns":["arn:aws:ecs:us-east-1:111:cluster/web","arn:aws:ecs:us-east-1:111:cluster/workers"]}"#;
+    let body = r#"t=>h(t,"clusterArns")"#;
+    let results = run_post_process_with_canned_stdout(stdout, body).await;
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(
+        names,
+        [
+            "arn:aws:ecs:us-east-1:111:cluster/web",
+            "arn:aws:ecs:us-east-1:111:cluster/workers",
+        ],
+    );
+}
+
+#[tokio::test]
+async fn aws_iam_list_roles_principal_returns_role_suggestions() {
+    // Mirrors body for completions filtered by trust-policy principal on
+    // `iam list-roles` outputs:
+    //   script: ["aws", "iam", "list-roles"]
+    //   body:   t=>f(t,"eks.amazonaws.com")
+    // The `f` helper decodes each role's URL-encoded AssumeRolePolicyDocument
+    // and keeps only those whose Statement[].Principal.Service matches the
+    // requested service — here, the lambda role must be filtered out.
+    //
+    // The stdout JSON contains URL-encoded `%xx` sequences, so we can't use
+    // the `printf_json_argv` helper (its `%` → `%%` escape would corrupt the
+    // encoded document). Write the JSON to a tempfile and `cat` it instead —
+    // bytes round-trip cleanly through the filesystem.
+    let eks_doc = "%7B%22Version%22%3A%222012-10-17%22%2C%22Statement%22%3A%5B%7B%22Effect%22%3A%22Allow%22%2C%22Principal%22%3A%7B%22Service%22%3A%22eks.amazonaws.com%22%7D%2C%22Action%22%3A%22sts%3AAssumeRole%22%7D%5D%7D";
+    let lambda_doc = "%7B%22Version%22%3A%222012-10-17%22%2C%22Statement%22%3A%5B%7B%22Effect%22%3A%22Allow%22%2C%22Principal%22%3A%7B%22Service%22%3A%22lambda.amazonaws.com%22%7D%2C%22Action%22%3A%22sts%3AAssumeRole%22%7D%5D%7D";
+    let stdout = format!(
+        r#"{{"Roles":[{{"RoleName":"EksRole","AssumeRolePolicyDocument":"{eks_doc}"}},{{"RoleName":"LambdaRole","AssumeRolePolicyDocument":"{lambda_doc}"}}]}}"#,
+    );
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let stdout_path = tmp.path().join("list-roles.json");
+    std::fs::write(&stdout_path, &stdout).expect("write canned stdout");
+    let argv = ["cat", stdout_path.to_str().expect("utf-8 path")];
+
+    let body = r#"t=>f(t,"eks.amazonaws.com")"#;
+    let gen = post_process_generator(&argv, body);
+    let engine = make_engine();
+    let ctx = make_ctx("aws-test", Vec::new(), "");
+    let results = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch");
+
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(
+        names,
+        ["EksRole"],
+        "`f` must filter roles by Principal.Service; only the eks-trusted \
+         role should remain. The helper `f` preamble in \
+         gc-jsrt/src/helpers.js is the source of truth."
+    );
+}

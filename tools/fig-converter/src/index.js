@@ -32,6 +32,7 @@
  */
 
 import { readdir, readFile, mkdir, rm, writeFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, basename, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -42,6 +43,42 @@ import { matchPostProcess } from './post-process-matcher.js';
 import { matchNativeFromJsSource, matchNativeGenerator } from './native-map.js';
 import { analyzeGenerator } from './ast-analyzer.js';
 import { stringifySorted } from './serialize.js';
+
+/**
+ * Names that gc-jsrt installs as global helpers in every job's sandbox
+ * (see crates/gc-jsrt/src/helpers.js). When the AST analyzer flags a
+ * body's free identifiers and ALL of them are in this set, we preserve
+ * the source — the runtime guarantees the names will resolve.
+ *
+ * Shape-validated at module load so a corrupted or schema-changed
+ * known-helpers.json fails loudly here instead of silently degrading
+ * every helper-bearing body to `js_runtime: undefined` downstream.
+ */
+const KNOWN_HELPERS = (() => {
+  const parsed = JSON.parse(
+    readFileSync(new URL('./known-helpers.json', import.meta.url), 'utf8'),
+  );
+  if (!Array.isArray(parsed.helpers) || parsed.helpers.length === 0) {
+    throw new Error(
+      'known-helpers.json missing or empty `helpers` array (expected a non-empty string list)',
+    );
+  }
+  // Per-element validation: a partially corrupted list (e.g.
+  // `["l", 42, "f"]`) must NOT silently land non-strings in the Set —
+  // `KNOWN_HELPERS.has('l')` would still work but `.has(42)` would
+  // miss any minified body that references that helper, degrading only
+  // some bodies. The regex is the schema the helper-preservation test
+  // pins in helper-preservation.test.js (`/^[a-z]$/`).
+  for (const name of parsed.helpers) {
+    if (typeof name !== 'string' || !/^[a-z]$/.test(name)) {
+      throw new Error(
+        `known-helpers.json: invalid helper name ${JSON.stringify(name)} ` +
+          `— expected single-lowercase-letter string`,
+      );
+    }
+  }
+  return new Set(parsed.helpers);
+})();
 
 const BUILD_DIR = join(
   import.meta.dirname,
@@ -249,7 +286,13 @@ function buildSelfContainedJsRuntime(kind, source) {
   if (!source || typeof source !== 'string') return null;
   const analysis = analyzeGenerator(source);
   if (analysis.parse_error) return null;
-  if (analysis.fig_api_refs.some((ref) => ref.kind === 'free')) return null;
+  // Free identifiers normally disqualify a body — they would throw
+  // ReferenceError in the sandbox. The runtime installs pure-JS
+  // definitions for Fig's minified helpers in every job (see
+  // crates/gc-jsrt/src/helpers.js), so free refs whose names are
+  // entirely covered by that preamble are safe to preserve.
+  const freeRefs = analysis.fig_api_refs.filter((ref) => ref.kind === 'free');
+  if (freeRefs.some((ref) => !KNOWN_HELPERS.has(ref.name))) return null;
   return { kind, source, self_contained: true };
 }
 
