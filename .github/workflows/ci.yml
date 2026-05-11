@@ -192,6 +192,7 @@ jobs:
           filters: |
             fig_converter:
               - 'tools/fig-converter/**'
+              - '.github/workflows/ci.yml'
       - name: Set up Node
         if: steps.filter.outputs.fig_converter == 'true'
         uses: actions/setup-node@v5

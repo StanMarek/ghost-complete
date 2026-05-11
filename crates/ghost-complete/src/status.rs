@@ -1451,6 +1451,38 @@ mod tests {
         p
     }
 
+    fn assert_outcome_requires_js_counters(
+        outcome: &StatusOutcome,
+        total: usize,
+        supported: usize,
+        unsupported: usize,
+    ) {
+        assert_eq!(outcome.counters.requires_js_total, total);
+        assert_eq!(outcome.counters.requires_js_supported, supported);
+        assert_eq!(outcome.counters.requires_js_unsupported, unsupported);
+    }
+
+    fn assert_json_requires_js_counters(
+        cfg: &std::path::Path,
+        total: u64,
+        supported: u64,
+        unsupported: u64,
+    ) {
+        let mut out = Vec::new();
+        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        let parsed: serde_json::Value = serde_json::from_slice(&out).unwrap();
+        let counters = &parsed["counters"];
+        assert_eq!(counters["requires_js_total"].as_u64().unwrap(), total);
+        assert_eq!(
+            counters["requires_js_supported"].as_u64().unwrap(),
+            supported
+        );
+        assert_eq!(
+            counters["requires_js_unsupported"].as_u64().unwrap(),
+            unsupported
+        );
+    }
+
     fn render_specs_status_for_test(
         store: &gc_suggest::SpecStore,
         cfg: &gc_config::SpecCacheConfig,
@@ -1642,6 +1674,8 @@ mod tests {
             "primary wins: only its 5 generators count, not the fallback's 10 (15 total \
              would indicate the pre-fix double-counting bug)"
         );
+        assert_outcome_requires_js_counters(&outcome, 5, 0, 5);
+        assert_json_requires_js_counters(&cfg, 5, 0, 5);
         assert_eq!(
             outcome.command_alias_conflicts, 1,
             "fallback copy is recorded as a DirectoryPrecedence fallback candidate"
@@ -1663,7 +1697,7 @@ mod tests {
         std::fs::write(primary_dir.join("git.json"), "{not valid json").unwrap();
         std::fs::write(
             fallback_dir.join("git.json"),
-            r#"{"name":"git","subcommands":[{"name":"from-fallback"}]}"#,
+            make_git_spec_with_requires_js(3),
         )
         .unwrap();
 
@@ -1683,9 +1717,15 @@ mod tests {
             "git remains functional through the lower-precedence parsed candidate"
         );
         assert_eq!(
-            outcome.fully_functional, 1,
+            outcome.partially_functional, 1,
             "fallback candidate should be the resolved runtime spec"
         );
+        assert_eq!(
+            outcome.requires_js_generators_total, 3,
+            "requires_js totals must come from the parsed fallback candidate"
+        );
+        assert_outcome_requires_js_counters(&outcome, 3, 0, 3);
+        assert_json_requires_js_counters(&cfg, 3, 0, 3);
     }
 
     #[test]

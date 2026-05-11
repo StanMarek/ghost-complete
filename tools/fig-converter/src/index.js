@@ -82,6 +82,11 @@ async function loadFigSpec(specName) {
   return spec;
 }
 
+function unresolvedLoadSpecMessage(targetName, specName, visited) {
+  const loadPath = [...visited, targetName].join(' -> ');
+  return `unresolved loadSpec target "${targetName}" while resolving "${specName}" (${loadPath})`;
+}
+
 /**
  * Resolve loadSpec references by inlining the referenced sub-spec.
  * Walks the converted spec tree and replaces _loadSpec markers with actual content.
@@ -132,22 +137,32 @@ export async function resolveLoadSpecs(spec, specName, visited = new Set([specNa
               `[converter] loadSpec cycle detected in "${specName}": "${cyclePath}" already resolved; skipping to avoid infinite recursion`
             );
           } else {
-            const loaded = await loader(targetName);
-            if (loaded) {
-              const converted = convertSpec(loaded);
-              // Merge the loaded spec into this subcommand
-              if (converted.subcommands) sub.subcommands = converted.subcommands;
-              if (converted.options) sub.options = converted.options;
-              if (converted.args) sub.args = converted.args;
-
-              // Descend into the freshly-inlined sub-spec with a forked
-              // visited set so sibling loadSpecs to the same target don't
-              // false-positive on each other.
-              const nextVisited = new Set(visited);
-              nextVisited.add(targetName);
-              await resolveLoadSpecs(sub, specName, nextVisited, loader);
-              continue;
+            let loaded;
+            try {
+              loaded = await loader(targetName);
+            } catch (err) {
+              const message = unresolvedLoadSpecMessage(targetName, specName, visited);
+              const detail = err && err.message ? err.message : String(err);
+              throw new Error(`${message}: ${detail}`, { cause: err });
             }
+
+            if (!loaded || typeof loaded !== 'object') {
+              throw new Error(unresolvedLoadSpecMessage(targetName, specName, visited));
+            }
+
+            const converted = convertSpec(loaded);
+            // Merge the loaded spec into this subcommand
+            if (converted.subcommands) sub.subcommands = converted.subcommands;
+            if (converted.options) sub.options = converted.options;
+            if (converted.args) sub.args = converted.args;
+
+            // Descend into the freshly-inlined sub-spec with a forked
+            // visited set so sibling loadSpecs to the same target don't
+            // false-positive on each other.
+            const nextVisited = new Set(visited);
+            nextVisited.add(targetName);
+            await resolveLoadSpecs(sub, specName, nextVisited, loader);
+            continue;
           }
         }
       }

@@ -205,6 +205,34 @@ describe('resolveLoadSpecs cycle guard', () => {
     assert.equal(help._loadSpec, undefined);
   });
 
+  it('rejects unresolved string-form loadSpec targets', async () => {
+    const rawA = {
+      name: 'A',
+      subcommands: [{ name: 'missing', loadSpec: 'Missing' }],
+    };
+    const intermediate = convertSpec(rawA);
+    const loader = makeLoader({ A: rawA });
+
+    await assert.rejects(
+      () => resolveLoadSpecs(intermediate, 'A', new Set(['A']), loader),
+      /unresolved loadSpec target "Missing" while resolving "A" \(A -> Missing\)/,
+    );
+  });
+
+  it('rejects unresolved object-form loadSpec targets', async () => {
+    const rawA = {
+      name: 'A',
+      subcommands: [{ name: 'missing', loadSpec: { specName: 'MissingObject' } }],
+    };
+    const intermediate = convertSpec(rawA);
+    const loader = makeLoader({ A: rawA });
+
+    await assert.rejects(
+      () => resolveLoadSpecs(intermediate, 'A', new Set(['A']), loader),
+      /unresolved loadSpec target "MissingObject" while resolving "A" \(A -> MissingObject\)/,
+    );
+  });
+
   it('leaves function-form loadSpec untouched (sets requires_js, no cycle interaction)', async () => {
     // The intermediate spec carries the function reference directly on _loadSpec.
     // convertSpec preserves it as-is because typeof figSub.loadSpec !== 'undefined'.

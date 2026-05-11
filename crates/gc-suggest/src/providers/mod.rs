@@ -269,6 +269,11 @@ pub enum ProviderKind {
     /// `pandoc --list-output-formats`, emitting one format identifier
     /// per non-empty line.
     PandocOutputFormats,
+    /// Test-only provider that echoes `ProviderCtx::params` into
+    /// suggestions so engine-boundary tests can prove per-resolution
+    /// params reached dispatch.
+    #[cfg(test)]
+    TestEchoParams,
 }
 
 impl ProviderKind {
@@ -320,6 +325,8 @@ impl ProviderKind {
             Self::NpmScripts => "npm_scripts",
             Self::PandocInputFormats => "pandoc_input_formats",
             Self::PandocOutputFormats => "pandoc_output_formats",
+            #[cfg(test)]
+            Self::TestEchoParams => "__test_echo_params",
         }
     }
 }
@@ -431,6 +438,15 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
         ProviderKind::NpmScripts => local_project::npm_scripts::NpmScripts.generate(ctx).await,
         ProviderKind::PandocInputFormats => pandoc::PandocInputFormats.generate(ctx).await,
         ProviderKind::PandocOutputFormats => pandoc::PandocOutputFormats.generate(ctx).await,
+        #[cfg(test)]
+        ProviderKind::TestEchoParams => Ok(ctx
+            .params
+            .iter()
+            .map(|(key, value)| Suggestion {
+                text: format!("{key}={value}"),
+                ..Default::default()
+            })
+            .collect()),
     }
 }
 

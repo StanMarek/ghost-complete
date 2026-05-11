@@ -2802,6 +2802,42 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_resolve_providers_threads_params_per_resolution() {
+        let engine = make_engine();
+        let ctx = crate::providers::ProviderCtx {
+            cwd: Path::new("/tmp").to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+            params: std::sync::Arc::new(std::collections::BTreeMap::from([(
+                "base".to_string(),
+                "must-not-leak".to_string(),
+            )])),
+        };
+        let first = ProviderResolution {
+            kind: ProviderKind::TestEchoParams,
+            params: std::sync::Arc::new(std::collections::BTreeMap::from([
+                ("provider".to_string(), "first".to_string()),
+                ("shared".to_string(), "one".to_string()),
+            ])),
+        };
+        let second = ProviderResolution {
+            kind: ProviderKind::TestEchoParams,
+            params: std::sync::Arc::new(std::collections::BTreeMap::from([(
+                "provider".to_string(),
+                "second".to_string(),
+            )])),
+        };
+
+        let results = engine
+            .resolve_providers(&[first, second], &ctx, "")
+            .await
+            .unwrap();
+        let texts: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+
+        assert_eq!(texts, ["provider=first", "shared=one", "provider=second"]);
+    }
+
+    #[tokio::test]
     async fn test_resolve_git_returns_branches() {
         // resolve_git must work asynchronously.
         let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
