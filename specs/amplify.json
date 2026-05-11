@@ -1,18 +1,26 @@
 {
-  "name": "amplify",
   "description": "A set of tools and services to help front-end web and mobile developers build scalable full stack applications",
+  "name": "amplify",
   "subcommands": [
     {
-      "name": "init",
-      "description": "Initializes a new project, sets up deployment resources in the cloud, and makes your project ready for Amplify"
+      "description": "Initializes a new project, sets up deployment resources in the cloud, and makes your project ready for Amplify",
+      "name": "init"
     },
     {
-      "name": "configure",
-      "description": "Configures the attributes of your project for amplify-cli, such as switching front-end framework and adding/removing cloud-provider plugins"
+      "description": "Configures the attributes of your project for amplify-cli, such as switching front-end framework and adding/removing cloud-provider plugins",
+      "name": "configure"
     },
     {
-      "name": "push",
       "description": "Provisions cloud resources with the latest local developments",
+      "name": "push",
+      "options": [
+        {
+          "description": "Answer all question as 'Yes'",
+          "name": [
+            "-y"
+          ]
+        }
+      ],
       "subcommands": [
         {
           "name": "notifications"
@@ -43,32 +51,24 @@
         },
         {
           "name": "xr"
-        }
-      ],
-      "options": [
-        {
-          "name": [
-            "-y"
-          ],
-          "description": "Answer all question as 'Yes'"
         }
       ]
     },
     {
-      "name": "pull",
-      "description": "Fetch upstream backend environment definition changes from the cloud and updates the local environment to match that definition"
+      "description": "Fetch upstream backend environment definition changes from the cloud and updates the local environment to match that definition",
+      "name": "pull"
     },
     {
-      "name": "publish",
-      "description": "Executes amplify push, and then builds and publishes client-side application for hosting"
+      "description": "Executes amplify push, and then builds and publishes client-side application for hosting",
+      "name": "publish"
     },
     {
-      "name": "serve",
-      "description": "Executes amplify push, and then executes the project's start command to test run the client-side application locally"
+      "description": "Executes amplify push, and then executes the project's start command to test run the client-side application locally",
+      "name": "serve"
     },
     {
-      "name": "status",
       "description": "Shows the state of local resources not yet pushed to the cloud (Create/Update/Delete)",
+      "name": "status",
       "subcommands": [
         {
           "name": "notifications"
@@ -101,20 +101,20 @@
           "name": "xr"
         },
         {
-          "name": "-v",
-          "description": "Shows the detailed verbose diff between local and deployed resources, including cloudformation-diff"
+          "description": "Shows the detailed verbose diff between local and deployed resources, including cloudformation-diff",
+          "name": "-v"
         }
       ],
       "priority": 80
     },
     {
-      "name": "delete",
       "description": "Deletes all of the resources tied to the project from the cloud",
+      "name": "delete",
       "priority": 50
     },
     {
-      "name": "add",
       "description": "Adds a resource for an Amplify category in your local backend",
+      "name": "add",
       "subcommands": [
         {
           "name": "notifications"
@@ -149,8 +149,8 @@
       ]
     },
     {
-      "name": "update",
       "description": "Update resource for an Amplify category in your local backend",
+      "name": "update",
       "subcommands": [
         {
           "name": "notifications"
@@ -185,8 +185,8 @@
       ]
     },
     {
-      "name": "remove",
       "description": "Removes a resource for an Amplify category in your local backend",
+      "name": "remove",
       "subcommands": [
         {
           "name": "notifications"
@@ -222,42 +222,42 @@
       "priority": 50
     },
     {
-      "name": "upgrade",
-      "description": "Download and install the latest version of the Amplify CLI"
+      "description": "Download and install the latest version of the Amplify CLI",
+      "name": "upgrade"
     },
     {
-      "name": "uninstall",
-      "description": "Remove all global Amplify configuration files and uninstall the Amplify CLI. This will not delete any Amplify projects"
+      "description": "Remove all global Amplify configuration files and uninstall the Amplify CLI. This will not delete any Amplify projects",
+      "name": "uninstall"
     },
     {
       "name": "notifications",
       "subcommands": [
         {
-          "name": "add",
-          "description": "Adds a resource for an Amplify category in your local backend"
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
         },
         {
-          "name": "update",
-          "description": "Update resource for an Amplify category in your local backend"
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
         },
         {
-          "name": "remove",
           "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove",
           "priority": 50
         },
         {
-          "name": "console",
-          "description": "Opens the web console for the category"
+          "description": "Opens the web console for the category",
+          "name": "console"
         },
         {
-          "name": "push",
           "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
           "options": [
             {
+              "description": "Answer all question as 'Yes'",
               "name": [
                 "-y"
-              ],
-              "description": "Answer all question as 'Yes'"
+              ]
             }
           ]
         }
@@ -267,31 +267,31 @@
       "name": "analytics",
       "subcommands": [
         {
-          "name": "add",
-          "description": "Adds a resource for an Amplify category in your local backend"
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
         },
         {
-          "name": "update",
-          "description": "Update resource for an Amplify category in your local backend"
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
         },
         {
-          "name": "remove",
           "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove",
           "priority": 50
         },
         {
-          "name": "console",
-          "description": "Opens the web console for the category"
+          "description": "Opens the web console for the category",
+          "name": "console"
         },
         {
-          "name": "push",
           "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
           "options": [
             {
+              "description": "Answer all question as 'Yes'",
               "name": [
                 "-y"
-              ],
-              "description": "Answer all question as 'Yes'"
+              ]
             }
           ]
         }
@@ -301,47 +301,47 @@
       "name": "api",
       "subcommands": [
         {
-          "name": "gql-compile",
-          "description": "Compiles your GraphQL schema and generates a corresponding cloudformation template"
+          "description": "Compiles your GraphQL schema and generates a corresponding cloudformation template",
+          "name": "gql-compile"
         },
         {
-          "name": "migrate",
-          "description": "Migrates GraphQL schemas to the latest GraphQL transformer version"
+          "description": "Migrates GraphQL schemas to the latest GraphQL transformer version",
+          "name": "migrate"
         },
         {
-          "name": "override",
-          "description": "Generates overrides file to apply custom modifications to CloudFormation"
+          "description": "Generates overrides file to apply custom modifications to CloudFormation",
+          "name": "override"
         },
         {
-          "name": "rebuild",
-          "description": "Removes and recreates all DynamoDB tables backing a GraphQL API. Useful for resetting test data during the development phase of an app"
+          "description": "Removes and recreates all DynamoDB tables backing a GraphQL API. Useful for resetting test data during the development phase of an app",
+          "name": "rebuild"
         },
         {
-          "name": "add",
-          "description": "Adds a resource for an Amplify category in your local backend"
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
         },
         {
-          "name": "update",
-          "description": "Update resource for an Amplify category in your local backend"
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
         },
         {
-          "name": "remove",
           "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove",
           "priority": 50
         },
         {
-          "name": "console",
-          "description": "Opens the web console for the category"
+          "description": "Opens the web console for the category",
+          "name": "console"
         },
         {
-          "name": "push",
           "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
           "options": [
             {
+              "description": "Answer all question as 'Yes'",
               "name": [
                 "-y"
-              ],
-              "description": "Answer all question as 'Yes'"
+              ]
             }
           ]
         }
@@ -351,31 +351,31 @@
       "name": "auth",
       "subcommands": [
         {
-          "name": "add",
-          "description": "Adds a resource for an Amplify category in your local backend"
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
         },
         {
-          "name": "update",
-          "description": "Update resource for an Amplify category in your local backend"
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
         },
         {
-          "name": "remove",
           "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove",
           "priority": 50
         },
         {
-          "name": "console",
-          "description": "Opens the web console for the category"
+          "description": "Opens the web console for the category",
+          "name": "console"
         },
         {
-          "name": "push",
           "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
           "options": [
             {
+              "description": "Answer all question as 'Yes'",
               "name": [
                 "-y"
-              ],
-              "description": "Answer all question as 'Yes'"
+              ]
             }
           ]
         }
@@ -385,35 +385,35 @@
       "name": "function",
       "subcommands": [
         {
-          "name": "build",
-          "description": "Builds all the functions in the project (does an npm install on the functions src directory)"
+          "description": "Builds all the functions in the project (does an npm install on the functions src directory)",
+          "name": "build"
         },
         {
-          "name": "add",
-          "description": "Adds a resource for an Amplify category in your local backend"
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
         },
         {
-          "name": "update",
-          "description": "Update resource for an Amplify category in your local backend"
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
         },
         {
-          "name": "remove",
           "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove",
           "priority": 50
         },
         {
-          "name": "console",
-          "description": "Opens the web console for the category"
+          "description": "Opens the web console for the category",
+          "name": "console"
         },
         {
-          "name": "push",
           "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
           "options": [
             {
+              "description": "Answer all question as 'Yes'",
               "name": [
                 "-y"
-              ],
-              "description": "Answer all question as 'Yes'"
+              ]
             }
           ]
         }
@@ -423,31 +423,31 @@
       "name": "hosting",
       "subcommands": [
         {
-          "name": "add",
-          "description": "Adds a resource for an Amplify category in your local backend"
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
         },
         {
-          "name": "update",
-          "description": "Update resource for an Amplify category in your local backend"
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
         },
         {
-          "name": "remove",
           "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove",
           "priority": 50
         },
         {
-          "name": "console",
-          "description": "Opens the web console for the category"
+          "description": "Opens the web console for the category",
+          "name": "console"
         },
         {
-          "name": "push",
           "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
           "options": [
             {
+              "description": "Answer all question as 'Yes'",
               "name": [
                 "-y"
-              ],
-              "description": "Answer all question as 'Yes'"
+              ]
             }
           ]
         }
@@ -457,31 +457,31 @@
       "name": "interactions",
       "subcommands": [
         {
-          "name": "add",
-          "description": "Adds a resource for an Amplify category in your local backend"
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
         },
         {
-          "name": "update",
-          "description": "Update resource for an Amplify category in your local backend"
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
         },
         {
-          "name": "remove",
           "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove",
           "priority": 50
         },
         {
-          "name": "console",
-          "description": "Opens the web console for the category"
+          "description": "Opens the web console for the category",
+          "name": "console"
         },
         {
-          "name": "push",
           "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
           "options": [
             {
+              "description": "Answer all question as 'Yes'",
               "name": [
                 "-y"
-              ],
-              "description": "Answer all question as 'Yes'"
+              ]
             }
           ]
         }
@@ -491,31 +491,31 @@
       "name": "predictions",
       "subcommands": [
         {
-          "name": "add",
-          "description": "Adds a resource for an Amplify category in your local backend"
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
         },
         {
-          "name": "update",
-          "description": "Update resource for an Amplify category in your local backend"
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
         },
         {
-          "name": "remove",
           "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove",
           "priority": 50
         },
         {
-          "name": "console",
-          "description": "Opens the web console for the category"
+          "description": "Opens the web console for the category",
+          "name": "console"
         },
         {
-          "name": "push",
           "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
           "options": [
             {
+              "description": "Answer all question as 'Yes'",
               "name": [
                 "-y"
-              ],
-              "description": "Answer all question as 'Yes'"
+              ]
             }
           ]
         }
@@ -525,31 +525,31 @@
       "name": "storage",
       "subcommands": [
         {
-          "name": "add",
-          "description": "Adds a resource for an Amplify category in your local backend"
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
         },
         {
-          "name": "update",
-          "description": "Update resource for an Amplify category in your local backend"
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
         },
         {
-          "name": "remove",
           "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove",
           "priority": 50
         },
         {
-          "name": "console",
-          "description": "Opens the web console for the category"
+          "description": "Opens the web console for the category",
+          "name": "console"
         },
         {
-          "name": "push",
           "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
           "options": [
             {
+              "description": "Answer all question as 'Yes'",
               "name": [
                 "-y"
-              ],
-              "description": "Answer all question as 'Yes'"
+              ]
             }
           ]
         }
@@ -559,222 +559,222 @@
       "name": "xr",
       "subcommands": [
         {
-          "name": "add",
-          "description": "Adds a resource for an Amplify category in your local backend"
+          "description": "Adds a resource for an Amplify category in your local backend",
+          "name": "add"
         },
         {
-          "name": "update",
-          "description": "Update resource for an Amplify category in your local backend"
+          "description": "Update resource for an Amplify category in your local backend",
+          "name": "update"
         },
         {
-          "name": "remove",
           "description": "Removes a resource for an Amplify category in your local backend",
+          "name": "remove",
           "priority": 50
         },
         {
-          "name": "console",
-          "description": "Opens the web console for the category"
+          "description": "Opens the web console for the category",
+          "name": "console"
         },
         {
-          "name": "push",
           "description": "Provisions cloud resources with the latest local developments",
+          "name": "push",
           "options": [
             {
+              "description": "Answer all question as 'Yes'",
               "name": [
                 "-y"
-              ],
-              "description": "Answer all question as 'Yes'"
+              ]
             }
           ]
         }
       ]
     },
     {
-      "name": "mock",
-      "description": "Run mock server for testing categories locally"
+      "description": "Run mock server for testing categories locally",
+      "name": "mock"
     },
     {
-      "name": "codegen",
-      "description": "Generates GraphQL statements(queries, mutations and eventHandlers) and type annotations"
+      "description": "Generates GraphQL statements(queries, mutations and eventHandlers) and type annotations",
+      "name": "codegen"
     },
     {
-      "name": "console",
-      "description": "Opens the web console for the selected cloud resource"
+      "description": "Opens the web console for the selected cloud resource",
+      "name": "console"
     },
     {
-      "name": "logout",
       "description": "If using temporary cloud provider credentials, this logs out of the account",
+      "name": "logout",
       "priority": 60
     },
     {
-      "name": "env",
       "description": "Display all commands available for new Amplify project",
+      "name": "env",
       "subcommands": [
         {
-          "name": "add",
-          "description": "Adds a new environment"
+          "description": "Adds a new environment",
+          "name": "add"
         },
         {
-          "name": "pull",
           "description": "Pulls the current env from the cloud",
+          "name": "pull",
           "options": [
             {
+              "description": "Overwrite your local changes",
               "name": [
                 "--restore"
-              ],
-              "description": "Overwrite your local changes"
+              ]
             }
           ]
         },
         {
-          "name": "checkout",
-          "description": "Switches to selected environment",
-          "options": [
-            {
-              "name": [
-                "--restore"
-              ],
-              "description": "Overwrite your local changes"
-            }
-          ],
           "args": {
-            "name": "env-name",
             "description": "Env name",
             "generators": [
               {
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(a){return JSON.parse(a).envs.map(t=>({name:t,description:\"Environment\"}))}"
+                },
+                "requires_js": true,
                 "script": [
                   "amplify",
                   "env",
                   "list",
                   "--json"
-                ],
-                "requires_js": true,
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(a){return JSON.parse(a).envs.map(t=>({name:t,description:\"Environment\"}))}"
-                }
+                ]
               }
-            ]
-          }
-        },
-        {
-          "name": "list",
-          "description": "Displays a list of all the environments",
+            ],
+            "name": "env-name"
+          },
+          "description": "Switches to selected environment",
+          "name": "checkout",
           "options": [
             {
+              "description": "Overwrite your local changes",
+              "name": [
+                "--restore"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Displays a list of all the environments",
+          "name": "list",
+          "options": [
+            {
+              "description": "See more details",
               "name": [
                 "--details"
-              ],
-              "description": "See more details"
+              ]
             },
             {
+              "description": "Format the output",
               "name": [
                 "--json"
-              ],
-              "description": "Format the output"
+              ]
             }
           ],
           "priority": 82
         },
         {
-          "name": "get",
           "description": "Displays the environment details",
+          "name": "get",
           "options": [
             {
-              "name": [
-                "--name"
-              ],
-              "description": "Mandatory flag",
               "args": {
-                "name": "env-name",
                 "description": "Env name",
                 "generators": [
                   {
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(a){return JSON.parse(a).envs.map(t=>({name:t,description:\"Environment\"}))}"
+                    },
+                    "requires_js": true,
                     "script": [
                       "amplify",
                       "env",
                       "list",
                       "--json"
-                    ],
-                    "requires_js": true,
-                    "js_runtime": {
-                      "kind": "post_process",
-                      "source": "function(a){return JSON.parse(a).envs.map(t=>({name:t,description:\"Environment\"}))}"
-                    }
+                    ]
                   }
-                ]
-              }
+                ],
+                "name": "env-name"
+              },
+              "description": "Mandatory flag",
+              "name": [
+                "--name"
+              ]
             }
           ],
           "priority": 82
         },
         {
-          "name": "import",
           "description": "Imports an environment",
+          "name": "import",
           "options": [
             {
-              "name": [
-                "--name"
-              ],
-              "description": "Mandatory flag",
               "args": {
-                "name": "env-name",
                 "description": "Env name",
                 "generators": [
                   {
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "function(a){return JSON.parse(a).envs.map(t=>({name:t,description:\"Environment\"}))}"
+                    },
+                    "requires_js": true,
                     "script": [
                       "amplify",
                       "env",
                       "list",
                       "--json"
-                    ],
-                    "requires_js": true,
-                    "js_runtime": {
-                      "kind": "post_process",
-                      "source": "function(a){return JSON.parse(a).envs.map(t=>({name:t,description:\"Environment\"}))}"
-                    }
+                    ]
                   }
-                ]
-              }
+                ],
+                "name": "env-name"
+              },
+              "description": "Mandatory flag",
+              "name": [
+                "--name"
+              ]
             },
             {
+              "args": {},
+              "description": "Specify provider configs",
               "name": [
                 "--config"
-              ],
-              "description": "Specify provider configs",
-              "args": {}
+              ]
             },
             {
+              "args": {},
+              "description": "Specify AWS configs",
               "name": [
                 "--awsInfo"
-              ],
-              "description": "Specify AWS configs",
-              "args": {}
+              ]
             }
           ]
         },
         {
-          "name": "remove",
-          "description": "Removes an environment",
           "args": {
-            "name": "env-name",
             "description": "Env name",
             "generators": [
               {
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(a){return JSON.parse(a).envs.map(t=>({name:t,description:\"Environment\"}))}"
+                },
+                "requires_js": true,
                 "script": [
                   "amplify",
                   "env",
                   "list",
                   "--json"
-                ],
-                "requires_js": true,
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(a){return JSON.parse(a).envs.map(t=>({name:t,description:\"Environment\"}))}"
-                }
+                ]
               }
-            ]
+            ],
+            "name": "env-name"
           },
+          "description": "Removes an environment",
+          "name": "remove",
           "priority": 50
         }
       ]

@@ -1,71 +1,71 @@
 {
-  "name": "cut",
+  "args": {
+    "isOptional": true,
+    "isVariadic": true,
+    "template": "filepaths"
+  },
   "description": "Cut out selected portions of each line of a file",
+  "name": "cut",
   "options": [
     {
+      "args": {
+        "description": "Specifies byte positions",
+        "name": "list"
+      },
+      "description": "Byte positions as a comma or - separated list of numbers",
       "name": [
         "-b"
-      ],
-      "description": "Byte positions as a comma or - separated list of numbers",
-      "args": {
-        "name": "list",
-        "description": "Specifies byte positions"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "Specifies column positions",
+        "name": "list"
+      },
+      "description": "Column positions as a comma or - separated list of numbers",
       "name": [
         "-c"
-      ],
-      "description": "Column positions as a comma or - separated list of numbers",
-      "args": {
-        "name": "list",
-        "description": "Specifies column positions"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "Specifies column positions",
+        "name": "list"
+      },
+      "description": "Field positions as a comma or - separated list of numbers",
       "name": [
         "-f"
-      ],
-      "description": "Field positions as a comma or - separated list of numbers",
-      "args": {
-        "name": "list",
-        "description": "Specifies column positions"
-      }
+      ]
     },
     {
+      "description": "Do not split multi-byte characters",
       "name": [
         "-n"
       ],
-      "description": "Do not split multi-byte characters",
       "priority": 65
     },
     {
+      "args": {
+        "description": "Field deliminator to use instead of the tab character",
+        "isOptional": true,
+        "name": "delim"
+      },
+      "description": "Use delim as the field delimiter character instead of the tab character",
       "name": [
         "-d"
-      ],
-      "description": "Use delim as the field delimiter character instead of the tab character",
-      "args": {
-        "name": "delim",
-        "description": "Field deliminator to use instead of the tab character",
-        "isOptional": true
-      }
+      ]
     },
     {
+      "description": "Suppress lines with no field delimiter characters.  unless specified, lines with no delimiters are passed through unmodified",
       "name": [
         "-s"
-      ],
-      "description": "Suppress lines with no field delimiter characters.  unless specified, lines with no delimiters are passed through unmodified"
+      ]
     },
     {
+      "description": "Use whitespace (spaces and tabs) as the delimiter.  Consecutive spaces and tabs count as one single field separator",
       "name": [
         "-w"
-      ],
-      "description": "Use whitespace (spaces and tabs) as the delimiter.  Consecutive spaces and tabs count as one single field separator"
+      ]
     }
-  ],
-  "args": {
-    "template": "filepaths",
-    "isVariadic": true,
-    "isOptional": true
-  }
+  ]
 }

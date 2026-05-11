@@ -1,127 +1,171 @@
 {
-  "name": "meroxa",
   "description": "The Meroxa CLI",
+  "name": "meroxa",
+  "options": [
+    {
+      "args": {
+        "name": "api-url"
+      },
+      "description": "API url",
+      "name": [
+        "--api-url"
+      ]
+    },
+    {
+      "args": {
+        "name": "cli-config-file",
+        "template": "filepaths"
+      },
+      "description": "Meroxa configuration file",
+      "name": [
+        "--cli-config-file"
+      ]
+    },
+    {
+      "description": "Display any debugging information",
+      "name": [
+        "--debug"
+      ]
+    },
+    {
+      "description": "Output json",
+      "name": [
+        "--json"
+      ]
+    },
+    {
+      "args": {
+        "name": "timeout"
+      },
+      "description": "Set the duration of the client timeout in seconds",
+      "name": [
+        "--timeout"
+      ]
+    },
+    {
+      "description": "Display help",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "accounts",
       "description": "Manage Meroxa Accounts",
+      "name": "accounts",
       "subcommands": [
         {
-          "name": "ls",
           "description": "List Meroxa Accounts",
+          "name": "ls",
           "options": [
             {
+              "description": "Display output without headers",
               "name": [
                 "--no-headers"
-              ],
-              "description": "Display output without headers"
+              ]
             }
           ]
         },
         {
-          "name": "set",
-          "description": "Set active account"
+          "description": "Set active account",
+          "name": "set"
         }
       ]
     },
     {
-      "name": "api",
-      "description": "Invoke Meroxa API"
+      "description": "Invoke Meroxa API",
+      "name": "api"
     },
     {
-      "name": "app",
       "description": "Manage Turbine Data Applications",
+      "name": "app",
       "subcommands": [
         {
-          "name": "deploy",
           "description": "Deploy a Turbine Data Application",
+          "name": "deploy",
           "options": [
             {
-              "name": [
-                "--docker-hub-access-token"
-              ],
-              "description": "DockerHub access token to use to build and deploy the app",
               "args": {
                 "name": "docker-hub-access-token"
-              }
+              },
+              "description": "DockerHub access token to use to build and deploy the app",
+              "name": [
+                "--docker-hub-access-token"
+              ]
             },
             {
-              "name": [
-                "--docker-hub-username"
-              ],
-              "description": "DockerHub username to use to build and deploy the app",
               "args": {
                 "name": "docker-hub-username"
-              }
+              },
+              "description": "DockerHub username to use to build and deploy the app",
+              "name": [
+                "--docker-hub-username"
+              ]
             },
             {
-              "name": [
-                "--env"
-              ],
-              "description": "Environment (name or UUID) where application will be deployed to",
               "args": {
                 "name": "env"
-              }
+              },
+              "description": "Environment (name or UUID) where application will be deployed to",
+              "name": [
+                "--env"
+              ]
             },
             {
-              "name": [
-                "--path"
-              ],
-              "description": "Path to the app directory (default is local directory)",
               "args": {
                 "name": "path",
                 "template": "folders"
-              }
+              },
+              "description": "Path to the app directory (default is local directory)",
+              "name": [
+                "--path"
+              ]
             },
             {
+              "description": "Skips unique destination collection and looping validations",
               "name": [
                 "--skip-collection-validation"
-              ],
-              "description": "Skips unique destination collection and looping validations"
+              ]
             },
             {
-              "name": [
-                "--spec"
-              ],
-              "description": "Deployment specification version to use to build and deploy the app",
               "args": {
                 "name": "spec"
-              }
+              },
+              "description": "Deployment specification version to use to build and deploy the app",
+              "name": [
+                "--spec"
+              ]
             },
             {
+              "description": "Prints more logging messages",
               "name": [
                 "--verbose"
-              ],
-              "description": "Prints more logging messages"
+              ]
             }
           ]
         },
         {
-          "name": "describe",
           "description": "Describe a Turbine Data Application",
+          "name": "describe",
           "options": [
             {
-              "name": [
-                "--path"
-              ],
-              "description": "Path to the app directory (default is local directory)",
               "args": {
                 "name": "path",
                 "template": "folders"
-              }
+              },
+              "description": "Path to the app directory (default is local directory)",
+              "name": [
+                "--path"
+              ]
             }
           ]
         },
         {
-          "name": "init",
           "description": "Initialize a Turbine Data Application",
+          "name": "init",
           "options": [
             {
-              "name": [
-                "--lang",
-                "-l"
-              ],
-              "description": "Language to use (js|go|py) (required)",
               "args": {
                 "name": "lang",
                 "suggestions": [
@@ -135,928 +179,884 @@
                     "name": "py"
                   }
                 ]
-              }
+              },
+              "description": "Language to use (js|go|py) (required)",
+              "name": [
+                "--lang",
+                "-l"
+              ]
             },
             {
+              "description": "Whether to download modules to vendor or globally while initializing a Go application",
               "name": [
                 "--mod-vendor"
-              ],
-              "description": "Whether to download modules to vendor or globally while initializing a Go application"
+              ]
             },
             {
-              "name": [
-                "--path"
-              ],
-              "description": "Path where application will be initialized (current directory as default)",
               "args": {
                 "name": "path",
                 "template": "folders"
-              }
+              },
+              "description": "Path where application will be initialized (current directory as default)",
+              "name": [
+                "--path"
+              ]
             },
             {
+              "description": "Whether to run 'go mod init' while initializing a Go application",
               "name": [
                 "--skip-mod-init"
-              ],
-              "description": "Whether to run 'go mod init' while initializing a Go application"
+              ]
             }
           ]
         },
         {
-          "name": "ls",
           "description": "List Turbine Data Applications",
+          "name": "ls",
           "options": [
             {
+              "description": "Display output without headers",
               "name": [
                 "--no-headers"
-              ],
-              "description": "Display output without headers"
+              ]
             }
           ]
         },
         {
-          "name": "log",
           "description": "View relevant logs to the state of the given Turbine Data Application",
+          "name": "log",
           "options": [
             {
-              "name": [
-                "--path"
-              ],
-              "description": "Path to the app directory (default is local directory)",
               "args": {
                 "name": "path",
                 "template": "folders"
-              }
+              },
+              "description": "Path to the app directory (default is local directory)",
+              "name": [
+                "--path"
+              ]
             }
           ]
         },
         {
-          "name": "open",
           "description": "Open the link to a Turbine Data Application in the Dashboard",
+          "name": "open",
           "options": [
             {
-              "name": [
-                "--path"
-              ],
-              "description": "Path to the app directory (default is local directory)",
               "args": {
                 "name": "path",
                 "template": "folders"
-              }
+              },
+              "description": "Path to the app directory (default is local directory)",
+              "name": [
+                "--path"
+              ]
             }
           ]
         },
         {
-          "name": "rm",
           "description": "Remove a Turbine Data Application",
+          "name": "rm",
           "options": [
             {
+              "description": "Skip confirmation",
               "name": [
                 "--force",
                 "-f"
-              ],
-              "description": "Skip confirmation"
+              ]
             },
             {
-              "name": [
-                "--path"
-              ],
+              "args": {
+                "name": "path",
+                "template": "folders"
+              },
               "description": "Path to the app directory (default is local directory)",
-              "args": {
-                "name": "path",
-                "template": "folders"
-              }
+              "name": [
+                "--path"
+              ]
             }
           ]
         },
         {
-          "name": "run",
           "description": "Execute a Turbine Data Application locally",
+          "name": "run",
           "options": [
             {
-              "name": [
-                "--path"
-              ],
+              "args": {
+                "name": "path",
+                "template": "folders"
+              },
               "description": "Path of application to run",
-              "args": {
-                "name": "path",
-                "template": "folders"
-              }
-            }
-          ]
-        },
-        {
-          "name": "upgrade",
-          "description": "Upgrade a Turbine Data Application",
-          "options": [
-            {
               "name": [
                 "--path"
-              ],
-              "description": "Path where application exists (current directory as default)",
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Upgrade a Turbine Data Application",
+          "name": "upgrade",
+          "options": [
+            {
               "args": {
                 "name": "path",
                 "template": "folders"
-              }
+              },
+              "description": "Path where application exists (current directory as default)",
+              "name": [
+                "--path"
+              ]
             }
           ]
         }
       ]
     },
     {
-      "name": "auth",
       "description": "Authentication commands for Meroxa",
+      "name": "auth",
       "subcommands": [
         {
-          "name": "login",
-          "description": "Login or Sign up to the Meroxa Platform"
+          "description": "Login or Sign up to the Meroxa Platform",
+          "name": "login"
         },
         {
-          "name": "logout",
-          "description": "Clears local login credentials of the Meroxa Platform"
+          "description": "Clears local login credentials of the Meroxa Platform",
+          "name": "logout"
         },
         {
-          "name": "whoami",
-          "description": "Display the current logged in user"
+          "description": "Display the current logged in user",
+          "name": "whoami"
         }
       ]
     },
     {
-      "name": "billing",
-      "description": "Open your billing page in a web browser"
+      "description": "Open your billing page in a web browser",
+      "name": "billing"
     },
     {
-      "name": "build",
       "description": "Inspect Process Builds on Meroxa",
+      "name": "build",
       "subcommands": [
         {
-          "name": "describe",
-          "description": "Describe a Meroxa Process Build"
+          "description": "Describe a Meroxa Process Build",
+          "name": "describe"
         },
         {
-          "name": "log",
-          "description": "List a Meroxa Process Build's Logs"
+          "description": "List a Meroxa Process Build's Logs",
+          "name": "log"
         }
       ]
     },
     {
-      "name": "completion",
-      "description": "Generate completion script"
+      "description": "Generate completion script",
+      "name": "completion"
     },
     {
-      "name": "cfg",
       "description": "Manage your Meroxa CLI configuration",
+      "name": "cfg",
       "subcommands": [
         {
-          "name": "describe",
-          "description": "Show Meroxa CLI configuration details"
+          "description": "Show Meroxa CLI configuration details",
+          "name": "describe"
         },
         {
-          "name": "set",
-          "description": "Update your Meroxa CLI configuration file with a specific key=value"
+          "description": "Update your Meroxa CLI configuration file with a specific key=value",
+          "name": "set"
         }
       ]
     },
     {
-      "name": "env",
       "description": "Manage environments on Meroxa",
+      "name": "env",
       "subcommands": [
         {
-          "name": "create",
           "description": "Create an environment",
+          "name": "create",
           "options": [
             {
+              "args": {
+                "name": "config"
+              },
+              "description": "Environment configuration based on type and provider (e.g.: --config aws_access_key_id=my_access_key --config aws_secret_access_key=my_access_secret)",
               "name": [
                 "--config",
                 "-c"
-              ],
-              "description": "Environment configuration based on type and provider (e.g.: --config aws_access_key_id=my_access_key --config aws_secret_access_key=my_access_secret)",
-              "args": {
-                "name": "config"
-              }
+              ]
             },
             {
-              "name": [
-                "--provider"
-              ],
-              "description": "Environment cloud provider to use",
               "args": {
                 "name": "provider"
-              }
+              },
+              "description": "Environment cloud provider to use",
+              "name": [
+                "--provider"
+              ]
             },
             {
-              "name": [
-                "--region"
-              ],
-              "description": "Environment region",
               "args": {
                 "name": "region"
-              }
+              },
+              "description": "Environment region",
+              "name": [
+                "--region"
+              ]
             },
             {
-              "name": [
-                "--type"
-              ],
-              "description": "Environment type, when not specified",
               "args": {
                 "name": "type"
-              }
+              },
+              "description": "Environment type, when not specified",
+              "name": [
+                "--type"
+              ]
             },
             {
+              "description": "Skip confirmation prompt",
               "name": [
                 "--yes",
                 "-y"
-              ],
-              "description": "Skip confirmation prompt"
+              ]
             }
           ]
         },
         {
-          "name": "describe",
-          "description": "Describe environment"
+          "description": "Describe environment",
+          "name": "describe"
         },
         {
-          "name": "ls",
           "description": "List environments",
+          "name": "ls",
           "options": [
             {
+              "description": "Display output without headers",
               "name": [
                 "--no-headers"
-              ],
-              "description": "Display output without headers"
+              ]
             }
           ]
         },
         {
-          "name": "rm",
           "description": "Remove environment",
+          "name": "rm",
           "options": [
             {
+              "description": "Skip confirmation",
               "name": [
                 "--force",
                 "-f"
-              ],
-              "description": "Skip confirmation"
+              ]
             },
             {
+              "description": "Skip confirmation",
               "name": [
                 "--yolo"
-              ],
-              "description": "Skip confirmation"
+              ]
             }
           ]
         },
         {
-          "name": "repair",
-          "description": "Repair environment"
+          "description": "Repair environment",
+          "name": "repair"
         },
         {
-          "name": "update",
           "description": "Update an environment",
+          "name": "update",
           "options": [
             {
+              "args": {
+                "name": "config"
+              },
+              "description": "Updated environment configuration based on type and provider (e.g.: --config aws_access_key_id=my_access_key --config aws_secret_access_key=my_access_secret)",
               "name": [
                 "--config",
                 "-c"
-              ],
-              "description": "Updated environment configuration based on type and provider (e.g.: --config aws_access_key_id=my_access_key --config aws_secret_access_key=my_access_secret)",
-              "args": {
-                "name": "config"
-              }
+              ]
             },
             {
-              "name": [
-                "--name"
-              ],
-              "description": "Updated environment name, when specified",
               "args": {
                 "name": "name"
-              }
+              },
+              "description": "Updated environment name, when specified",
+              "name": [
+                "--name"
+              ]
             },
             {
+              "description": "Skip confirmation prompt",
               "name": [
                 "--yes",
                 "-y"
-              ],
-              "description": "Skip confirmation prompt"
+              ]
             }
           ]
         }
       ]
     },
     {
-      "name": "login",
-      "description": "Login or Sign up to the Meroxa Platform"
+      "description": "Login or Sign up to the Meroxa Platform",
+      "name": "login"
     },
     {
-      "name": "logout",
-      "description": "Clears local login credentials of the Meroxa Platform"
+      "description": "Clears local login credentials of the Meroxa Platform",
+      "name": "logout"
     },
     {
-      "name": "open",
       "description": "Open in a web browser",
+      "name": "open",
       "subcommands": [
         {
-          "name": "billing",
-          "description": "Open your billing page in a web browser"
+          "description": "Open your billing page in a web browser",
+          "name": "billing"
         }
       ]
     },
     {
-      "name": "resource",
       "description": "Manage resources on Meroxa",
+      "name": "resource",
       "subcommands": [
         {
-          "name": "add",
           "description": "Add a resource to your Meroxa resource catalog",
+          "name": "add",
           "options": [
             {
-              "name": [
-                "--ca-cert"
-              ],
-              "description": "Trusted certificates for verifying resource",
               "args": {
                 "name": "ca-cert"
-              }
+              },
+              "description": "Trusted certificates for verifying resource",
+              "name": [
+                "--ca-cert"
+              ]
             },
             {
-              "name": [
-                "--client-cert"
-              ],
-              "description": "Client certificate for authenticating to the resource",
               "args": {
                 "name": "client-cert"
-              }
+              },
+              "description": "Client certificate for authenticating to the resource",
+              "name": [
+                "--client-cert"
+              ]
             },
             {
-              "name": [
-                "--client-key"
-              ],
-              "description": "Client private key for authenticating to the resource",
               "args": {
                 "name": "client-key"
-              }
+              },
+              "description": "Client private key for authenticating to the resource",
+              "name": [
+                "--client-key"
+              ]
             },
             {
-              "name": [
-                "--env"
-              ],
-              "description": "Environment (name or UUID) where resource will be created",
               "args": {
                 "name": "env"
-              }
+              },
+              "description": "Environment (name or UUID) where resource will be created",
+              "name": [
+                "--env"
+              ]
             },
             {
+              "args": {
+                "name": "metadata"
+              },
+              "description": "Resource metadata",
               "name": [
                 "--metadata",
                 "-m"
-              ],
-              "description": "Resource metadata",
-              "args": {
-                "name": "metadata"
-              }
+              ]
             },
             {
-              "name": [
-                "--password"
-              ],
-              "description": "Password",
               "args": {
                 "name": "password"
-              }
+              },
+              "description": "Password",
+              "name": [
+                "--password"
+              ]
             },
             {
-              "name": [
-                "--private-key-file"
-              ],
-              "description": "Path to private key file",
               "args": {
                 "name": "private-key-file"
-              }
+              },
+              "description": "Path to private key file",
+              "name": [
+                "--private-key-file"
+              ]
             },
             {
-              "name": [
-                "--ssh-private-key"
-              ],
-              "description": "SSH tunneling private key",
               "args": {
                 "name": "ssh-private-key"
-              }
+              },
+              "description": "SSH tunneling private key",
+              "name": [
+                "--ssh-private-key"
+              ]
             },
             {
-              "name": [
-                "--ssh-url"
-              ],
-              "description": "SSH tunneling address",
               "args": {
                 "name": "ssh-url"
-              }
+              },
+              "description": "SSH tunneling address",
+              "name": [
+                "--ssh-url"
+              ]
             },
             {
+              "description": "Use SSL",
               "name": [
                 "--ssl"
-              ],
-              "description": "Use SSL"
+              ]
             },
             {
-              "name": [
-                "--token"
-              ],
-              "description": "API Token",
               "args": {
                 "name": "token"
-              }
+              },
+              "description": "API Token",
+              "name": [
+                "--token"
+              ]
             },
             {
-              "name": [
-                "--type"
-              ],
-              "description": "Resource type (required)",
               "args": {
                 "name": "type"
-              }
+              },
+              "description": "Resource type (required)",
+              "name": [
+                "--type"
+              ]
             },
             {
+              "args": {
+                "name": "url"
+              },
+              "description": "Resource url",
               "name": [
                 "--url",
                 "-u"
-              ],
-              "description": "Resource url",
-              "args": {
-                "name": "url"
-              }
+              ]
             },
             {
-              "name": [
-                "--username"
-              ],
-              "description": "Username",
               "args": {
                 "name": "username"
-              }
+              },
+              "description": "Username",
+              "name": [
+                "--username"
+              ]
             }
           ]
         },
         {
-          "name": "describe",
-          "description": "Describe resource"
+          "description": "Describe resource",
+          "name": "describe"
         },
         {
-          "name": "ls",
           "description": "List resources and resource types",
+          "name": "ls",
           "options": [
             {
+              "description": "Display output without headers",
               "name": [
                 "--no-headers"
-              ],
-              "description": "Display output without headers"
+              ]
             },
             {
+              "description": "Alias to --types",
               "name": [
                 "--type"
-              ],
-              "description": "Alias to --types"
+              ]
             },
             {
+              "description": "List resource types",
               "name": [
                 "--types"
-              ],
-              "description": "List resource types"
+              ]
             }
           ]
         },
         {
-          "name": "rm",
           "description": "Remove resource",
+          "name": "rm",
           "options": [
             {
+              "description": "Skip confirmation",
               "name": [
                 "--force",
                 "-f"
-              ],
-              "description": "Skip confirmation"
+              ]
             },
             {
+              "description": "Skip confirmation",
               "name": [
                 "--yolo"
-              ],
-              "description": "Skip confirmation"
+              ]
             }
           ]
         },
         {
-          "name": "rotate-tunnel-key",
           "description": "Rotate the tunnel key for a resource",
+          "name": "rotate-tunnel-key",
           "options": [
             {
+              "description": "Skip confirmation",
               "name": [
                 "--force",
                 "-f"
-              ],
-              "description": "Skip confirmation"
+              ]
             },
             {
+              "description": "Skip confirmation",
               "name": [
                 "--yolo"
-              ],
-              "description": "Skip confirmation"
+              ]
             }
           ]
         },
         {
-          "name": "update",
           "description": "Update a resource",
+          "name": "update",
           "options": [
             {
-              "name": [
-                "--ca-cert"
-              ],
-              "description": "Trusted certificates for verifying resource",
               "args": {
                 "name": "ca-cert"
-              }
+              },
+              "description": "Trusted certificates for verifying resource",
+              "name": [
+                "--ca-cert"
+              ]
             },
             {
-              "name": [
-                "--client-cert"
-              ],
-              "description": "Client certificate for authenticating to the resource",
               "args": {
                 "name": "client-cert"
-              }
+              },
+              "description": "Client certificate for authenticating to the resource",
+              "name": [
+                "--client-cert"
+              ]
             },
             {
-              "name": [
-                "--client-key"
-              ],
-              "description": "Client private key for authenticating to the resource",
               "args": {
                 "name": "client-key"
-              }
+              },
+              "description": "Client private key for authenticating to the resource",
+              "name": [
+                "--client-key"
+              ]
             },
             {
+              "args": {
+                "name": "metadata"
+              },
+              "description": "New resource metadata",
               "name": [
                 "--metadata",
                 "-m"
-              ],
-              "description": "New resource metadata",
-              "args": {
-                "name": "metadata"
-              }
+              ]
             },
             {
-              "name": [
-                "--name"
-              ],
-              "description": "New resource name",
               "args": {
                 "name": "name"
-              }
+              },
+              "description": "New resource name",
+              "name": [
+                "--name"
+              ]
             },
             {
-              "name": [
-                "--password"
-              ],
-              "description": "Password",
               "args": {
                 "name": "password"
-              }
+              },
+              "description": "Password",
+              "name": [
+                "--password"
+              ]
             },
             {
-              "name": [
-                "--ssh-url"
-              ],
-              "description": "SSH tunneling address",
               "args": {
                 "name": "ssh-url"
-              }
+              },
+              "description": "SSH tunneling address",
+              "name": [
+                "--ssh-url"
+              ]
             },
             {
+              "description": "Use SSL",
               "name": [
                 "--ssl"
-              ],
-              "description": "Use SSL"
+              ]
             },
             {
+              "args": {
+                "name": "url"
+              },
+              "description": "New resource url",
               "name": [
                 "--url",
                 "-u"
-              ],
-              "description": "New resource url",
-              "args": {
-                "name": "url"
-              }
+              ]
             },
             {
-              "name": [
-                "--username"
-              ],
-              "description": "Username",
               "args": {
                 "name": "username"
-              }
+              },
+              "description": "Username",
+              "name": [
+                "--username"
+              ]
             }
           ]
         },
         {
-          "name": "validate",
-          "description": "Validate a resource"
+          "description": "Validate a resource",
+          "name": "validate"
         }
       ]
     },
     {
-      "name": "transform",
       "description": "Manage transforms on Meroxa",
+      "name": "transform",
       "subcommands": [
         {
-          "name": "ls",
           "description": "List transforms",
+          "name": "ls",
           "options": [
             {
+              "description": "Display output without headers",
               "name": [
                 "--no-headers"
-              ],
-              "description": "Display output without headers"
+              ]
             }
           ]
         }
       ]
     },
     {
-      "name": "version",
-      "description": "Display the Meroxa CLI version"
+      "description": "Display the Meroxa CLI version",
+      "name": "version"
     },
     {
-      "name": "whoami",
-      "description": "Display the current logged in user"
+      "description": "Display the current logged in user",
+      "name": "whoami"
     },
     {
-      "name": "help",
       "description": "Help about any command",
+      "name": "help",
       "subcommands": [
         {
-          "name": "accounts",
           "description": "Manage Meroxa Accounts",
+          "name": "accounts",
           "subcommands": [
             {
-              "name": "ls",
-              "description": "List Meroxa Accounts"
+              "description": "List Meroxa Accounts",
+              "name": "ls"
             },
             {
-              "name": "set",
-              "description": "Set active account"
+              "description": "Set active account",
+              "name": "set"
             }
           ]
         },
         {
-          "name": "api",
-          "description": "Invoke Meroxa API"
+          "description": "Invoke Meroxa API",
+          "name": "api"
         },
         {
-          "name": "app",
           "description": "Manage Turbine Data Applications",
+          "name": "app",
           "subcommands": [
             {
-              "name": "deploy",
-              "description": "Deploy a Turbine Data Application"
+              "description": "Deploy a Turbine Data Application",
+              "name": "deploy"
             },
             {
-              "name": "describe",
-              "description": "Describe a Turbine Data Application"
+              "description": "Describe a Turbine Data Application",
+              "name": "describe"
             },
             {
-              "name": "init",
-              "description": "Initialize a Turbine Data Application"
+              "description": "Initialize a Turbine Data Application",
+              "name": "init"
             },
             {
-              "name": "ls",
-              "description": "List Turbine Data Applications"
+              "description": "List Turbine Data Applications",
+              "name": "ls"
             },
             {
-              "name": "log",
-              "description": "View relevant logs to the state of the given Turbine Data Application"
+              "description": "View relevant logs to the state of the given Turbine Data Application",
+              "name": "log"
             },
             {
-              "name": "open",
-              "description": "Open the link to a Turbine Data Application in the Dashboard"
+              "description": "Open the link to a Turbine Data Application in the Dashboard",
+              "name": "open"
             },
             {
-              "name": "rm",
-              "description": "Remove a Turbine Data Application"
+              "description": "Remove a Turbine Data Application",
+              "name": "rm"
             },
             {
-              "name": "run",
-              "description": "Execute a Turbine Data Application locally"
+              "description": "Execute a Turbine Data Application locally",
+              "name": "run"
             },
             {
-              "name": "upgrade",
-              "description": "Upgrade a Turbine Data Application"
+              "description": "Upgrade a Turbine Data Application",
+              "name": "upgrade"
             }
           ]
         },
         {
-          "name": "auth",
           "description": "Authentication commands for Meroxa",
+          "name": "auth",
           "subcommands": [
             {
-              "name": "login",
-              "description": "Login or Sign up to the Meroxa Platform"
+              "description": "Login or Sign up to the Meroxa Platform",
+              "name": "login"
             },
             {
-              "name": "logout",
-              "description": "Clears local login credentials of the Meroxa Platform"
+              "description": "Clears local login credentials of the Meroxa Platform",
+              "name": "logout"
             },
             {
-              "name": "whoami",
-              "description": "Display the current logged in user"
+              "description": "Display the current logged in user",
+              "name": "whoami"
             }
           ]
         },
         {
-          "name": "billing",
-          "description": "Open your billing page in a web browser"
+          "description": "Open your billing page in a web browser",
+          "name": "billing"
         },
         {
-          "name": "build",
           "description": "Inspect Process Builds on Meroxa",
+          "name": "build",
           "subcommands": [
             {
-              "name": "describe",
-              "description": "Describe a Meroxa Process Build"
+              "description": "Describe a Meroxa Process Build",
+              "name": "describe"
             },
             {
-              "name": "log",
-              "description": "List a Meroxa Process Build's Logs"
+              "description": "List a Meroxa Process Build's Logs",
+              "name": "log"
             }
           ]
         },
         {
-          "name": "completion",
-          "description": "Generate completion script"
+          "description": "Generate completion script",
+          "name": "completion"
         },
         {
-          "name": "cfg",
           "description": "Manage your Meroxa CLI configuration",
+          "name": "cfg",
           "subcommands": [
             {
-              "name": "describe",
-              "description": "Show Meroxa CLI configuration details"
+              "description": "Show Meroxa CLI configuration details",
+              "name": "describe"
             },
             {
-              "name": "set",
-              "description": "Update your Meroxa CLI configuration file with a specific key=value"
+              "description": "Update your Meroxa CLI configuration file with a specific key=value",
+              "name": "set"
             }
           ]
         },
         {
-          "name": "env",
           "description": "Manage environments on Meroxa",
+          "name": "env",
           "subcommands": [
             {
-              "name": "create",
-              "description": "Create an environment"
+              "description": "Create an environment",
+              "name": "create"
             },
             {
-              "name": "describe",
-              "description": "Describe environment"
+              "description": "Describe environment",
+              "name": "describe"
             },
             {
-              "name": "ls",
-              "description": "List environments"
+              "description": "List environments",
+              "name": "ls"
             },
             {
-              "name": "rm",
-              "description": "Remove environment"
+              "description": "Remove environment",
+              "name": "rm"
             },
             {
-              "name": "repair",
-              "description": "Repair environment"
+              "description": "Repair environment",
+              "name": "repair"
             },
             {
-              "name": "update",
-              "description": "Update an environment"
+              "description": "Update an environment",
+              "name": "update"
             }
           ]
         },
         {
-          "name": "login",
-          "description": "Login or Sign up to the Meroxa Platform"
+          "description": "Login or Sign up to the Meroxa Platform",
+          "name": "login"
         },
         {
-          "name": "logout",
-          "description": "Clears local login credentials of the Meroxa Platform"
+          "description": "Clears local login credentials of the Meroxa Platform",
+          "name": "logout"
         },
         {
-          "name": "open",
           "description": "Open in a web browser",
+          "name": "open",
           "subcommands": [
             {
-              "name": "billing",
-              "description": "Open your billing page in a web browser"
+              "description": "Open your billing page in a web browser",
+              "name": "billing"
             }
           ]
         },
         {
-          "name": "resource",
           "description": "Manage resources on Meroxa",
+          "name": "resource",
           "subcommands": [
             {
-              "name": "add",
-              "description": "Add a resource to your Meroxa resource catalog"
+              "description": "Add a resource to your Meroxa resource catalog",
+              "name": "add"
             },
             {
-              "name": "describe",
-              "description": "Describe resource"
+              "description": "Describe resource",
+              "name": "describe"
             },
             {
-              "name": "ls",
-              "description": "List resources and resource types"
+              "description": "List resources and resource types",
+              "name": "ls"
             },
             {
-              "name": "rm",
-              "description": "Remove resource"
+              "description": "Remove resource",
+              "name": "rm"
             },
             {
-              "name": "rotate-tunnel-key",
-              "description": "Rotate the tunnel key for a resource"
+              "description": "Rotate the tunnel key for a resource",
+              "name": "rotate-tunnel-key"
             },
             {
-              "name": "update",
-              "description": "Update a resource"
+              "description": "Update a resource",
+              "name": "update"
             },
             {
-              "name": "validate",
-              "description": "Validate a resource"
+              "description": "Validate a resource",
+              "name": "validate"
             }
           ]
         },
         {
-          "name": "transform",
           "description": "Manage transforms on Meroxa",
+          "name": "transform",
           "subcommands": [
             {
-              "name": "ls",
-              "description": "List transforms"
+              "description": "List transforms",
+              "name": "ls"
             }
           ]
         },
         {
-          "name": "version",
-          "description": "Display the Meroxa CLI version"
+          "description": "Display the Meroxa CLI version",
+          "name": "version"
         },
         {
-          "name": "whoami",
-          "description": "Display the current logged in user"
+          "description": "Display the current logged in user",
+          "name": "whoami"
         }
       ]
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--api-url"
-      ],
-      "description": "API url",
-      "args": {
-        "name": "api-url"
-      }
-    },
-    {
-      "name": [
-        "--cli-config-file"
-      ],
-      "description": "Meroxa configuration file",
-      "args": {
-        "name": "cli-config-file",
-        "template": "filepaths"
-      }
-    },
-    {
-      "name": [
-        "--debug"
-      ],
-      "description": "Display any debugging information"
-    },
-    {
-      "name": [
-        "--json"
-      ],
-      "description": "Output json"
-    },
-    {
-      "name": [
-        "--timeout"
-      ],
-      "description": "Set the duration of the client timeout in seconds",
-      "args": {
-        "name": "timeout"
-      }
-    },
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Display help"
     }
   ]
 }

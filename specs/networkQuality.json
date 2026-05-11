@@ -1,61 +1,61 @@
 {
-  "name": "networkQuality",
   "description": "Measure the different aspects of network quality",
+  "name": "networkQuality",
   "options": [
     {
+      "description": "Show help for networkQuality",
       "name": [
         "-h"
-      ],
-      "description": "Show help for networkQuality"
+      ]
     },
     {
+      "description": "Produce computer readable output",
       "name": [
         "-c"
-      ],
-      "description": "Produce computer readable output"
+      ]
     },
     {
+      "description": "Run tests sequentially instead of in parallel",
       "name": [
         "-s"
-      ],
-      "description": "Run tests sequentially instead of in parallel"
+      ]
     },
     {
+      "description": "Verbose output",
       "name": [
         "-v"
-      ],
-      "description": "Verbose output"
+      ]
     },
     {
-      "name": [
-        "-C"
-      ],
-      "description": "Use a custom configuration URL",
       "args": {
         "name": "URL"
-      }
+      },
+      "description": "Use a custom configuration URL",
+      "name": [
+        "-C"
+      ]
     },
     {
-      "name": [
-        "-I"
-      ],
-      "description": "Bind test to interface",
       "args": {
-        "name": "interface",
         "generators": [
           {
-            "script": [
-              "networksetup",
-              "-listallhardwareports"
-            ],
-            "requires_js": true,
             "js_runtime": {
               "kind": "post_process",
               "source": "n=>{let e=[],o=/^Hardware Port: (.*?)\\n.*?Device: (.*?)$/gms;for(let t of n.matchAll(o))e.push({name:t[2],description:t[1]});return e}"
-            }
+            },
+            "requires_js": true,
+            "script": [
+              "networksetup",
+              "-listallhardwareports"
+            ]
           }
-        ]
-      }
+        ],
+        "name": "interface"
+      },
+      "description": "Bind test to interface",
+      "name": [
+        "-I"
+      ]
     }
   ]
 }

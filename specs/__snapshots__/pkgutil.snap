@@ -240,7 +240,8 @@
         "generators": [
           {
             "js_runtime": {
-              "kind": "custom",
+              "kind": "token_only",
+              "self_contained": false,
               "source": "async(t,a)=>{let p=t.indexOf(\"--edit-pkg\"),s=p+1;if(p===-1||s>=t.length)return[];let n=t[s],i=t[t.length-1];return r({pathPrefix:i})((await a({command:\"pkgutil\",args:[\"--files\",n]})).stdout,t)}"
             },
             "requires_js": true

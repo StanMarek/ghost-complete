@@ -1,42 +1,42 @@
 {
   "name": "publish",
+  "options": [
+    {
+      "description": "Show help for publish",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "new",
-      "description": "Set up a new website in the current folder"
+      "description": "Set up a new website in the current folder",
+      "name": "new"
     },
     {
-      "name": "run",
       "description": "Generate and run a localhost server on default port 8000 for the website in the current folder",
+      "name": "run",
       "options": [
         {
+          "args": {
+            "name": "port"
+          },
+          "description": "Customize the port",
           "name": [
             "-p",
             "--port"
-          ],
-          "description": "Customize the port",
-          "args": {
-            "name": "port"
-          }
+          ]
         }
       ]
     },
     {
-      "name": "deploy",
-      "description": "Generate and deploy the website in the current folder"
+      "description": "Generate and deploy the website in the current folder",
+      "name": "deploy"
     },
     {
-      "name": "generate",
-      "description": "Generate the website in the current folder"
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Show help for publish"
+      "description": "Generate the website in the current folder",
+      "name": "generate"
     }
   ]
 }

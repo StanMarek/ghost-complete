@@ -1,27 +1,13 @@
 {
-  "name": "pip",
+  "args": {},
   "description": "Python package manager",
+  "name": "pip",
   "subcommands": [
     {
-      "name": "install",
-      "description": "Install packages",
-      "options": [
-        {
-          "name": [
-            "-r",
-            "--requirement"
-          ],
-          "description": "Install from the given requirements file. This option can be used multiple times",
-          "args": {
-            "name": "requirements file",
-            "template": "filepaths"
-          }
-        }
-      ],
       "args": {
-        "name": "package",
         "description": "Package to install",
         "isVariadic": true,
+        "name": "package",
         "suggestions": [
           {
             "name": "urllib3"
@@ -12037,95 +12023,110 @@
           }
         ]
       },
-      "priority": 92
-    },
-    {
-      "name": "download",
-      "description": "Download packages",
+      "description": "Install packages",
+      "name": "install",
       "options": [
         {
-          "name": [
-            "-c",
-            "--constraint"
-          ],
-          "description": "Constrain versions using the given constraints file. This option can be used multiple times"
-        },
-        {
+          "args": {
+            "name": "requirements file",
+            "template": "filepaths"
+          },
+          "description": "Install from the given requirements file. This option can be used multiple times",
           "name": [
             "-r",
             "--requirement"
-          ],
-          "description": "Install from the given requirements file. This option can be used multiple times"
+          ]
+        }
+      ],
+      "priority": 92
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Download packages",
+      "name": "download",
+      "options": [
+        {
+          "description": "Constrain versions using the given constraints file. This option can be used multiple times",
+          "name": [
+            "-c",
+            "--constraint"
+          ]
         },
         {
+          "description": "Install from the given requirements file. This option can be used multiple times",
+          "name": [
+            "-r",
+            "--requirement"
+          ]
+        },
+        {
+          "description": "Don’t install package dependencies",
           "name": [
             "--no-deps"
-          ],
-          "description": "Don’t install package dependencies"
+          ]
         },
         {
+          "description": "Extra global options to be supplied to the setup.py call before the install command",
           "name": [
             "--global-option"
-          ],
-          "description": "Extra global options to be supplied to the setup.py call before the install command"
+          ]
         },
         {
+          "description": "Constrain versions using the given constraints file. This option can be used multiple times",
           "name": [
             "--no-binary"
-          ],
-          "description": "Constrain versions using the given constraints file. This option can be used multiple times"
+          ]
         },
         {
-          "name": [
-            "--only-binary"
-          ],
-          "description": "Do not use source packages",
           "args": {
             "suggestions": [
               {
-                "name": ":all:",
-                "description": "Disable all source packages"
+                "description": "Disable all source packages",
+                "name": ":all:"
               },
               {
-                "name": ":none:",
-                "description": "Empty the set"
+                "description": "Empty the set",
+                "name": ":none:"
               }
             ]
-          }
+          },
+          "description": "Do not use source packages",
+          "name": [
+            "--only-binary"
+          ]
         },
         {
+          "description": "Prefer older binary packages over newer source packages",
           "name": [
             "--prefer-binary"
-          ],
-          "description": "Prefer older binary packages over newer source packages"
+          ]
         },
         {
-          "name": [
-            "--src"
-          ],
-          "description": "Directory to check out editable projects into",
           "args": {
             "name": "source folder",
             "template": "folders"
-          }
+          },
+          "description": "Directory to check out editable projects into",
+          "name": [
+            "--src"
+          ]
         },
         {
+          "description": "Include pre-release and development versions. By default, pip only finds stable versions",
           "name": [
             "--pre"
-          ],
-          "description": "Include pre-release and development versions. By default, pip only finds stable versions"
+          ]
         },
         {
+          "description": "Require a hash to check each requirement against, for repeatable installs",
           "name": [
             "--require-hashes"
-          ],
-          "description": "Require a hash to check each requirement against, for repeatable installs"
+          ]
         },
         {
-          "name": [
-            "--progress-bar"
-          ],
-          "description": "Specify type of progress to be displayed",
           "args": {
             "suggestions": [
               {
@@ -12144,325 +12145,325 @@
                 "name": "emoji"
               }
             ]
-          }
+          },
+          "description": "Specify type of progress to be displayed",
+          "name": [
+            "--progress-bar"
+          ]
         },
         {
+          "description": "Disable isolation when building a modern source distribution",
           "name": [
             "--no-build-isolation"
-          ],
-          "description": "Disable isolation when building a modern source distribution"
+          ]
         },
         {
+          "description": "Use PEP 517 for building source distributions",
           "name": [
             "--use-pep517"
-          ],
-          "description": "Use PEP 517 for building source distributions"
+          ]
         },
         {
+          "description": "Ignore the Requires-Python information",
           "name": [
             "--ignore-requires-python"
-          ],
-          "description": "Ignore the Requires-Python information"
+          ]
         },
         {
-          "name": [
-            "-d",
-            "--dest"
-          ],
-          "description": "Require a hash to check each requirement against, for repeatable installs",
           "args": {
             "name": "dir",
             "template": "folders"
-          }
+          },
+          "description": "Require a hash to check each requirement against, for repeatable installs",
+          "name": [
+            "-d",
+            "--dest"
+          ]
         },
         {
-          "name": [
-            "--platform"
-          ],
-          "description": "Only use wheels compatible with platform",
           "args": {
             "name": "platform"
-          }
+          },
+          "description": "Only use wheels compatible with platform",
+          "name": [
+            "--platform"
+          ]
         },
         {
+          "description": "The Python interpreter version to use for wheel and “Requires-Python” compatibility checks",
           "name": [
             "--python-version"
-          ],
-          "description": "The Python interpreter version to use for wheel and “Requires-Python” compatibility checks"
+          ]
         },
         {
-          "name": [
-            "--implementation"
-          ],
-          "description": "Only use wheels compatible with Python implementation",
           "args": {
             "name": "implementation"
-          }
+          },
+          "description": "Only use wheels compatible with Python implementation",
+          "name": [
+            "--implementation"
+          ]
         },
         {
-          "name": [
-            "--abi"
-          ],
-          "description": "Only use wheels compatible with Python abi <abi>, e.g. ‘pypy_41’",
           "args": {
             "name": "abi"
-          }
+          },
+          "description": "Only use wheels compatible with Python abi <abi>, e.g. ‘pypy_41’",
+          "name": [
+            "--abi"
+          ]
         },
         {
+          "description": "Don’t clean up build directories",
           "name": [
             "--no-clean"
-          ],
-          "description": "Don’t clean up build directories"
+          ]
         },
         {
+          "args": {
+            "name": "url"
+          },
+          "description": "Base URL of the Python Package Index",
           "name": [
             "-i",
             "--index-url"
-          ],
-          "description": "Base URL of the Python Package Index",
-          "args": {
-            "name": "url"
-          }
+          ]
         },
         {
+          "description": "Ignore package index (only looking at --find-links URLs instead)",
           "name": [
             "--no-index"
-          ],
-          "description": "Ignore package index (only looking at --find-links URLs instead)"
+          ]
         },
         {
+          "description": "Extra URLs of package indexes to use in addition to --index-url. Should follow the same rules as --index-url",
           "name": [
             "--extra-index-url"
-          ],
-          "description": "Extra URLs of package indexes to use in addition to --index-url. Should follow the same rules as --index-url"
+          ]
         },
         {
-          "name": [
-            "-f",
-            "--find-links"
-          ],
-          "description": "Look for archives in the directory listing",
           "args": {
             "name": "url",
             "template": "filepaths"
           },
-          "priority": 20
-        }
-      ],
-      "args": {
-        "name": "path",
-        "template": "filepaths"
-      }
-    },
-    {
-      "name": "uninstall",
-      "description": "Uninstall packages",
-      "args": {},
-      "priority": 78
-    },
-    {
-      "name": "freeze",
-      "description": "Output installed packages in requirements format",
-      "options": [
-        {
-          "name": [
-            "-r",
-            "--requirement"
-          ],
-          "description": "Use the order in the given requirements file and its comments when generating output"
-        },
-        {
-          "name": [
-            "-l",
-            "--local"
-          ],
-          "description": "If in a virtualenv that has global access, do not output globally-installed packages"
-        },
-        {
-          "name": [
-            "--user"
-          ],
-          "description": "Only output packages installed in user-site"
-        },
-        {
-          "name": [
-            "--path"
-          ],
-          "description": "Restrict to the specified installation path for listing packages (can be used multiple times)"
-        },
-        {
-          "name": [
-            "--all"
-          ],
-          "description": "Do not skip these packages in the output: setuptools, distribute, pip, wheel"
-        },
-        {
-          "name": [
-            "--exclude-editable"
-          ],
-          "description": "Exclude editable package from output"
-        },
-        {
-          "name": [
-            "--exclude"
-          ],
-          "description": "Exclude specified package from the output",
-          "args": {
-            "name": "package",
-            "generators": [
-              {
-                "script": [
-                  "pip",
-                  "list"
-                ],
-                "requires_js": true,
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(i){let e=i.split(`\n`),a=[];for(let n=2;n<e.length;n++)a.push({name:e[n],icon:\"\\u{1F40D}\"});return a}"
-                }
-              }
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "list",
-      "description": "List installed packages",
-      "options": [
-        {
-          "name": [
-            "-o",
-            "--outdated"
-          ],
-          "description": "List outdated packages"
-        },
-        {
-          "name": [
-            "-u",
-            "--uptodate"
-          ],
-          "description": "List uptodate packages"
-        },
-        {
-          "name": [
-            "-e",
-            "--editable"
-          ],
-          "description": "List editable projects"
-        },
-        {
-          "name": [
-            "-l",
-            "--local"
-          ],
-          "description": "If in a virtualenv that has global access, do not list globally-installed packages"
-        },
-        {
-          "name": [
-            "--user"
-          ],
-          "description": "Only output packages installed in user-site"
-        },
-        {
-          "name": [
-            "--path"
-          ],
-          "description": "Restrict to the specified installation path for listing packages (can be used multiple times)",
-          "args": {
-            "name": "path",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "--pre"
-          ],
-          "description": "Include pre-release and development versions. By default, pip only finds stable versions"
-        },
-        {
-          "name": [
-            "--format"
-          ],
-          "description": "Select the output format among: columns (default), freeze, or json"
-        },
-        {
-          "name": [
-            "--not-required"
-          ],
-          "description": "List packages that are not dependencies of installed packages"
-        },
-        {
-          "name": [
-            "--exclude-editable"
-          ],
-          "description": "Exclude editable package from output"
-        },
-        {
-          "name": [
-            "--include-editable"
-          ],
-          "description": "Include editable package from output"
-        },
-        {
-          "name": [
-            "--exclude"
-          ],
-          "description": "Exclude specified package from the output",
-          "args": {
-            "name": "package",
-            "generators": [
-              {
-                "script": [
-                  "pip",
-                  "list"
-                ],
-                "requires_js": true,
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(i){let e=i.split(`\n`),a=[];for(let n=2;n<e.length;n++)a.push({name:e[n],icon:\"\\u{1F40D}\"});return a}"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "name": [
-            "-i",
-            "--index-url"
-          ],
-          "description": "Base URL of the Python Package Index (default https://pypi.org/simple)",
-          "args": {}
-        },
-        {
-          "name": [
-            "--extra-index-url"
-          ],
-          "description": "Include pre-release and development versions. By default, pip only finds stable versions"
-        },
-        {
-          "name": [
-            "--no-index"
-          ],
-          "description": "Ignore package index (only looking at --find-links URLs instead)"
-        },
-        {
+          "description": "Look for archives in the directory listing",
           "name": [
             "-f",
             "--find-links"
           ],
-          "description": "If a URL or path to an html file, then parse for links to archives such as sdist (.tar.gz) or wheel (.whl) files",
+          "priority": 20
+        }
+      ]
+    },
+    {
+      "args": {},
+      "description": "Uninstall packages",
+      "name": "uninstall",
+      "priority": 78
+    },
+    {
+      "description": "Output installed packages in requirements format",
+      "name": "freeze",
+      "options": [
+        {
+          "description": "Use the order in the given requirements file and its comments when generating output",
+          "name": [
+            "-r",
+            "--requirement"
+          ]
+        },
+        {
+          "description": "If in a virtualenv that has global access, do not output globally-installed packages",
+          "name": [
+            "-l",
+            "--local"
+          ]
+        },
+        {
+          "description": "Only output packages installed in user-site",
+          "name": [
+            "--user"
+          ]
+        },
+        {
+          "description": "Restrict to the specified installation path for listing packages (can be used multiple times)",
+          "name": [
+            "--path"
+          ]
+        },
+        {
+          "description": "Do not skip these packages in the output: setuptools, distribute, pip, wheel",
+          "name": [
+            "--all"
+          ]
+        },
+        {
+          "description": "Exclude editable package from output",
+          "name": [
+            "--exclude-editable"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(i){let e=i.split(`\n`),a=[];for(let n=2;n<e.length;n++)a.push({name:e[n],icon:\"\\u{1F40D}\"});return a}"
+                },
+                "requires_js": true,
+                "script": [
+                  "pip",
+                  "list"
+                ]
+              }
+            ],
+            "name": "package"
+          },
+          "description": "Exclude specified package from the output",
+          "name": [
+            "--exclude"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List installed packages",
+      "name": "list",
+      "options": [
+        {
+          "description": "List outdated packages",
+          "name": [
+            "-o",
+            "--outdated"
+          ]
+        },
+        {
+          "description": "List uptodate packages",
+          "name": [
+            "-u",
+            "--uptodate"
+          ]
+        },
+        {
+          "description": "List editable projects",
+          "name": [
+            "-e",
+            "--editable"
+          ]
+        },
+        {
+          "description": "If in a virtualenv that has global access, do not list globally-installed packages",
+          "name": [
+            "-l",
+            "--local"
+          ]
+        },
+        {
+          "description": "Only output packages installed in user-site",
+          "name": [
+            "--user"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Restrict to the specified installation path for listing packages (can be used multiple times)",
+          "name": [
+            "--path"
+          ]
+        },
+        {
+          "description": "Include pre-release and development versions. By default, pip only finds stable versions",
+          "name": [
+            "--pre"
+          ]
+        },
+        {
+          "description": "Select the output format among: columns (default), freeze, or json",
+          "name": [
+            "--format"
+          ]
+        },
+        {
+          "description": "List packages that are not dependencies of installed packages",
+          "name": [
+            "--not-required"
+          ]
+        },
+        {
+          "description": "Exclude editable package from output",
+          "name": [
+            "--exclude-editable"
+          ]
+        },
+        {
+          "description": "Include editable package from output",
+          "name": [
+            "--include-editable"
+          ]
+        },
+        {
+          "args": {
+            "generators": [
+              {
+                "js_runtime": {
+                  "kind": "post_process",
+                  "source": "function(i){let e=i.split(`\n`),a=[];for(let n=2;n<e.length;n++)a.push({name:e[n],icon:\"\\u{1F40D}\"});return a}"
+                },
+                "requires_js": true,
+                "script": [
+                  "pip",
+                  "list"
+                ]
+              }
+            ],
+            "name": "package"
+          },
+          "description": "Exclude specified package from the output",
+          "name": [
+            "--exclude"
+          ]
+        },
+        {
+          "args": {},
+          "description": "Base URL of the Python Package Index (default https://pypi.org/simple)",
+          "name": [
+            "-i",
+            "--index-url"
+          ]
+        },
+        {
+          "description": "Include pre-release and development versions. By default, pip only finds stable versions",
+          "name": [
+            "--extra-index-url"
+          ]
+        },
+        {
+          "description": "Ignore package index (only looking at --find-links URLs instead)",
+          "name": [
+            "--no-index"
+          ]
+        },
+        {
           "args": {
             "name": "url"
           },
+          "description": "If a URL or path to an html file, then parse for links to archives such as sdist (.tar.gz) or wheel (.whl) files",
+          "name": [
+            "-f",
+            "--find-links"
+          ],
           "priority": 20
         }
       ],
       "priority": 72
     },
     {
-      "name": "show",
       "description": "Show information about installed packages",
+      "name": "show",
       "options": [
         {
           "name": [
@@ -12475,43 +12476,43 @@
       "priority": 65
     },
     {
-      "name": "check",
-      "description": "Verify installed packages have compatible dependencies"
+      "description": "Verify installed packages have compatible dependencies",
+      "name": "check"
     },
     {
-      "name": "config",
       "description": "Manage local and global configuration",
+      "name": "config",
       "options": [
         {
+          "description": "Editor to use to edit the file. Uses VISUAL or EDITOR environment variables if not provided",
           "name": [
             "--editor"
-          ],
-          "description": "Editor to use to edit the file. Uses VISUAL or EDITOR environment variables if not provided"
+          ]
         },
         {
+          "description": "Use the system-wide configuration file only",
           "name": [
             "--global"
           ],
-          "description": "Use the system-wide configuration file only",
           "priority": 60
         },
         {
+          "description": "Use the user configuration file only",
           "name": [
             "--user"
-          ],
-          "description": "Use the user configuration file only"
+          ]
         },
         {
+          "description": "Use the current environment configuration file only",
           "name": [
             "--site"
-          ],
-          "description": "Use the current environment configuration file only"
+          ]
         }
       ]
     },
     {
-      "name": "search",
       "description": "Search PyPI for packages",
+      "name": "search",
       "options": [
         {
           "name": [
@@ -12522,23 +12523,18 @@
       ]
     },
     {
-      "name": "cache",
-      "description": "Inspect and manage pip's wheel cache"
+      "description": "Inspect and manage pip's wheel cache",
+      "name": "cache"
     },
     {
-      "name": "wheel",
-      "description": "Build wheels from your requirements"
+      "description": "Build wheels from your requirements",
+      "name": "wheel"
     },
     {
-      "name": "hash",
       "description": "Compute hashes of package archives",
+      "name": "hash",
       "options": [
         {
-          "name": [
-            "-a",
-            "--algorithm"
-          ],
-          "description": "The hash algorithm to use",
           "args": {
             "suggestions": [
               {
@@ -12551,51 +12547,55 @@
                 "name": "sha512"
               }
             ]
-          }
+          },
+          "description": "The hash algorithm to use",
+          "name": [
+            "-a",
+            "--algorithm"
+          ]
         }
       ]
     },
     {
-      "name": "completion",
-      "description": "A helper command used for command completion"
+      "description": "A helper command used for command completion",
+      "name": "completion"
     },
     {
-      "name": "debug",
       "description": "Show information useful for debugging",
+      "name": "debug",
       "options": [
         {
-          "name": [
-            "--platform"
-          ],
-          "description": "Only use wheels compatible with platform",
           "args": {
             "name": "platform"
-          }
+          },
+          "description": "Only use wheels compatible with platform",
+          "name": [
+            "--platform"
+          ]
         },
         {
-          "name": [
-            "--python-version"
-          ],
-          "description": "The Python interpreter version to use for wheel and “Requires-Python” compatibility checks",
           "args": {
             "name": "python version"
-          }
+          },
+          "description": "The Python interpreter version to use for wheel and “Requires-Python” compatibility checks",
+          "name": [
+            "--python-version"
+          ]
         },
         {
-          "name": [
-            "--implementation"
-          ],
-          "description": "Only use wheels compatible with Python implementation",
           "args": {
             "name": "implementation"
-          }
+          },
+          "description": "Only use wheels compatible with Python implementation",
+          "name": [
+            "--implementation"
+          ]
         }
       ]
     },
     {
-      "name": "help",
-      "description": "Show help for commands"
+      "description": "Show help for commands",
+      "name": "help"
     }
-  ],
-  "args": {}
+  ]
 }

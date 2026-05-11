@@ -1,195 +1,209 @@
 {
-  "name": "charm",
   "description": "Do Charm stuff; run without arguments for a TUI or use the sub-commands like a pro",
+  "name": "charm",
+  "options": [
+    {
+      "description": "Help for charm",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Version for charm",
+      "name": [
+        "--version",
+        "-v"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "backup-keys",
-      "description": "Backup your Charm account keys"
+      "description": "Backup your Charm account keys",
+      "name": "backup-keys"
     },
     {
-      "name": "completion",
-      "description": "Generate shell completion"
+      "description": "Generate shell completion",
+      "name": "completion"
     },
     {
-      "name": "crypt",
       "description": "Use charm encryption",
+      "name": "crypt",
       "subcommands": [
         {
-          "name": "decrypt",
-          "description": "Decrypt stdin with your Charm account encryption key"
+          "description": "Decrypt stdin with your Charm account encryption key",
+          "name": "decrypt"
         },
         {
-          "name": "decrypt-lookup",
-          "description": "Decrypt arg deterministically"
+          "description": "Decrypt arg deterministically",
+          "name": "decrypt-lookup"
         },
         {
-          "name": "encrypt",
-          "description": "Encrypt stdin with your Charm account encryption key"
+          "description": "Encrypt stdin with your Charm account encryption key",
+          "name": "encrypt"
         },
         {
-          "name": "encrypt-lookup",
-          "description": "Encrypt arg deterministically"
+          "description": "Encrypt arg deterministically",
+          "name": "encrypt-lookup"
         }
       ]
     },
     {
-      "name": "fs",
       "description": "Use the Charm file systems",
+      "name": "fs",
       "subcommands": [
         {
-          "name": "cat",
-          "description": "Output the content of the file at path",
           "args": {
             "name": "[charm:]PATH"
-          }
+          },
+          "description": "Output the content of the file at path",
+          "name": "cat"
         },
         {
-          "name": "cp",
+          "args": [
+            {
+              "name": "[charm:]PATH"
+            },
+            {
+              "name": "[charm:]PATH"
+            }
+          ],
           "description": "Copy a file, preface source or destination with \"charm:\" to specify a remote path",
+          "name": "cp",
           "options": [
             {
+              "description": "Copy directories recursively",
               "name": [
                 "--recursive",
                 "-r"
-              ],
-              "description": "Copy directories recursively"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "[charm:]PATH"
+          },
+          "description": "List file or directory at path",
+          "name": "ls"
+        },
+        {
+          "args": [
+            {
+              "name": "[charm:]PATH"
+            },
+            {
+              "name": "[charm:]PATH"
             }
           ],
-          "args": [
-            {
-              "name": "[charm:]PATH"
-            },
-            {
-              "name": "[charm:]PATH"
-            }
-          ]
-        },
-        {
-          "name": "ls",
-          "description": "List file or directory at path",
-          "args": {
-            "name": "[charm:]PATH"
-          }
-        },
-        {
-          "name": "mv",
           "description": "Move a file, preface source or destination with \"charm\" to specify a remote  path",
-          "args": [
-            {
-              "name": "[charm:]PATH"
-            },
-            {
-              "name": "[charm:]PATH"
-            }
-          ]
+          "name": "mv"
         },
         {
-          "name": "rm",
+          "args": {
+            "name": "[charm:]PATH"
+          },
           "description": "Remove file or directory at path",
-          "args": {
-            "name": "[charm:]PATH"
-          }
+          "name": "rm"
         },
         {
-          "name": "tree",
-          "description": "Print a file system tree from path",
           "args": {
             "name": "[charm:]PATH"
-          }
+          },
+          "description": "Print a file system tree from path",
+          "name": "tree"
         }
       ]
     },
     {
-      "name": "help",
-      "description": "Help about any command"
+      "description": "Help about any command",
+      "name": "help"
     },
     {
-      "name": "id",
-      "description": "Print your Charm ID"
+      "description": "Print your Charm ID",
+      "name": "id"
     },
     {
-      "name": "import-keys",
-      "description": "Import previously backed up Charm account keys",
-      "options": [
-        {
-          "name": [
-            "--force-overwrite",
-            "-f"
-          ],
-          "description": "Overwrite if keys exist; don't prompt for input"
-        }
-      ],
       "args": {
         "name": "BACKUP.tar",
-        "template": "filepaths",
         "suggestions": [
           {
             "name": "BACKUP.tar"
           }
-        ]
-      }
-    },
-    {
-      "name": "jwt",
-      "description": "Print a JWT"
-    },
-    {
-      "name": "keys",
-      "description": "Browse or print linked SSH keys",
+        ],
+        "template": "filepaths"
+      },
+      "description": "Import previously backed up Charm account keys",
+      "name": "import-keys",
       "options": [
         {
+          "description": "Overwrite if keys exist; don't prompt for input",
           "name": [
-            "--randomart",
-            "-r"
-          ],
-          "description": "Print SSH 5.1 randomart for each key (the Drunken Bishop algorithm)"
-        },
-        {
-          "name": [
-            "--simple",
-            "-s"
-          ],
-          "description": "Simple, non-interactive output (good for scripts)"
+            "--force-overwrite",
+            "-f"
+          ]
         }
       ]
     },
     {
-      "name": "kv",
+      "description": "Print a JWT",
+      "name": "jwt"
+    },
+    {
+      "description": "Browse or print linked SSH keys",
+      "name": "keys",
+      "options": [
+        {
+          "description": "Print SSH 5.1 randomart for each key (the Drunken Bishop algorithm)",
+          "name": [
+            "--randomart",
+            "-r"
+          ]
+        },
+        {
+          "description": "Simple, non-interactive output (good for scripts)",
+          "name": [
+            "--simple",
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
       "description": "Use the Charm key value store",
+      "name": "kv",
       "subcommands": [
         {
-          "name": "delete",
+          "args": {
+            "name": "KEY[@DB]"
+          },
           "description": "Delete a key with an optional @ db",
-          "args": {
-            "name": "KEY[@DB]"
-          }
+          "name": "delete"
         },
         {
-          "name": "get",
+          "args": {
+            "name": "KEY[@DB]"
+          },
           "description": "Get a value for a key with an optional @ db",
+          "name": "get"
+        },
+        {
           "args": {
+            "isOptional": true,
             "name": "KEY[@DB]"
-          }
-        },
-        {
-          "name": "list",
+          },
           "description": "List all key value pairs with an optional @ db",
-          "args": {
-            "name": "KEY[@DB]",
-            "isOptional": true
-          }
+          "name": "list"
         },
         {
-          "name": "reset",
+          "args": {
+            "isOptional": true,
+            "name": "KEY[@DB]"
+          },
           "description": "Delete local db and pull down fresh copy from Charm Cloud",
-          "args": {
-            "name": "KEY[@DB]",
-            "isOptional": true
-          }
+          "name": "reset"
         },
         {
-          "name": "set",
-          "description": "Set a value for a key with an optional @ db",
           "args": [
             {
               "name": "KEY[@DB]"
@@ -197,54 +211,52 @@
             {
               "name": "VALUE"
             }
-          ]
+          ],
+          "description": "Set a value for a key with an optional @ db",
+          "name": "set"
         },
         {
-          "name": "sync",
-          "description": "Sync local db with latest Charm Cloud db",
           "args": {
             "name": "KEY[@DB]"
-          }
+          },
+          "description": "Sync local db with latest Charm Cloud db",
+          "name": "sync"
         }
       ]
     },
     {
-      "name": "link",
+      "args": {
+        "isOptional": true,
+        "name": "code"
+      },
       "description": "Link multiple machines to your Charm account",
-      "args": {
-        "name": "code",
-        "isOptional": true
-      }
+      "name": "link"
     },
     {
-      "name": "name",
+      "args": {
+        "isOptional": true,
+        "name": "username"
+      },
       "description": "Username stuff",
-      "args": {
-        "name": "username",
-        "isOptional": true
-      }
+      "name": "name"
     },
     {
-      "name": "serve",
       "description": "Start a self-hosted Charm Cloud server",
+      "name": "serve",
       "options": [
         {
-          "name": [
-            "--data-dir"
-          ],
-          "description": "Directory to store SQLite db, SSH keys and file data",
           "args": {
             "name": "DATA_DIR",
             "template": [
               "folders"
             ]
-          }
+          },
+          "description": "Directory to store SQLite db, SSH keys and file data",
+          "name": [
+            "--data-dir"
+          ]
         },
         {
-          "name": [
-            "--health-port"
-          ],
-          "description": "Health port to listen on",
           "args": {
             "name": "HEALTH_PORT",
             "suggestions": [
@@ -252,13 +264,13 @@
                 "name": "35356"
               }
             ]
-          }
+          },
+          "description": "Health port to listen on",
+          "name": [
+            "--health-port"
+          ]
         },
         {
-          "name": [
-            "--http-port"
-          ],
-          "description": "HTTP port to listen on",
           "args": {
             "name": "HTTP_PORT",
             "suggestions": [
@@ -266,13 +278,13 @@
                 "name": "35354"
               }
             ]
-          }
+          },
+          "description": "HTTP port to listen on",
+          "name": [
+            "--http-port"
+          ]
         },
         {
-          "name": [
-            "--ssh-port"
-          ],
-          "description": "SSH port to listen on",
           "args": {
             "name": "SSH_PORT",
             "suggestions": [
@@ -280,13 +292,13 @@
                 "name": "35353"
               }
             ]
-          }
+          },
+          "description": "SSH port to listen on",
+          "name": [
+            "--ssh-port"
+          ]
         },
         {
-          "name": [
-            "--stats-port"
-          ],
-          "description": "Stats port to listen on",
           "args": {
             "name": "STATS_PORT",
             "suggestions": [
@@ -294,25 +306,13 @@
                 "name": "35355"
               }
             ]
-          }
+          },
+          "description": "Stats port to listen on",
+          "name": [
+            "--stats-port"
+          ]
         }
       ]
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Help for charm"
-    },
-    {
-      "name": [
-        "--version",
-        "-v"
-      ],
-      "description": "Version for charm"
     }
   ]
 }

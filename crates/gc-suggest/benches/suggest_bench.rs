@@ -260,6 +260,68 @@ fn engine_benchmarks(c: &mut Criterion) {
     group.finish();
 }
 
+fn token_only_engine(source: &str) -> (SuggestionEngine, tempfile::TempDir) {
+    let temp = tempfile::TempDir::new().unwrap();
+    let escaped_source = serde_json::to_string(source).unwrap();
+    let spec = format!(
+        r#"{{
+            "name": "bench-token-only",
+            "args": [{{
+                "name": "value",
+                "generators": [{{
+                    "requires_js": true,
+                    "js_runtime": {{
+                        "kind": "token_only",
+                        "source": {escaped_source},
+                        "self_contained": false
+                    }}
+                }}]
+            }}]
+        }}"#
+    );
+    std::fs::write(temp.path().join("bench-token-only.json"), spec).unwrap();
+    let store = SpecStore::load_from_dir(temp.path()).unwrap().store;
+    let engine = SuggestionEngine::with_providers(
+        store,
+        HistoryProvider::from_entries(Vec::new()),
+        CommandsProvider::from_list(Vec::new()),
+    );
+    (engine, temp)
+}
+
+fn token_only_benchmarks(c: &mut Criterion) {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let ctx = make_ctx(Some("bench-token-only"), vec!["get"], "po", 2);
+
+    let mut group = c.benchmark_group("engine_suggest_sync_token_only");
+    for (name, source) in [
+        ("returns_tokens", "tokens.map(name => ({ name }))"),
+        (
+            "previous_token_branch",
+            "previousToken === 'get' ? ['pods', 'services'].map(name => ({ name })) : ['apply'].map(name => ({ name }))",
+        ),
+        (
+            "regex_filter",
+            "['pods', 'services', 'deployments'].filter(name => /^p/.test(name)).map(name => ({ name }))",
+        ),
+    ] {
+        let (engine, temp) = token_only_engine(source);
+        let scheduled = engine
+            .suggest_sync(&ctx, temp.path(), "bench-token-only get po")
+            .unwrap()
+            .script_generators;
+        group.bench_function(name, |b| {
+            b.iter(|| {
+                let suggestions = rt
+                    .block_on(engine.run_generators(&scheduled, &ctx, temp.path(), 50))
+                    .unwrap();
+                std::hint::black_box(suggestions);
+            });
+        });
+    }
+    group.finish();
+}
+
 fn priority_sort_benchmarks(c: &mut Criterion) {
     let mut suggestions = Vec::with_capacity(10_000);
     for i in 0..10_000 {
@@ -448,6 +510,7 @@ criterion_group!(
     resolution_benchmarks,
     transform_benchmarks,
     engine_benchmarks,
+    token_only_benchmarks,
     priority_sort_benchmarks,
     memory_benchmarks,
     lazy_load_benchmarks,

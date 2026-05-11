@@ -11,10 +11,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // Generators referencing Fig's minified single-letter helpers (`l`, `p`,
 // `c`, `d`, `h`, `f`) are flagged as having free identifiers by the AST
 // analyzer. Because the runtime installs pure-JS definitions for those
-// names in every gc-jsrt job (see crates/gc-jsrt/src/helpers.js),
-// `buildSelfContainedJsRuntime` preserves bodies whose only free
-// identifiers are in `known-helpers.json`. These tests pin that
-// allow-list contract.
+// names in every non-token-only gc-jsrt job (see crates/gc-jsrt/src/helpers.js),
+// `buildSelfContainedJsRuntime` preserves bodies whose only free identifiers
+// are in `known-helpers.json`. TokenOnly is reserved for bodies that fail
+// that older proof but still do not reference host capabilities.
 
 describe('processGenerator — helper-bearing _custom bodies', () => {
   it('preserves the JS source when the only free identifiers are known helpers', () => {
@@ -48,32 +48,32 @@ describe('processGenerator — helper-bearing _custom bodies', () => {
     assert.equal(result.js_runtime.self_contained, true);
   });
 
-  it('still rejects bodies with genuinely unknown free identifiers', () => {
+  it('preserves bodies with genuinely unknown free identifiers as token_only', () => {
     const gen = {
       _custom: true,
       _customSource: 'function(t){return xyzUnknownHelper(t)}',
     };
     const result = processGenerator(gen, 'aws');
     assert.equal(result.requires_js, true);
-    assert.equal(
-      result.js_runtime,
-      undefined,
-      'unknown identifier must still strip the runtime body',
-    );
+    assert.deepStrictEqual(result.js_runtime, {
+      kind: 'token_only',
+      source: gen._customSource,
+      self_contained: false,
+    });
   });
 
-  it('still rejects bodies mixing known helpers with unknown identifiers', () => {
+  it('preserves bodies mixing known helpers with unknown identifiers as token_only', () => {
     const gen = {
       _custom: true,
       _customSource: 'function(t){let x = unknownThing(); return l(t,x,"name")}',
     };
     const result = processGenerator(gen, 'aws');
     assert.equal(result.requires_js, true);
-    assert.equal(
-      result.js_runtime,
-      undefined,
-      'mixed known+unknown identifiers must NOT preserve source',
-    );
+    assert.deepStrictEqual(result.js_runtime, {
+      kind: 'token_only',
+      source: gen._customSource,
+      self_contained: false,
+    });
   });
 });
 

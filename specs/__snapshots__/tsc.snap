@@ -2,10 +2,6 @@
   "args": {
     "generators": [
       {
-        "js_runtime": {
-          "kind": "custom",
-          "source": "(f,h,b)=>le(this,void 0,void 0,function*(){var u;let{isDangerous:S,currentWorkingDirectory:w,searchTerm:m}=b,O=(u=(0,y.getCurrentInsertedDirectory)(l??w,m,b))!==null&&u!==void 0?u:\"/\";try{let R=yield h({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Q=N(R.stdout.split(`\n`),[\".DS_Store\"]),V=[];for(let k of Q)if(k){let T=k.endsWith(\"/\")?\"folders\":\"filepaths\";(T===\"filepaths\"&&d!==\"only\"||T===\"folders\"&&d!==\"never\")&&V.push({type:T===\"filepaths\"?\"file\":\"folder\",name:k,insertValue:k,isDangerous:S,context:{templateType:T}})}return x(g(V))}catch{return[]}})"
-        },
         "requires_js": true
       }
     ],

@@ -40,10 +40,6 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "custom",
-                  "source": "async(e,t)=>{let n=await o(t);return n?n.bootVersion.values.map(i=>({name:i.id,displayName:i.name})):[]}"
-                },
                 "requires_js": true
               }
             ],
@@ -76,10 +72,6 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "custom",
-                  "source": "async(e,t)=>{let n=await o(t);if(!n)return[];let i=new Set(e[e.length-1]?.split(r));return n.dependencies.values.flatMap(({values:a})=>a).filter(({id:a})=>!i.has(a)).sort((a,c)=>a.name.localeCompare(c.name)).map(a=>({name:a.id,displayName:a.name,description:a.description}))}"
-                },
                 "requires_js": true
               }
             ],
@@ -139,10 +131,6 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "custom",
-                  "source": "async(e,t)=>{let n=await o(t);return n?n.javaVersion.values.map(i=>({name:i.id,displayName:i.name})):[]}"
-                },
                 "requires_js": true
               }
             ],

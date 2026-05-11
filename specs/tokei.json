@@ -1,115 +1,110 @@
 {
-  "name": "tokei",
   "description": "Count your code, quickly",
+  "name": "tokei",
   "options": [
     {
+      "description": "Will print out statistics on individual files",
       "name": [
         "-f",
         "--files"
-      ],
-      "description": "Will print out statistics on individual files"
+      ]
     },
     {
+      "description": "Prints help information",
       "name": [
         "-h",
         "--help"
-      ],
-      "description": "Prints help information"
+      ]
     },
     {
+      "description": "Count hidden files",
       "name": [
         "--hidden"
-      ],
-      "description": "Count hidden files"
+      ]
     },
     {
+      "description": "Prints out supported languages and their extensions",
       "name": [
         "-l",
         "--languages"
-      ],
-      "description": "Prints out supported languages and their extensions"
+      ]
     },
     {
+      "description": "Don't respect ignore files (.gitignore, .ignore, etc.)",
       "name": [
         "--no-ignore"
-      ],
-      "description": "Don't respect ignore files (.gitignore, .ignore, etc.)"
+      ]
     },
     {
+      "description": "Don't respect .ignore and .tokeignore files, including those in parent directories",
       "name": [
         "--no-ignore-dot"
-      ],
-      "description": "Don't respect .ignore and .tokeignore files, including those in parent directories"
+      ]
     },
     {
+      "description": "Don't respect ignore files (.gitignore, .ignore, etc.) in parent directories",
       "name": [
         "--no-ignore-parent"
-      ],
-      "description": "Don't respect ignore files (.gitignore, .ignore, etc.) in parent directories"
+      ]
     },
     {
+      "description": "Don't respect VCS ignore files (.gitignore, .hgignore, etc.), including those in parent directories",
       "name": [
         "--no-ignore-vcs"
-      ],
-      "description": "Don't respect VCS ignore files (.gitignore, .hgignore, etc.), including those in parent directories"
+      ]
     },
     {
+      "description": "Prints version information",
       "name": [
         "-V",
         "--version"
-      ],
-      "description": "Prints version information"
+      ]
     },
     {
+      "description": "Set log output level:",
       "name": [
         "-v",
         "--verbose"
-      ],
-      "description": "Set log output level:"
+      ]
     },
     {
+      "args": {
+        "name": "columns"
+      },
+      "description": "Sets a strict column width of the output, only available for terminal output",
       "name": [
         "-c",
         "--columns"
-      ],
-      "description": "Sets a strict column width of the output, only available for terminal output",
-      "args": {
-        "name": "columns"
-      }
+      ]
     },
     {
-      "name": [
-        "-e",
-        "--exclude"
-      ],
-      "description": "Ignore all files & directories matching the pattern",
       "args": {
         "name": "exclude",
         "template": "filepaths"
-      }
+      },
+      "description": "Ignore all files & directories matching the pattern",
+      "name": [
+        "-e",
+        "--exclude"
+      ]
     },
     {
-      "name": [
-        "-i",
-        "--input"
-      ],
-      "description": "Gives statistics from a previous tokei run. Can be given a file path, or \"stdin\" to read from stdin",
       "args": {
         "name": "input",
-        "template": "filepaths",
         "suggestions": [
           {
             "name": "stdin"
           }
-        ]
-      }
+        ],
+        "template": "filepaths"
+      },
+      "description": "Gives statistics from a previous tokei run. Can be given a file path, or \"stdin\" to read from stdin",
+      "name": [
+        "-i",
+        "--input"
+      ]
     },
     {
-      "name": [
-        "-o",
-        "--output"
-      ],
-      "description": "Outputs Tokei in a specific format",
       "args": {
         "name": "output",
         "suggestions": [
@@ -123,14 +118,14 @@
             "name": "yaml"
           }
         ]
-      }
+      },
+      "description": "Outputs Tokei in a specific format",
+      "name": [
+        "-o",
+        "--output"
+      ]
     },
     {
-      "name": [
-        "-s",
-        "--sort"
-      ],
-      "description": "Sort languages based on column",
       "args": {
         "name": "sort",
         "suggestions": [
@@ -150,16 +145,15 @@
             "name": "comments"
           }
         ]
-      }
+      },
+      "description": "Sort languages based on column",
+      "name": [
+        "-s",
+        "--sort"
+      ]
     },
     {
-      "name": [
-        "-t",
-        "--type"
-      ],
-      "description": "Filters output by language type, seperated by a comma. i.e. -t=Rust,Markdown",
       "args": {
-        "name": "type",
         "generators": [
           {
             "script": [
@@ -171,8 +165,14 @@
               "filter_empty"
             ]
           }
-        ]
-      }
+        ],
+        "name": "type"
+      },
+      "description": "Filters output by language type, seperated by a comma. i.e. -t=Rust,Markdown",
+      "name": [
+        "-t",
+        "--type"
+      ]
     }
   ]
 }

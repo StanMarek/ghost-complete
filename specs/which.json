@@ -1,24 +1,5 @@
 {
-  "name": "which",
-  "description": "Locate a program in the user's PATH",
-  "options": [
-    {
-      "name": [
-        "-s"
-      ],
-      "description": "No output, return 0 if all the executables are found, 1 if not"
-    },
-    {
-      "name": [
-        "-a"
-      ],
-      "description": "List all instances of executables found, instead of just the first",
-      "priority": 60
-    }
-  ],
   "args": {
-    "name": "names",
-    "isVariadic": true,
     "generators": [
       {
         "script": [
@@ -31,6 +12,25 @@
           "filter_empty"
         ]
       }
-    ]
-  }
+    ],
+    "isVariadic": true,
+    "name": "names"
+  },
+  "description": "Locate a program in the user's PATH",
+  "name": "which",
+  "options": [
+    {
+      "description": "No output, return 0 if all the executables are found, 1 if not",
+      "name": [
+        "-s"
+      ]
+    },
+    {
+      "description": "List all instances of executables found, instead of just the first",
+      "name": [
+        "-a"
+      ],
+      "priority": 60
+    }
+  ]
 }

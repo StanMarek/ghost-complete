@@ -1,85 +1,81 @@
 {
-  "name": "ssh-keygen",
   "description": "Generates, manages and converts authentication keys for ssh",
+  "name": "ssh-keygen",
   "options": [
     {
+      "description": "For each of the key types (rsa, dsa, ecdsa and ed25519) for which host keys do not exist, generate the host keys with the default key file path, an empty passphrase, default bits for the key type, and default comment",
       "name": [
         "-A"
-      ],
-      "description": "For each of the key types (rsa, dsa, ecdsa and ed25519) for which host keys do not exist, generate the host keys with the default key file path, an empty passphrase, default bits for the key type, and default comment"
+      ]
     },
     {
-      "name": [
-        "-a"
-      ],
-      "description": "When saving a private key, this option specifies the number of KDF",
       "args": {
-        "name": "rounds",
         "description": "Number of rounds being used",
         "isOptional": true,
+        "name": "rounds",
         "suggestions": [
           {
             "name": "16"
           }
         ]
       },
+      "description": "When saving a private key, this option specifies the number of KDF",
+      "name": [
+        "-a"
+      ],
       "priority": 75
     },
     {
+      "description": "Show the bubblebabble digest of specified private or public key file",
       "name": [
         "-B"
-      ],
-      "description": "Show the bubblebabble digest of specified private or public key file"
+      ]
     },
     {
-      "name": [
-        "-b"
-      ],
-      "description": "Specifies the number of bits in the key to create",
       "args": {
-        "name": "bits",
         "description": "Number of bits in the key",
+        "name": "bits",
         "suggestions": [
           {
             "name": "3072"
           }
         ]
-      }
+      },
+      "description": "Specifies the number of bits in the key to create",
+      "name": [
+        "-b"
+      ]
     },
     {
+      "args": {
+        "description": "New comment value",
+        "name": "comment"
+      },
+      "description": "Provides a new comment",
       "name": [
         "-C"
-      ],
-      "description": "Provides a new comment",
-      "args": {
-        "name": "comment",
-        "description": "New comment value"
-      }
+      ]
     },
     {
+      "description": "Requests changing the comment in the private and public key files",
       "name": [
         "-c"
-      ],
-      "description": "Requests changing the comment in the private and public key files"
+      ]
     },
     {
+      "args": {
+        "description": "PKCS#11 public keys",
+        "name": "pkcs11"
+      },
+      "description": "Download the public keys provided by the PKCS#11",
       "name": [
         "-D"
-      ],
-      "description": "Download the public keys provided by the PKCS#11",
-      "args": {
-        "name": "pkcs11",
-        "description": "PKCS#11 public keys"
-      }
+      ]
     },
     {
-      "name": [
-        "-E"
-      ],
-      "description": "Specifies the hash algorithm used",
       "args": {
-        "name": "fingerprint_hash",
         "description": "Hash algorithm value",
+        "name": "fingerprint_hash",
         "suggestions": [
           {
             "name": "md5"
@@ -88,104 +84,104 @@
             "name": "sha256"
           }
         ]
-      }
+      },
+      "description": "Specifies the hash algorithm used",
+      "name": [
+        "-E"
+      ]
     },
     {
+      "description": "Read a OpenSSH key file and print to stdout",
       "name": [
         "-e"
-      ],
-      "description": "Read a OpenSSH key file and print to stdout"
+      ]
     },
     {
+      "args": {
+        "description": "Hostname with optional port number",
+        "name": "hostname"
+      },
+      "description": "Search for the specified hostname (with optional port number)",
       "name": [
         "-F"
-      ],
-      "description": "Search for the specified hostname (with optional port number)",
-      "args": {
-        "name": "hostname",
-        "description": "Hostname with optional port number"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "Filename of the key file",
+        "name": "filename",
+        "template": "filepaths"
+      },
+      "description": "Specifies the filename of the key file",
       "name": [
         "-f"
       ],
-      "description": "Specifies the filename of the key file",
-      "args": {
-        "name": "filename",
-        "description": "Filename of the key file",
-        "template": "filepaths"
-      },
       "priority": 25
     },
     {
+      "description": "Use generic DNS format when printing fingerprint resource records",
       "name": [
         "-g"
-      ],
-      "description": "Use generic DNS format when printing fingerprint resource records"
+      ]
     },
     {
+      "description": "Hash a known_hosts file",
       "name": [
         "-H"
-      ],
-      "description": "Hash a known_hosts file"
+      ]
     },
     {
+      "description": "Create a host certificate instead of a user",
       "name": [
         "-h"
-      ],
-      "description": "Create a host certificate instead of a user"
+      ]
     },
     {
+      "args": {
+        "description": "Key identity value",
+        "name": "certificate_identity",
+        "template": "filepaths"
+      },
+      "description": "Specify the key identity when signing a public key",
       "name": [
         "-I"
-      ],
-      "description": "Specify the key identity when signing a public key",
-      "args": {
-        "name": "certificate_identity",
-        "description": "Key identity value",
-        "template": "filepaths"
-      }
+      ]
     },
     {
+      "description": "Read an unencrypted private (or public) key file",
       "name": [
         "-i"
       ],
-      "description": "Read an unencrypted private (or public) key file",
       "priority": 65
     },
     {
+      "description": "Download resident keys from a FIDO\tauthenticator",
       "name": [
         "-K"
-      ],
-      "description": "Download resident keys from a FIDO\tauthenticator"
+      ]
     },
     {
+      "description": "Generate a\tKRL file",
       "name": [
         "-k"
-      ],
-      "description": "Generate a\tKRL file"
+      ]
     },
     {
+      "description": "Generate a\tKRL file",
       "name": [
         "-L"
-      ],
-      "description": "Generate a\tKRL file"
+      ]
     },
     {
+      "description": "Show fingerprint of specified public key file",
       "name": [
         "-l"
-      ],
-      "description": "Show fingerprint of specified public key file"
+      ]
     },
     {
-      "name": [
-        "-M"
-      ],
-      "description": "Use for Moduli generation",
       "args": {
-        "name": "command",
         "description": "Use generate or screen",
+        "name": "command",
         "suggestions": [
           {
             "name": "generate"
@@ -194,114 +190,114 @@
             "name": "screen"
           }
         ]
-      }
+      },
+      "description": "Use for Moduli generation",
+      "name": [
+        "-M"
+      ]
     },
     {
+      "args": {
+        "description": "Key format for key generation",
+        "name": "key_format"
+      },
+      "description": "Specify a key format for key generation",
       "name": [
         "-m"
-      ],
-      "description": "Specify a key format for key generation",
-      "args": {
-        "name": "key_format",
-        "description": "Key format for key generation"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "New passphrase value",
+        "name": "new_passphrase"
+      },
+      "description": "Provides the new passphrase",
       "name": [
         "-N"
-      ],
-      "description": "Provides the new passphrase",
-      "args": {
-        "name": "new_passphrase",
-        "description": "New passphrase value"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "Principals to be included in a certificate when signing a key",
+        "name": "principals"
+      },
+      "description": "Specify one or more principals (user or host names) to be included in a certificate when signing a key",
       "name": [
         "-n"
       ],
-      "description": "Specify one or more principals (user or host names) to be included in a certificate when signing a key",
-      "args": {
-        "name": "principals",
-        "description": "Principals to be included in a certificate when signing a key"
-      },
       "priority": 50
     },
     {
+      "args": {
+        "description": "Value for option",
+        "name": "option"
+      },
+      "description": "Specify a key/value option",
       "name": [
         "-O"
-      ],
-      "description": "Specify a key/value option",
-      "args": {
-        "name": "option",
-        "description": "Value for option"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "(Old) passphrase value",
+        "name": "passphrase"
+      },
+      "description": "Provides the (old) passphrase",
       "name": [
         "-P"
-      ],
-      "description": "Provides the (old) passphrase",
-      "args": {
-        "name": "passphrase",
-        "description": "(Old) passphrase value"
-      }
+      ]
     },
     {
+      "description": "Requests changing the passphrase of a private key file instead of creating a new private key",
       "name": [
         "-p"
       ],
-      "description": "Requests changing the passphrase of a private key file instead of creating a new private key",
       "priority": 70
     },
     {
+      "description": "Test whether keys have been revoked in a KRL",
       "name": [
         "-Q"
-      ],
-      "description": "Test whether keys have been revoked in a KRL"
+      ]
     },
     {
+      "description": "Silence ssh-keygen",
       "name": [
         "-q"
-      ],
-      "description": "Silence ssh-keygen"
+      ]
     },
     {
+      "args": {
+        "description": "Hostname to remove keys from a known_hosts file",
+        "name": "hostname"
+      },
+      "description": "Removes all keys belonging to hostname",
       "name": [
         "-R"
-      ],
-      "description": "Removes all keys belonging to hostname",
-      "args": {
-        "name": "hostname",
-        "description": "Hostname to remove keys from a known_hosts file"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "Hostname for the specified public key file",
+        "name": "hostname"
+      },
+      "description": "Print the SSHFP fingerprint resource record named hostname for the specified public key file",
       "name": [
         "-r"
       ],
-      "description": "Print the SSHFP fingerprint resource record named hostname for the specified public key file",
-      "args": {
-        "name": "hostname",
-        "description": "Hostname for the specified public key file"
-      },
       "priority": 75
     },
     {
+      "args": {
+        "description": "Hostname for the specified public key file",
+        "name": "ca_key"
+      },
+      "description": "Certify (sign) a public key using the specified CA\tkey",
       "name": [
         "-s"
-      ],
-      "description": "Certify (sign) a public key using the specified CA\tkey",
-      "args": {
-        "name": "ca_key",
-        "description": "Hostname for the specified public key file"
-      }
+      ]
     },
     {
-      "name": [
-        "-t"
-      ],
-      "description": "Specifies the type of key to create",
       "args": {
         "name": "command",
         "suggestions": [
@@ -321,99 +317,103 @@
             "name": "rsa"
           }
         ]
-      }
+      },
+      "description": "Specifies the type of key to create",
+      "name": [
+        "-t"
+      ]
     },
     {
+      "description": "When used in combination with -s, this option indicates that a CA key resides in a ssh-agent(1)",
       "name": [
         "-U"
-      ],
-      "description": "When used in combination with -s, this option indicates that a CA key resides in a ssh-agent(1)"
+      ]
     },
     {
+      "description": "Update a KRL",
       "name": [
         "-u"
-      ],
-      "description": "Update a KRL"
+      ]
     },
     {
+      "args": {
+        "description": "Value for validity interval",
+        "name": "validity_interval"
+      },
+      "description": "Specify a validity interval when signing a certificate",
       "name": [
         "-V"
-      ],
-      "description": "Specify a validity interval when signing a certificate",
-      "args": {
-        "name": "validity_interval",
-        "description": "Value for validity interval"
-      }
+      ]
     },
     {
+      "description": "Verbose mode",
       "name": [
         "-v"
-      ],
-      "description": "Verbose mode"
+      ]
     },
     {
+      "args": {
+        "description": "Path to library to be used when creating FIDO authenticator-hosted keys",
+        "name": "provider"
+      },
+      "description": "Specifies a path to a library that will be used when creating FIDO authenticator-hosted keys",
       "name": [
         "-w"
-      ],
-      "description": "Specifies a path to a library that will be used when creating FIDO authenticator-hosted keys",
-      "args": {
-        "name": "provider",
-        "description": "Path to library to be used when creating FIDO authenticator-hosted keys"
-      }
+      ]
     },
     {
-      "name": [
-        "-Y"
-      ],
-      "description": "Multiple functions: find principals, match principals, check novalidate, sign, verify",
       "args": {
-        "name": "command",
         "isVariadic": true,
+        "name": "command",
         "suggestions": [
           {
-            "name": "find-principals",
-            "description": "Find the principal(s) associated with the public key of a signature"
+            "description": "Find the principal(s) associated with the public key of a signature",
+            "name": "find-principals"
           },
           {
-            "name": "check-novalidate",
-            "description": "Checks that a signature generated using ssh-keygen -Y sign has a valid structure"
+            "description": "Checks that a signature generated using ssh-keygen -Y sign has a valid structure",
+            "name": "check-novalidate"
           },
           {
-            "name": "sign",
-            "description": "Cryptographically sign a file or some data using a SSH key"
+            "description": "Cryptographically sign a file or some data using a SSH key",
+            "name": "sign"
           },
           {
-            "name": "verify",
-            "description": "Request to verify a signature generated using ssh-keygen -Y"
+            "description": "Request to verify a signature generated using ssh-keygen -Y",
+            "name": "verify"
           }
         ]
-      }
+      },
+      "description": "Multiple functions: find principals, match principals, check novalidate, sign, verify",
+      "name": [
+        "-Y"
+      ]
     },
     {
+      "description": "Read a private OpenSSH format file and print an OpenSSH public key to stdout",
       "name": [
         "-y"
-      ],
-      "description": "Read a private OpenSSH format file and print an OpenSSH public key to stdout"
+      ]
     },
     {
+      "args": {
+        "description": "Cipher to use for encryption",
+        "name": "cipher"
+      },
+      "description": "Specifies the cipher to use for encryption when writing an OpenSSH-format private key file",
       "name": [
         "-Z"
-      ],
-      "description": "Specifies the cipher to use for encryption when writing an OpenSSH-format private key file",
-      "args": {
-        "name": "cipher",
-        "description": "Cipher to use for encryption"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "Serial number to distinguish this certificate",
+        "name": "serial_number"
+      },
+      "description": "Specifies a serial number to be embedded in the certificate to distinguish this certificate from others from the same CA",
       "name": [
         "-z"
-      ],
-      "description": "Specifies a serial number to be embedded in the certificate to distinguish this certificate from others from the same CA",
-      "args": {
-        "name": "serial_number",
-        "description": "Serial number to distinguish this certificate"
-      }
+      ]
     }
   ]
 }

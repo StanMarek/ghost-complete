@@ -1,176 +1,190 @@
 {
-  "name": "aliases",
   "description": "Bash aliases on steroids, dynamic alias functions for bash",
-  "subcommands": [
+  "name": "aliases",
+  "options": [
     {
-      "name": "add",
-      "description": "Add an alias via the cli",
-      "args": [
-        {
-          "name": "name",
-          "description": "The name of the alias"
-        },
-        {
-          "name": "command",
-          "description": "The command you want to run"
-        }
+      "description": "Prints help information",
+      "name": [
+        "--help",
+        "-h"
       ]
     },
     {
-      "name": "clone",
+      "description": "Prints version information",
+      "name": [
+        "--version",
+        "-V"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": [
+        {
+          "description": "The name of the alias",
+          "name": "name"
+        },
+        {
+          "description": "The command you want to run",
+          "name": "command"
+        }
+      ],
+      "description": "Add an alias via the cli",
+      "name": "add"
+    },
+    {
+      "args": [
+        {
+          "description": "The username of the aliases you want to clone",
+          "name": "username"
+        },
+        {
+          "description": "The git repo url of the aliases (defaults to github/<username>/dot-aliases)",
+          "name": "repo_url"
+        }
+      ],
       "description": "Clone external aliases",
+      "name": "clone",
       "options": [
         {
+          "description": "Whether to enable the user if they are not currently enabled",
           "name": [
             "-E",
             "--enable"
-          ],
-          "description": "Whether to enable the user if they are not currently enabled"
-        }
-      ],
-      "args": [
-        {
-          "name": "username",
-          "description": "The username of the aliases you want to clone"
-        },
-        {
-          "name": "repo_url",
-          "description": "The git repo url of the aliases (defaults to github/<username>/dot-aliases)"
+          ]
         }
       ]
     },
     {
-      "name": "directories",
-      "description": "List all directories initialized with aliases"
+      "description": "List all directories initialized with aliases",
+      "name": "directories"
     },
     {
-      "name": "exec",
-      "description": "Execute an alias for a given directory",
       "args": [
         {
-          "name": "directory",
           "description": "Directory where the alias is defined",
+          "name": "directory",
           "template": "folders"
         },
         {
-          "name": "name",
           "description": "Name of alias",
-          "isVariadic": true
+          "isVariadic": true,
+          "name": "name"
         }
-      ]
+      ],
+      "description": "Execute an alias for a given directory",
+      "name": "exec"
     },
     {
-      "name": "help",
-      "description": "Prints help information"
+      "description": "Prints help information",
+      "name": "help"
     },
     {
-      "name": "init",
       "description": "Initialize a directory for aliases",
+      "name": "init",
       "options": [
         {
+          "description": "Returns the global initialization for the app",
           "name": [
             "-g",
             "--global"
-          ],
-          "description": "Returns the global initialization for the app"
+          ]
         },
         {
+          "args": {
+            "name": "user"
+          },
+          "description": "Initialize aliases for a specific user",
           "name": [
             "-u",
             "--user"
-          ],
-          "description": "Initialize aliases for a specific user",
-          "args": {
-            "name": "user"
-          }
+          ]
         }
       ]
     },
     {
-      "name": "list",
       "description": "List the aliases available",
+      "name": "list",
       "options": [
         {
+          "description": "List only global aliases",
           "name": [
             "-g",
             "--global"
-          ],
-          "description": "List only global aliases"
+          ]
         },
         {
+          "description": "List only local aliases",
           "name": [
             "-l",
             "--local"
-          ],
-          "description": "List only local aliases"
+          ]
         },
         {
-          "name": [
-            "-d",
-            "--directory"
-          ],
-          "description": "List aliases for a specific directory",
           "args": {
             "name": "directory",
             "template": "folders"
-          }
+          },
+          "description": "List aliases for a specific directory",
+          "name": [
+            "-d",
+            "--directory"
+          ]
         },
         {
-          "name": [
-            "name"
-          ],
-          "description": "List aliases for with a specific name",
           "args": {
             "name": "name"
-          }
+          },
+          "description": "List aliases for with a specific name",
+          "name": [
+            "name"
+          ]
         }
       ]
     },
     {
-      "name": "pull",
+      "args": {
+        "description": "The username of the aliases you want to pull, leave blank to pull all user aliases",
+        "name": "username"
+      },
       "description": "Pull a cloned user's aliases",
+      "name": "pull"
+    },
+    {
+      "description": "Update the aliases",
+      "name": "rehash"
+    },
+    {
       "args": {
-        "name": "username",
-        "description": "The username of the aliases you want to pull, leave blank to pull all user aliases"
-      }
-    },
-    {
-      "name": "rehash",
-      "description": "Update the aliases"
-    },
-    {
-      "name": "remove",
+        "description": "The name of the alias",
+        "name": "name"
+      },
       "description": "Remove an alias via the cli",
-      "args": {
-        "name": "name",
-        "description": "The name of the alias"
-      }
+      "name": "remove"
     },
     {
-      "name": "users",
       "description": "List the users",
+      "name": "users",
       "subcommands": [
         {
-          "name": "disable",
+          "args": {
+            "name": "username"
+          },
           "description": "Disable a user's aliases",
-          "args": {
-            "name": "username"
-          }
+          "name": "disable"
         },
         {
-          "name": "enable",
+          "args": {
+            "name": "username"
+          },
           "description": "Enable a user's aliases",
-          "args": {
-            "name": "username"
-          }
+          "name": "enable"
         },
         {
-          "name": "help",
-          "description": "Prints this message or the help of the given subcommand(s)"
+          "description": "Prints this message or the help of the given subcommand(s)",
+          "name": "help"
         },
         {
-          "name": "move",
-          "description": "Move a user up or down the prioritization list",
           "args": [
             {
               "name": "username"
@@ -178,32 +192,18 @@
             {
               "name": "prioritization"
             }
-          ]
+          ],
+          "description": "Move a user up or down the prioritization list",
+          "name": "move"
         },
         {
-          "name": "use",
-          "description": "Assign a user to the top of the priority list",
           "args": {
             "name": "username"
-          }
+          },
+          "description": "Assign a user to the top of the priority list",
+          "name": "use"
         }
       ]
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Prints help information"
-    },
-    {
-      "name": [
-        "--version",
-        "-V"
-      ],
-      "description": "Prints version information"
     }
   ]
 }

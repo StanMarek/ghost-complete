@@ -1,105 +1,105 @@
 {
-  "name": "omz",
   "description": "Oh My Zsh",
+  "name": "omz",
   "subcommands": [
     {
-      "name": "help",
-      "description": "Print the help message"
+      "description": "Print the help message",
+      "name": "help"
     },
     {
-      "name": "changelog",
-      "description": "Print the changelog"
+      "description": "Print the changelog",
+      "name": "changelog"
     },
     {
-      "name": "plugin",
       "description": "Manage plugins",
+      "name": "plugin",
       "subcommands": [
         {
-          "name": "disable",
+          "args": {
+            "name": "plugin"
+          },
           "description": "Disable plugin(s)",
-          "args": {
-            "name": "plugin"
-          }
+          "name": "disable"
         },
         {
-          "name": "enable",
+          "args": {
+            "name": "plugin"
+          },
           "description": "Enable plugin(s)",
-          "args": {
-            "name": "plugin"
-          }
+          "name": "enable"
         },
         {
-          "name": "info",
+          "args": {
+            "name": "plugin"
+          },
           "description": "Get information of a plugin",
+          "name": "info"
+        },
+        {
+          "description": "List all available Oh My Zsh plugins",
+          "name": "list"
+        },
+        {
           "args": {
             "name": "plugin"
-          }
-        },
-        {
-          "name": "list",
-          "description": "List all available Oh My Zsh plugins"
-        },
-        {
-          "name": "load",
+          },
           "description": "Load plugin(s)",
-          "args": {
-            "name": "plugin"
-          }
+          "name": "load"
         }
       ]
     },
     {
-      "name": "pr",
       "description": "Manage Oh My Zsh Pull Requests",
+      "name": "pr",
       "subcommands": [
         {
-          "name": "clean",
-          "description": "Delete all PR branches (ohmyzsh/pull-*)"
+          "description": "Delete all PR branches (ohmyzsh/pull-*)",
+          "name": "clean"
         },
         {
-          "name": "test",
-          "description": "Fetch PR #NUMBER and rebase against master",
           "args": {
             "name": "PR_number_or_URL"
-          }
+          },
+          "description": "Fetch PR #NUMBER and rebase against master",
+          "name": "test"
         }
       ]
     },
     {
-      "name": "reload",
-      "description": "Reload the current zsh session"
+      "description": "Reload the current zsh session",
+      "name": "reload"
     },
     {
-      "name": "theme",
       "description": "Manage themes",
+      "name": "theme",
       "subcommands": [
         {
-          "name": "list",
-          "description": "List all available Oh My Zsh themes"
+          "description": "List all available Oh My Zsh themes",
+          "name": "list"
         },
         {
-          "name": "set",
+          "args": {
+            "name": "theme"
+          },
           "description": "Set a theme in your .zshrc file",
-          "args": {
-            "name": "theme"
-          }
+          "name": "set"
         },
         {
-          "name": "use",
-          "description": "Load a theme",
           "args": {
             "name": "theme"
-          }
+          },
+          "description": "Load a theme",
+          "name": "use"
         }
       ]
     },
     {
-      "name": "update",
-      "description": "Update Oh My Zsh"
+      "description": "Update Oh My Zsh",
+      "name": "update"
     },
     {
-      "name": "version",
-      "description": "Show the version"
+      "description": "Show the version",
+      "name": "version"
     }
   ]
 }

@@ -1,52 +1,52 @@
 {
-  "name": "elm-format",
+  "args": {
+    "name": "INPUT",
+    "template": "filepaths"
+  },
   "description": "Format your code in the Elm idiomatic way",
+  "name": "elm-format",
   "options": [
     {
+      "description": "Show help for elm-format",
       "name": [
         "--help",
         "-h"
-      ],
-      "description": "Show help for elm-format"
+      ]
     },
     {
+      "args": {
+        "description": "Name and location of output file",
+        "name": "FILE",
+        "template": "filepaths"
+      },
+      "description": "Write output to FILE instead of overwriting the given source file",
       "name": [
         "--output"
-      ],
-      "description": "Write output to FILE instead of overwriting the given source file",
-      "args": {
-        "name": "FILE",
-        "description": "Name and location of output file",
-        "template": "filepaths"
-      }
+      ]
     },
     {
+      "description": "Reply 'yes' to all automated prompts",
       "name": [
         "--yes"
-      ],
-      "description": "Reply 'yes' to all automated prompts"
+      ]
     },
     {
+      "description": "Check if files are formatted without changing them",
       "name": [
         "--validate"
-      ],
-      "description": "Check if files are formatted without changing them"
+      ]
     },
     {
+      "description": "Read from stdin, output to stdout",
       "name": [
         "--stdin"
-      ],
-      "description": "Read from stdin, output to stdout"
+      ]
     },
     {
-      "name": [
-        "--elm-version"
-      ],
-      "description": "The Elm version of the source files being formatted",
       "args": {
-        "name": "VERSION",
         "description": "Valid values: 0.18, 0.19. Default: auto",
         "isOptional": true,
+        "name": "VERSION",
         "suggestions": [
           {
             "name": "0.19"
@@ -55,11 +55,11 @@
             "name": "0.18"
           }
         ]
-      }
+      },
+      "description": "The Elm version of the source files being formatted",
+      "name": [
+        "--elm-version"
+      ]
     }
-  ],
-  "args": {
-    "name": "INPUT",
-    "template": "filepaths"
-  }
+  ]
 }

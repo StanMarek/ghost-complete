@@ -1,9 +1,11 @@
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use anyhow::Result;
 use gc_buffer::CommandContext;
+use gc_jsrt::{JsDiagnosticCode, JsRuntimeOutputPayload};
 use tokio::sync::Semaphore;
 
 use crate::alias::AliasStore;
@@ -62,6 +64,69 @@ const MAX_CONCURRENT_GENERATORS: usize = 3;
 ///   <1ms on 10k candidates means a locked re-rank of ≤1000 stays well
 ///   under the keystroke-latency budget.
 const MAX_DYNAMIC_CANDIDATES: usize = 1000;
+
+/// Consecutive token-only failures (timeouts or other hard runtime errors)
+/// allowed before a generator is skipped for the rest of the engine
+/// process lifetime.
+const TOKEN_ONLY_DEMOTE_AFTER_FAILURES: u8 = 2;
+
+#[derive(Debug, Default)]
+struct TokenOnlyDemotionState {
+    consecutive_failures: Mutex<HashMap<String, u8>>,
+}
+
+impl TokenOnlyDemotionState {
+    fn is_demoted(&self, generator_id: &str) -> bool {
+        self.consecutive_failures
+            .lock()
+            .expect("token_only demotion state poisoned")
+            .get(generator_id)
+            .copied()
+            .unwrap_or(0)
+            >= TOKEN_ONLY_DEMOTE_AFTER_FAILURES
+    }
+
+    fn record_timeout(&self, generator_id: &str) -> u8 {
+        let mut failures = self
+            .consecutive_failures
+            .lock()
+            .expect("token_only demotion state poisoned");
+        let count = failures.entry(generator_id.to_string()).or_insert(0);
+        *count = count.saturating_add(1);
+        *count
+    }
+
+    /// Bumps the consecutive-failure counter for a non-timeout hard error
+    /// (exception, memory exhaustion, oversized output, etc.). Returned
+    /// count uses the same threshold as [`Self::record_timeout`] for
+    /// demotion logging.
+    fn record_failure(&self, generator_id: &str) -> u8 {
+        self.record_timeout(generator_id)
+    }
+
+    /// Clear the consecutive-failure counter after a real success — JS
+    /// evaluated to a non-empty Suggestions payload.
+    ///
+    /// Only [`JsDiagnosticCode::Timeout`] (via [`Self::record_timeout`])
+    /// and [`JsDiagnosticCode::Exception`] /
+    /// [`JsDiagnosticCode::MemoryExceeded`] /
+    /// [`JsDiagnosticCode::OversizedOutput`] (via
+    /// [`Self::record_failure`]) bump the counter; only a non-empty
+    /// `Suggestions` payload resets it. Every other diagnostic
+    /// (`EmptyOutput`, `InvalidShape`, `UnsupportedHostApi`,
+    /// `UnsupportedApi`, `ShellCommandStringDenied`,
+    /// `ShellCommandLimitExceeded`, `ShellCommandFailed`, `InvalidArgv`)
+    /// leaves the counter untouched so a recovery still requires real
+    /// output. `UnsupportedHostApi` is load-bearing for the token_only
+    /// design — token_only sources that touch a host API surface that
+    /// diagnostic and we deliberately do not treat that as a failure.
+    fn record_success(&self, generator_id: &str) {
+        self.consecutive_failures
+            .lock()
+            .expect("token_only demotion state poisoned")
+            .remove(generator_id);
+    }
+}
 
 /// Result from `suggest_sync` — includes ranked suggestions and any
 /// generators that the caller should dispatch asynchronously.
@@ -264,10 +329,12 @@ pub struct SuggestionEngine {
     alias_map: AliasStore,
     generator_cache: Arc<GeneratorCache>,
     /// Lazily-spawned QuickJS worker. Only paid for when a `requires_js`
-    /// generator (`post_process`, `script_function`, or `custom`) actually
-    /// fires. Held in an `Arc` so per-generator tasks can share it without
-    /// taking `&self` references across `tokio::spawn`.
+    /// generator (`post_process`, `script_function`, `custom`, or
+    /// `token_only`) actually fires. Held in an `Arc` so per-generator
+    /// tasks can share it without taking `&self` references across
+    /// `tokio::spawn`.
     js_runtime: Arc<JsRuntimeAdapter>,
+    token_only_demotion_state: Arc<TokenOnlyDemotionState>,
     frecency_db: FrecencyDb,
     max_results: usize,
     max_history_results: usize,
@@ -314,6 +381,7 @@ impl SuggestionEngine {
             alias_map: AliasStore::load_async(),
             generator_cache: Arc::new(GeneratorCache::new()),
             js_runtime: Arc::new(JsRuntimeAdapter::new()),
+            token_only_demotion_state: Arc::new(TokenOnlyDemotionState::default()),
             frecency_db: FrecencyDb::load(),
             max_results: fuzzy::DEFAULT_MAX_RESULTS,
             max_history_results: 5,
@@ -368,6 +436,7 @@ impl SuggestionEngine {
             alias_map: AliasStore::empty(),
             generator_cache: Arc::new(GeneratorCache::new()),
             js_runtime: Arc::new(JsRuntimeAdapter::new()),
+            token_only_demotion_state: Arc::new(TokenOnlyDemotionState::default()),
             frecency_db: FrecencyDb::empty(),
             max_results: fuzzy::DEFAULT_MAX_RESULTS,
             max_history_results: 5,
@@ -462,6 +531,8 @@ impl SuggestionEngine {
             //     then we execute the resolved argv through `run_script`.
             //   - `Custom`: JS produces suggestions directly; no engine-side
             //     script invocation. argv is intentionally left empty.
+            //   - `TokenOnly`: JS produces suggestions directly with only
+            //     token globals installed. No script argv is needed.
             //   - non-JS: existing path (script + optional transforms).
             //
             // The kill switch (`providers_js_runtime`) drops every
@@ -477,6 +548,7 @@ impl SuggestionEngine {
                 Some(JsRuntimeKind::PostProcess)
                     | Some(JsRuntimeKind::ScriptFunction)
                     | Some(JsRuntimeKind::Custom)
+                    | Some(JsRuntimeKind::TokenOnly)
             ) && !self.providers_js_runtime
             {
                 tracing::info!(
@@ -488,13 +560,16 @@ impl SuggestionEngine {
                 continue;
             }
 
-            // For PostProcess + non-JS we resolve argv up front; for
-            // ScriptFunction and Custom we either compute argv from JS
-            // or skip the script execution entirely.
+            // PostProcess and non-JS generators resolve argv up front;
+            // ScriptFunction computes argv from JS; Custom and TokenOnly
+            // skip script execution entirely and produce suggestions
+            // directly.
             let argv = resolve_script_argv(gen, ctx);
             let needs_argv = !matches!(
                 js_kind,
-                Some(JsRuntimeKind::ScriptFunction) | Some(JsRuntimeKind::Custom)
+                Some(JsRuntimeKind::ScriptFunction)
+                    | Some(JsRuntimeKind::Custom)
+                    | Some(JsRuntimeKind::TokenOnly)
             );
             if needs_argv && argv.is_empty() {
                 continue;
@@ -593,6 +668,59 @@ impl SuggestionEngine {
                         cache,
                         cache_store,
                         js_runtime,
+                    )
+                    .await
+                }));
+                continue;
+            }
+
+            if matches!(js_kind, Some(JsRuntimeKind::TokenOnly)) {
+                let rt = match gen.js_runtime.as_ref() {
+                    Some(rt) => Arc::clone(rt),
+                    None => {
+                        tracing::warn!(
+                            spec = %command,
+                            generator_index = idx,
+                            kind = ?js_kind,
+                            "requires_js generator with TokenOnly kind has no js_runtime metadata — skipping"
+                        );
+                        continue;
+                    }
+                };
+                let exec_ctx = make_js_exec_context(ctx, cwd);
+                let cmd_name = command.to_string();
+                let generator_index = idx;
+                let generator_id = token_only_generator_id(&cmd_name, generator_index);
+                if self.token_only_demotion_state.is_demoted(&generator_id) {
+                    tracing::warn!(
+                        spec = %command,
+                        generator_index,
+                        generator_id = %generator_id,
+                        "token_only generator is demoted after repeated failures — skipping"
+                    );
+                    continue;
+                }
+                let js_runtime = Arc::clone(&self.js_runtime);
+                let cache = gen.cache.clone();
+                let cache_store = Arc::clone(&self.generator_cache);
+                let demotion_state = Arc::clone(&self.token_only_demotion_state);
+                let permit = Arc::clone(&semaphore);
+                handles.push(tokio::spawn(async move {
+                    let _permit = permit
+                        .acquire()
+                        .await
+                        .map_err(|e| anyhow::anyhow!("semaphore error: {e}"))?;
+                    run_token_only_dispatch(
+                        rt,
+                        exec_ctx,
+                        cmd_name,
+                        generator_index,
+                        timeout_ms,
+                        cache,
+                        cache_store,
+                        js_runtime,
+                        demotion_state,
+                        generator_id,
                     )
                     .await
                 }));
@@ -1452,6 +1580,10 @@ fn cache_cwd_owned<'a>(
     cache.as_ref().filter(|c| c.cache_by_directory).map(|_| cwd)
 }
 
+fn token_only_generator_id(cmd_name: &str, generator_index: usize) -> String {
+    format!("{cmd_name}#{generator_index}#token_only")
+}
+
 /// Resolve the argv for a script generator, applying template substitution if needed.
 fn resolve_script_argv(gen: &GeneratorSpec, ctx: &CommandContext) -> Vec<String> {
     if let Some(ref script) = gen.script {
@@ -1491,6 +1623,7 @@ fn is_supported_script_generator(gen: &GeneratorSpec) -> bool {
         {
             rt.self_contained && !rt.source.trim().is_empty()
         }
+        Some(rt) if rt.kind == JsRuntimeKind::TokenOnly => !rt.source.trim().is_empty(),
         _ => false,
     }
 }
@@ -1770,6 +1903,127 @@ async fn run_custom_dispatch(
     // None — so the None arm here is the normal "empty / failed" path,
     // not a wire-protocol mismatch. Diagnostics from the runtime are
     // already logged by the adapter on the way out.
+    let suggestions: Vec<Suggestion> = match js_output.into_suggestions() {
+        Some(suggs) => suggs
+            .into_iter()
+            .map(|js| Suggestion {
+                text: js.name,
+                description: js.description,
+                kind: SuggestionKind::Command,
+                source: SuggestionSource::Script,
+                ..Default::default()
+            })
+            .collect(),
+        None => Vec::new(),
+    };
+
+    if let Some(ref cache_cfg) = cache {
+        if cache_cfg.ttl_seconds > 0 && !suggestions.is_empty() {
+            cache_store.insert(
+                cache_key,
+                suggestions.clone(),
+                Duration::from_secs(cache_cfg.ttl_seconds),
+            );
+        }
+    }
+    Ok(suggestions)
+}
+
+/// Run a `token_only` generator. JS evaluates with only token globals
+/// installed by gc-jsrt; the engine does not expose cwd/env/fig or run a
+/// subprocess. The result normalises through the same suggestion shapes as
+/// `custom`.
+#[allow(clippy::too_many_arguments)]
+async fn run_token_only_dispatch(
+    rt: Arc<specs::JsRuntimeSpec>,
+    exec_ctx: JsExecContext,
+    cmd_name: String,
+    generator_index: usize,
+    timeout_ms: u64,
+    cache: Option<crate::specs::CacheConfig>,
+    cache_store: Arc<crate::cache::GeneratorCache>,
+    js_runtime: Arc<JsRuntimeAdapter>,
+    demotion_state: Arc<TokenOnlyDemotionState>,
+    generator_id: String,
+) -> Result<Vec<Suggestion>> {
+    let timeout = Duration::from_millis(rt.timeout_ms.unwrap_or(timeout_ms));
+
+    let token_fingerprint = exec_ctx.tokens.join("\u{1}");
+    let key_source = format!(
+        "token_only:{src}#tokens:{tokens}#current:{current}#previous:{previous}",
+        src = rt.source,
+        tokens = token_fingerprint,
+        current = exec_ctx.current_token,
+        previous = exec_ctx.previous_token,
+    );
+    let cache_key = CacheKey::js_processed(
+        &cmd_name,
+        std::slice::from_ref(&cmd_name),
+        None,
+        hash_js_source(&key_source),
+    );
+    if let Some(cached) = cache_store.get(&cache_key) {
+        tracing::debug!("token_only cache hit for spec {}", cmd_name);
+        return Ok(cached);
+    }
+
+    let js_output = match js_runtime
+        .token_only(&rt.source, exec_ctx, timeout, generator_id.clone())
+        .await
+    {
+        Ok(out) => out,
+        Err(e) => {
+            tracing::warn!(
+                spec = %cmd_name,
+                generator_index,
+                error = %e,
+                "js_runtime worker error during token_only — returning empty suggestions"
+            );
+            return Ok(Vec::new());
+        }
+    };
+    let had_timeout = js_output
+        .diagnostics
+        .iter()
+        .any(|diag| diag.code == JsDiagnosticCode::Timeout);
+    let had_hard_failure = js_output.diagnostics.iter().any(|diag| {
+        matches!(
+            diag.code,
+            JsDiagnosticCode::Exception
+                | JsDiagnosticCode::MemoryExceeded
+                | JsDiagnosticCode::OversizedOutput
+        )
+    });
+    let has_real_success = matches!(
+        &js_output.payload,
+        JsRuntimeOutputPayload::Suggestions(v) if !v.is_empty()
+    );
+
+    if had_timeout {
+        let consecutive = demotion_state.record_timeout(&generator_id);
+        if consecutive >= TOKEN_ONLY_DEMOTE_AFTER_FAILURES {
+            tracing::warn!(
+                spec = %cmd_name,
+                generator_index,
+                generator_id = %generator_id,
+                consecutive_failures = consecutive,
+                "token_only generator demoted after repeated timeouts"
+            );
+        }
+    } else if had_hard_failure {
+        let consecutive = demotion_state.record_failure(&generator_id);
+        if consecutive >= TOKEN_ONLY_DEMOTE_AFTER_FAILURES {
+            tracing::warn!(
+                spec = %cmd_name,
+                generator_index,
+                generator_id = %generator_id,
+                consecutive_failures = consecutive,
+                "token_only generator demoted after repeated runtime failures"
+            );
+        }
+    } else if has_real_success {
+        demotion_state.record_success(&generator_id);
+    }
     let suggestions: Vec<Suggestion> = match js_output.into_suggestions() {
         Some(suggs) => suggs
             .into_iter()

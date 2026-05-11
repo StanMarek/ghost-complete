@@ -3,10 +3,6 @@
     {
       "generators": [
         {
-          "js_runtime": {
-            "kind": "custom",
-            "source": "(g,w,x)=>Fe(this,void 0,void 0,function*(){var f;let{isDangerous:S,currentWorkingDirectory:N,searchTerm:k}=x,O=(f=(0,M.getCurrentInsertedDirectory)(c??N,k,x))!==null&&f!==void 0?f:\"/\";try{let ce=yield w({command:\"ls\",args:[\"-1ApL\"],cwd:O}),xe=me(ce.stdout.split(`\n`),[\".DS_Store\"]),pe=[];for(let W of xe)if(W){let Z=W.endsWith(\"/\")?\"folders\":\"filepaths\";(Z===\"filepaths\"&&p!==\"only\"||Z===\"folders\"&&p!==\"never\")&&pe.push({type:Z===\"filepaths\"?\"file\":\"folder\",name:W,insertValue:W,isDangerous:S,context:{templateType:Z}})}return h(y(pe))}catch{return[]}})"
-          },
           "requires_js": true
         },
         {
@@ -124,6 +120,7 @@
             {
               "js_runtime": {
                 "kind": "custom",
+                "self_contained": true,
                 "source": "async(e,n,t)=>{let{stdout:a}=await n({command:\"ls\",args:[\"-1\",`${t.environmentVariables.HOME}/.bun-create`]});return a.split(`\n`).map(i=>({name:i}))}"
               },
               "requires_js": true
@@ -143,6 +140,7 @@
             {
               "js_runtime": {
                 "kind": "script_function",
+                "self_contained": true,
                 "source": "function(e){return e[e.length-1]===\"\"?void 0:[\"curl\",\"-s\",\"-H\",\"Accept: application/json\",`https://api.npms.io/v2/search?q=${\"create-\"+e[e.length-1]}&size=20`]}"
               },
               "requires_js": true
@@ -243,10 +241,6 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "source": "(g,w,x)=>Fe(this,void 0,void 0,function*(){var f;let{isDangerous:S,currentWorkingDirectory:N,searchTerm:k}=x,O=(f=(0,M.getCurrentInsertedDirectory)(c??N,k,x))!==null&&f!==void 0?f:\"/\";try{let ce=yield w({command:\"ls\",args:[\"-1ApL\"],cwd:O}),xe=me(ce.stdout.split(`\n`),[\".DS_Store\"]),pe=[];for(let W of xe)if(W){let Z=W.endsWith(\"/\")?\"folders\":\"filepaths\";(Z===\"filepaths\"&&p!==\"only\"||Z===\"folders\"&&p!==\"never\")&&pe.push({type:Z===\"filepaths\"?\"file\":\"folder\",name:W,insertValue:W,isDangerous:S,context:{templateType:Z}})}return h(y(pe))}catch{return[]}})"
-            },
             "requires_js": true
           },
           {
@@ -470,7 +464,8 @@
         "generators": [
           {
             "js_runtime": {
-              "kind": "custom",
+              "kind": "token_only",
+              "self_contained": false,
               "source": "async(n,t,a)=>{let i=n[n.length-1];if(i===\"\")return[];let s=e&&e.length>0?`+keywords:${e.join(\",\")}`:\"\",c=[\"-s\",\"-H\",\"Accept: application/json\",s?`https://api.npms.io/v2/search?size=20&q=${i}${s}`:`https://api.npms.io/v2/search/suggestions?q=${i}&size=20`],p=[\"-s\",\"-H\",\"Accept: application/vnd.npm.install-v1+json\",`https://registry.npmjs.org/${i.slice(0,-1)}`],d=l=>t({command:\"curl\",args:l[l.length-1]===\"@\"?p:c}),r=i.startsWith(\"@\")?ae(i)>1:i.includes(\"@\");try{let l=JSON.parse((await d(i)).stdout);if(r){let h=Object.entries(l[\"dist-tags\"]||{}).map(([g,w])=>({name:g,description:w}));return h.push(...Object.keys(l.versions).map(g=>({name:g})).reverse()),h}return(s?l.results:l).map(h=>({name:h.package.name,description:h.package.description}))}catch(l){return console.error({error:l}),[]}}"
             },
             "requires_js": true
@@ -677,6 +672,7 @@
           {
             "js_runtime": {
               "kind": "custom",
+              "self_contained": true,
               "source": "async function(e,n){if(!e.includes(\"-g\")&&!e.includes(\"--global\")){let{stdout:t}=await n({command:\"npm\",args:[\"prefix\"]}),{stdout:a}=await n({command:\"cat\",args:[`${t}/package.json`]}),i=JSON.parse(a),s=i.dependencies??{},o=i.devDependencies,c=i.optionalDependencies??{};return Object.assign(s,o,c),Object.keys(s).filter(p=>!e.some(r=>r===p)).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:s[p]?\"dependency\":c[p]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:t}=await n({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return t.split(`\n`).map(a=>({name:a,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
             },
             "requires_js": true
@@ -883,10 +879,6 @@
         "description": "Entrypoint to bundle. If multiple entrypoints provided, must specify --outdir",
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "source": "(g,w,x)=>Fe(this,void 0,void 0,function*(){var f;let{isDangerous:S,currentWorkingDirectory:N,searchTerm:k}=x,O=(f=(0,M.getCurrentInsertedDirectory)(c??N,k,x))!==null&&f!==void 0?f:\"/\";try{let ce=yield w({command:\"ls\",args:[\"-1ApL\"],cwd:O}),xe=me(ce.stdout.split(`\n`),[\".DS_Store\"]),pe=[];for(let W of xe)if(W){let Z=W.endsWith(\"/\")?\"folders\":\"filepaths\";(Z===\"filepaths\"&&p!==\"only\"||Z===\"folders\"&&p!==\"never\")&&pe.push({type:Z===\"filepaths\"?\"file\":\"folder\",name:W,insertValue:W,isDangerous:S,context:{templateType:Z}})}return h(y(pe))}catch{return[]}})"
-            },
             "requires_js": true
           }
         ],
@@ -1080,10 +1072,6 @@
             "description": "Parse files with .ext:loader, e.g. --loader .js:jsx. Valid loaders: js, jsx, ts, tsx, json, toml, text, file, wasm, napi",
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "custom",
-                  "source": "(...d)=>G(this,void 0,void 0,function*(){let[r]=d,l=r[r.length-1],y=J(l,e,n),h=y===-1||l.slice(y,y+e.length)!==e,g=h?t:a,w=he(h,i),f=yield ie(g,h?s?e:\"\":o?n:\"\",w,d);if(h){if(c)return f;let N=l.split(n).map(k=>k.slice(0,k.indexOf(e)));return te(N,f)}if(p)return f;let S=l.split(n).map(N=>N.slice(N.indexOf(e)+e.length));return te(S,f)})"
-                },
                 "requires_js": true
               }
             ],
@@ -1156,10 +1144,6 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "custom",
-                  "source": "(...s)=>G(this,void 0,void 0,function*(){var o;let c=yield ie(n,a?e:\"\",t,s);if(i)return c;let[p]=s,d=(o=p[p.length-1])===null||o===void 0?void 0:o.split(e);return te(d,c)})"
-                },
                 "requires_js": true
               }
             ]
@@ -1456,6 +1440,7 @@
           {
             "js_runtime": {
               "kind": "custom",
+              "self_contained": true,
               "source": "async function(e,n){if(!e.includes(\"-g\")&&!e.includes(\"--global\")){let{stdout:t}=await n({command:\"npm\",args:[\"prefix\"]}),{stdout:a}=await n({command:\"cat\",args:[`${t}/package.json`]}),i=JSON.parse(a),s=i.dependencies??{},o=i.devDependencies,c=i.optionalDependencies??{};return Object.assign(s,o,c),Object.keys(s).filter(p=>!e.some(r=>r===p)).map(p=>({name:p,icon:\"\\u{1F4E6}\",description:s[p]?\"dependency\":c[p]?\"optionalDependency\":\"devDependency\"}))}else{let{stdout:t}=await n({command:\"bash\",args:[\"-c\",\"ls -1 `npm root -g`\"]});return t.split(`\n`).map(a=>({name:a,icon:\"\\u{1F4E6}\",description:\"Global dependency\"}))}}"
             },
             "requires_js": true
@@ -1921,10 +1906,6 @@
             "description": "Parse files with .ext:loader, e.g. --loader .js:jsx. Valid loaders: js, jsx, ts, tsx, json, toml, text, file, wasm, napi",
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "custom",
-                  "source": "(...d)=>G(this,void 0,void 0,function*(){let[r]=d,l=r[r.length-1],y=J(l,e,n),h=y===-1||l.slice(y,y+e.length)!==e,g=h?t:a,w=he(h,i),f=yield ie(g,h?s?e:\"\":o?n:\"\",w,d);if(h){if(c)return f;let N=l.split(n).map(k=>k.slice(0,k.indexOf(e)));return te(N,f)}if(p)return f;let S=l.split(n).map(N=>N.slice(N.indexOf(e)+e.length));return te(S,f)})"
-                },
                 "requires_js": true
               }
             ],
@@ -1997,10 +1978,6 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "custom",
-                  "source": "(...s)=>G(this,void 0,void 0,function*(){var o;let c=yield ie(n,a?e:\"\",t,s);if(i)return c;let[p]=s,d=(o=p[p.length-1])===null||o===void 0?void 0:o.split(e);return te(d,c)})"
-                },
                 "requires_js": true
               }
             ]

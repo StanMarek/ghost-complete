@@ -1,62 +1,74 @@
 {
-  "name": "fisher",
   "description": "A plugin manager for Fish",
+  "name": "fisher",
+  "options": [
+    {
+      "description": "Show help for fisher",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Show fisher version",
+      "name": [
+        "--version",
+        "-v"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "install",
       "description": "Install plugin",
+      "name": "install",
       "subcommands": [
         {
-          "name": "IlanCosman/tide@v5",
           "description": "[Prompt] - 🌊 The ultimate Fish prompt",
+          "name": "IlanCosman/tide@v5",
           "priority": 99
         },
         {
-          "name": "pure-fish/pure",
           "description": "[Prompt] - Pretty, minimal, and fast prompt for Fish from Zsh",
+          "name": "pure-fish/pure",
           "priority": 98
         },
         {
-          "name": "jorgebucaran/hydro",
-          "description": "[Prompt] - Minimal, lag-free prompt with async Git status"
+          "description": "[Prompt] - Minimal, lag-free prompt with async Git status",
+          "name": "jorgebucaran/hydro"
         },
         {
-          "name": "jethrokuan/z",
-          "description": "[Plugin] - Pure-fish z directory jumping"
+          "description": "[Plugin] - Pure-fish z directory jumping",
+          "name": "jethrokuan/z"
         },
         {
-          "name": "PatrickF1/fzf.fish",
-          "description": "[Plugin] - Augment your fish command line with fzf key bindings"
+          "description": "[Plugin] - Augment your fish command line with fzf key bindings",
+          "name": "PatrickF1/fzf.fish"
         },
         {
-          "name": "jorgebucaran/nvm.fish",
-          "description": "[Plugin] -  Node.js version manager lovingly made for Fish"
+          "description": "[Plugin] -  Node.js version manager lovingly made for Fish",
+          "name": "jorgebucaran/nvm.fish"
         },
         {
-          "name": "franciscolourenco/done",
-          "description": "[Plugin] - A fish-shell package to automatically receive notifications when long processes finish"
+          "description": "[Plugin] - A fish-shell package to automatically receive notifications when long processes finish",
+          "name": "franciscolourenco/done"
         },
         {
-          "name": "jorgebucaran/replay.fish",
-          "description": "[Plugin] - Run Bash commands replaying changes in Fish. 🍤"
+          "description": "[Plugin] - Run Bash commands replaying changes in Fish. 🍤",
+          "name": "jorgebucaran/replay.fish"
         },
         {
-          "name": "jorgebucaran/spark.fish",
-          "description": "[Plugin] - Visualize a range of numbers right in your terminal"
+          "description": "[Plugin] - Visualize a range of numbers right in your terminal",
+          "name": "jorgebucaran/spark.fish"
         },
         {
-          "name": "joseluisq/gitnow@2.10.0",
-          "description": "[Plugin] - Speed up your Git workflow. 🐠"
+          "description": "[Plugin] - Speed up your Git workflow. 🐠",
+          "name": "joseluisq/gitnow@2.10.0"
         }
       ]
     },
     {
-      "name": "remove",
-      "description": "Remove plugins",
       "args": {
-        "name": "installed plugins",
         "description": "The plugin you want to remove",
-        "isVariadic": true,
         "generators": [
           {
             "script": [
@@ -70,16 +82,16 @@
               "trim"
             ]
           }
-        ]
-      }
+        ],
+        "isVariadic": true,
+        "name": "installed plugins"
+      },
+      "description": "Remove plugins",
+      "name": "remove"
     },
     {
-      "name": "update",
-      "description": "Update plugins",
       "args": {
-        "name": "installed plugins",
         "description": "The plugin you want to update",
-        "isVariadic": true,
         "generators": [
           {
             "script": [
@@ -93,33 +105,21 @@
               "trim"
             ]
           }
-        ]
-      }
+        ],
+        "isVariadic": true,
+        "name": "installed plugins"
+      },
+      "description": "Update plugins",
+      "name": "update"
     },
     {
-      "name": "list",
-      "description": "List plugins",
       "args": {
-        "name": "RegEx",
         "description": "Search in list with regular expression",
-        "isOptional": true
-      }
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Show help for fisher"
-    },
-    {
-      "name": [
-        "--version",
-        "-v"
-      ],
-      "description": "Show fisher version"
+        "isOptional": true,
+        "name": "RegEx"
+      },
+      "description": "List plugins",
+      "name": "list"
     }
   ]
 }

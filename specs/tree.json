@@ -1,251 +1,250 @@
 {
-  "name": "tree",
+  "args": {
+    "template": "folders"
+  },
   "description": "Display directories as trees (with optional color/HTML output)",
+  "name": "tree",
   "options": [
     {
+      "description": "All files are listed",
       "name": [
         "-a"
-      ],
-      "description": "All files are listed"
+      ]
     },
     {
+      "description": "List directories only",
       "name": [
         "-d"
-      ],
-      "description": "List directories only"
+      ]
     },
     {
+      "description": "Follow symbolic links like directories",
       "name": [
         "-l"
-      ],
-      "description": "Follow symbolic links like directories"
+      ]
     },
     {
+      "description": "Print the full path prefix for each file",
       "name": [
         "-f"
-      ],
-      "description": "Print the full path prefix for each file"
+      ]
     },
     {
+      "description": "Stay on current filesystem only",
       "name": [
         "-x"
-      ],
-      "description": "Stay on current filesystem only"
+      ]
     },
     {
-      "name": [
-        "-L"
-      ],
-      "description": "Descend only level directories deep",
       "args": {
         "name": "level"
-      }
+      },
+      "description": "Descend only level directories deep",
+      "name": [
+        "-L"
+      ]
     },
     {
+      "description": "Rerun tree when max dir level reached",
       "name": [
         "-R"
-      ],
-      "description": "Rerun tree when max dir level reached"
+      ]
     },
     {
+      "args": {
+        "name": "pattern"
+      },
+      "description": "List only those files that match the pattern given",
       "name": [
         "-P"
-      ],
-      "description": "List only those files that match the pattern given",
-      "args": {
-        "name": "pattern"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "pattern"
+      },
+      "description": "Do not list files that match the given pattern",
       "name": [
         "-I"
-      ],
-      "description": "Do not list files that match the given pattern",
-      "args": {
-        "name": "pattern"
-      }
+      ]
     },
     {
+      "description": "Ignore case when pattern matching",
       "name": [
         "--ignore-case"
-      ],
-      "description": "Ignore case when pattern matching"
+      ]
     },
     {
+      "description": "Include directory names in -P pattern matching",
       "name": [
         "--matchdirs"
-      ],
-      "description": "Include directory names in -P pattern matching"
+      ]
     },
     {
+      "description": "Turn off file/directory count at end of tree listing",
       "name": [
         "--noreport"
-      ],
-      "description": "Turn off file/directory count at end of tree listing"
+      ]
     },
     {
-      "name": [
-        "--charset"
-      ],
-      "description": "Use charset X for terminal/HTML and indentation line output",
       "args": {
         "name": "charset"
-      }
+      },
+      "description": "Use charset X for terminal/HTML and indentation line output",
+      "name": [
+        "--charset"
+      ]
     },
     {
+      "args": {
+        "description": "Number of files",
+        "name": "number"
+      },
+      "description": "Do not descend dirs with more than # files in them",
       "name": [
         "--filelimit"
-      ],
-      "description": "Do not descend dirs with more than # files in them",
-      "args": {
-        "name": "number",
-        "description": "Number of files"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "Format in strftime syntax",
+        "name": "format"
+      },
+      "description": "Print and format time according to the format <f>",
       "name": [
         "--timefmt"
-      ],
-      "description": "Print and format time according to the format <f>",
-      "args": {
-        "name": "format",
-        "description": "Format in strftime syntax"
-      }
+      ]
     },
     {
-      "name": [
-        "-o"
-      ],
-      "description": "Output to file instead of stdout",
       "args": {
         "name": "filename"
-      }
+      },
+      "description": "Output to file instead of stdout",
+      "name": [
+        "-o"
+      ]
     },
     {
+      "description": "Print non-printable characters as '?'",
       "name": [
         "-q"
-      ],
-      "description": "Print non-printable characters as '?'"
+      ]
     },
     {
+      "description": "Print non-printable characters as is",
       "name": [
         "-N"
-      ],
-      "description": "Print non-printable characters as is"
+      ]
     },
     {
+      "description": "Quote filenames with double quotes",
       "name": [
         "-Q"
-      ],
-      "description": "Quote filenames with double quotes"
+      ]
     },
     {
+      "description": "Print the protections for each file",
       "name": [
         "-p"
-      ],
-      "description": "Print the protections for each file"
+      ]
     },
     {
+      "description": "Displays file owner or UID number",
       "name": [
         "-u"
-      ],
-      "description": "Displays file owner or UID number"
+      ]
     },
     {
+      "description": "Displays file group owner or GID number",
       "name": [
         "-g"
-      ],
-      "description": "Displays file group owner or GID number"
+      ]
     },
     {
+      "description": "Print the size in bytes of each file",
       "name": [
         "-s"
-      ],
-      "description": "Print the size in bytes of each file"
+      ]
     },
     {
+      "description": "Print the size in a more human readable way",
       "name": [
         "-h"
-      ],
-      "description": "Print the size in a more human readable way"
+      ]
     },
     {
+      "description": "Like -h but use SI units (powers of 1000) instead",
       "name": [
         "--si"
-      ],
-      "description": "Like -h but use SI units (powers of 1000) instead"
+      ]
     },
     {
+      "description": "For each directory report its size as the accumulation of sizes of all its files and sub-directories (and their files, and so on). The total amount of used space is also given in the final report (like the 'du -c' command.) This option requires tree to read the entire directory tree before emitting it, see BUGS AND NOTES below. Implies -s",
       "name": [
         "--du"
-      ],
-      "description": "For each directory report its size as the accumulation of sizes of all its files and sub-directories (and their files, and so on). The total amount of used space is also given in the final report (like the 'du -c' command.) This option requires tree to read the entire directory tree before emitting it, see BUGS AND NOTES below. Implies -s"
+      ]
     },
     {
+      "description": "Print the date of the last modification time or if -c is used, the last status change time for the file listed",
       "name": [
         "-D"
-      ],
-      "description": "Print the date of the last modification time or if -c is used, the last status change time for the file listed"
+      ]
     },
     {
+      "description": "Appends '/', '=', '*', '@', '|' or '>' as per ls -F",
       "name": [
         "-F"
-      ],
-      "description": "Appends '/', '=', '*', '@', '|' or '>' as per ls -F"
+      ]
     },
     {
+      "description": "Print inode number of each file",
       "name": [
         "--inodes"
-      ],
-      "description": "Print inode number of each file"
+      ]
     },
     {
+      "description": "Print device ID number to which each file belongs",
       "name": [
         "--device"
-      ],
-      "description": "Print device ID number to which each file belongs"
+      ]
     },
     {
+      "description": "Sort files alphanumerically by version",
       "name": [
         "-v"
-      ],
-      "description": "Sort files alphanumerically by version"
+      ]
     },
     {
+      "description": "Sort files by last modification time",
       "name": [
         "-t"
-      ],
-      "description": "Sort files by last modification time"
+      ]
     },
     {
+      "description": "Sort files by last status change time",
       "name": [
         "-c"
-      ],
-      "description": "Sort files by last status change time"
+      ]
     },
     {
+      "description": "Leave files unsorted",
       "name": [
         "-U"
-      ],
-      "description": "Leave files unsorted"
+      ]
     },
     {
+      "description": "Reverse the order of the sort",
       "name": [
         "-r"
-      ],
-      "description": "Reverse the order of the sort"
+      ]
     },
     {
+      "description": "List directories before files (-U disables)",
       "name": [
         "--dirsfirst"
-      ],
-      "description": "List directories before files (-U disables)"
+      ]
     },
     {
-      "name": [
-        "--sort"
-      ],
-      "description": "Select sort",
       "args": {
         "name": "type",
         "suggestions": [
@@ -265,100 +264,101 @@
             "name": "ctime"
           }
         ]
-      }
+      },
+      "description": "Select sort",
+      "name": [
+        "--sort"
+      ]
     },
     {
+      "description": "Don't print indentation lines",
       "name": [
         "-i"
-      ],
-      "description": "Don't print indentation lines"
+      ]
     },
     {
+      "description": "Print ANSI lines graphic indentation lines",
       "name": [
         "-A"
-      ],
-      "description": "Print ANSI lines graphic indentation lines"
+      ]
     },
     {
+      "description": "Print with CP437 (console) graphics indentation lines",
       "name": [
         "-S"
-      ],
-      "description": "Print with CP437 (console) graphics indentation lines"
+      ]
     },
     {
+      "description": "Turn colorization off always (-C overrides)",
       "name": [
         "-n"
-      ],
-      "description": "Turn colorization off always (-C overrides)"
+      ]
     },
     {
+      "description": "Turn colorization on always",
       "name": [
         "-C"
-      ],
-      "description": "Turn colorization on always"
+      ]
     },
     {
+      "description": "Prints out an XML representation of the tree",
       "name": [
         "-X"
-      ],
-      "description": "Prints out an XML representation of the tree"
+      ]
     },
     {
+      "description": "Prints out an JSON representation of the tree",
       "name": [
         "-J"
-      ],
-      "description": "Prints out an JSON representation of the tree"
+      ]
     },
     {
-      "name": [
-        "-H"
-      ],
-      "description": "Prints out HTML format with baseHREF as top directory",
       "args": {
         "name": "baseHREF"
-      }
+      },
+      "description": "Prints out HTML format with baseHREF as top directory",
+      "name": [
+        "-H"
+      ]
     },
     {
-      "name": [
-        "-T"
-      ],
-      "description": "Replace the default HTML title and H1 header with string",
       "args": {
         "name": "title"
-      }
+      },
+      "description": "Replace the default HTML title and H1 header with string",
+      "name": [
+        "-T"
+      ]
     },
     {
+      "description": "Turn off hyperlinks in HTML output",
       "name": [
         "--nolinks"
-      ],
-      "description": "Turn off hyperlinks in HTML output"
+      ]
     },
     {
+      "description": "Reads paths from files",
       "name": [
         "--fromfile"
-      ],
-      "description": "Reads paths from files"
+      ]
     },
     {
+      "description": "Print version and exit",
       "name": [
         "--version"
-      ],
-      "description": "Print version and exit"
+      ]
     },
     {
+      "description": "Print usage and this help message and exit",
       "name": [
         "--help"
-      ],
-      "description": "Print usage and this help message and exit"
+      ]
     },
     {
+      "description": "Options processing terminator",
       "name": [
         "--"
-      ],
-      "description": "Options processing terminator"
+      ]
     }
-  ],
-  "args": {
-    "template": "folders"
-  }
+  ]
 }

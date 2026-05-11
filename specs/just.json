@@ -1,46 +1,57 @@
 {
-  "name": "just",
+  "args": {
+    "generators": [
+      {
+        "js_runtime": {
+          "kind": "token_only",
+          "self_contained": false,
+          "source": "n=>{let e=g(n);return d(e)}"
+        },
+        "requires_js": true
+      }
+    ],
+    "isOptional": true,
+    "isVariadic": true,
+    "name": "args"
+  },
   "description": "Just a command runner",
+  "name": "just",
   "options": [
     {
+      "description": "Print help information",
       "name": [
         "--help",
         "-h"
-      ],
-      "description": "Print help information"
+      ]
     },
     {
+      "description": "Print the changelog",
       "name": [
         "--changelog"
-      ],
-      "description": "Print the changelog"
+      ]
     },
     {
+      "description": "Run --fmt in 'check' mode",
       "name": [
         "--check"
-      ],
-      "description": "Run --fmt in 'check' mode"
+      ]
     },
     {
+      "description": "Select one or more recipes to run using another program",
       "name": [
         "--choose"
-      ],
-      "description": "Select one or more recipes to run using another program"
+      ]
     },
     {
-      "name": [
-        "--chooser"
-      ],
-      "description": "Override the binary invoked by --choose",
       "args": {
         "name": "program"
-      }
+      },
+      "description": "Override the binary invoked by --choose",
+      "name": [
+        "--chooser"
+      ]
     },
     {
-      "name": [
-        "--color"
-      ],
-      "description": "Print colorful output",
       "args": {
         "suggestions": [
           {
@@ -53,23 +64,23 @@
             "name": "never"
           }
         ]
-      }
+      },
+      "description": "Print colorful output",
+      "name": [
+        "--color"
+      ]
     },
     {
+      "args": {
+        "name": "command"
+      },
+      "description": "Run an arbitrary command with the working directory, .env, overrides, and exports",
       "name": [
         "-c",
         "--command"
-      ],
-      "description": "Run an arbitrary command with the working directory, .env, overrides, and exports",
-      "args": {
-        "name": "command"
-      }
+      ]
     },
     {
-      "name": [
-        "--completions"
-      ],
-      "description": "Print shell completions",
       "args": {
         "name": "shell",
         "suggestions": [
@@ -89,47 +100,47 @@
             "name": "elvish"
           }
         ]
-      }
+      },
+      "description": "Print shell completions",
+      "name": [
+        "--completions"
+      ]
     },
     {
+      "description": "Clear shell arguments",
       "name": [
         "--clear-shell-args"
-      ],
-      "description": "Clear shell arguments"
+      ]
     },
     {
+      "description": "Print what just would do, without doing it",
       "name": [
         "--dry-run"
       ],
-      "description": "Print what just would do, without doing it",
       "priority": 50
     },
     {
+      "description": "Print justfile",
       "name": [
         "--dump"
-      ],
-      "description": "Print justfile"
+      ]
     },
     {
-      "name": [
-        "--dotenv-filename"
-      ],
-      "description": "Use a file with this name instead of .env",
       "args": {
         "name": "name"
-      }
+      },
+      "description": "Use a file with this name instead of .env",
+      "name": [
+        "--dotenv-filename"
+      ]
     },
     {
+      "description": "Load the environment file from a path instead of searching for one",
       "name": [
         "--dotenv-path"
-      ],
-      "description": "Load the environment file from a path instead of searching for one"
+      ]
     },
     {
-      "name": [
-        "--dump-format"
-      ],
-      "description": "Specify the format for dumping the justfile",
       "args": {
         "name": "format",
         "suggestions": [
@@ -137,228 +148,220 @@
             "name": "just"
           },
           {
-            "name": "json",
-            "description": "This value requires --unstable"
+            "description": "This value requires --unstable",
+            "name": "json"
           }
         ]
-      }
+      },
+      "description": "Specify the format for dumping the justfile",
+      "name": [
+        "--dump-format"
+      ]
     },
     {
+      "description": "Edit the justfile with $VISUAL or $EDITOR, falling back to vim",
       "name": [
         "-e",
         "--edit"
-      ],
-      "description": "Edit the justfile with $VISUAL or $EDITOR, falling back to vim"
+      ]
     },
     {
+      "description": "Evaluate and print all variables",
       "name": [
         "--evaluate"
-      ],
-      "description": "Evaluate and print all variables"
+      ]
     },
     {
+      "description": "Format and overwrite the justfile",
       "name": [
         "--fmt"
-      ],
-      "description": "Format and overwrite the justfile"
+      ]
     },
     {
+      "description": "Highlight echoed recipe lines in bold",
       "name": [
         "--highlight"
-      ],
-      "description": "Highlight echoed recipe lines in bold"
+      ]
     },
     {
+      "description": "Initialize a new justfile",
       "name": [
         "--init"
-      ],
-      "description": "Initialize a new justfile"
+      ]
     },
     {
-      "name": [
-        "-f",
-        "--justfile"
-      ],
-      "description": "Use a specific justfile",
       "args": {
         "name": "file",
         "template": "filepaths"
       },
+      "description": "Use a specific justfile",
+      "name": [
+        "-f",
+        "--justfile"
+      ],
       "priority": 25
     },
     {
+      "description": "List available recipes and their arguments",
       "name": [
         "-l",
         "--list"
-      ],
-      "description": "List available recipes and their arguments"
-    },
-    {
-      "name": [
-        "--list-heading"
-      ],
-      "description": "Print this text before the list",
-      "args": {
-        "name": "text"
-      }
-    },
-    {
-      "name": [
-        "--list-prefix"
-      ],
-      "description": "Print this text before each list item",
-      "args": {
-        "name": "text"
-      }
-    },
-    {
-      "name": [
-        "--no-dotenv"
-      ],
-      "description": "Don't load the environment file"
-    },
-    {
-      "name": [
-        "--no-highlight"
-      ],
-      "description": "Don't highlight echoed recipe lines"
-    },
-    {
-      "name": [
-        "-q",
-        "--quiet"
-      ],
-      "description": "Suppress all output"
-    },
-    {
-      "name": [
-        "--set"
-      ],
-      "description": "Override a variable with a value",
-      "args": [
-        {
-          "name": "variable",
-          "generators": [
-            {
-              "requires_js": true,
-              "js_runtime": {
-                "kind": "script_function",
-                "source": "n=>{let e=g(n);return d(e)}"
-              }
-            }
-          ]
-        },
-        {
-          "name": "value",
-          "description": "The string value the variable will be set to"
-        }
       ]
     },
     {
+      "args": {
+        "name": "text"
+      },
+      "description": "Print this text before the list",
       "name": [
-        "--shell"
+        "--list-heading"
+      ]
+    },
+    {
+      "args": {
+        "name": "text"
+      },
+      "description": "Print this text before each list item",
+      "name": [
+        "--list-prefix"
+      ]
+    },
+    {
+      "description": "Don't load the environment file",
+      "name": [
+        "--no-dotenv"
+      ]
+    },
+    {
+      "description": "Don't highlight echoed recipe lines",
+      "name": [
+        "--no-highlight"
+      ]
+    },
+    {
+      "description": "Suppress all output",
+      "name": [
+        "-q",
+        "--quiet"
+      ]
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "js_runtime": {
+                "kind": "token_only",
+                "self_contained": false,
+                "source": "n=>{let e=g(n);return d(e)}"
+              },
+              "requires_js": true
+            }
+          ],
+          "name": "variable"
+        },
+        {
+          "description": "The string value the variable will be set to",
+          "name": "value"
+        }
       ],
-      "description": "Invoke this shell to run recipes",
+      "description": "Override a variable with a value",
+      "name": [
+        "--set"
+      ]
+    },
+    {
       "args": {
         "name": "shell"
-      }
+      },
+      "description": "Invoke this shell to run recipes",
+      "name": [
+        "--shell"
+      ]
     },
     {
-      "name": [
-        "--shell-arg"
-      ],
-      "description": "Invoke the shell with this as an argument",
       "args": {
         "name": "argument"
-      }
+      },
+      "description": "Invoke the shell with this as an argument",
+      "name": [
+        "--shell-arg"
+      ]
     },
     {
+      "description": "Invoke --command with the shell used to run recipe lines and backticks",
       "name": [
         "--shell-command"
-      ],
-      "description": "Invoke --command with the shell used to run recipe lines and backticks"
+      ]
     },
     {
+      "args": {
+        "generators": [
+          {
+            "js_runtime": {
+              "kind": "token_only",
+              "self_contained": false,
+              "source": "n=>{let e=g(n);return d(e)}"
+            },
+            "requires_js": true
+          }
+        ],
+        "name": "recipe"
+      },
+      "description": "Show information about a recipe",
       "name": [
         "-s",
         "--show"
-      ],
-      "description": "Show information about a recipe",
-      "args": {
-        "name": "recipe",
-        "generators": [
-          {
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "script_function",
-              "source": "n=>{let e=g(n);return d(e)}"
-            }
-          }
-        ]
-      }
+      ]
     },
     {
+      "description": "List names of available recipes",
       "name": [
         "--summary"
-      ],
-      "description": "List names of available recipes"
+      ]
     },
     {
+      "description": "Return list and summary entries in source order",
       "name": [
         "-u",
         "--unsorted"
-      ],
-      "description": "Return list and summary entries in source order"
+      ]
     },
     {
+      "description": "Enable unstable features",
       "name": [
         "--unstable"
-      ],
-      "description": "Enable unstable features"
+      ]
     },
     {
+      "description": "List names of variables",
       "name": [
         "--variables"
-      ],
-      "description": "List names of variables"
+      ]
     },
     {
+      "description": "Use verbose output",
       "name": [
         "-v",
         "--verbose"
-      ],
-      "description": "Use verbose output"
+      ]
     },
     {
+      "description": "Print version information",
       "name": [
         "-V",
         "--version"
-      ],
-      "description": "Print version information"
+      ]
     },
     {
+      "args": {
+        "template": "folders"
+      },
+      "description": "Use this as the working directory",
       "name": [
         "-d",
         "--working-directory"
-      ],
-      "description": "Use this as the working directory",
-      "args": {
-        "template": "folders"
-      }
+      ]
     }
-  ],
-  "args": {
-    "name": "args",
-    "isVariadic": true,
-    "isOptional": true,
-    "generators": [
-      {
-        "requires_js": true,
-        "js_runtime": {
-          "kind": "script_function",
-          "source": "n=>{let e=g(n);return d(e)}"
-        }
-      }
-    ]
-  }
+  ]
 }

@@ -1,8 +1,20 @@
 {
-  "name": "bunx",
   "args": {
-    "name": "command",
     "description": "The command to run",
+    "generators": [
+      {
+        "script": [
+          "bash",
+          "-c",
+          "until [[ -d node_modules/ ]] || [[ $PWD = '/' ]]; do cd ..; done; ls -1 node_modules/.bin/`"
+        ],
+        "transforms": [
+          "split_lines",
+          "filter_empty"
+        ]
+      }
+    ],
+    "name": "command",
     "suggestions": [
       {
         "name": "autocannon"
@@ -127,19 +139,7 @@
       {
         "name": "ampx"
       }
-    ],
-    "generators": [
-      {
-        "script": [
-          "bash",
-          "-c",
-          "until [[ -d node_modules/ ]] || [[ $PWD = '/' ]]; do cd ..; done; ls -1 node_modules/.bin/`"
-        ],
-        "transforms": [
-          "split_lines",
-          "filter_empty"
-        ]
-      }
     ]
-  }
+  },
+  "name": "bunx"
 }

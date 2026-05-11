@@ -11,8 +11,9 @@
 //!   text comes from the JS body, not from raw stdout.
 //! - The same script with two distinct `js_runtime.source` bodies produces
 //!   two distinct result sets that do NOT cross-contaminate via the cache.
-//! - Skipping happens for `script_function`, `custom`, and missing
-//!   `js_runtime` shapes.
+//! - An empty `js_runtime.source` on an otherwise JS-dispatchable
+//!   shape returns no suggestions (the evaluator surfaces an
+//!   `EmptyOutput` diagnostic).
 //! - JS timeouts and exceptions surface as empty suggestions (without
 //!   hanging the test process) and are captured via the diagnostic log
 //!   path.

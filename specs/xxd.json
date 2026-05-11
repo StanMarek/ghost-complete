@@ -1,143 +1,4 @@
 {
-  "name": "xxd",
-  "description": "Make a hexdump or do the reverse",
-  "options": [
-    {
-      "name": [
-        "-help",
-        "-h"
-      ],
-      "description": "Show help for xxd"
-    },
-    {
-      "name": [
-        "-autoskip",
-        "-a"
-      ],
-      "description": "Toggle autoskip: A single '*' replaces nul-lines.  Default off"
-    },
-    {
-      "name": [
-        "-bits",
-        "-b"
-      ],
-      "description": "Switch to bits (binary digits) dump, rather than hexdump"
-    },
-    {
-      "name": [
-        "-cols",
-        "-c"
-      ],
-      "description": "Format <cols> octets per line. Default 16",
-      "args": {
-        "name": "cols"
-      }
-    },
-    {
-      "name": [
-        "-capitalize",
-        "-C"
-      ],
-      "description": "Capitalize variable names in C include file style, when using -i"
-    },
-    {
-      "name": [
-        "-EBCDIC",
-        "-E"
-      ],
-      "description": "Change the character encoding in the righthand column from ASCII to EBCDIC"
-    },
-    {
-      "name": [
-        "-e"
-      ],
-      "description": "Switch to little-endian hexdump"
-    },
-    {
-      "name": [
-        "-groupsize",
-        "-g"
-      ],
-      "description": "Separate the output of every <bytes> bytes",
-      "args": {
-        "name": "bytes"
-      }
-    },
-    {
-      "name": [
-        "-include",
-        "-i"
-      ],
-      "description": "Output in C include file style"
-    },
-    {
-      "name": [
-        "-len",
-        "-l"
-      ],
-      "description": "Stop after writing <len> octets",
-      "args": {
-        "name": "len"
-      }
-    },
-    {
-      "name": [
-        "-name",
-        "-n"
-      ],
-      "description": "Override the variable name output when -i is used",
-      "args": {
-        "name": "name"
-      }
-    },
-    {
-      "name": [
-        "-o"
-      ],
-      "description": "Add <offset> to the displayed file position",
-      "args": {
-        "name": "offset"
-      }
-    },
-    {
-      "name": [
-        "-postscript",
-        "-plain",
-        "-ps",
-        "-p"
-      ],
-      "description": "Output in postscript continuous hexdump style"
-    },
-    {
-      "name": [
-        "-revert",
-        "-r"
-      ],
-      "description": "Reverse operation: convert (or patch) hexdump into binary"
-    },
-    {
-      "name": [
-        "-seek"
-      ],
-      "description": "When used after -r: revert with <offset> added to file positions found in hexdump",
-      "args": {
-        "name": "offset"
-      }
-    },
-    {
-      "name": [
-        "-u"
-      ],
-      "description": "Use upper case hex letters. Default is lower case"
-    },
-    {
-      "name": [
-        "-version",
-        "-v"
-      ],
-      "description": "Show version string"
-    }
-  ],
   "args": [
     {
       "name": "infile",
@@ -146,6 +7,145 @@
     {
       "name": "outfile",
       "template": "filepaths"
+    }
+  ],
+  "description": "Make a hexdump or do the reverse",
+  "name": "xxd",
+  "options": [
+    {
+      "description": "Show help for xxd",
+      "name": [
+        "-help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Toggle autoskip: A single '*' replaces nul-lines.  Default off",
+      "name": [
+        "-autoskip",
+        "-a"
+      ]
+    },
+    {
+      "description": "Switch to bits (binary digits) dump, rather than hexdump",
+      "name": [
+        "-bits",
+        "-b"
+      ]
+    },
+    {
+      "args": {
+        "name": "cols"
+      },
+      "description": "Format <cols> octets per line. Default 16",
+      "name": [
+        "-cols",
+        "-c"
+      ]
+    },
+    {
+      "description": "Capitalize variable names in C include file style, when using -i",
+      "name": [
+        "-capitalize",
+        "-C"
+      ]
+    },
+    {
+      "description": "Change the character encoding in the righthand column from ASCII to EBCDIC",
+      "name": [
+        "-EBCDIC",
+        "-E"
+      ]
+    },
+    {
+      "description": "Switch to little-endian hexdump",
+      "name": [
+        "-e"
+      ]
+    },
+    {
+      "args": {
+        "name": "bytes"
+      },
+      "description": "Separate the output of every <bytes> bytes",
+      "name": [
+        "-groupsize",
+        "-g"
+      ]
+    },
+    {
+      "description": "Output in C include file style",
+      "name": [
+        "-include",
+        "-i"
+      ]
+    },
+    {
+      "args": {
+        "name": "len"
+      },
+      "description": "Stop after writing <len> octets",
+      "name": [
+        "-len",
+        "-l"
+      ]
+    },
+    {
+      "args": {
+        "name": "name"
+      },
+      "description": "Override the variable name output when -i is used",
+      "name": [
+        "-name",
+        "-n"
+      ]
+    },
+    {
+      "args": {
+        "name": "offset"
+      },
+      "description": "Add <offset> to the displayed file position",
+      "name": [
+        "-o"
+      ]
+    },
+    {
+      "description": "Output in postscript continuous hexdump style",
+      "name": [
+        "-postscript",
+        "-plain",
+        "-ps",
+        "-p"
+      ]
+    },
+    {
+      "description": "Reverse operation: convert (or patch) hexdump into binary",
+      "name": [
+        "-revert",
+        "-r"
+      ]
+    },
+    {
+      "args": {
+        "name": "offset"
+      },
+      "description": "When used after -r: revert with <offset> added to file positions found in hexdump",
+      "name": [
+        "-seek"
+      ]
+    },
+    {
+      "description": "Use upper case hex letters. Default is lower case",
+      "name": [
+        "-u"
+      ]
+    },
+    {
+      "description": "Show version string",
+      "name": [
+        "-version",
+        "-v"
+      ]
     }
   ]
 }

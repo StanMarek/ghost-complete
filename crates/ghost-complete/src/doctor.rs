@@ -738,6 +738,7 @@ fn count_runtime_metadata_issues_in_spec(spec: &CompletionSpec) -> RuntimeMetada
                             Some(Issue::UnsupportedUnproven)
                         }
                     }
+                    JsRuntimeKind::TokenOnly => None,
                 }
             }
         }
@@ -797,9 +798,10 @@ fn count_unproven_js_runtime_in_spec(spec: &CompletionSpec) -> usize {
 
 /// Embedded specs runtime-source check. Walks every entry in the
 /// SpecStore (including embedded fallback). Malformed JS runtime metadata
-/// fails the check; unproven `script_function` / `custom` generators are
-/// expected unsupported coverage and are also visible in `ghost-complete
-/// status`, so they remain an OK health result.
+/// warns (engine skips the generator silently, same runtime impact as
+/// unproven `script_function` / `custom`, but the converter regen path
+/// should still surface it to a maintainer). Unproven generators are
+/// expected unsupported coverage and remain an OK result.
 fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> CheckResult {
     let mut affected: Vec<(&str, usize)> = store
         .iter()
@@ -870,11 +872,12 @@ fn check_embedded_runtime_metadata_for_store(store: &gc_suggest::SpecStore) -> C
         String::new()
     };
 
-    CheckResult::fail(format!(
+    CheckResult::warn(format!(
         "Embedded specs: {total} requires_js generator(s) across {spec_count} spec(s) cannot be \
          dispatched (missing js_runtime metadata, empty `js_runtime.source`, `post_process` kind \
-         without a non-empty `script`/`script_template`). Indicates an incomplete converter \
-         regen or a hand-edited spec. Affected: {preview_str}{tail}"
+         without a non-empty `script`/`script_template`). Engine skips them silently; regenerate \
+         the corpus or remove the stale `requires_js: true` to clear. Affected: \
+         {preview_str}{tail}"
     ))
 }
 
@@ -1684,10 +1687,12 @@ mod tests {
     }
 
     #[test]
-    fn doctor_fails_when_runtime_metadata_missing() {
+    fn doctor_warns_when_runtime_metadata_missing() {
         // Spec with requires_js=true but no js_runtime — the converter
-        // forgot to populate. Doctor must Fail (loud signal so a regen
-        // mistake doesn't ship silently).
+        // forgot to populate. Engine skips at runtime, but the doctor
+        // surfaces a WARN so a regen mistake stays visible without
+        // exit-1ing every clean install (the converted corpus ships
+        // ~295 such entries that are stale-but-harmless).
         let (store, _dir) = store_from_json_fixtures(&[(
             "broken.json",
             r#"{
@@ -1699,7 +1704,7 @@ mod tests {
             }"#,
         )]);
         let result = check_embedded_runtime_metadata_for_store(&store);
-        assert!(matches!(result.severity, Severity::Fail));
+        assert!(matches!(result.severity, Severity::Warn));
         assert!(
             result.message.contains("missing js_runtime metadata"),
             "got: {}",
@@ -1713,10 +1718,12 @@ mod tests {
     }
 
     #[test]
-    fn doctor_fails_when_second_option_arg_runtime_metadata_missing() {
+    fn doctor_warns_when_second_option_arg_runtime_metadata_missing() {
         // Fig permits option args as an array. The doctor check must inspect
         // more than the first element so converter regressions in later option
-        // args do not ship silently.
+        // args still surface (as a WARN — see
+        // `doctor_warns_when_runtime_metadata_missing` for the severity
+        // rationale).
         let (store, _dir) = store_from_json_fixtures(&[(
             "option-args.json",
             r#"{
@@ -1741,8 +1748,8 @@ mod tests {
         )]);
         let result = check_embedded_runtime_metadata_for_store(&store);
         assert!(
-            matches!(result.severity, Severity::Fail),
-            "expected Fail, got message: {}",
+            matches!(result.severity, Severity::Warn),
+            "expected Warn, got message: {}",
             result.message
         );
         assert!(
@@ -1758,7 +1765,7 @@ mod tests {
     }
 
     #[test]
-    fn doctor_fails_when_runtime_source_empty() {
+    fn doctor_warns_when_runtime_source_empty() {
         // js_runtime present but source is whitespace — the converter
         // dropped the body. Same severity as missing entirely.
         let (store, _dir) = store_from_json_fixtures(&[(
@@ -1775,7 +1782,7 @@ mod tests {
             }"#,
         )]);
         let result = check_embedded_runtime_metadata_for_store(&store);
-        assert!(matches!(result.severity, Severity::Fail));
+        assert!(matches!(result.severity, Severity::Warn));
     }
 
     /// A `script_function` / `custom` generator whose `self_contained` is
@@ -1842,6 +1849,53 @@ mod tests {
         assert!(
             matches!(result.severity, Severity::Ok),
             "custom with self_contained:false must be OK, got: {}",
+            result.message
+        );
+    }
+
+    /// `token_only` is the sandboxed runtime — its source receives only the
+    /// captured user tokens and never the host's cwd/env, so the
+    /// `self_contained` gate that motivates the `script_function`/`custom`
+    /// classification does not apply. A future refactor that re-classifies
+    /// `TokenOnly` as `Issue::UnsupportedUnproven` (e.g. by collapsing the
+    /// match arm under `_` or moving the self_contained gate up) would flip
+    /// the doctor severity for every promoted spec and surface a spurious
+    /// "unsupported (unproven self_contained)" message. This test pins the
+    /// current `JsRuntimeKind::TokenOnly => None` arm so that regression is
+    /// caught loudly.
+    #[test]
+    fn doctor_is_ok_when_token_only_lacks_self_contained() {
+        let (store, _dir) = store_from_json_fixtures(&[(
+            "token-only.json",
+            r#"{
+                "name": "token-only",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "requires_js": true,
+                        "js_runtime": {
+                            "kind": "token_only",
+                            "source": "tokens.map(name => ({name}))",
+                            "self_contained": false
+                        }
+                    }]
+                }]
+            }"#,
+        )]);
+        let result = check_embedded_runtime_metadata_for_store(&store);
+        assert!(
+            matches!(result.severity, Severity::Ok),
+            "token_only with self_contained:false must be OK, got: {}",
+            result.message
+        );
+        assert!(
+            !result.message.contains("self_contained"),
+            "token_only must not surface an unsupported-self_contained warning: {}",
+            result.message
+        );
+        assert!(
+            !result.message.contains("unsupported"),
+            "token_only must not surface an unsupported-class warning: {}",
             result.message
         );
     }
@@ -1915,7 +1969,7 @@ mod tests {
     /// result while the engine silently filters the generator at
     /// dispatch.
     #[test]
-    fn doctor_fails_when_post_process_lacks_script() {
+    fn doctor_warns_when_post_process_lacks_script() {
         let (store, _dir) = store_from_json_fixtures(&[(
             "pp_no_script.json",
             r#"{
@@ -1934,8 +1988,8 @@ mod tests {
         )]);
         let result = check_embedded_runtime_metadata_for_store(&store);
         assert!(
-            matches!(result.severity, Severity::Fail),
-            "post_process without script/script_template must Fail, got: {}",
+            matches!(result.severity, Severity::Warn),
+            "post_process without script/script_template must Warn, got: {}",
             result.message
         );
         assert!(
@@ -1946,7 +2000,7 @@ mod tests {
     }
 
     #[test]
-    fn doctor_fails_when_post_process_script_argv_is_empty() {
+    fn doctor_warns_when_post_process_script_argv_is_empty() {
         let (store, _dir) = store_from_json_fixtures(&[
             (
                 "pp_empty_script.json",
@@ -1985,8 +2039,8 @@ mod tests {
         ]);
         let result = check_embedded_runtime_metadata_for_store(&store);
         assert!(
-            matches!(result.severity, Severity::Fail),
-            "post_process with empty script/script_template argv must Fail, got: {}",
+            matches!(result.severity, Severity::Warn),
+            "post_process with empty script/script_template argv must Warn, got: {}",
             result.message
         );
         assert!(
@@ -2027,13 +2081,13 @@ mod tests {
         );
     }
 
-    /// Regression guard for comment-1: the user-facing fail message must
-    /// enumerate every malformed runtime-metadata class the fatal predicate
+    /// Regression guard for comment-1: the user-facing warn message must
+    /// enumerate every malformed runtime-metadata class the warn predicate
     /// counts — missing js_runtime metadata, empty source, and post_process
     /// without script/script_template. Unsupported script_function/custom
-    /// generators are covered by the warning tests above.
+    /// generators are covered by the OK tests above.
     #[test]
-    fn doctor_fail_message_enumerates_all_malformed_classes() {
+    fn doctor_warn_message_enumerates_all_malformed_classes() {
         let (store, _dir) = store_from_json_fixtures(&[(
             "pp_no_script.json",
             r#"{
@@ -2051,7 +2105,7 @@ mod tests {
             }"#,
         )]);
         let result = check_embedded_runtime_metadata_for_store(&store);
-        assert!(matches!(result.severity, Severity::Fail));
+        assert!(matches!(result.severity, Severity::Warn));
         let msg = &result.message;
         assert!(
             msg.contains("missing js_runtime metadata"),
@@ -2067,7 +2121,7 @@ mod tests {
         );
         assert!(
             !msg.contains("`script_function`/`custom`"),
-            "fatal message must not conflate unsupported coverage with malformed metadata: {msg}"
+            "warn message must not conflate unsupported coverage with malformed metadata: {msg}"
         );
     }
 }

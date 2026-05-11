@@ -1,36 +1,54 @@
 {
-  "name": "create-react-native-app",
+  "args": {
+    "name": "name",
+    "template": "folders"
+  },
   "description": "Creates a new React Native project",
+  "name": "create-react-native-app",
   "options": [
     {
+      "args": {
+        "name": "template"
+      },
+      "description": "The name of a template from expo/examples or URL to a GitHub repo that contains an example",
       "name": [
         "--template"
       ],
-      "description": "The name of a template from expo/examples or URL to a GitHub repo that contains an example",
-      "priority": 76,
-      "args": {
-        "name": "template"
-      }
+      "priority": 76
     },
     {
+      "args": {
+        "name": "name"
+      },
+      "description": "The path inside of a GitHub repo where the example lives",
       "name": [
         "--template-path"
       ],
-      "description": "The path inside of a GitHub repo where the example lives",
-      "priority": 76,
-      "args": {
-        "name": "name"
-      }
+      "priority": 76
     },
     {
+      "args": {
+        "isOptional": true,
+        "name": "boolean",
+        "suggestions": [
+          {
+            "name": "true"
+          },
+          {
+            "name": "false"
+          }
+        ]
+      },
+      "description": "Use the default options for creating a project",
       "name": [
         "--yes"
       ],
-      "description": "Use the default options for creating a project",
-      "priority": 76,
+      "priority": 76
+    },
+    {
       "args": {
-        "name": "boolean",
         "isOptional": true,
+        "name": "boolean",
         "suggestions": [
           {
             "name": "true"
@@ -39,17 +57,17 @@
             "name": "false"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Skip installing npm packages or CocoaPods",
       "name": [
         "--no-install"
       ],
-      "description": "Skip installing npm packages or CocoaPods",
-      "priority": 76,
+      "priority": 76
+    },
+    {
       "args": {
-        "name": "boolean",
         "isOptional": true,
+        "name": "boolean",
         "suggestions": [
           {
             "name": "true"
@@ -58,46 +76,28 @@
             "name": "false"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Use npm to install dependencies. (default when Yarn is not installed)",
       "name": [
         "--use-npm"
       ],
-      "description": "Use npm to install dependencies. (default when Yarn is not installed)",
-      "priority": 76,
-      "args": {
-        "name": "boolean",
-        "isOptional": true,
-        "suggestions": [
-          {
-            "name": "true"
-          },
-          {
-            "name": "false"
-          }
-        ]
-      }
+      "priority": 76
     },
     {
+      "description": "Output usage information",
       "name": [
         "-h",
         "--help"
       ],
-      "description": "Output usage information",
       "priority": 1
     },
     {
+      "description": "Output the version number",
       "name": [
         "-V",
         "--version"
       ],
-      "description": "Output the version number",
       "priority": 1
     }
-  ],
-  "args": {
-    "name": "name",
-    "template": "folders"
-  }
+  ]
 }

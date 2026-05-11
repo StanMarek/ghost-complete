@@ -1,39 +1,197 @@
 {
-  "name": "pnpx",
   "description": "Execute binaries from npm packages",
+  "name": "pnpx",
+  "options": [
+    {
+      "args": {
+        "name": "package"
+      },
+      "description": "Package to be executed",
+      "name": [
+        "--package",
+        "-p"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Location of the npm cache",
+      "name": [
+        "--cache"
+      ]
+    },
+    {
+      "description": "Always spawn a child process to execute the command",
+      "name": [
+        "--always-spawn"
+      ]
+    },
+    {
+      "description": "Skip installation if a package is missing",
+      "name": [
+        "--no-install"
+      ]
+    },
+    {
+      "args": {
+        "name": "path",
+        "template": "filepaths"
+      },
+      "description": "Path to user npmrc",
+      "name": [
+        "--userconfig"
+      ]
+    },
+    {
+      "args": {
+        "name": "script"
+      },
+      "description": "Execute string as if inside `npm run-script`",
+      "name": [
+        "--call",
+        "-c"
+      ]
+    },
+    {
+      "args": {
+        "name": "shell",
+        "suggestions": [
+          {
+            "name": "bash"
+          },
+          {
+            "name": "fish"
+          },
+          {
+            "name": "zsh"
+          }
+        ]
+      },
+      "description": "Shell to execute the command with, if any",
+      "name": [
+        "--shell",
+        "-s"
+      ]
+    },
+    {
+      "args": {
+        "name": "shell-fallback",
+        "suggestions": [
+          {
+            "name": "bash"
+          },
+          {
+            "name": "fish"
+          },
+          {
+            "name": "zsh"
+          }
+        ]
+      },
+      "description": "Generate shell code to use pnpx as the \"command not found\" fallback",
+      "name": [
+        "--shell-auto-fallback"
+      ]
+    },
+    {
+      "description": "Ignores existing binaries in $PATH, or in the localproject. This forces pnpx to do a temporary install and use the latest version",
+      "name": [
+        "--ignore-existing"
+      ]
+    },
+    {
+      "description": "Suppress output from pnpx itself. Subcommands will not be affected",
+      "name": [
+        "--quiet",
+        "-q"
+      ]
+    },
+    {
+      "args": {
+        "name": "path to binary",
+        "template": "filepaths"
+      },
+      "description": "Npm binary to use for internal operations",
+      "name": [
+        "--npm"
+      ]
+    },
+    {
+      "args": {},
+      "description": "Extra node argument when calling a node binary",
+      "name": [
+        "--node-arg",
+        "-n"
+      ]
+    },
+    {
+      "description": "Show version number",
+      "name": [
+        "--version",
+        "-v"
+      ]
+    },
+    {
+      "description": "Show help",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    }
+  ],
   "subcommands": [
     {
+      "args": {
+        "name": "name",
+        "template": "folders"
+      },
       "name": "create-react-native-app",
       "options": [
         {
+          "args": {
+            "name": "template"
+          },
+          "description": "The name of a template from expo/examples or URL to a GitHub repo that contains an example",
           "name": [
             "--template"
           ],
-          "description": "The name of a template from expo/examples or URL to a GitHub repo that contains an example",
-          "priority": 76,
-          "args": {
-            "name": "template"
-          }
+          "priority": 76
         },
         {
+          "args": {
+            "name": "name"
+          },
+          "description": "The path inside of a GitHub repo where the example lives",
           "name": [
             "--template-path"
           ],
-          "description": "The path inside of a GitHub repo where the example lives",
-          "priority": 76,
-          "args": {
-            "name": "name"
-          }
+          "priority": 76
         },
         {
+          "args": {
+            "isOptional": true,
+            "name": "boolean",
+            "suggestions": [
+              {
+                "name": "true"
+              },
+              {
+                "name": "false"
+              }
+            ]
+          },
+          "description": "Use the default options for creating a project",
           "name": [
             "--yes"
           ],
-          "description": "Use the default options for creating a project",
-          "priority": 76,
+          "priority": 76
+        },
+        {
           "args": {
-            "name": "boolean",
             "isOptional": true,
+            "name": "boolean",
             "suggestions": [
               {
                 "name": "true"
@@ -42,17 +200,17 @@
                 "name": "false"
               }
             ]
-          }
-        },
-        {
+          },
+          "description": "Skip installing npm packages or CocoaPods",
           "name": [
             "--no-install"
           ],
-          "description": "Skip installing npm packages or CocoaPods",
-          "priority": 76,
+          "priority": 76
+        },
+        {
           "args": {
-            "name": "boolean",
             "isOptional": true,
+            "name": "boolean",
             "suggestions": [
               {
                 "name": "true"
@@ -61,104 +219,99 @@
                 "name": "false"
               }
             ]
-          }
-        },
-        {
+          },
+          "description": "Use npm to install dependencies. (default when Yarn is not installed)",
           "name": [
             "--use-npm"
           ],
-          "description": "Use npm to install dependencies. (default when Yarn is not installed)",
-          "priority": 76,
-          "args": {
-            "name": "boolean",
-            "isOptional": true,
-            "suggestions": [
-              {
-                "name": "true"
-              },
-              {
-                "name": "false"
-              }
-            ]
-          }
+          "priority": 76
         },
         {
+          "description": "Output usage information",
           "name": [
             "-h",
             "--help"
           ],
-          "description": "Output usage information",
           "priority": 1
         },
         {
+          "description": "Output the version number",
           "name": [
             "-V",
             "--version"
           ],
-          "description": "Output the version number",
           "priority": 1
         }
-      ],
-      "args": {
-        "name": "name",
-        "template": "folders"
-      }
+      ]
     },
     {
       "name": "react-native",
+      "options": [
+        {
+          "description": "Print CLI version",
+          "name": [
+            "--version"
+          ]
+        },
+        {
+          "description": "Increase logging verbosity",
+          "name": [
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Output usage information",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ],
       "subcommands": [
         {
-          "name": "doctor",
           "description": "[EXPERIMENTAL] Diagnose and fix common Node.js, iOS, Android & React Native issues",
+          "name": "doctor",
           "options": [
             {
+              "description": "Attempt to fix all diagnosed issues",
               "name": [
                 "--fix"
-              ],
-              "description": "Attempt to fix all diagnosed issues"
+              ]
             },
             {
+              "description": "Add healthchecks required to installations required for contributing to React Native",
               "name": [
                 "--contributor"
-              ],
-              "description": "Add healthchecks required to installations required for contributing to React Native"
+              ]
             },
             {
+              "description": "Output usage information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Output usage information"
+              ]
             }
           ]
         },
         {
-          "name": "bundle",
           "description": "Builds the javascript bundle for offline use",
+          "name": "bundle",
           "options": [
             {
-              "name": [
-                "--entry-file"
-              ],
-              "description": "Path to the root JS file, either absolute or relative to JS root",
               "args": {
-                "name": "file",
                 "generators": [
                   {
-                    "requires_js": true,
-                    "js_runtime": {
-                      "kind": "custom",
-                      "source": "(m,g,w)=>me(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:f}=w,x=(p=(0,v.getCurrentInsertedDirectory)(l??O,f,w))!==null&&p!==void 0?p:\"/\";try{let V=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:x}),te=H(V.stdout.split(`\n`),[\".DS_Store\"]),B=[];for(let T of te)if(T){let P=T.endsWith(\"/\")?\"folders\":\"filepaths\";(P===\"filepaths\"&&u!==\"only\"||P===\"folders\"&&u!==\"never\")&&B.push({type:P===\"filepaths\"?\"file\":\"folder\",name:T,insertValue:T,isDangerous:b,context:{templateType:P}})}return S(h(B))}catch{return[]}})"
-                    }
+                    "requires_js": true
                   }
-                ]
-              }
+                ],
+                "name": "file"
+              },
+              "description": "Path to the root JS file, either absolute or relative to JS root",
+              "name": [
+                "--entry-file"
+              ]
             },
             {
-              "name": [
-                "--platform"
-              ],
-              "description": "Either \"ios\" or \"android\" (default: \"ios\")",
               "args": {
                 "name": "platform",
                 "suggestions": [
@@ -169,25 +322,43 @@
                     "name": "ios"
                   }
                 ]
-              }
+              },
+              "description": "Either \"ios\" or \"android\" (default: \"ios\")",
+              "name": [
+                "--platform"
+              ]
             },
             {
-              "name": [
-                "--transformer"
-              ],
-              "description": "Specify a custom transformer to be used",
               "args": {
                 "name": "transformer"
-              }
+              },
+              "description": "Specify a custom transformer to be used",
+              "name": [
+                "--transformer"
+              ]
             },
             {
+              "args": {
+                "isOptional": true,
+                "name": "boolean",
+                "suggestions": [
+                  {
+                    "name": "true"
+                  },
+                  {
+                    "name": "false"
+                  }
+                ]
+              },
+              "description": "If false, warnings are disabled and the bundle is minified (default: true)",
               "name": [
                 "--dev"
-              ],
-              "description": "If false, warnings are disabled and the bundle is minified (default: true)",
+              ]
+            },
+            {
               "args": {
-                "name": "boolean",
                 "isOptional": true,
+                "name": "boolean",
                 "suggestions": [
                   {
                     "name": "true"
@@ -196,40 +367,22 @@
                     "name": "false"
                   }
                 ]
-              }
-            },
-            {
+              },
+              "description": "Allows overriding whether bundle is minified. This defaults to false if dev is true, and true if dev is false. Disabling minification can be useful for speeding up production builds for testing purposes",
               "name": [
                 "--minify"
-              ],
-              "description": "Allows overriding whether bundle is minified. This defaults to false if dev is true, and true if dev is false. Disabling minification can be useful for speeding up production builds for testing purposes",
-              "args": {
-                "name": "boolean",
-                "isOptional": true,
-                "suggestions": [
-                  {
-                    "name": "true"
-                  },
-                  {
-                    "name": "false"
-                  }
-                ]
-              }
+              ]
             },
             {
-              "name": [
-                "--bundle-output"
-              ],
-              "description": "File name where to store the resulting bundle, ex. /tmp/groups.bundle",
               "args": {
                 "name": "bundle file"
-              }
+              },
+              "description": "File name where to store the resulting bundle, ex. /tmp/groups.bundle",
+              "name": [
+                "--bundle-output"
+              ]
             },
             {
-              "name": [
-                "--bundle-encoding"
-              ],
-              "description": "Encoding the bundle should be written in (https://nodejs.org/api/buffer.html#buffer_buffer). (default: \"utf8\")",
               "args": {
                 "name": "encoding",
                 "suggestions": [
@@ -243,71 +396,71 @@
                     "name": "latin1"
                   }
                 ]
-              }
+              },
+              "description": "Encoding the bundle should be written in (https://nodejs.org/api/buffer.html#buffer_buffer). (default: \"utf8\")",
+              "name": [
+                "--bundle-encoding"
+              ]
             },
             {
-              "name": [
-                "--max-workers"
-              ],
-              "description": "Specifies the maximum number of workers the worker-pool will spawn for transforming files. This defaults to the number of the cores available on your machine",
               "args": {
-                "name": "Number of workers",
                 "generators": [
                   {
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "e=>Array.from({length:Number(e)},(n,t)=>({name:`${t}`}))"
+                    },
+                    "requires_js": true,
                     "script": [
                       "sysctl",
                       "-n",
                       "hw.ncpu"
-                    ],
-                    "requires_js": true,
-                    "js_runtime": {
-                      "kind": "post_process",
-                      "source": "e=>Array.from({length:Number(e)},(n,t)=>({name:`${t}`}))"
-                    }
+                    ]
                   }
-                ]
-              }
+                ],
+                "name": "Number of workers"
+              },
+              "description": "Specifies the maximum number of workers the worker-pool will spawn for transforming files. This defaults to the number of the cores available on your machine",
+              "name": [
+                "--max-workers"
+              ]
             },
             {
-              "name": [
-                "--sourcemap-output"
-              ],
-              "description": "File name where to store the sourcemap file for resulting bundle, ex. /tmp/groups.map",
               "args": {
                 "name": "sourcemap-output"
-              }
+              },
+              "description": "File name where to store the sourcemap file for resulting bundle, ex. /tmp/groups.map",
+              "name": [
+                "--sourcemap-output"
+              ]
             },
             {
-              "name": [
-                "--sourcemap-sources-root"
-              ],
-              "description": "Path to make sourcemap's sources entries relative to, ex. /root/dir",
               "args": {
                 "name": "root",
                 "template": "folders"
-              }
+              },
+              "description": "Path to make sourcemap's sources entries relative to, ex. /root/dir",
+              "name": [
+                "--sourcemap-sources-root"
+              ]
             },
             {
+              "description": "Report SourceMapURL using its full path",
               "name": [
                 "--sourcemap-use-absolute-path"
-              ],
-              "description": "Report SourceMapURL using its full path"
+              ]
             },
             {
-              "name": [
-                "--assets-dest"
-              ],
-              "description": "Directory name where to store assets referenced in the bundle",
               "args": {
                 "name": "directory",
                 "template": "folders"
-              }
+              },
+              "description": "Directory name where to store assets referenced in the bundle",
+              "name": [
+                "--assets-dest"
+              ]
             },
             {
-              "name": [
-                "--unstable-transform-profile"
-              ],
-              "description": "Experimental, transform JS for a specific JS engine. Currently supported: hermes, hermes-canary, default",
               "args": {
                 "name": "transform-profile",
                 "suggestions": [
@@ -321,177 +474,177 @@
                     "name": "default"
                   }
                 ]
-              }
+              },
+              "description": "Experimental, transform JS for a specific JS engine. Currently supported: hermes, hermes-canary, default",
+              "name": [
+                "--unstable-transform-profile"
+              ]
             },
             {
+              "description": "Removes cached files",
               "name": [
                 "--reset-cache"
-              ],
-              "description": "Removes cached files"
+              ]
             },
             {
+              "description": "Try to fetch transformed JS code from the global cache, if configured",
               "name": [
                 "--read-global-cache"
-              ],
-              "description": "Try to fetch transformed JS code from the global cache, if configured"
+              ]
             },
             {
-              "name": [
-                "--config"
-              ],
-              "description": "Path to the CLI configuration file",
               "args": {
                 "name": "string",
                 "template": "filepaths"
-              }
+              },
+              "description": "Path to the CLI configuration file",
+              "name": [
+                "--config"
+              ]
             },
             {
+              "description": "Output usage information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Output usage information"
+              ]
             }
           ]
         },
         {
-          "name": "init",
+          "args": {
+            "name": "projectName"
+          },
           "description": "Initialize a new React Native project named <projectName> in a directory of the same name",
+          "name": "init",
           "options": [
             {
-              "name": [
-                "--version"
-              ],
-              "description": "Shortcut for `--template react-native@version`",
               "args": {
                 "name": "version"
-              }
+              },
+              "description": "Shortcut for `--template react-native@version`",
+              "name": [
+                "--version"
+              ]
             },
             {
-              "name": [
-                "--template"
-              ],
-              "description": "Uses a custom template. Valid arguments are the ones supported by `yarn add [package]` or `npm install [package]`, if you are using `--npm` option",
               "args": {
                 "name": "template"
-              }
+              },
+              "description": "Uses a custom template. Valid arguments are the ones supported by `yarn add [package]` or `npm install [package]`, if you are using `--npm` option",
+              "name": [
+                "--template"
+              ]
             },
             {
+              "description": "Forces using npm for initialization",
               "name": [
                 "--npm"
-              ],
-              "description": "Forces using npm for initialization"
+              ]
             },
             {
-              "name": [
-                "--directory"
-              ],
-              "description": "Uses a custom directory instead of `<projectName>`",
               "args": {
                 "name": "string",
                 "template": "folders"
-              }
+              },
+              "description": "Uses a custom directory instead of `<projectName>`",
+              "name": [
+                "--directory"
+              ]
             },
             {
-              "name": [
-                "--title"
-              ],
-              "description": "Uses a custom app title name for application",
               "args": {
                 "name": "title"
-              }
+              },
+              "description": "Uses a custom app title name for application",
+              "name": [
+                "--title"
+              ]
             },
             {
+              "description": "Skips dependencies installation step",
               "name": [
                 "--skip-install"
-              ],
-              "description": "Skips dependencies installation step"
+              ]
             },
             {
+              "description": "Output usage information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Output usage information"
+              ]
             }
-          ],
-          "args": {
-            "name": "projectName"
-          }
+          ]
         },
         {
-          "name": "uninstall",
-          "description": "Uninstall and unlink native dependencies",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Output usage information"
-            }
-          ],
           "args": {
             "name": "packageName"
-          }
-        },
-        {
-          "name": "start",
-          "description": "Starts the webserver",
+          },
+          "description": "Uninstall and unlink native dependencies",
+          "name": "uninstall",
           "options": [
             {
+              "description": "Output usage information",
               "name": [
-                "--port"
-              ],
-              "description": "Port on which to listen to",
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Starts the webserver",
+          "name": "start",
+          "options": [
+            {
               "args": {
                 "name": "free port"
-              }
+              },
+              "description": "Port on which to listen to",
+              "name": [
+                "--port"
+              ]
             },
             {
-              "name": [
-                "--host"
-              ],
-              "description": "Change the default host",
               "args": {
                 "name": "new host"
-              }
+              },
+              "description": "Change the default host",
+              "name": [
+                "--host"
+              ]
             },
             {
-              "name": [
-                "--projectRoot"
-              ],
-              "description": "Path to a custom project root",
               "args": {
                 "name": "path",
                 "template": "folders"
-              }
+              },
+              "description": "Path to a custom project root",
+              "name": [
+                "--projectRoot"
+              ]
             },
             {
-              "name": [
-                "--watchFolders"
-              ],
-              "description": "Specify any additional folders to be added to the watch list",
               "args": {
                 "name": "folders",
                 "template": "folders"
-              }
+              },
+              "description": "Specify any additional folders to be added to the watch list",
+              "name": [
+                "--watchFolders"
+              ]
             },
             {
-              "name": [
-                "--assetPlugins"
-              ],
-              "description": "Specify any additional asset plugins to be used by the packager by full filepath",
               "args": {
                 "name": "plugins",
                 "template": "folders"
-              }
+              },
+              "description": "Specify any additional asset plugins to be used by the packager by full filepath",
+              "name": [
+                "--assetPlugins"
+              ]
             },
             {
-              "name": [
-                "--sourceExts"
-              ],
-              "description": "Specify any additional source extensions to be used by the packager",
               "args": {
                 "name": "sourceExts",
                 "suggestions": [
@@ -508,149 +661,141 @@
                     "name": "xml"
                   }
                 ]
-              }
+              },
+              "description": "Specify any additional source extensions to be used by the packager",
+              "name": [
+                "--sourceExts"
+              ]
             },
             {
-              "name": [
-                "--max-workers"
-              ],
-              "description": "Specifies the maximum number of workers the worker-pool will spawn for transforming files. This defaults to the number of the cores available on your machine",
               "args": {
-                "name": "Number of workers",
                 "generators": [
                   {
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "e=>Array.from({length:Number(e)},(n,t)=>({name:`${t}`}))"
+                    },
+                    "requires_js": true,
                     "script": [
                       "sysctl",
                       "-n",
                       "hw.ncpu"
-                    ],
-                    "requires_js": true,
-                    "js_runtime": {
-                      "kind": "post_process",
-                      "source": "e=>Array.from({length:Number(e)},(n,t)=>({name:`${t}`}))"
-                    }
+                    ]
                   }
-                ]
-              }
+                ],
+                "name": "Number of workers"
+              },
+              "description": "Specifies the maximum number of workers the worker-pool will spawn for transforming files. This defaults to the number of the cores available on your machine",
+              "name": [
+                "--max-workers"
+              ]
             },
             {
-              "name": [
-                "--transformer"
-              ],
-              "description": "Specify a custom transformer to be used",
               "args": {
                 "name": "transformer"
-              }
+              },
+              "description": "Specify a custom transformer to be used",
+              "name": [
+                "--transformer"
+              ]
             },
             {
+              "description": "Removes cached files",
               "name": [
                 "--reset-cache",
                 "--resetCache"
-              ],
-              "description": "Removes cached files"
+              ]
             },
             {
+              "args": {
+                "generators": [
+                  {
+                    "requires_js": true
+                  }
+                ],
+                "name": "logFile"
+              },
+              "description": "Path to a JavaScript file that exports a log reporter as a replacement for TerminalReporter",
               "name": [
                 "--custom-log-reporter-path",
                 "--customLogReporterPath"
-              ],
-              "description": "Path to a JavaScript file that exports a log reporter as a replacement for TerminalReporter",
-              "args": {
-                "name": "logFile",
-                "generators": [
-                  {
-                    "requires_js": true,
-                    "js_runtime": {
-                      "kind": "custom",
-                      "source": "(m,g,w)=>me(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:f}=w,x=(p=(0,v.getCurrentInsertedDirectory)(l??O,f,w))!==null&&p!==void 0?p:\"/\";try{let V=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:x}),te=H(V.stdout.split(`\n`),[\".DS_Store\"]),B=[];for(let T of te)if(T){let P=T.endsWith(\"/\")?\"folders\":\"filepaths\";(P===\"filepaths\"&&u!==\"only\"||P===\"folders\"&&u!==\"never\")&&B.push({type:P===\"filepaths\"?\"file\":\"folder\",name:T,insertValue:T,isDangerous:b,context:{templateType:P}})}return S(h(B))}catch{return[]}})"
-                    }
-                  }
-                ]
-              }
+              ]
             },
             {
+              "description": "Enables logging",
               "name": [
                 "--verbose"
-              ],
-              "description": "Enables logging"
+              ]
             },
             {
+              "description": "Enables https connections to the server",
               "name": [
                 "--https"
-              ],
-              "description": "Enables https connections to the server"
+              ]
             },
             {
+              "args": {
+                "name": "path",
+                "template": "filepaths"
+              },
+              "description": "Path to custom SSL key",
               "name": [
                 "--key"
-              ],
-              "description": "Path to custom SSL key",
+              ]
+            },
+            {
               "args": {
                 "name": "path",
                 "template": "filepaths"
-              }
-            },
-            {
+              },
+              "description": "Path to custom SSL cert",
               "name": [
                 "--cert"
-              ],
-              "description": "Path to custom SSL cert",
-              "args": {
-                "name": "path",
-                "template": "filepaths"
-              }
+              ]
             },
             {
-              "name": [
-                "--config"
-              ],
-              "description": "Path to the CLI configuration file",
               "args": {
                 "name": "string"
-              }
+              },
+              "description": "Path to the CLI configuration file",
+              "name": [
+                "--config"
+              ]
             },
             {
+              "description": "Disables interactive mode",
               "name": [
                 "--no-interactive"
-              ],
-              "description": "Disables interactive mode"
+              ]
             },
             {
+              "description": "Output usage information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Output usage information"
+              ]
             }
           ]
         },
         {
-          "name": "ram-bundle",
           "description": "Builds javascript as a \"Random Access Module\" bundle for offline use",
+          "name": "ram-bundle",
           "options": [
             {
-              "name": [
-                "--entry-file"
-              ],
-              "description": "Path to the root JS file, either absolute or relative to JS root",
               "args": {
-                "name": "file",
                 "generators": [
                   {
-                    "requires_js": true,
-                    "js_runtime": {
-                      "kind": "custom",
-                      "source": "(m,g,w)=>me(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:O,searchTerm:f}=w,x=(p=(0,v.getCurrentInsertedDirectory)(l??O,f,w))!==null&&p!==void 0?p:\"/\";try{let V=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:x}),te=H(V.stdout.split(`\n`),[\".DS_Store\"]),B=[];for(let T of te)if(T){let P=T.endsWith(\"/\")?\"folders\":\"filepaths\";(P===\"filepaths\"&&u!==\"only\"||P===\"folders\"&&u!==\"never\")&&B.push({type:P===\"filepaths\"?\"file\":\"folder\",name:T,insertValue:T,isDangerous:b,context:{templateType:P}})}return S(h(B))}catch{return[]}})"
-                    }
+                    "requires_js": true
                   }
-                ]
-              }
+                ],
+                "name": "file"
+              },
+              "description": "Path to the root JS file, either absolute or relative to JS root",
+              "name": [
+                "--entry-file"
+              ]
             },
             {
-              "name": [
-                "--platform"
-              ],
-              "description": "Either \"ios\" or \"android\" (default: \"ios\")",
               "args": {
                 "name": "platform",
                 "suggestions": [
@@ -661,25 +806,43 @@
                     "name": "ios"
                   }
                 ]
-              }
+              },
+              "description": "Either \"ios\" or \"android\" (default: \"ios\")",
+              "name": [
+                "--platform"
+              ]
             },
             {
-              "name": [
-                "--transformer"
-              ],
-              "description": "Specify a custom transformer to be used",
               "args": {
                 "name": "transformer"
-              }
+              },
+              "description": "Specify a custom transformer to be used",
+              "name": [
+                "--transformer"
+              ]
             },
             {
+              "args": {
+                "isOptional": true,
+                "name": "boolean",
+                "suggestions": [
+                  {
+                    "name": "true"
+                  },
+                  {
+                    "name": "false"
+                  }
+                ]
+              },
+              "description": "If false, warnings are disabled and the bundle is minified (default: true)",
               "name": [
                 "--dev"
-              ],
-              "description": "If false, warnings are disabled and the bundle is minified (default: true)",
+              ]
+            },
+            {
               "args": {
-                "name": "boolean",
                 "isOptional": true,
+                "name": "boolean",
                 "suggestions": [
                   {
                     "name": "true"
@@ -688,40 +851,22 @@
                     "name": "false"
                   }
                 ]
-              }
-            },
-            {
+              },
+              "description": "Allows overriding whether bundle is minified. This defaults to false if dev is true, and true if dev is false. Disabling minification can be useful for speeding up production builds for testing purposes",
               "name": [
                 "--minify"
-              ],
-              "description": "Allows overriding whether bundle is minified. This defaults to false if dev is true, and true if dev is false. Disabling minification can be useful for speeding up production builds for testing purposes",
-              "args": {
-                "name": "boolean",
-                "isOptional": true,
-                "suggestions": [
-                  {
-                    "name": "true"
-                  },
-                  {
-                    "name": "false"
-                  }
-                ]
-              }
+              ]
             },
             {
-              "name": [
-                "--bundle-output"
-              ],
-              "description": "File name where to store the resulting bundle, ex. /tmp/groups.bundle",
               "args": {
                 "name": "output file"
-              }
+              },
+              "description": "File name where to store the resulting bundle, ex. /tmp/groups.bundle",
+              "name": [
+                "--bundle-output"
+              ]
             },
             {
-              "name": [
-                "--bundle-encoding"
-              ],
-              "description": "Encoding the bundle should be written in (https://nodejs.org/api/buffer.html#buffer_buffer). (default: \"utf8\")",
               "args": {
                 "name": "encoding",
                 "suggestions": [
@@ -735,71 +880,71 @@
                     "name": "latin1"
                   }
                 ]
-              }
+              },
+              "description": "Encoding the bundle should be written in (https://nodejs.org/api/buffer.html#buffer_buffer). (default: \"utf8\")",
+              "name": [
+                "--bundle-encoding"
+              ]
             },
             {
-              "name": [
-                "--max-workers"
-              ],
-              "description": "Specifies the maximum number of workers the worker-pool will spawn for transforming files. This defaults to the number of the cores available on your machine",
               "args": {
-                "name": "Number of workers",
                 "generators": [
                   {
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "e=>Array.from({length:Number(e)},(n,t)=>({name:`${t}`}))"
+                    },
+                    "requires_js": true,
                     "script": [
                       "sysctl",
                       "-n",
                       "hw.ncpu"
-                    ],
-                    "requires_js": true,
-                    "js_runtime": {
-                      "kind": "post_process",
-                      "source": "e=>Array.from({length:Number(e)},(n,t)=>({name:`${t}`}))"
-                    }
+                    ]
                   }
-                ]
-              }
+                ],
+                "name": "Number of workers"
+              },
+              "description": "Specifies the maximum number of workers the worker-pool will spawn for transforming files. This defaults to the number of the cores available on your machine",
+              "name": [
+                "--max-workers"
+              ]
             },
             {
-              "name": [
-                "--sourcemap-output"
-              ],
-              "description": "File name where to store the sourcemap file for resulting bundle, ex. /tmp/groups.map",
               "args": {
                 "name": "sourcemap-output"
-              }
+              },
+              "description": "File name where to store the sourcemap file for resulting bundle, ex. /tmp/groups.map",
+              "name": [
+                "--sourcemap-output"
+              ]
             },
             {
-              "name": [
-                "--sourcemap-sources-root"
-              ],
-              "description": "Path to make sourcemap's sources entries relative to, ex. /root/dir",
               "args": {
                 "name": "root",
                 "template": "folders"
-              }
+              },
+              "description": "Path to make sourcemap's sources entries relative to, ex. /root/dir",
+              "name": [
+                "--sourcemap-sources-root"
+              ]
             },
             {
+              "description": "Report SourceMapURL using its full path",
               "name": [
                 "--sourcemap-use-absolute-path"
-              ],
-              "description": "Report SourceMapURL using its full path"
+              ]
             },
             {
-              "name": [
-                "--assets-dest"
-              ],
-              "description": "Directory name where to store assets referenced in the bundle",
               "args": {
                 "name": "directory",
                 "template": "folders"
-              }
+              },
+              "description": "Directory name where to store assets referenced in the bundle",
+              "name": [
+                "--assets-dest"
+              ]
             },
             {
-              "name": [
-                "--unstable-transform-profile"
-              ],
-              "description": "Experimental, transform JS for a specific JS engine. Currently supported: hermes, hermes-canary, default",
               "args": {
                 "name": "transform-profile",
                 "suggestions": [
@@ -813,266 +958,266 @@
                     "name": "default"
                   }
                 ]
-              }
+              },
+              "description": "Experimental, transform JS for a specific JS engine. Currently supported: hermes, hermes-canary, default",
+              "name": [
+                "--unstable-transform-profile"
+              ]
             },
             {
+              "description": "Removes cached files",
               "name": [
                 "--reset-cache"
-              ],
-              "description": "Removes cached files"
+              ]
             },
             {
+              "description": "Try to fetch transformed JS code from the global cache, if configured",
               "name": [
                 "--read-global-cache"
-              ],
-              "description": "Try to fetch transformed JS code from the global cache, if configured"
+              ]
             },
             {
-              "name": [
-                "--config"
-              ],
-              "description": "Path to the CLI configuration file",
               "args": {
                 "name": "string"
-              }
+              },
+              "description": "Path to the CLI configuration file",
+              "name": [
+                "--config"
+              ]
             },
             {
+              "description": "Force the \"Indexed RAM\" bundle file format, even when building for android",
               "name": [
                 "--indexed-ram-bundle"
-              ],
-              "description": "Force the \"Indexed RAM\" bundle file format, even when building for android"
+              ]
             },
             {
+              "description": "Output usage information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Output usage information"
+              ]
             }
           ]
         },
         {
-          "name": "link",
+          "args": {
+            "isOptional": true,
+            "name": "packageName"
+          },
           "description": "Links assets and optionally native modules",
+          "name": "link",
           "options": [
             {
+              "args": {
+                "isOptional": true,
+                "name": "list"
+              },
+              "description": "Scope linking to specified platforms",
               "name": [
                 "--platforms"
-              ],
-              "description": "Scope linking to specified platforms",
-              "args": {
-                "name": "list",
-                "isOptional": true
-              }
+              ]
             },
             {
+              "description": "Link all native modules and assets",
               "name": [
                 "--all"
-              ],
-              "description": "Link all native modules and assets"
+              ]
             },
             {
+              "description": "Output usage information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Output usage information"
-            }
-          ],
-          "args": {
-            "name": "packageName",
-            "isOptional": true
-          }
-        },
-        {
-          "name": "upgrade",
-          "description": "Upgrade your app's template files to the specified or latest npm version using `rn-diff-purge` project. Only valid semver versions are allowed",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Output usage information"
-            }
-          ],
-          "args": {
-            "name": "version",
-            "isOptional": true
-          }
-        },
-        {
-          "name": "info",
-          "description": "Get relevant version info about OS, toolchain and libraries",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Output usage information"
+              ]
             }
           ]
         },
         {
-          "name": "install",
-          "description": "Install and link native dependencies",
+          "args": {
+            "isOptional": true,
+            "name": "version"
+          },
+          "description": "Upgrade your app's template files to the specified or latest npm version using `rn-diff-purge` project. Only valid semver versions are allowed",
+          "name": "upgrade",
           "options": [
             {
+              "description": "Output usage information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Output usage information"
+              ]
             }
-          ],
+          ]
+        },
+        {
+          "description": "Get relevant version info about OS, toolchain and libraries",
+          "name": "info",
+          "options": [
+            {
+              "description": "Output usage information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
           "args": {
             "name": "packageName"
-          }
-        },
-        {
-          "name": "config",
-          "description": "Print CLI configuration",
+          },
+          "description": "Install and link native dependencies",
+          "name": "install",
           "options": [
             {
+              "description": "Output usage information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Output usage information"
+              ]
             }
           ]
         },
         {
-          "name": "unlink",
-          "description": "Unlink native dependency",
+          "description": "Print CLI configuration",
+          "name": "config",
           "options": [
             {
+              "description": "Output usage information",
+              "name": [
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "name": "packageName"
+          },
+          "description": "Unlink native dependency",
+          "name": "unlink",
+          "options": [
+            {
+              "args": {
+                "isOptional": true,
+                "name": "list"
+              },
+              "description": "Scope unlinking to specified platforms",
               "name": [
                 "--platforms"
-              ],
-              "description": "Scope unlinking to specified platforms",
-              "args": {
-                "name": "list",
-                "isOptional": true
-              }
+              ]
             },
             {
+              "description": "Output usage information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Output usage information"
-            }
-          ],
-          "args": {
-            "name": "packageName"
-          }
-        },
-        {
-          "name": "log-ios",
-          "description": "Starts iOS device syslog tail",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Output usage information"
+              ]
             }
           ]
         },
         {
-          "name": "profile-hermes",
-          "description": "Pull and convert a Hermes tracing profile to Chrome tracing profile, then store it in the directory <destinationDir> of the local machine",
+          "description": "Starts iOS device syslog tail",
+          "name": "log-ios",
           "options": [
             {
+              "description": "Output usage information",
               "name": [
-                "--filename"
-              ],
-              "description": "File name of the profile to be downloaded, eg. sampling-profiler-trace8593107139682635366.cpuprofile",
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "destinationDir",
+            "template": "folders"
+          },
+          "description": "Pull and convert a Hermes tracing profile to Chrome tracing profile, then store it in the directory <destinationDir> of the local machine",
+          "name": "profile-hermes",
+          "options": [
+            {
               "args": {
                 "name": "profile",
                 "template": "filepaths"
-              }
+              },
+              "description": "File name of the profile to be downloaded, eg. sampling-profiler-trace8593107139682635366.cpuprofile",
+              "name": [
+                "--filename"
+              ]
             },
             {
+              "description": "Pulls the original Hermes tracing profile without any transformation",
               "name": [
                 "--raw"
-              ],
-              "description": "Pulls the original Hermes tracing profile without any transformation"
+              ]
             },
             {
-              "name": [
-                "--sourcemap-path"
-              ],
-              "description": "The local path to your source map file, eg. /tmp/sourcemap.json",
               "args": {
                 "name": "sourcemap-path",
                 "template": "filepaths"
-              }
+              },
+              "description": "The local path to your source map file, eg. /tmp/sourcemap.json",
+              "name": [
+                "--sourcemap-path"
+              ]
             },
             {
+              "description": "Generates the JS bundle and source map",
               "name": [
                 "--generate-sourcemap"
-              ],
-              "description": "Generates the JS bundle and source map"
+              ]
             },
             {
-              "name": [
-                "--port"
-              ],
-              "description": "Default: \"8081\"",
               "args": {
                 "name": "free port"
-              }
+              },
+              "description": "Default: \"8081\"",
+              "name": [
+                "--port"
+              ]
             },
             {
+              "description": "Output usage information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Output usage information"
-            }
-          ],
-          "args": {
-            "name": "destinationDir",
-            "template": "folders",
-            "isOptional": true
-          }
-        },
-        {
-          "name": "log-android",
-          "description": "Starts logkitty",
-          "options": [
-            {
-              "name": [
-                "-h",
-                "--help"
-              ],
-              "description": "Output usage information"
+              ]
             }
           ]
         },
         {
-          "name": "run-android",
-          "description": "Builds your app and starts it on a connected Android emulator or device",
+          "description": "Starts logkitty",
+          "name": "log-android",
           "options": [
             {
+              "description": "Output usage information",
               "name": [
-                "--root"
-              ],
-              "description": "[DEPRECATED - root is discovered automatically] Override the root directory for the android build (which contains the android directory) (default: \"\")",
+                "-h",
+                "--help"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Builds your app and starts it on a connected Android emulator or device",
+          "name": "run-android",
+          "options": [
+            {
               "args": {
                 "name": "root",
                 "template": "folders"
-              }
+              },
+              "description": "[DEPRECATED - root is discovered automatically] Override the root directory for the android build (which contains the android directory) (default: \"\")",
+              "name": [
+                "--root"
+              ]
             },
             {
-              "name": [
-                "--variant"
-              ],
-              "description": "Specify your app's build variant (default: \"debug\")",
               "args": {
                 "name": "variant",
                 "suggestions": [
@@ -1083,52 +1228,51 @@
                     "name": "release"
                   }
                 ]
-              }
+              },
+              "description": "Specify your app's build variant (default: \"debug\")",
+              "name": [
+                "--variant"
+              ]
             },
             {
-              "name": [
-                "--appFolder"
-              ],
-              "description": "[DEPRECATED – use \"project.android.appName\" in react-native.config.js] Specify a different application folder name for the android source. If not, we assume is \"app\"",
               "args": {
                 "name": "string",
                 "template": "folders"
-              }
+              },
+              "description": "[DEPRECATED – use \"project.android.appName\" in react-native.config.js] Specify a different application folder name for the android source. If not, we assume is \"app\"",
+              "name": [
+                "--appFolder"
+              ]
             },
             {
-              "name": [
-                "--appId"
-              ],
-              "description": "Specify an applicationId to launch after build. If not specified, `package` from AndroidManifest.xml will be used. (default: \"\")",
               "args": {
                 "name": "appId"
-              }
+              },
+              "description": "Specify an applicationId to launch after build. If not specified, `package` from AndroidManifest.xml will be used. (default: \"\")",
+              "name": [
+                "--appId"
+              ]
             },
             {
-              "name": [
-                "--appIdSuffix"
-              ],
-              "description": "Specify an applicationIdSuffix to launch after build. (default: \"\")",
               "args": {
                 "name": "appIdSuffix"
-              }
+              },
+              "description": "Specify an applicationIdSuffix to launch after build. (default: \"\")",
+              "name": [
+                "--appIdSuffix"
+              ]
             },
             {
-              "name": [
-                "--main-activity"
-              ],
-              "description": "Name of the activity to start (default: \"MainActivity\")",
               "args": {
                 "name": "main activity"
-              }
+              },
+              "description": "Name of the activity to start (default: \"MainActivity\")",
+              "name": [
+                "--main-activity"
+              ]
             },
             {
-              "name": [
-                "--deviceId"
-              ],
-              "description": "Builds your app and starts it on a specific device/simulator with the given device id (listed by running \"adb devices\" on the command line)",
               "args": {
-                "name": "deviceId",
                 "generators": [
                   {
                     "script": [
@@ -1140,46 +1284,46 @@
                       "filter_empty",
                       "trim",
                       {
-                        "type": "regex_extract",
+                        "name": 1,
                         "pattern": "^(List)|\\*",
-                        "name": 1
+                        "type": "regex_extract"
                       }
                     ]
                   }
-                ]
-              }
+                ],
+                "name": "deviceId"
+              },
+              "description": "Builds your app and starts it on a specific device/simulator with the given device id (listed by running \"adb devices\" on the command line)",
+              "name": [
+                "--deviceId"
+              ]
             },
             {
+              "description": "Do not launch packager while building",
               "name": [
                 "--no-packager"
-              ],
-              "description": "Do not launch packager while building"
+              ]
             },
             {
-              "name": [
-                "--port"
-              ],
-              "description": "Default: 8081",
               "args": {
                 "name": "free port"
-              }
+              },
+              "description": "Default: 8081",
+              "name": [
+                "--port"
+              ]
             },
             {
-              "name": [
-                "--terminal"
-              ],
-              "description": "Launches the Metro Bundler in a new window using the specified terminal path. (default: \"Apple_Terminal\")",
               "args": {
                 "name": "terminal path"
-              }
+              },
+              "description": "Launches the Metro Bundler in a new window using the specified terminal path. (default: \"Apple_Terminal\")",
+              "name": [
+                "--terminal"
+              ]
             },
             {
-              "name": [
-                "--tasks"
-              ],
-              "description": "Run custom Gradle tasks. By default it's \"installDebug\"",
               "args": {
-                "name": "task list",
                 "generators": [
                   {
                     "script": [
@@ -1191,43 +1335,48 @@
                       "split_lines",
                       "filter_empty",
                       {
-                        "type": "regex_extract",
+                        "name": 1,
                         "pattern": "^\\w+ \\- |\\*",
-                        "name": 1
+                        "type": "regex_extract"
                       }
                     ]
                   }
-                ]
-              }
+                ],
+                "name": "task list"
+              },
+              "description": "Run custom Gradle tasks. By default it's \"installDebug\"",
+              "name": [
+                "--tasks"
+              ]
             },
             {
+              "description": "Do not run \"jetifier\" – the AndroidX transition tool. By default it runs before Gradle to ease working with libraries that don't support AndroidX yet. See more at: https://www.npmjs.com/package/jetifier",
               "name": [
                 "--no-jetifier"
-              ],
-              "description": "Do not run \"jetifier\" – the AndroidX transition tool. By default it runs before Gradle to ease working with libraries that don't support AndroidX yet. See more at: https://www.npmjs.com/package/jetifier"
+              ]
             },
             {
+              "description": "Output usage information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Output usage information"
+              ]
             }
           ]
         },
         {
-          "name": "run-ios",
           "description": "Builds your app and starts it on iOS simulator",
+          "name": "run-ios",
           "options": [
             {
-              "name": [
-                "--simulator"
-              ],
-              "description": "Explicitly set simulator to use. Optionally include iOS version between parenthesis at the end to match an exact version: \"iPhone 6 (10.0)\" (default: \"iPhone 12\")",
               "args": {
-                "name": "simulator",
                 "generators": [
                   {
+                    "js_runtime": {
+                      "kind": "post_process",
+                      "source": "e=>{let n=JSON.parse(e).devices;return Object.entries(n).map(([t,i])=>i).reduce((t,i)=>[...t,...i],[]).map(({name:t})=>({name:t,icon:G}))}"
+                    },
+                    "requires_js": true,
                     "script": [
                       "xcrun",
                       "simctl",
@@ -1235,23 +1384,42 @@
                       "--json",
                       "devices",
                       "available"
-                    ],
-                    "requires_js": true,
-                    "js_runtime": {
-                      "kind": "post_process",
-                      "source": "e=>{let n=JSON.parse(e).devices;return Object.entries(n).map(([t,i])=>i).reduce((t,i)=>[...t,...i],[]).map(({name:t})=>({name:t,icon:G}))}"
-                    }
+                    ]
                   }
-                ]
-              }
+                ],
+                "name": "simulator"
+              },
+              "description": "Explicitly set simulator to use. Optionally include iOS version between parenthesis at the end to match an exact version: \"iPhone 6 (10.0)\" (default: \"iPhone 12\")",
+              "name": [
+                "--simulator"
+              ]
             },
             {
+              "args": {
+                "generators": [
+                  {
+                    "script": [
+                      "bash",
+                      "-c",
+                      "xcodebuild -project ios/*.xcodeproj  -list -json"
+                    ],
+                    "transforms": [
+                      {
+                        "path": "project.configurations",
+                        "type": "json_extract_array"
+                      }
+                    ]
+                  }
+                ],
+                "name": "config scheme"
+              },
+              "description": "Explicitly set the scheme configuration to use (default: \"Debug\")",
               "name": [
                 "--configuration"
-              ],
-              "description": "Explicitly set the scheme configuration to use (default: \"Debug\")",
+              ]
+            },
+            {
               "args": {
-                "name": "config scheme",
                 "generators": [
                   {
                     "script": [
@@ -1261,56 +1429,61 @@
                     ],
                     "transforms": [
                       {
-                        "type": "json_extract_array",
-                        "path": "project.configurations"
+                        "path": "project.schemes",
+                        "type": "json_extract_array"
                       }
                     ]
                   }
-                ]
-              }
-            },
-            {
+                ],
+                "name": "scheme"
+              },
+              "description": "Explicitly set Xcode scheme to use",
               "name": [
                 "--scheme"
-              ],
-              "description": "Explicitly set Xcode scheme to use",
-              "args": {
-                "name": "scheme",
-                "generators": [
-                  {
-                    "script": [
-                      "bash",
-                      "-c",
-                      "xcodebuild -project ios/*.xcodeproj  -list -json"
-                    ],
-                    "transforms": [
-                      {
-                        "type": "json_extract_array",
-                        "path": "project.schemes"
-                      }
-                    ]
-                  }
-                ]
-              }
+              ]
             },
             {
-              "name": [
-                "--project-path"
-              ],
-              "description": "Path relative to project root where the Xcode project (.xcodeproj) lives. (default: \"ios\")",
               "args": {
                 "name": "path",
                 "template": "folders"
-              }
+              },
+              "description": "Path relative to project root where the Xcode project (.xcodeproj) lives. (default: \"ios\")",
+              "name": [
+                "--project-path"
+              ]
             },
             {
+              "args": {
+                "generators": [
+                  {
+                    "script": [
+                      "xcrun",
+                      "xctrace",
+                      "list",
+                      "devices"
+                    ],
+                    "transforms": [
+                      "split_lines",
+                      "filter_empty",
+                      "trim",
+                      {
+                        "name": 1,
+                        "pattern": "^=",
+                        "type": "regex_extract"
+                      }
+                    ]
+                  }
+                ],
+                "isOptional": true,
+                "name": "device name"
+              },
+              "description": "Explicitly set device to use by name",
               "name": [
                 "--device"
-              ],
-              "description": "Explicitly set device to use by name",
+              ]
+            },
+            {
               "args": {
-                "name": "device name",
-                "isOptional": true,
                 "generators": [
                   {
                     "script": [
@@ -1324,558 +1497,509 @@
                       "filter_empty",
                       "trim",
                       {
-                        "type": "regex_extract",
+                        "name": 1,
                         "pattern": "^=",
-                        "name": 1
+                        "type": "regex_extract"
                       }
                     ]
                   }
-                ]
-              }
-            },
-            {
+                ],
+                "name": "udid"
+              },
+              "description": "Explicitly set device to use by udid",
               "name": [
                 "--udid"
-              ],
-              "description": "Explicitly set device to use by udid",
-              "args": {
-                "name": "udid",
-                "generators": [
-                  {
-                    "script": [
-                      "xcrun",
-                      "xctrace",
-                      "list",
-                      "devices"
-                    ],
-                    "transforms": [
-                      "split_lines",
-                      "filter_empty",
-                      "trim",
-                      {
-                        "type": "regex_extract",
-                        "pattern": "^=",
-                        "name": 1
-                      }
-                    ]
-                  }
-                ]
-              }
+              ]
             },
             {
+              "description": "Do not launch packager while building",
               "name": [
                 "--no-packager"
-              ],
-              "description": "Do not launch packager while building"
+              ]
             },
             {
+              "description": "Do not use xcpretty even if installed",
               "name": [
                 "--verbose"
-              ],
-              "description": "Do not use xcpretty even if installed"
+              ]
             },
             {
-              "name": [
-                "--port"
-              ],
-              "description": "Default: 8081",
               "args": {
                 "name": "free port"
-              }
+              },
+              "description": "Default: 8081",
+              "name": [
+                "--port"
+              ]
             },
             {
-              "name": [
-                "--terminal"
-              ],
-              "description": "Launches the Metro Bundler in a new window using the specified terminal path. (default: \"Apple_Terminal\")",
               "args": {
                 "name": "terminal path"
-              }
+              },
+              "description": "Launches the Metro Bundler in a new window using the specified terminal path. (default: \"Apple_Terminal\")",
+              "name": [
+                "--terminal"
+              ]
             },
             {
+              "description": "Output usage information",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Output usage information"
+              ]
             }
           ]
-        }
-      ],
-      "options": [
-        {
-          "name": [
-            "--version"
-          ],
-          "description": "Print CLI version"
-        },
-        {
-          "name": [
-            "--verbose"
-          ],
-          "description": "Increase logging verbosity"
-        },
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Output usage information"
         }
       ]
     },
     {
       "name": "tailwindcss",
-      "subcommands": [
-        {
-          "name": "init",
-          "description": "Creates Tailwind config file. Default: tailwind.config.js",
-          "options": [
-            {
-              "name": [
-                "-p",
-                "--postcss"
-              ],
-              "description": "Initialize a 'postcss.config.js' file"
-            },
-            {
-              "name": [
-                "-f",
-                "--full"
-              ],
-              "description": "Initialize a full 'tailwind.config.js' file"
-            },
-            {
-              "name": [
-                "--help",
-                "-h"
-              ],
-              "description": "Display usage information"
-            }
-          ],
-          "args": {
-            "name": "filename",
-            "isOptional": true
-          }
-        },
-        {
-          "name": "build",
-          "description": "Build CSS file",
-          "options": [
-            {
-              "name": [
-                "-i",
-                "--input"
-              ],
-              "description": "Specify input file",
-              "args": {
-                "name": "input file",
-                "template": "filepaths"
-              }
-            },
-            {
-              "name": [
-                "-o",
-                "--output"
-              ],
-              "description": "Specify output file",
-              "args": {
-                "name": "output file",
-                "template": "filepaths"
-              }
-            },
-            {
-              "name": [
-                "-c",
-                "--config"
-              ],
-              "description": "Specify config file to use",
-              "args": {
-                "name": "config file",
-                "template": "filepaths"
-              }
-            },
-            {
-              "name": [
-                "--postcss"
-              ],
-              "description": "Load custom PostCSS configuration",
-              "args": {
-                "name": "postcss config file",
-                "template": "filepaths",
-                "isOptional": true
-              }
-            },
-            {
-              "name": [
-                "--purge"
-              ],
-              "description": "Content paths to use for removing unused classes. [Deprecated]: use `--content` instead"
-            },
-            {
-              "name": [
-                "--content"
-              ],
-              "description": "Content paths to use for removing unused classes"
-            },
-            {
-              "name": [
-                "--watch",
-                "-w"
-              ],
-              "description": "Watch for changes and rebuild as needed"
-            },
-            {
-              "name": [
-                "--minify",
-                "-m"
-              ],
-              "description": "Minify the output"
-            },
-            {
-              "name": [
-                "--no-autoprefixer"
-              ],
-              "description": "Disable autoprefixer"
-            },
-            {
-              "name": [
-                "--help",
-                "-h"
-              ],
-              "description": "Display usage information"
-            }
-          ]
-        }
-      ],
       "options": [
         {
-          "name": [
-            "-i",
-            "--input"
-          ],
-          "description": "Specify input file",
           "args": {
             "name": "input file",
             "template": "filepaths"
-          }
+          },
+          "description": "Specify input file",
+          "name": [
+            "-i",
+            "--input"
+          ]
         },
         {
-          "name": [
-            "-o",
-            "--output"
-          ],
-          "description": "Specify output file",
           "args": {
             "name": "output file",
             "template": "filepaths"
-          }
+          },
+          "description": "Specify output file",
+          "name": [
+            "-o",
+            "--output"
+          ]
         },
         {
-          "name": [
-            "-c",
-            "--config"
-          ],
-          "description": "Specify config file to use",
           "args": {
             "name": "config file",
             "template": "filepaths"
-          }
+          },
+          "description": "Specify config file to use",
+          "name": [
+            "-c",
+            "--config"
+          ]
         },
         {
+          "args": {
+            "isOptional": true,
+            "name": "postcss config file",
+            "template": "filepaths"
+          },
+          "description": "Load custom PostCSS configuration",
           "name": [
             "--postcss"
-          ],
-          "description": "Load custom PostCSS configuration",
-          "args": {
-            "name": "postcss config file",
-            "template": "filepaths",
-            "isOptional": true
-          }
+          ]
         },
         {
+          "description": "Content paths to use for removing unused classes. [Deprecated]: use `--content` instead",
           "name": [
             "--purge"
-          ],
-          "description": "Content paths to use for removing unused classes. [Deprecated]: use `--content` instead"
+          ]
         },
         {
+          "description": "Content paths to use for removing unused classes",
           "name": [
             "--content"
-          ],
-          "description": "Content paths to use for removing unused classes"
+          ]
         },
         {
+          "description": "Watch for changes and rebuild as needed",
           "name": [
             "--watch",
             "-w"
-          ],
-          "description": "Watch for changes and rebuild as needed"
+          ]
         },
         {
+          "description": "Minify the output",
           "name": [
             "--minify",
             "-m"
-          ],
-          "description": "Minify the output"
+          ]
         },
         {
+          "description": "Disable autoprefixer",
           "name": [
             "--no-autoprefixer"
-          ],
-          "description": "Disable autoprefixer"
+          ]
         },
         {
+          "description": "Display usage information",
           "name": [
             "--help",
             "-h"
-          ],
-          "description": "Display usage information"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "filename"
+          },
+          "description": "Creates Tailwind config file. Default: tailwind.config.js",
+          "name": "init",
+          "options": [
+            {
+              "description": "Initialize a 'postcss.config.js' file",
+              "name": [
+                "-p",
+                "--postcss"
+              ]
+            },
+            {
+              "description": "Initialize a full 'tailwind.config.js' file",
+              "name": [
+                "-f",
+                "--full"
+              ]
+            },
+            {
+              "description": "Display usage information",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "Build CSS file",
+          "name": "build",
+          "options": [
+            {
+              "args": {
+                "name": "input file",
+                "template": "filepaths"
+              },
+              "description": "Specify input file",
+              "name": [
+                "-i",
+                "--input"
+              ]
+            },
+            {
+              "args": {
+                "name": "output file",
+                "template": "filepaths"
+              },
+              "description": "Specify output file",
+              "name": [
+                "-o",
+                "--output"
+              ]
+            },
+            {
+              "args": {
+                "name": "config file",
+                "template": "filepaths"
+              },
+              "description": "Specify config file to use",
+              "name": [
+                "-c",
+                "--config"
+              ]
+            },
+            {
+              "args": {
+                "isOptional": true,
+                "name": "postcss config file",
+                "template": "filepaths"
+              },
+              "description": "Load custom PostCSS configuration",
+              "name": [
+                "--postcss"
+              ]
+            },
+            {
+              "description": "Content paths to use for removing unused classes. [Deprecated]: use `--content` instead",
+              "name": [
+                "--purge"
+              ]
+            },
+            {
+              "description": "Content paths to use for removing unused classes",
+              "name": [
+                "--content"
+              ]
+            },
+            {
+              "description": "Watch for changes and rebuild as needed",
+              "name": [
+                "--watch",
+                "-w"
+              ]
+            },
+            {
+              "description": "Minify the output",
+              "name": [
+                "--minify",
+                "-m"
+              ]
+            },
+            {
+              "description": "Disable autoprefixer",
+              "name": [
+                "--no-autoprefixer"
+              ]
+            },
+            {
+              "description": "Display usage information",
+              "name": [
+                "--help",
+                "-h"
+              ]
+            }
+          ]
         }
       ]
     },
     {
       "name": "next",
-      "subcommands": [
-        {
-          "name": "build",
-          "description": "Create an optimized production build of your application",
-          "options": [
-            {
-              "name": [
-                "--profile"
-              ],
-              "description": "Enable production profiling"
-            },
-            {
-              "name": [
-                "--debug"
-              ],
-              "description": "Enable more verbose build output"
-            }
-          ],
-          "args": {
-            "name": "dir",
-            "description": "Represent the directory of the Next.js application",
-            "template": "folders",
-            "isOptional": true
-          }
-        },
-        {
-          "name": "dev",
-          "description": "Start the application in development mode",
-          "options": [
-            {
-              "name": [
-                "-p",
-                "--port"
-              ],
-              "description": "A port number on which to start the application",
-              "args": {}
-            },
-            {
-              "name": [
-                "-H",
-                "--hostname"
-              ],
-              "description": "Hostname on which to start the application",
-              "args": {}
-            }
-          ],
-          "args": {
-            "name": "dir",
-            "description": "Represent the directory of the Next.js application",
-            "template": "folders",
-            "isOptional": true
-          }
-        },
-        {
-          "name": "start",
-          "description": "Start the application in production mode",
-          "options": [
-            {
-              "name": [
-                "-p",
-                "--port"
-              ],
-              "description": "A port number on which to start the application",
-              "args": {}
-            },
-            {
-              "name": [
-                "-H",
-                "--hostname"
-              ],
-              "description": "Hostname on which to start the application",
-              "args": {}
-            }
-          ],
-          "args": {
-            "name": "dir",
-            "description": "Represent the directory of the Next.js application",
-            "template": "folders",
-            "isOptional": true
-          }
-        },
-        {
-          "name": "export",
-          "description": "Exports the application for production deployment",
-          "options": [
-            {
-              "name": [
-                "-s"
-              ],
-              "description": "Do not print any messages to console"
-            }
-          ],
-          "args": {
-            "name": "dir",
-            "description": "Represent the directory of the Next.js application",
-            "template": "folders",
-            "isOptional": true
-          }
-        },
-        {
-          "name": "telemetry",
-          "description": "Allows you to control Next.js' telemetry collection",
-          "args": {
-            "name": "status",
-            "description": "Turn Next.js' telemetry collection on or off",
-            "suggestions": [
-              {
-                "name": "enable",
-                "description": "Enable Next.js' telemetry collection"
-              },
-              {
-                "name": "disable",
-                "description": "Disable Next.js' telemetry collection"
-              }
-            ]
-          }
-        }
-      ],
       "options": [
         {
+          "description": "Output usage information",
           "name": [
             "-h",
             "--help"
-          ],
-          "description": "Output usage information"
+          ]
         },
         {
+          "description": "Output the version number",
           "name": [
             "-v",
             "--version"
-          ],
-          "description": "Output the version number"
+          ]
+        }
+      ],
+      "subcommands": [
+        {
+          "args": {
+            "description": "Represent the directory of the Next.js application",
+            "isOptional": true,
+            "name": "dir",
+            "template": "folders"
+          },
+          "description": "Create an optimized production build of your application",
+          "name": "build",
+          "options": [
+            {
+              "description": "Enable production profiling",
+              "name": [
+                "--profile"
+              ]
+            },
+            {
+              "description": "Enable more verbose build output",
+              "name": [
+                "--debug"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Represent the directory of the Next.js application",
+            "isOptional": true,
+            "name": "dir",
+            "template": "folders"
+          },
+          "description": "Start the application in development mode",
+          "name": "dev",
+          "options": [
+            {
+              "args": {},
+              "description": "A port number on which to start the application",
+              "name": [
+                "-p",
+                "--port"
+              ]
+            },
+            {
+              "args": {},
+              "description": "Hostname on which to start the application",
+              "name": [
+                "-H",
+                "--hostname"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Represent the directory of the Next.js application",
+            "isOptional": true,
+            "name": "dir",
+            "template": "folders"
+          },
+          "description": "Start the application in production mode",
+          "name": "start",
+          "options": [
+            {
+              "args": {},
+              "description": "A port number on which to start the application",
+              "name": [
+                "-p",
+                "--port"
+              ]
+            },
+            {
+              "args": {},
+              "description": "Hostname on which to start the application",
+              "name": [
+                "-H",
+                "--hostname"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Represent the directory of the Next.js application",
+            "isOptional": true,
+            "name": "dir",
+            "template": "folders"
+          },
+          "description": "Exports the application for production deployment",
+          "name": "export",
+          "options": [
+            {
+              "description": "Do not print any messages to console",
+              "name": [
+                "-s"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Turn Next.js' telemetry collection on or off",
+            "name": "status",
+            "suggestions": [
+              {
+                "description": "Enable Next.js' telemetry collection",
+                "name": "enable"
+              },
+              {
+                "description": "Disable Next.js' telemetry collection",
+                "name": "disable"
+              }
+            ]
+          },
+          "description": "Allows you to control Next.js' telemetry collection",
+          "name": "telemetry"
         }
       ]
     },
     {
-      "name": "gltfjsx",
-      "options": [
-        {
-          "name": [
-            "-t",
-            "--types"
-          ],
-          "description": "Add Typescript definitions"
-        },
-        {
-          "name": [
-            "-v",
-            "--verbose"
-          ],
-          "description": "Verbose output w/ names and empty groups"
-        },
-        {
-          "name": [
-            "-m",
-            "--meta"
-          ],
-          "description": "Include metadata (as userData)"
-        },
-        {
-          "name": [
-            "-s",
-            "--shadows"
-          ],
-          "description": "Let meshes cast and receive shadows"
-        },
-        {
-          "name": [
-            "-w",
-            "--printwidth"
-          ],
-          "description": "Prettier printWidth (default: 120)",
-          "args": {
-            "name": "width"
-          }
-        },
-        {
-          "name": [
-            "-p",
-            "--precision"
-          ],
-          "description": "Number of fractional digits (default: 2)",
-          "args": {
-            "name": "digits"
-          }
-        },
-        {
-          "name": [
-            "-d",
-            "--draco"
-          ],
-          "description": "Draco binary path",
-          "args": {
-            "name": "path",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": [
-            "-r",
-            "--root"
-          ],
-          "description": "Sets directory from which .gltf file is served",
-          "args": {
-            "name": "root",
-            "template": "folders"
-          }
-        },
-        {
-          "name": [
-            "-D",
-            "--debug"
-          ],
-          "description": "Debug output"
-        }
-      ],
       "args": {
         "name": "file",
         "template": "filepaths"
-      }
+      },
+      "name": "gltfjsx",
+      "options": [
+        {
+          "description": "Add Typescript definitions",
+          "name": [
+            "-t",
+            "--types"
+          ]
+        },
+        {
+          "description": "Verbose output w/ names and empty groups",
+          "name": [
+            "-v",
+            "--verbose"
+          ]
+        },
+        {
+          "description": "Include metadata (as userData)",
+          "name": [
+            "-m",
+            "--meta"
+          ]
+        },
+        {
+          "description": "Let meshes cast and receive shadows",
+          "name": [
+            "-s",
+            "--shadows"
+          ]
+        },
+        {
+          "args": {
+            "name": "width"
+          },
+          "description": "Prettier printWidth (default: 120)",
+          "name": [
+            "-w",
+            "--printwidth"
+          ]
+        },
+        {
+          "args": {
+            "name": "digits"
+          },
+          "description": "Number of fractional digits (default: 2)",
+          "name": [
+            "-p",
+            "--precision"
+          ]
+        },
+        {
+          "args": {
+            "name": "path",
+            "template": "filepaths"
+          },
+          "description": "Draco binary path",
+          "name": [
+            "-d",
+            "--draco"
+          ]
+        },
+        {
+          "args": {
+            "name": "root",
+            "template": "folders"
+          },
+          "description": "Sets directory from which .gltf file is served",
+          "name": [
+            "-r",
+            "--root"
+          ]
+        },
+        {
+          "description": "Debug output",
+          "name": [
+            "-D",
+            "--debug"
+          ]
+        }
+      ]
     },
     {
       "name": "prisma",
       "subcommands": [
         {
-          "name": "init",
           "description": "Setup Prisma for your app",
+          "name": "init",
           "options": [
             {
+              "description": "Display this help message",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Display this help message"
+              ]
             },
             {
-              "name": [
-                "--datasource-provider"
-              ],
-              "description": "Define the datasource provider to use",
               "args": {
                 "description": "Choose provider",
                 "suggestions": [
@@ -1898,110 +2022,109 @@
                     "name": "CockroachDB"
                   }
                 ]
-              }
+              },
+              "description": "Define the datasource provider to use",
+              "name": [
+                "--datasource-provider"
+              ]
             },
             {
-              "name": [
-                "--url"
-              ],
-              "description": "Define a custom datasource url",
               "args": {
                 "name": "full url",
                 "template": "filepaths"
-              }
+              },
+              "description": "Define a custom datasource url",
+              "name": [
+                "--url"
+              ]
             }
           ]
         },
         {
-          "name": "generate",
           "description": "Generate artifacts (e.g. Prisma Client)",
+          "name": "generate",
           "options": [
             {
+              "description": "Display this help message",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Display this help message"
+              ]
             },
             {
-              "name": [
-                "--schema"
-              ],
-              "description": "Custom path to your Prisma schema",
               "args": {
                 "name": "Schema path",
                 "template": "filepaths"
-              }
+              },
+              "description": "Custom path to your Prisma schema",
+              "name": [
+                "--schema"
+              ]
             },
             {
+              "description": "Enable the Data Proxy in the Prisma Client",
               "name": [
                 "--data-proxy"
-              ],
-              "description": "Enable the Data Proxy in the Prisma Client"
+              ]
             },
             {
+              "description": "Hides the hint messages but still outputs errors and warnings",
               "name": [
                 "--no-hints"
-              ],
-              "description": "Hides the hint messages but still outputs errors and warnings"
+              ]
             },
             {
+              "description": "Generate a client for use with Accelerate only",
               "name": [
                 "--no-engine"
-              ],
-              "description": "Generate a client for use with Accelerate only"
+              ]
             },
             {
+              "description": "Watch the Prisma schema and rerun after a change",
               "name": [
                 "--watch"
-              ],
-              "description": "Watch the Prisma schema and rerun after a change"
+              ]
             },
             {
+              "description": "Allow generating a client without models",
               "name": [
                 "--allow-no-models"
-              ],
-              "description": "Allow generating a client without models"
+              ]
             }
           ]
         },
         {
-          "name": "studio",
           "description": "Open Prisma Studio",
+          "name": "studio",
           "options": [
             {
+              "description": "Display this help message",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Display this help message"
+              ]
             },
             {
-              "name": [
-                "--schema"
-              ],
-              "description": "Custom path to your Prisma schema",
               "args": {
                 "name": "Schema path",
                 "template": "filepaths"
-              }
+              },
+              "description": "Custom path to your Prisma schema",
+              "name": [
+                "--schema"
+              ]
             },
             {
+              "args": {
+                "name": "port"
+              },
+              "description": "Port to start Studio on",
               "name": [
                 "-p",
                 "--port"
-              ],
-              "description": "Port to start Studio on",
-              "args": {
-                "name": "port"
-              }
+              ]
             },
             {
-              "name": [
-                "-b",
-                "--browser"
-              ],
-              "description": "Browser to open Studio in",
               "args": {
                 "name": "Browser choice",
                 "suggestions": [
@@ -2018,686 +2141,551 @@
                     "name": "none"
                   }
                 ]
-              }
+              },
+              "description": "Browser to open Studio in",
+              "name": [
+                "-b",
+                "--browser"
+              ]
             },
             {
+              "args": {
+                "name": "port"
+              },
+              "description": "Hostname to bind the Express server to",
               "name": [
                 "-n",
                 "--hostname"
-              ],
-              "description": "Hostname to bind the Express server to",
-              "args": {
-                "name": "port"
-              }
+              ]
             }
           ]
         },
         {
-          "name": "format",
           "description": "Format your schema",
+          "name": "format",
           "options": [
             {
+              "description": "Display this help message",
               "name": [
                 "-h",
                 "--help"
-              ],
-              "description": "Display this help message"
+              ]
             },
             {
-              "name": [
-                "--schema"
-              ],
-              "description": "Custom path to your Prisma schema",
               "args": {
                 "name": "Schema path",
                 "template": "filepaths"
-              }
+              },
+              "description": "Custom path to your Prisma schema",
+              "name": [
+                "--schema"
+              ]
             }
           ]
         },
         {
-          "name": "migrate",
           "description": "Migrate your database",
+          "name": "migrate",
           "subcommands": [
             {
-              "name": "dev",
               "description": "The migrate dev command updates your database using migrations files during development",
+              "name": "dev",
               "options": [
                 {
+                  "description": "Display this help message",
                   "name": [
                     "-h",
                     "--help"
-                  ],
-                  "description": "Display this help message"
+                  ]
                 },
                 {
-                  "name": [
-                    "--schema"
-                  ],
-                  "description": "Custom path to your Prisma schema",
                   "args": {
                     "name": "Schema path",
                     "template": "filepaths"
-                  }
+                  },
+                  "description": "Custom path to your Prisma schema",
+                  "name": [
+                    "--schema"
+                  ]
                 },
                 {
+                  "description": "Skip triggering seed",
                   "name": [
                     "--skip-seed"
-                  ],
-                  "description": "Skip triggering seed"
+                  ]
                 },
                 {
+                  "description": "Skip triggering generators (e.g. Prisma Client)",
                   "name": [
                     "--skip-generate"
-                  ],
-                  "description": "Skip triggering generators (e.g. Prisma Client)"
+                  ]
                 },
                 {
+                  "description": "Create a new migration but do not apply it. The migration will be empty if there are no changes in Prisma schema",
                   "name": [
                     "--create-only"
-                  ],
-                  "description": "Create a new migration but do not apply it. The migration will be empty if there are no changes in Prisma schema"
+                  ]
                 },
                 {
+                  "args": {
+                    "isOptional": true,
+                    "name": "filename"
+                  },
+                  "description": "The name of the migration. If no name is provided, the CLI will prompt you",
                   "name": [
                     "-n",
                     "--name"
-                  ],
-                  "description": "The name of the migration. If no name is provided, the CLI will prompt you",
-                  "args": {
-                    "name": "filename",
-                    "isOptional": true
-                  }
+                  ]
                 }
               ]
             },
             {
-              "name": "reset",
               "description": "Reset your database and apply all migrations, all data will be lost",
+              "name": "reset",
               "options": [
                 {
+                  "description": "Display this help message",
                   "name": [
                     "-h",
                     "--help"
-                  ],
-                  "description": "Display this help message"
+                  ]
                 },
                 {
-                  "name": [
-                    "--schema"
-                  ],
-                  "description": "Custom path to your Prisma schema",
                   "args": {
                     "name": "Schema path",
                     "template": "filepaths"
-                  }
+                  },
+                  "description": "Custom path to your Prisma schema",
+                  "name": [
+                    "--schema"
+                  ]
                 },
                 {
+                  "description": "Skip triggering seed",
                   "name": [
                     "--skip-seed"
-                  ],
-                  "description": "Skip triggering seed"
+                  ]
                 },
                 {
+                  "description": "Skip triggering generators (e.g. Prisma Client)",
                   "name": [
                     "--skip-generate"
-                  ],
-                  "description": "Skip triggering generators (e.g. Prisma Client)"
+                  ]
                 },
                 {
+                  "description": "Skip the confirmation prompt",
                   "name": [
                     "-f",
                     "--force"
-                  ],
-                  "description": "Skip the confirmation prompt"
+                  ]
                 }
               ]
             },
             {
-              "name": "deploy",
               "description": "Apply pending migrations to update the database schema in production/staging",
+              "name": "deploy",
               "options": [
                 {
+                  "description": "Display this help message",
                   "name": [
                     "-h",
                     "--help"
-                  ],
-                  "description": "Display this help message"
+                  ]
                 },
                 {
-                  "name": [
-                    "--schema"
-                  ],
-                  "description": "Custom path to your Prisma schema",
                   "args": {
                     "name": "Schema path",
                     "template": "filepaths"
-                  }
+                  },
+                  "description": "Custom path to your Prisma schema",
+                  "name": [
+                    "--schema"
+                  ]
                 }
               ]
             },
             {
-              "name": "resolve",
               "description": "Resolve issues with database migrations in deployment databases",
+              "name": "resolve",
               "options": [
                 {
+                  "description": "Display this help message",
                   "name": [
                     "-h",
                     "--help"
-                  ],
-                  "description": "Display this help message"
+                  ]
                 },
                 {
-                  "name": [
-                    "--schema"
-                  ],
-                  "description": "Custom path to your Prisma schema",
                   "args": {
                     "name": "Schema path",
                     "template": "filepaths"
-                  }
+                  },
+                  "description": "Custom path to your Prisma schema",
+                  "name": [
+                    "--schema"
+                  ]
                 },
                 {
+                  "args": {
+                    "name": "migration file path",
+                    "template": "filepaths"
+                  },
+                  "description": "Record a specific migration as applied",
                   "name": [
                     "--applied"
-                  ],
-                  "description": "Record a specific migration as applied",
-                  "args": {
-                    "name": "migration file path",
-                    "template": "filepaths"
-                  }
+                  ]
                 },
                 {
-                  "name": [
-                    "--rolled-back"
-                  ],
-                  "description": "Record a specific migration as rolled back",
                   "args": {
                     "name": "migration file path",
                     "template": "filepaths"
-                  }
+                  },
+                  "description": "Record a specific migration as rolled back",
+                  "name": [
+                    "--rolled-back"
+                  ]
                 }
               ]
             },
             {
-              "name": "status",
               "description": "Check the status of your database migrations",
+              "name": "status",
               "options": [
                 {
+                  "description": "Display this help message",
                   "name": [
                     "-h",
                     "--help"
-                  ],
-                  "description": "Display this help message"
+                  ]
                 },
                 {
-                  "name": [
-                    "--schema"
-                  ],
-                  "description": "Custom path to your Prisma schema",
                   "args": {
                     "name": "Schema path",
                     "template": "filepaths"
-                  }
+                  },
+                  "description": "Custom path to your Prisma schema",
+                  "name": [
+                    "--schema"
+                  ]
                 }
               ]
             },
             {
-              "name": "diff",
               "description": "Compares the database schema from two arbitrary sources, and outputs the differences either as a human-readable summary (by default) or an executable script",
+              "name": "diff",
               "options": [
                 {
+                  "description": "Display this help message",
                   "name": [
                     "-h",
                     "--help"
-                  ],
-                  "description": "Display this help message"
+                  ]
                 },
                 {
+                  "args": {
+                    "name": "full url",
+                    "template": "filepaths"
+                  },
+                  "description": "A datasource url",
                   "name": [
                     "--from-url"
-                  ],
-                  "description": "A datasource url",
+                  ]
+                },
+                {
                   "args": {
                     "name": "full url",
                     "template": "filepaths"
-                  }
-                },
-                {
+                  },
+                  "description": "A datasource url",
                   "name": [
                     "--to-url"
-                  ],
-                  "description": "A datasource url",
-                  "args": {
-                    "name": "full url",
-                    "template": "filepaths"
-                  }
+                  ]
                 },
                 {
+                  "description": "Flag to assume from is an empty datamodel",
                   "name": [
                     "--from-empty"
-                  ],
-                  "description": "Flag to assume from is an empty datamodel"
+                  ]
                 },
                 {
+                  "description": "Flag to assume to is an empty datamodel",
                   "name": [
                     "--to-empty"
-                  ],
-                  "description": "Flag to assume to is an empty datamodel"
+                  ]
                 },
                 {
+                  "args": {
+                    "name": "filepath",
+                    "template": "filepaths"
+                  },
+                  "description": "Path to a Prisma schema file, uses the 'datamodel' for the diff",
                   "name": [
                     "--from-schema-datamodel"
-                  ],
-                  "description": "Path to a Prisma schema file, uses the 'datamodel' for the diff",
+                  ]
+                },
+                {
                   "args": {
                     "name": "filepath",
                     "template": "filepaths"
-                  }
-                },
-                {
+                  },
+                  "description": "Path to a Prisma schema file, uses the 'datamodel' for the diff",
                   "name": [
                     "--to-schema-datamodel"
-                  ],
-                  "description": "Path to a Prisma schema file, uses the 'datamodel' for the diff",
+                  ]
+                },
+                {
                   "args": {
                     "name": "filepath",
                     "template": "filepaths"
-                  }
-                },
-                {
+                  },
+                  "description": "Path to a Prisma schema file, uses the 'datasource url' for the diff",
                   "name": [
                     "--from-schema-datasource"
-                  ],
-                  "description": "Path to a Prisma schema file, uses the 'datasource url' for the diff",
+                  ]
+                },
+                {
                   "args": {
                     "name": "filepath",
                     "template": "filepaths"
-                  }
-                },
-                {
+                  },
+                  "description": "Path to a Prisma schema file, uses the 'datasource url' for the diff",
                   "name": [
                     "--to-schema-datasource"
-                  ],
-                  "description": "Path to a Prisma schema file, uses the 'datasource url' for the diff",
-                  "args": {
-                    "name": "filepath",
-                    "template": "filepaths"
-                  }
+                  ]
                 },
                 {
+                  "args": {
+                    "name": "folder",
+                    "template": "folders"
+                  },
+                  "description": "Path to the Prisma Migrate migrations directory",
                   "name": [
                     "--from-migrations"
-                  ],
-                  "description": "Path to the Prisma Migrate migrations directory",
+                  ]
+                },
+                {
                   "args": {
                     "name": "folder",
                     "template": "folders"
-                  }
-                },
-                {
+                  },
+                  "description": "Path to the Prisma Migrate migrations directory",
                   "name": [
                     "--to-migrations"
-                  ],
-                  "description": "Path to the Prisma Migrate migrations directory",
-                  "args": {
-                    "name": "folder",
-                    "template": "folders"
-                  }
+                  ]
                 },
                 {
-                  "name": [
-                    "--shadow-database-url"
-                  ],
-                  "description": "URL for the shadow database. Only required if using --from-migrations or --to-migrations",
                   "args": {
                     "name": "full url",
                     "template": "filepaths"
-                  }
+                  },
+                  "description": "URL for the shadow database. Only required if using --from-migrations or --to-migrations",
+                  "name": [
+                    "--shadow-database-url"
+                  ]
                 },
                 {
-                  "name": [
-                    "--script"
-                  ],
-                  "description": "Render a SQL script to stdout instead of the default human readable summary (not supported on MongoDB)",
                   "args": {
                     "name": "filepath",
                     "template": "filepaths"
-                  }
+                  },
+                  "description": "Render a SQL script to stdout instead of the default human readable summary (not supported on MongoDB)",
+                  "name": [
+                    "--script"
+                  ]
                 },
                 {
+                  "description": "Change the exit code behavior to signal if the diff is empty or not (Empty: 0, Error: 1, Not empty: 2). Default behavior is Success: 0, Error: 1.`",
                   "name": [
                     "--exit-code"
-                  ],
-                  "description": "Change the exit code behavior to signal if the diff is empty or not (Empty: 0, Error: 1, Not empty: 2). Default behavior is Success: 0, Error: 1.`"
+                  ]
                 }
               ]
             }
           ]
         },
         {
-          "name": "db",
           "description": "Manage your database schema and lifecycle (Preview)",
+          "name": "db",
           "subcommands": [
             {
               "name": "pull",
               "options": [
                 {
+                  "description": "Display this help message",
                   "name": [
                     "-h",
                     "--help"
-                  ],
-                  "description": "Display this help message"
+                  ]
                 },
                 {
-                  "name": [
-                    "--schema"
-                  ],
-                  "description": "Custom path to your Prisma schema",
                   "args": {
                     "name": "Schema path",
                     "template": "filepaths"
-                  }
+                  },
+                  "description": "Custom path to your Prisma schema",
+                  "name": [
+                    "--schema"
+                  ]
                 },
                 {
+                  "description": "Ignore current Prisma schema file",
                   "name": [
                     "--force"
-                  ],
-                  "description": "Ignore current Prisma schema file"
+                  ]
                 },
                 {
+                  "description": "Print the introspected Prisma schema to stdout",
                   "name": [
                     "--print"
-                  ],
-                  "description": "Print the introspected Prisma schema to stdout"
+                  ]
                 },
                 {
-                  "name": [
-                    "--url"
-                  ],
-                  "description": "The datasource url",
                   "args": {
                     "name": "full url",
                     "template": "filepaths"
-                  }
+                  },
+                  "description": "The datasource url",
+                  "name": [
+                    "--url"
+                  ]
                 },
                 {
-                  "name": [
-                    "--composite-type-depth"
-                  ],
-                  "description": "Specify the depth for introspecting composite types (e.g. Embedded Documents in MongoDB). Number, default is -1 for infinite depth, 0 = off",
                   "args": {
                     "name": "number"
-                  }
+                  },
+                  "description": "Specify the depth for introspecting composite types (e.g. Embedded Documents in MongoDB). Number, default is -1 for infinite depth, 0 = off",
+                  "name": [
+                    "--composite-type-depth"
+                  ]
                 }
               ]
             },
             {
-              "name": "push",
               "description": "This command pushes the state of your Prisma schema file to the database without using migrations files",
+              "name": "push",
               "options": [
                 {
+                  "description": "Display this help message",
                   "name": [
                     "-h",
                     "--help"
-                  ],
-                  "description": "Display this help message"
+                  ]
                 },
                 {
-                  "name": [
-                    "--schema"
-                  ],
-                  "description": "Custom path to your Prisma schema",
                   "args": {
                     "name": "Schema path",
                     "template": "filepaths"
-                  }
+                  },
+                  "description": "Custom path to your Prisma schema",
+                  "name": [
+                    "--schema"
+                  ]
                 },
                 {
+                  "description": "Skip generation of artifacts such as Prisma Client",
                   "name": [
                     "--skip-generate"
-                  ],
-                  "description": "Skip generation of artifacts such as Prisma Client"
+                  ]
                 },
                 {
+                  "description": "Resets the database and then updates the schema - useful if you need to start from scratch due to unexecutable migrations",
                   "name": [
                     "--force-reset"
-                  ],
-                  "description": "Resets the database and then updates the schema - useful if you need to start from scratch due to unexecutable migrations"
+                  ]
                 },
                 {
+                  "description": "Ignore data loss warnings. This option is required if as a result of making the schema changes, data may be lost",
                   "name": [
                     "--accept-data-loss"
-                  ],
-                  "description": "Ignore data loss warnings. This option is required if as a result of making the schema changes, data may be lost"
+                  ]
                 }
               ]
             },
             {
-              "name": "seed",
               "description": "Seed your database",
+              "name": "seed",
               "options": [
                 {
+                  "description": "Display this help message",
                   "name": [
                     "-h",
                     "--help"
-                  ],
-                  "description": "Display this help message"
+                  ]
                 },
                 {
-                  "name": [
-                    "--schema"
-                  ],
-                  "description": "Custom path to your Prisma schema",
                   "args": {
                     "name": "Schema path",
                     "template": "filepaths"
-                  }
+                  },
+                  "description": "Custom path to your Prisma schema",
+                  "name": [
+                    "--schema"
+                  ]
                 }
               ]
             },
             {
-              "name": "execute",
               "description": "Execute native commands to your database",
+              "name": "execute",
               "options": [
                 {
+                  "description": "Display this help message",
                   "name": [
                     "-h",
                     "--help"
-                  ],
-                  "description": "Display this help message"
+                  ]
                 },
                 {
-                  "name": [
-                    "--schema"
-                  ],
-                  "description": "Custom path to your Prisma schema",
                   "args": {
                     "name": "Schema path",
                     "template": "filepaths"
-                  }
+                  },
+                  "description": "Custom path to your Prisma schema",
+                  "name": [
+                    "--schema"
+                  ]
                 },
                 {
-                  "name": [
-                    "--url"
-                  ],
-                  "description": "The datasource url",
                   "args": {
                     "name": "full url",
                     "template": "filepaths"
-                  }
+                  },
+                  "description": "The datasource url",
+                  "name": [
+                    "--url"
+                  ]
                 },
                 {
-                  "name": [
-                    "--file"
-                  ],
-                  "description": "Path to a file. The content will be sent as the script to be executed",
                   "args": {
                     "name": "filepath",
                     "template": "filepaths"
-                  }
+                  },
+                  "description": "Path to a file. The content will be sent as the script to be executed",
+                  "name": [
+                    "--file"
+                  ]
                 },
                 {
+                  "description": "Use the terminal standard input as the script to be executed",
                   "name": [
                     "--stdin"
-                  ],
-                  "description": "Use the terminal standard input as the script to be executed"
+                  ]
                 }
               ]
             }
           ]
         },
         {
-          "name": "version",
           "description": "Print current version of Prisma components",
+          "name": "version",
           "subcommands": [
             {
-              "name": "--json",
-              "description": "Output JSON"
+              "description": "Output JSON",
+              "name": "--json"
             }
           ]
         }
       ]
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--package",
-        "-p"
-      ],
-      "description": "Package to be executed",
-      "args": {
-        "name": "package"
-      }
-    },
-    {
-      "name": [
-        "--cache"
-      ],
-      "description": "Location of the npm cache",
-      "args": {
-        "name": "path",
-        "template": "filepaths"
-      }
-    },
-    {
-      "name": [
-        "--always-spawn"
-      ],
-      "description": "Always spawn a child process to execute the command"
-    },
-    {
-      "name": [
-        "--no-install"
-      ],
-      "description": "Skip installation if a package is missing"
-    },
-    {
-      "name": [
-        "--userconfig"
-      ],
-      "description": "Path to user npmrc",
-      "args": {
-        "name": "path",
-        "template": "filepaths"
-      }
-    },
-    {
-      "name": [
-        "--call",
-        "-c"
-      ],
-      "description": "Execute string as if inside `npm run-script`",
-      "args": {
-        "name": "script"
-      }
-    },
-    {
-      "name": [
-        "--shell",
-        "-s"
-      ],
-      "description": "Shell to execute the command with, if any",
-      "args": {
-        "name": "shell",
-        "suggestions": [
-          {
-            "name": "bash"
-          },
-          {
-            "name": "fish"
-          },
-          {
-            "name": "zsh"
-          }
-        ]
-      }
-    },
-    {
-      "name": [
-        "--shell-auto-fallback"
-      ],
-      "description": "Generate shell code to use pnpx as the \"command not found\" fallback",
-      "args": {
-        "name": "shell-fallback",
-        "suggestions": [
-          {
-            "name": "bash"
-          },
-          {
-            "name": "fish"
-          },
-          {
-            "name": "zsh"
-          }
-        ]
-      }
-    },
-    {
-      "name": [
-        "--ignore-existing"
-      ],
-      "description": "Ignores existing binaries in $PATH, or in the localproject. This forces pnpx to do a temporary install and use the latest version"
-    },
-    {
-      "name": [
-        "--quiet",
-        "-q"
-      ],
-      "description": "Suppress output from pnpx itself. Subcommands will not be affected"
-    },
-    {
-      "name": [
-        "--npm"
-      ],
-      "description": "Npm binary to use for internal operations",
-      "args": {
-        "name": "path to binary",
-        "template": "filepaths"
-      }
-    },
-    {
-      "name": [
-        "--node-arg",
-        "-n"
-      ],
-      "description": "Extra node argument when calling a node binary",
-      "args": {}
-    },
-    {
-      "name": [
-        "--version",
-        "-v"
-      ],
-      "description": "Show version number"
-    },
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Show help"
     }
   ]
 }

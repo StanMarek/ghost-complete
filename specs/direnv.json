@@ -1,49 +1,70 @@
 {
-  "name": "direnv",
   "description": "Unclutter your .profile",
+  "name": "direnv",
+  "options": [
+    {
+      "args": {
+        "isOptional": true,
+        "name": "VERSION_AT_LEAST"
+      },
+      "description": "Prints the version or checks that direnv is older than VERSION_AT_LEAST",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "args": {
+        "description": "Any string",
+        "isOptional": true,
+        "name": "SHOW_PRIVATE"
+      },
+      "description": "Help for direnv",
+      "name": [
+        "--help"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "allow",
+      "args": {
+        "generators": [
+          {
+            "template": "filepaths"
+          }
+        ],
+        "isOptional": true,
+        "name": "PATH_TO_RC"
+      },
       "description": "Grants direnv to load the given .envrc",
+      "name": "allow"
+    },
+    {
       "args": {
-        "name": "PATH_TO_RC",
-        "isOptional": true,
         "generators": [
           {
             "template": "filepaths"
           }
-        ]
-      }
-    },
-    {
-      "name": "deny",
+        ],
+        "isOptional": true,
+        "name": "PATH_TO_RC"
+      },
       "description": "Revokes the authorization of a given .envrc",
+      "name": "deny"
+    },
+    {
       "args": {
-        "name": "PATH_TO_RC",
-        "isOptional": true,
         "generators": [
           {
             "template": "filepaths"
           }
-        ]
-      }
-    },
-    {
-      "name": "edit",
+        ],
+        "isOptional": true,
+        "name": "PATH_TO_RC"
+      },
       "description": "Opens PATH_TO_RC or the current .envrc into an $EDITOR and allow the file to be loaded afterwards",
-      "args": {
-        "name": "PATH_TO_RC",
-        "isOptional": true,
-        "generators": [
-          {
-            "template": "filepaths"
-          }
-        ]
-      }
+      "name": "edit"
     },
     {
-      "name": "exec",
-      "description": "Executes a command after loading the first .envrc found in DIR",
       "args": [
         {
           "name": "DIR",
@@ -52,34 +73,34 @@
         {
           "name": "COMMAND"
         }
-      ]
+      ],
+      "description": "Executes a command after loading the first .envrc found in DIR",
+      "name": "exec"
     },
     {
-      "name": "fetchurl",
-      "description": "Fetches a given URL into direnv's CAS",
       "args": [
         {
           "name": "url"
         },
         {
-          "name": "integrity-hash",
           "description": "Check if the `integrity hash` is equal to the hash value of the file obtained from the `url`",
-          "isOptional": true
+          "isOptional": true,
+          "name": "integrity-hash"
         }
-      ]
+      ],
+      "description": "Fetches a given URL into direnv's CAS",
+      "name": "fetchurl"
     },
     {
-      "name": "help",
-      "description": "Help for direnv",
       "args": {
-        "name": "SHOW_PRIVATE",
         "description": "Any string",
-        "isOptional": true
-      }
+        "isOptional": true,
+        "name": "SHOW_PRIVATE"
+      },
+      "description": "Help for direnv",
+      "name": "help"
     },
     {
-      "name": "hook",
-      "description": "Used to setup the shell hook",
       "args": {
         "name": "SHELL",
         "suggestions": [
@@ -99,58 +120,57 @@
             "name": "elvish"
           }
         ]
-      }
+      },
+      "description": "Used to setup the shell hook",
+      "name": "hook"
     },
     {
-      "name": "prune",
-      "description": "Removes old allowed files"
+      "description": "Removes old allowed files",
+      "name": "prune"
     },
     {
-      "name": "reload",
-      "description": "Triggers an env reload"
+      "description": "Triggers an env reload",
+      "name": "reload"
     },
     {
-      "name": "status",
-      "description": "Prints some debug status information"
+      "description": "Prints some debug status information",
+      "name": "status"
     },
     {
-      "name": "stdlib",
-      "description": "Displays the stdlib available in the .envrc execution context"
+      "description": "Displays the stdlib available in the .envrc execution context",
+      "name": "stdlib"
     },
     {
-      "name": "version",
-      "description": "Prints the version or checks that direnv is older than VERSION_AT_LEAST",
       "args": {
-        "name": "VERSION_AT_LEAST",
-        "isOptional": true
-      }
+        "isOptional": true,
+        "name": "VERSION_AT_LEAST"
+      },
+      "description": "Prints the version or checks that direnv is older than VERSION_AT_LEAST",
+      "name": "version"
     },
     {
-      "name": "apply_dump",
-      "description": "Accepts a filename containing `direnv dump` output and generates a series of bash export statements to apply the given env",
-      "priority": 49,
       "args": {
         "name": "FILE",
         "template": "filepaths"
-      }
+      },
+      "description": "Accepts a filename containing `direnv dump` output and generates a series of bash export statements to apply the given env",
+      "name": "apply_dump",
+      "priority": 49
     },
     {
-      "name": "show_dump",
-      "description": "Show the data inside of a dump for debugging purposes",
-      "priority": 49,
       "args": {
         "name": "DUMP",
         "template": "filepaths"
-      }
+      },
+      "description": "Show the data inside of a dump for debugging purposes",
+      "name": "show_dump",
+      "priority": 49
     },
     {
-      "name": "dotenv",
-      "description": "Transforms a .env file to evaluatable `export KEY=PAIR` statements",
-      "priority": 49,
       "args": [
         {
-          "name": "SHELL",
           "isOptional": true,
+          "name": "SHELL",
           "suggestions": [
             {
               "name": "bash"
@@ -170,27 +190,23 @@
           ]
         },
         {
-          "name": "PATH_TO_DOTENV",
           "generators": [
             {
-              "requires_js": true,
-              "js_runtime": {
-                "kind": "custom",
-                "source": "(p,g,_)=>ge(this,void 0,void 0,function*(){var f;let{isDangerous:O,currentWorkingDirectory:S,searchTerm:h}=_,T=(f=(0,v.getCurrentInsertedDirectory)(u??S,h,_))!==null&&f!==void 0?f:\"/\";try{let q=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:T}),ie=z(q.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let R of ie)if(R){let P=R.endsWith(\"/\")?\"folders\":\"filepaths\";(P===\"filepaths\"&&c!==\"only\"||P===\"folders\"&&c!==\"never\")&&W.push({type:P===\"filepaths\"?\"file\":\"folder\",name:R,insertValue:R,isDangerous:O,context:{templateType:P}})}return b(m(W))}catch{return[]}})"
-              }
+              "requires_js": true
             }
-          ]
+          ],
+          "name": "PATH_TO_DOTENV"
         }
-      ]
+      ],
+      "description": "Transforms a .env file to evaluatable `export KEY=PAIR` statements",
+      "name": "dotenv",
+      "priority": 49
     },
     {
-      "name": "dump",
-      "description": "Used to export the inner bash state at the end of execution",
-      "priority": 49,
       "args": [
         {
-          "name": "SHELL",
           "isOptional": true,
+          "name": "SHELL",
           "suggestions": [
             {
               "name": "bash"
@@ -210,17 +226,17 @@
           ]
         },
         {
-          "name": "FILE",
           "description": "Overwrites by dump data",
-          "template": "filepaths",
-          "isOptional": true
+          "isOptional": true,
+          "name": "FILE",
+          "template": "filepaths"
         }
-      ]
+      ],
+      "description": "Used to export the inner bash state at the end of execution",
+      "name": "dump",
+      "priority": 49
     },
     {
-      "name": "export",
-      "description": "Loads an .envrc and prints the diff in terms of exports",
-      "priority": 49,
       "args": {
         "name": "SHELL",
         "suggestions": [
@@ -240,12 +256,12 @@
             "name": "elvish"
           }
         ]
-      }
+      },
+      "description": "Loads an .envrc and prints the diff in terms of exports",
+      "name": "export",
+      "priority": 49
     },
     {
-      "name": "watch",
-      "description": "Adds a path to the list that direnv watches for changes",
-      "priority": 49,
       "args": [
         {
           "name": "SHELL",
@@ -268,16 +284,16 @@
           ]
         },
         {
+          "isVariadic": true,
           "name": "PATH",
-          "template": "filepaths",
-          "isVariadic": true
+          "template": "filepaths"
         }
-      ]
+      ],
+      "description": "Adds a path to the list that direnv watches for changes",
+      "name": "watch",
+      "priority": 49
     },
     {
-      "name": "watch-dir",
-      "description": "Recursively adds a directory to the list that direnv watches for changes",
-      "priority": 49,
       "args": [
         {
           "name": "SHELL",
@@ -303,15 +319,15 @@
           "name": "DIR",
           "template": "folders"
         }
-      ]
+      ],
+      "description": "Recursively adds a directory to the list that direnv watches for changes",
+      "name": "watch-dir",
+      "priority": 49
     },
     {
-      "name": "watch-list",
-      "description": "Pipe pairs of `mtime path` to stdin to build a list of files to watch",
-      "priority": 49,
       "args": {
-        "name": "SHELL",
         "isOptional": true,
+        "name": "SHELL",
         "suggestions": [
           {
             "name": "bash"
@@ -329,39 +345,19 @@
             "name": "elvish"
           }
         ]
-      }
+      },
+      "description": "Pipe pairs of `mtime path` to stdin to build a list of files to watch",
+      "name": "watch-list",
+      "priority": 49
     },
     {
-      "name": "current",
-      "description": "Reports whether direnv's view of a file is current (or stale)",
-      "priority": 49,
       "args": {
         "name": "PATH",
         "template": "filepaths"
-      }
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--version"
-      ],
-      "description": "Prints the version or checks that direnv is older than VERSION_AT_LEAST",
-      "args": {
-        "name": "VERSION_AT_LEAST",
-        "isOptional": true
-      }
-    },
-    {
-      "name": [
-        "--help"
-      ],
-      "description": "Help for direnv",
-      "args": {
-        "name": "SHOW_PRIVATE",
-        "description": "Any string",
-        "isOptional": true
-      }
+      },
+      "description": "Reports whether direnv's view of a file is current (or stale)",
+      "name": "current",
+      "priority": 49
     }
   ]
 }

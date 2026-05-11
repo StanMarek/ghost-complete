@@ -1,679 +1,689 @@
 {
-  "name": "typeorm",
   "description": "TypeORM CLI",
+  "name": "typeorm",
+  "options": [
+    {
+      "description": "Show help for command",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Show the version",
+      "name": [
+        "-v",
+        "--version"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "schema:sync",
       "description": "Synchronizes your entities with database schema",
+      "name": "schema:sync",
       "options": [
         {
+          "description": "Show help for command",
           "name": [
             "--help"
-          ],
-          "description": "Show help for command"
+          ]
         },
         {
-          "name": [
-            "-c",
-            "--connection"
-          ],
+          "args": {
+            "name": "connection"
+          },
           "description": "Name of the connection on which schema synchronization needs to to run",
-          "args": {
-            "name": "connection"
-          }
+          "name": [
+            "-c",
+            "--connection"
+          ]
         },
         {
-          "name": [
-            "-f",
-            "--config"
-          ],
-          "description": "Name of the file with connection configuration",
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
         },
         {
+          "description": "Show the version",
           "name": [
             "-v",
             "--version"
-          ],
-          "description": "Show the version"
+          ]
         }
       ]
     },
     {
-      "name": "schema:log",
       "description": "Shows sql to be executed by schema:sync command",
+      "name": "schema:log",
       "options": [
         {
+          "description": "Show help for command",
           "name": [
             "--help"
-          ],
-          "description": "Show help for command"
+          ]
         },
         {
-          "name": [
-            "-c",
-            "--connection"
-          ],
+          "args": {
+            "name": "connection"
+          },
           "description": "Name of the connection of which schema sync log should be shown",
-          "args": {
-            "name": "connection"
-          }
+          "name": [
+            "-c",
+            "--connection"
+          ]
         },
         {
-          "name": [
-            "-f",
-            "--config"
-          ],
-          "description": "Name of the file with connection configuration",
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
         },
         {
+          "description": "Show the version",
           "name": [
             "-v",
             "--version"
-          ],
-          "description": "Show the version"
+          ]
         }
       ]
     },
     {
-      "name": "schema:drop",
       "description": "Drops all tables in the database on your default connection",
+      "name": "schema:drop",
       "options": [
         {
+          "description": "Show help for command",
           "name": [
             "--help"
-          ],
-          "description": "Show help for command"
+          ]
         },
         {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to drop all tables",
           "name": [
             "-c",
             "--connection"
-          ],
-          "description": "Name of the connection on which to drop all tables",
-          "args": {
-            "name": "connection"
-          }
+          ]
         },
         {
-          "name": [
-            "-f",
-            "--config"
-          ],
-          "description": "Name of the file with connection configuration",
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
         },
         {
+          "description": "Show the version",
           "name": [
             "-v",
             "--version"
-          ],
-          "description": "Show the version"
+          ]
         }
       ]
     },
     {
-      "name": "query",
+      "args": {
+        "description": "The SQL Query to run",
+        "name": "query"
+      },
       "description": "Executes given SQL query on a default connection",
+      "name": "query",
       "options": [
         {
+          "description": "Show help for command",
           "name": [
             "--help"
-          ],
-          "description": "Show help for command"
+          ]
         },
         {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
           "name": [
             "-c",
             "--connection"
-          ],
-          "description": "Name of the connection on which to run a query",
-          "args": {
-            "name": "connection"
-          }
+          ]
         },
         {
-          "name": [
-            "-f",
-            "--config"
-          ],
-          "description": "Name of the file with connection configuration",
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
         },
         {
+          "description": "Show the version",
           "name": [
             "-v",
             "--version"
-          ],
-          "description": "Show the version"
+          ]
         }
-      ],
-      "args": {
-        "name": "query",
-        "description": "The SQL Query to run"
-      }
+      ]
     },
     {
-      "name": "entity:create",
       "description": "Generates a new entity",
+      "name": "entity:create",
       "options": [
         {
+          "description": "Show help for command",
           "name": [
             "--help"
-          ],
-          "description": "Show help for command"
+          ]
         },
         {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
           "name": [
             "-c",
             "--connection"
-          ],
-          "description": "Name of the connection on which to run a query",
-          "args": {
-            "name": "connection"
-          }
+          ]
         },
         {
-          "name": [
-            "-n",
-            "--name"
-          ],
-          "description": "Name of the entity class",
           "args": {
             "name": "entity"
-          }
+          },
+          "description": "Name of the entity class",
+          "name": [
+            "-n",
+            "--name"
+          ]
         },
         {
-          "name": [
-            "-d",
-            "--dir"
-          ],
-          "description": "Directory where entity should be created",
           "args": {
             "name": "directory",
             "template": "folders"
-          }
+          },
+          "description": "Directory where entity should be created",
+          "name": [
+            "-d",
+            "--dir"
+          ]
         },
         {
-          "name": [
-            "-f",
-            "--config"
-          ],
-          "description": "Name of the file with connection configuration",
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
         },
         {
+          "description": "Show the version",
           "name": [
             "-v",
             "--version"
-          ],
-          "description": "Show the version"
+          ]
         }
       ]
     },
     {
-      "name": "subscriber:create",
       "description": "Generates a new subscriber",
+      "name": "subscriber:create",
       "options": [
         {
+          "description": "Show help for command",
           "name": [
             "--help"
-          ],
-          "description": "Show help for command"
+          ]
         },
         {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
           "name": [
             "-c",
             "--connection"
-          ],
-          "description": "Name of the connection on which to run a query",
-          "args": {
-            "name": "connection"
-          }
+          ]
         },
         {
-          "name": [
-            "-n",
-            "--name"
-          ],
-          "description": "Name of the subscriber class",
           "args": {
             "name": "subscriber"
-          }
+          },
+          "description": "Name of the subscriber class",
+          "name": [
+            "-n",
+            "--name"
+          ]
         },
         {
-          "name": [
-            "-d",
-            "--dir"
-          ],
-          "description": "Directory where subscriber should be created",
           "args": {
             "name": "directory",
             "template": "folders"
-          }
+          },
+          "description": "Directory where subscriber should be created",
+          "name": [
+            "-d",
+            "--dir"
+          ]
         },
         {
-          "name": [
-            "-f",
-            "--config"
-          ],
-          "description": "Name of the file with connection configuration",
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
         },
         {
+          "description": "Show the version",
           "name": [
             "-v",
             "--version"
-          ],
-          "description": "Show the version"
+          ]
         }
       ]
     },
     {
-      "name": "migration:create",
       "description": "Creates a new migration file",
+      "name": "migration:create",
       "options": [
         {
+          "description": "Show help for command",
           "name": [
             "--help"
-          ],
-          "description": "Show help for command"
+          ]
         },
         {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
           "name": [
             "-c",
             "--connection"
-          ],
-          "description": "Name of the connection on which to run a query",
-          "args": {
-            "name": "connection"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "migration"
+          },
+          "description": "Name of the migration class",
           "name": [
             "-n",
             "--name"
-          ],
-          "description": "Name of the migration class",
-          "args": {
-            "name": "migration"
-          }
+          ]
         },
         {
-          "name": [
-            "-d",
-            "--dir"
-          ],
-          "description": "Directory where migration should be created",
           "args": {
             "name": "directory",
             "template": "folders"
-          }
+          },
+          "description": "Directory where migration should be created",
+          "name": [
+            "-d",
+            "--dir"
+          ]
         },
         {
-          "name": [
-            "-f",
-            "--config"
-          ],
-          "description": "Name of the file with connection configuration",
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
         },
         {
+          "description": "Generate a migration file on Javascript instead of Typescript",
           "name": [
             "-o",
             "--outputJs"
-          ],
-          "description": "Generate a migration file on Javascript instead of Typescript"
+          ]
         },
         {
+          "description": "Show the version",
           "name": [
             "-v",
             "--version"
-          ],
-          "description": "Show the version"
+          ]
         }
       ]
     },
     {
-      "name": "migration:generate",
       "description": "Generates a new migration file with sql needs to be executed to update schema",
+      "name": "migration:generate",
       "options": [
         {
+          "description": "Show help for command",
           "name": [
             "--help"
-          ],
-          "description": "Show help for command"
+          ]
         },
         {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
           "name": [
             "-c",
             "--connection"
-          ],
-          "description": "Name of the connection on which to run a query",
-          "args": {
-            "name": "connection"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "migration"
+          },
+          "description": "Name of the migration class",
           "name": [
             "-n",
             "--name"
-          ],
-          "description": "Name of the migration class",
-          "args": {
-            "name": "migration"
-          }
+          ]
         },
         {
-          "name": [
-            "-d",
-            "--dir"
-          ],
-          "description": "Directory where migration should be created",
           "args": {
             "name": "directory",
             "template": "folders"
-          }
+          },
+          "description": "Directory where migration should be created",
+          "name": [
+            "-d",
+            "--dir"
+          ]
         },
         {
+          "description": "Pretty-print generated SQL",
           "name": [
             "-p",
             "--pretty"
-          ],
-          "description": "Pretty-print generated SQL"
+          ]
         },
         {
-          "name": [
-            "-f",
-            "--config"
-          ],
-          "description": "Name of the file with connection configuration",
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
         },
         {
+          "description": "Generate a migration file on Javascript instead of Typescript",
           "name": [
             "-o",
             "--outputJs"
-          ],
-          "description": "Generate a migration file on Javascript instead of Typescript"
+          ]
         },
         {
+          "description": "Prints out the contents of the migration instead of writing it to a file",
           "name": [
             "--dr",
             "--dryrun"
-          ],
-          "description": "Prints out the contents of the migration instead of writing it to a file"
+          ]
         },
         {
+          "description": "Verifies that the current database is up to date and that no migrations are needed",
           "name": [
             "--ch",
             "--check"
-          ],
-          "description": "Verifies that the current database is up to date and that no migrations are needed"
+          ]
         },
         {
+          "description": "Show the version",
           "name": [
             "-v",
             "--version"
-          ],
-          "description": "Show the version"
+          ]
         }
       ]
     },
     {
-      "name": "migration:run",
       "description": "Runs all pending migrations",
+      "name": "migration:run",
       "options": [
         {
+          "description": "Show help for command",
           "name": [
             "--help"
-          ],
-          "description": "Show help for command"
+          ]
         },
         {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
           "name": [
             "-c",
             "--connection"
-          ],
-          "description": "Name of the connection on which to run a query",
-          "args": {
-            "name": "connection"
-          }
+          ]
         },
         {
+          "description": "Indicates if transaction should be used or not for migration run",
           "name": [
             "-t",
             "--transaction"
-          ],
-          "description": "Indicates if transaction should be used or not for migration run"
+          ]
         },
         {
-          "name": [
-            "-f",
-            "--config"
-          ],
-          "description": "Name of the file with connection configuration",
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
         },
         {
+          "description": "Show the version",
           "name": [
             "-v",
             "--version"
-          ],
-          "description": "Show the version"
+          ]
         }
       ]
     },
     {
-      "name": "migration:show",
       "description": "Show all migrations and whether they have been run or not",
+      "name": "migration:show",
       "options": [
         {
+          "description": "Show help for command",
           "name": [
             "--help"
-          ],
-          "description": "Show help for command"
+          ]
         },
         {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
           "name": [
             "-c",
             "--connection"
-          ],
-          "description": "Name of the connection on which to run a query",
-          "args": {
-            "name": "connection"
-          }
+          ]
         },
         {
-          "name": [
-            "-f",
-            "--config"
-          ],
-          "description": "Name of the file with connection configuration",
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
         },
         {
+          "description": "Show the version",
           "name": [
             "-v",
             "--version"
-          ],
-          "description": "Show the version"
+          ]
         }
       ]
     },
     {
-      "name": "migration:revert",
       "description": "Reverts last executed migration",
+      "name": "migration:revert",
       "options": [
         {
+          "description": "Show help for command",
           "name": [
             "--help"
-          ],
-          "description": "Show help for command"
+          ]
         },
         {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
           "name": [
             "-c",
             "--connection"
-          ],
-          "description": "Name of the connection on which to run a query",
-          "args": {
-            "name": "connection"
-          }
+          ]
         },
         {
+          "description": "Indicates if transaction should be used or not for migration revert",
           "name": [
             "-t",
             "--transaction"
-          ],
-          "description": "Indicates if transaction should be used or not for migration revert"
+          ]
         },
         {
-          "name": [
-            "-f",
-            "--config"
-          ],
-          "description": "Name of the file with connection configuration",
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
         },
         {
+          "description": "Show the version",
           "name": [
             "-v",
             "--version"
-          ],
-          "description": "Show the version"
+          ]
         }
       ]
     },
     {
-      "name": "version",
       "description": "Prints TypeORM version this project uses",
+      "name": "version",
       "options": [
         {
+          "description": "Show help for command",
           "name": [
             "--help"
-          ],
-          "description": "Show help for command"
+          ]
         },
         {
+          "description": "Show the version",
           "name": [
             "-v",
             "--version"
-          ],
-          "description": "Show the version"
+          ]
         }
       ]
     },
     {
-      "name": "cache:clear",
       "description": "Clears all data stored in query runner cache",
+      "name": "cache:clear",
       "options": [
         {
+          "description": "Show help for command",
           "name": [
             "--help"
-          ],
-          "description": "Show help for command"
+          ]
         },
         {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
           "name": [
             "-c",
             "--connection"
-          ],
-          "description": "Name of the connection on which to run a query",
-          "args": {
-            "name": "connection"
-          }
+          ]
         },
         {
-          "name": [
-            "-f",
-            "--config"
-          ],
-          "description": "Name of the file with connection configuration",
           "args": {
             "name": "file",
             "template": "filepaths"
-          }
+          },
+          "description": "Name of the file with connection configuration",
+          "name": [
+            "-f",
+            "--config"
+          ]
         },
         {
+          "description": "Show the version",
           "name": [
             "-v",
             "--version"
-          ],
-          "description": "Show the version"
+          ]
         }
       ]
     },
     {
-      "name": "init",
       "description": "Generates initial TypeORM project structure",
+      "name": "init",
       "options": [
         {
+          "description": "Show help for command",
           "name": [
             "--help"
-          ],
-          "description": "Show help for command"
+          ]
         },
         {
+          "args": {
+            "name": "connection"
+          },
+          "description": "Name of the connection on which to run a query",
           "name": [
             "-c",
             "--connection"
-          ],
-          "description": "Name of the connection on which to run a query",
-          "args": {
-            "name": "connection"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "name"
+          },
+          "description": "Name of the project directory",
           "name": [
             "-n",
             "--name"
-          ],
-          "description": "Name of the project directory",
-          "args": {
-            "name": "name"
-          }
+          ]
         },
         {
-          "name": [
-            "--db",
-            "--database"
-          ],
-          "description": "Database type you'll use in your project",
           "args": {
             "name": "database",
             "suggestions": [
@@ -714,26 +724,26 @@
                 "name": "mongodb"
               }
             ]
-          }
+          },
+          "description": "Database type you'll use in your project",
+          "name": [
+            "--db",
+            "--database"
+          ]
         },
         {
+          "description": "Indicates if express should be included in the project",
           "name": [
             "--express"
-          ],
-          "description": "Indicates if express should be included in the project"
+          ]
         },
         {
+          "description": "Set to true if docker-compose must be generated as well",
           "name": [
             "--docker"
-          ],
-          "description": "Set to true if docker-compose must be generated as well"
+          ]
         },
         {
-          "name": [
-            "--pm",
-            "--manager"
-          ],
-          "description": "Install packages",
           "args": {
             "name": "manager",
             "suggestions": [
@@ -744,31 +754,21 @@
                 "name": "yarn"
               }
             ]
-          }
+          },
+          "description": "Install packages",
+          "name": [
+            "--pm",
+            "--manager"
+          ]
         },
         {
+          "description": "Show the version",
           "name": [
             "-v",
             "--version"
-          ],
-          "description": "Show the version"
+          ]
         }
       ]
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--help"
-      ],
-      "description": "Show help for command"
-    },
-    {
-      "name": [
-        "-v",
-        "--version"
-      ],
-      "description": "Show the version"
     }
   ]
 }

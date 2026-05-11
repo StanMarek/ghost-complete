@@ -3,10 +3,6 @@
     "description": "File name to output the compiled binary bindings",
     "generators": [
       {
-        "js_runtime": {
-          "kind": "custom",
-          "source": "(p,g,_)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:w,searchTerm:m}=_,S=(f=(0,y.getCurrentInsertedDirectory)(u??w,m,_))!==null&&f!==void 0?f:\"/\";try{let k=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:S}),Z=R(k.stdout.split(`\n`),[\".DS_Store\"]),J=[];for(let D of Z)if(D){let V=D.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&c!==\"only\"||V===\"folders\"&&c!==\"never\")&&J.push({type:V===\"filepaths\"?\"file\":\"folder\",name:D,insertValue:D,isDangerous:b,context:{templateType:V}})}return O(h(J))}catch{return[]}})"
-        },
         "requires_js": true
       }
     ],

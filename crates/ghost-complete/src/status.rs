@@ -349,7 +349,7 @@ pub struct StatusOutcome {
     pub file_scan: FileScan,
     /// Corpus-wide [`SpecResolutionCounters`] derived from the structured
     /// `SpecStore` walk. Surfaced under the new top-level `counters` block
-    /// of `status --json` (schema 1.6) and intentionally distinct from the
+    /// of `status --json` (schema 1.6+) and intentionally distinct from the
     /// raw-JSON `file_scan` numbers so future converter migration phases
     /// (ux-10..14) can populate the migration-future fields without
     /// disturbing the legacy `spec_counts` block.
@@ -440,17 +440,18 @@ pub struct FileScan {
     /// `OptionSpec.args` would underreport.
     pub requires_js_generators_total: usize,
     /// Subset of `requires_js_generators_total` that the engine can
-    /// dispatch — generators carrying any of the three supported
+    /// dispatch — generators carrying any of the supported
     /// `js_runtime.kind` shapes (post_process+script, script_function,
-    /// custom). Sourced from the same raw-JSON walk so this number stays
-    /// consistent with `requires_js_generators_total`.
+    /// custom, token_only). Sourced from the same raw-JSON walk so this
+    /// number stays consistent with `requires_js_generators_total`.
     pub requires_js_generators_supported: usize,
-    /// Class breakdown of `requires_js_generators_supported`. The three
+    /// Class breakdown of `requires_js_generators_supported`. The four
     /// per-kind fields sum to `requires_js_generators_supported` and are
     /// surfaced in JSON as `requires_js_generators_supported_by_kind`.
     pub requires_js_generators_supported_post_process: usize,
     pub requires_js_generators_supported_script_function: usize,
     pub requires_js_generators_supported_custom: usize,
+    pub requires_js_generators_supported_token_only: usize,
 }
 
 /// True when status should supplement resolved filesystem dirs with the
@@ -587,7 +588,7 @@ fn scan_resolved_specs(
 
     let registered_specs = store.len();
 
-    // Diagnostic-only walk over the structured loader for the new schema-1.6
+    // Diagnostic-only walk over the structured loader for the schema-1.6+
     // `counters` block. Force-loads every resolved spec; the same parse
     // work already runs during this status scan, so the cost is incremental.
     let counters = store.counters();
@@ -689,6 +690,7 @@ fn scan_spec_files(store: &SpecStore) -> Result<FileScan> {
         scan.requires_js_generators_supported_post_process += counts.post_process;
         scan.requires_js_generators_supported_script_function += counts.script_function;
         scan.requires_js_generators_supported_custom += counts.custom;
+        scan.requires_js_generators_supported_token_only += counts.token_only;
     }
 
     Ok(scan)
@@ -711,6 +713,9 @@ struct JsClassCounts {
     /// `requires_js` generators whose `js_runtime.kind == custom`. JS body
     /// returns suggestions directly without a subprocess.
     custom: usize,
+    /// `requires_js` generators whose `js_runtime.kind == token_only`. JS body
+    /// sees only tokens/currentToken/previousToken and no host API.
+    token_only: usize,
 }
 
 /// Walk a raw `serde_json::Value` and classify every object with
@@ -719,8 +724,8 @@ struct JsClassCounts {
 /// - `total` increments for every `requires_js: true` occurrence.
 /// - `supported` increments when the generator carries supportable
 ///   `js_runtime` metadata. The class-specific fields
-///   (`post_process` / `script_function` / `custom`) are mutually exclusive
-///   counters that sum to `supported`.
+///   (`post_process` / `script_function` / `custom` / `token_only`) are
+///   mutually exclusive counters that sum to `supported`.
 ///
 /// This is the doctor/status-side mirror of the runtime classification in
 /// `gc_suggest::specs::collect_generators` — keeping them in sync is a
@@ -740,6 +745,7 @@ fn count_requires_js_classes_in_value(value: &serde_json::Value) -> JsClassCount
                             SupportedKind::PostProcess => counts.post_process += 1,
                             SupportedKind::ScriptFunction => counts.script_function += 1,
                             SupportedKind::Custom => counts.custom += 1,
+                            SupportedKind::TokenOnly => counts.token_only += 1,
                         }
                     }
                 }
@@ -765,6 +771,7 @@ enum SupportedKind {
     PostProcess,
     ScriptFunction,
     Custom,
+    TokenOnly,
 }
 
 /// Returns the supported `js_runtime.kind` class when a generator object has
@@ -772,7 +779,7 @@ enum SupportedKind {
 ///
 /// Mirrors `collect_generators` in `gc-suggest::specs` and the dispatch
 /// gate in `gc-suggest::engine::is_supported_script_generator`. The
-/// engine handles all three `js_runtime.kind` variants, but with subtly
+/// engine handles all four `js_runtime.kind` variants, but with subtly
 /// different gates:
 ///   * `post_process` requires an accompanying `script` / `script_template`
 ///     plus a non-empty `js_runtime.source`. `self_contained` is irrelevant
@@ -789,6 +796,9 @@ enum SupportedKind {
 ///     the converter has been able to prove self-contained for and
 ///     fluctuates between releases; see CHANGELOG.md for the snapshot
 ///     count at any given version.)
+///   * `token_only` requires only a non-empty `source` — `self_contained`
+///     is irrelevant because no host bindings are installed; free
+///     identifiers can only throw inside the sandbox.
 fn supported_kind(map: &serde_json::Map<String, serde_json::Value>) -> Option<SupportedKind> {
     let runtime = map.get("js_runtime").and_then(|v| v.as_object())?;
     let kind = runtime
@@ -820,6 +830,7 @@ fn supported_kind(map: &serde_json::Map<String, serde_json::Value>) -> Option<Su
             Some(SupportedKind::ScriptFunction)
         }
         "custom" if source_non_empty && self_contained_true => Some(SupportedKind::Custom),
+        "token_only" if source_non_empty => Some(SupportedKind::TokenOnly),
         _ => None,
     }
 }
@@ -923,6 +934,13 @@ fn run_status_inner(
         out,
         "  Supported (custom):         {}",
         outcome.file_scan.requires_js_generators_supported_custom
+    )?;
+    writeln!(
+        out,
+        "  Supported (token_only):     {}",
+        outcome
+            .file_scan
+            .requires_js_generators_supported_token_only
     )?;
     writeln!(
         out,
@@ -1053,7 +1071,9 @@ fn run_status_inner_with_trend(
 ///       `native_provider_dispatched`) start at zero and are populated by
 ///       ux-10/11/12/13/14. The legacy `spec_counts` block is unchanged —
 ///       this is a pure addition so 1.5 consumers keep parsing 1.6 output.
-const STATUS_SCHEMA_VERSION: &str = "1.6";
+/// 1.7 — adds `token_only` to the supported-by-kind breakdown plus
+///       `spec_counts.requires_js_generators_token_only` for ux-12.
+const STATUS_SCHEMA_VERSION: &str = "1.7";
 
 /// The shape emitted by `ghost-complete status --json`. Defining this as a
 /// `#[derive(Serialize)]` struct rather than inline `json!` macros fails
@@ -1085,6 +1105,10 @@ struct StatusReport {
     /// by ux-10..14. Distinct from `spec_counts.requires_js_*` (which
     /// remain wired to the raw-JSON `file_scan`).
     counters: SpecResolutionCounters,
+    /// Schema 1.7 addition: user-facing token-only promotion count.
+    /// Duplicates `counters.token_only_promoted` under the acceptance-test
+    /// field name from the ux-12 roadmap.
+    requires_js_generators_token_only: usize,
     coverage_trend: Option<CoverageTrend>,
 }
 
@@ -1137,11 +1161,15 @@ struct SpecCounts {
     requires_js_generators_total: usize,
     /// Subset of `requires_js_generators_total` whose `js_runtime` metadata
     /// matches a shape the engine can dispatch (`post_process` with an
-    /// accompanying script, `script_function`, or `custom`).
+    /// accompanying script, `script_function`, `custom`, or `token_only`).
     requires_js_generators_supported: usize,
     /// `requires_js_generators_total - requires_js_generators_supported`.
     /// Surfaced as its own field so consumers don't need to subtract.
     requires_js_generators_unsupported: usize,
+    /// Supported `requires_js` generators promoted into the token-only
+    /// sandbox. Mirrors `counters.token_only_promoted` with the user-facing
+    /// status name from ux-12.
+    requires_js_generators_token_only: usize,
     /// Runtime alias collisions surfaced by the loader. SpecStore keys on
     /// filename stem (canonical id) plus the spec's `name` field as a
     /// secondary alias when free; an entry here can be either a rejected alias
@@ -1158,9 +1186,9 @@ struct SpecCounts {
     /// Always present (empty when no conflicts).
     command_alias_conflict_details: Vec<AliasConflictRecord>,
     /// Class breakdown of `requires_js_generators_supported` by
-    /// `js_runtime.kind`. Three numeric fields: `post_process`
-    /// (post_process+script lowering), `script_function`, `custom`. Sums to
-    /// `requires_js_generators_supported`.
+    /// `js_runtime.kind`. Numeric fields: `post_process`
+    /// (post_process+script lowering), `script_function`, `custom`, and
+    /// `token_only`. Sums to `requires_js_generators_supported`.
     requires_js_generators_supported_by_kind: SupportedByKind,
 }
 
@@ -1170,6 +1198,7 @@ struct SupportedByKind {
     post_process: usize,
     script_function: usize,
     custom: usize,
+    token_only: usize,
 }
 
 /// Corpus-structural and policy-level spec-store status surfaced under
@@ -1313,6 +1342,9 @@ fn run_status_json(
             requires_js_generators_total: outcome.requires_js_generators_total,
             requires_js_generators_supported: outcome.requires_js_generators_supported,
             requires_js_generators_unsupported: outcome.requires_js_generators_unsupported,
+            requires_js_generators_token_only: outcome
+                .file_scan
+                .requires_js_generators_supported_token_only,
             command_alias_conflicts: outcome.command_alias_conflicts,
             command_alias_conflict_details: outcome.command_alias_conflict_details.clone(),
             requires_js_generators_supported_by_kind: SupportedByKind {
@@ -1323,6 +1355,9 @@ fn run_status_json(
                     .file_scan
                     .requires_js_generators_supported_script_function,
                 custom: outcome.file_scan.requires_js_generators_supported_custom,
+                token_only: outcome
+                    .file_scan
+                    .requires_js_generators_supported_token_only,
             },
         },
         file_scan: outcome.file_scan.clone(),
@@ -1330,6 +1365,7 @@ fn run_status_json(
             enabled: outcome.js_runtime_enabled,
         },
         counters: outcome.counters.clone(),
+        requires_js_generators_token_only: outcome.counters.token_only_promoted,
         coverage_trend,
     };
 
@@ -2309,7 +2345,7 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.6");
+        assert_eq!(parsed["schema_version"], "1.7");
         assert!(
             parsed["spec_counts"].is_object(),
             "spec_counts must be an object"
@@ -2389,6 +2425,12 @@ mod tests {
             parsed["spec_counts"]["requires_js_generators_supported_by_kind"]["custom"].is_number()
         );
         assert!(
+            parsed["spec_counts"]["requires_js_generators_supported_by_kind"]["token_only"]
+                .is_number()
+        );
+        assert!(parsed["spec_counts"]["requires_js_generators_token_only"].is_number());
+        assert!(parsed["requires_js_generators_token_only"].is_number());
+        assert!(
             parsed["js_runtime"].is_object(),
             "js_runtime top-level block must be present"
         );
@@ -2398,6 +2440,7 @@ mod tests {
             parsed["file_scan"]["requires_js_generators_supported_script_function"].is_number()
         );
         assert!(parsed["file_scan"]["requires_js_generators_supported_custom"].is_number());
+        assert!(parsed["file_scan"]["requires_js_generators_supported_token_only"].is_number());
         assert_eq!(
             parsed["spec_counts"]["parse_error_details"]
                 .as_array()
@@ -2495,7 +2538,7 @@ mod tests {
 
         // Current schema surfaces every command and generator counter as
         // a numeric value.
-        assert_eq!(parsed["schema_version"], "1.6");
+        assert_eq!(parsed["schema_version"], "1.7");
         let counts = &parsed["spec_counts"];
         assert_eq!(
             counts["commands_addressable"].as_u64().unwrap(),
@@ -2536,11 +2579,14 @@ mod tests {
         );
     }
 
-    /// Schema 1.6 adds a top-level `counters` block carrying
-    /// [`gc_suggest::SpecResolutionCounters`]. Pin the eight expected
-    /// fields and the populated-vs-zero contract: the first three fields
-    /// match the structured walk over the SpecStore; the five
-    /// migration-future fields stay at zero until ux-10..14 land.
+    /// Top-level `counters` block carries [`gc_suggest::SpecResolutionCounters`].
+    /// Pin the eight expected fields and the populated-vs-zero contract:
+    /// the first three fields (total / supported / unsupported) match the
+    /// structured walk over the SpecStore; `token_only_promoted` is
+    /// populated today; the remaining four migration-future fields
+    /// (`lowered_to_transforms`, `static_extracted_subprocess`,
+    /// `aws_sdk_dispatched`, `native_provider_dispatched`) stay at zero
+    /// until the matching converter migrations land.
     #[test]
     fn status_json_includes_counters_block() {
         let tmp = tempfile::TempDir::new().unwrap();
@@ -2583,6 +2629,24 @@ mod tests {
             }"#,
         )
         .unwrap();
+        std::fs::write(
+            spec_dir.join("token-only-cmd.json"),
+            r#"{
+                "name": "token-only-cmd",
+                "args": [{
+                    "name": "thing",
+                    "generators": [{
+                        "requires_js": true,
+                        "js_runtime": {
+                            "kind": "token_only",
+                            "source": "tokens.map(name => ({ name }))",
+                            "self_contained": false
+                        }
+                    }]
+                }]
+            }"#,
+        )
+        .unwrap();
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
@@ -2590,21 +2654,20 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.6");
+        assert_eq!(parsed["schema_version"], "1.7");
         let counters = &parsed["counters"];
         assert!(counters.is_object(), "counters must be a top-level object");
 
         // Populated by this PR.
-        assert_eq!(counters["requires_js_total"].as_u64().unwrap(), 2);
-        assert_eq!(counters["requires_js_supported"].as_u64().unwrap(), 1);
+        assert_eq!(counters["requires_js_total"].as_u64().unwrap(), 3);
+        assert_eq!(counters["requires_js_supported"].as_u64().unwrap(), 2);
         assert_eq!(counters["requires_js_unsupported"].as_u64().unwrap(), 1);
 
-        // Migration-future fields — declared by SPEC § A but populated
-        // by ux-10/11/12/13/14 respectively. They MUST exist as numeric
-        // zeros so JSON consumers can rely on the schema shape.
+        // Migration fields — token_only is populated by ux-12, the rest
+        // remain declared numeric zeros for future phases.
         assert_eq!(counters["lowered_to_transforms"].as_u64().unwrap(), 0);
         assert_eq!(counters["static_extracted_subprocess"].as_u64().unwrap(), 0);
-        assert_eq!(counters["token_only_promoted"].as_u64().unwrap(), 0);
+        assert_eq!(counters["token_only_promoted"].as_u64().unwrap(), 1);
         assert_eq!(counters["aws_sdk_dispatched"].as_u64().unwrap(), 0);
         assert_eq!(counters["native_provider_dispatched"].as_u64().unwrap(), 0);
 
@@ -2617,6 +2680,18 @@ mod tests {
         // (ux-10/11/12/13/14) would track different numbers depending
         // on which block the consumer reads.
         let counts = &parsed["spec_counts"];
+        assert_eq!(
+            counts["requires_js_generators_token_only"]
+                .as_u64()
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            parsed["requires_js_generators_token_only"]
+                .as_u64()
+                .unwrap(),
+            1
+        );
         assert_eq!(
             counters["requires_js_total"].as_u64().unwrap(),
             counts["requires_js_generators_total"].as_u64().unwrap(),
@@ -3193,7 +3268,7 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.6");
+        assert_eq!(parsed["schema_version"], "1.7");
         let details = parsed["spec_counts"]["command_alias_conflict_details"]
             .as_array()
             .expect("command_alias_conflict_details must be an array");
@@ -3211,6 +3286,7 @@ mod tests {
         assert_eq!(by_kind["post_process"].as_u64().unwrap(), 0);
         assert_eq!(by_kind["script_function"].as_u64().unwrap(), 0);
         assert_eq!(by_kind["custom"].as_u64().unwrap(), 0);
+        assert_eq!(by_kind["token_only"].as_u64().unwrap(), 0);
 
         // js_runtime kill switch surfaces (default true).
         assert_eq!(
@@ -3233,7 +3309,7 @@ mod tests {
         let spec_dir = tmp.path().join("specs");
         std::fs::create_dir_all(&spec_dir).unwrap();
         // One post_process + one script_function + one custom + one
-        // unsupported. Total 4, supported 3 (1+1+1).
+        // token_only + one unsupported. Total 5, supported 4 (1+1+1+1).
         std::fs::write(
             spec_dir.join("a.json"),
             r#"{"name":"a","args":[{"name":"x","generators":[{
@@ -3262,6 +3338,14 @@ mod tests {
         std::fs::write(
             spec_dir.join("d.json"),
             r#"{"name":"d","args":[{"name":"x","generators":[{
+                "requires_js": true,
+                "js_runtime": {"kind":"token_only","source":"tokens","self_contained":false}
+            }]}]}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            spec_dir.join("e.json"),
+            r#"{"name":"e","args":[{"name":"x","generators":[{
                 "requires_js": true
             }]}]}"#,
         )
@@ -3274,10 +3358,10 @@ mod tests {
             serde_json::from_str(&String::from_utf8_lossy(&out)).unwrap();
 
         let counts = &parsed["spec_counts"];
-        assert_eq!(counts["requires_js_generators_total"].as_u64().unwrap(), 4);
+        assert_eq!(counts["requires_js_generators_total"].as_u64().unwrap(), 5);
         assert_eq!(
             counts["requires_js_generators_supported"].as_u64().unwrap(),
-            3
+            4
         );
         assert_eq!(
             counts["requires_js_generators_unsupported"]
@@ -3290,6 +3374,13 @@ mod tests {
         assert_eq!(by["post_process"].as_u64().unwrap(), 1);
         assert_eq!(by["script_function"].as_u64().unwrap(), 1);
         assert_eq!(by["custom"].as_u64().unwrap(), 1);
+        assert_eq!(by["token_only"].as_u64().unwrap(), 1);
+        assert_eq!(
+            counts["requires_js_generators_token_only"]
+                .as_u64()
+                .unwrap(),
+            1
+        );
     }
 
     #[test]

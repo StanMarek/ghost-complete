@@ -1,32 +1,45 @@
 {
-  "name": "ollama",
   "description": "A command-line tool for managing and deploying machine learning models",
-  "subcommands": [
+  "name": "ollama",
+  "options": [
     {
-      "name": "serve",
-      "description": "Start ollama"
+      "description": "Show help for ollama",
+      "name": [
+        "--help",
+        "-h"
+      ]
     },
     {
-      "name": "create",
+      "description": "Show version information",
+      "name": [
+        "--version",
+        "-v"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Start ollama",
+      "name": "serve"
+    },
+    {
       "description": "Create a model from a Modelfile",
+      "name": "create",
       "options": [
         {
-          "name": [
-            "-f"
-          ],
-          "description": "Specify Modelfile",
           "args": {
             "name": "filename",
             "template": "filepaths"
-          }
+          },
+          "description": "Specify Modelfile",
+          "name": [
+            "-f"
+          ]
         }
       ]
     },
     {
-      "name": "show",
-      "description": "Show information for a model",
       "args": {
-        "name": "model",
         "generators": [
           {
             "script": [
@@ -40,43 +53,43 @@
               "trim"
             ]
           }
-        ]
-      }
+        ],
+        "name": "model"
+      },
+      "description": "Show information for a model",
+      "name": "show"
     },
     {
-      "name": "run",
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "ollama ls | awk '!/NAME/ { print $1 }'"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "model"
+      },
       "description": "Run a model",
+      "name": "run",
       "options": [
         {
+          "description": "Enable verbose output",
           "name": [
             "--verbose"
-          ],
-          "description": "Enable verbose output"
+          ]
         }
-      ],
-      "args": {
-        "name": "model",
-        "generators": [
-          {
-            "script": [
-              "bash",
-              "-c",
-              "ollama ls | awk '!/NAME/ { print $1 }'"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              "trim"
-            ]
-          }
-        ]
-      }
+      ]
     },
     {
-      "name": "stop",
-      "description": "Stop the ollama server",
       "args": {
-        "name": "model",
         "generators": [
           {
             "script": [
@@ -90,30 +103,51 @@
               "trim"
             ]
           }
-        ]
-      }
+        ],
+        "name": "model"
+      },
+      "description": "Stop the ollama server",
+      "name": "stop"
     },
     {
-      "name": "pull",
-      "description": "Pull a model from a registry"
+      "description": "Pull a model from a registry",
+      "name": "pull"
     },
     {
-      "name": "push",
-      "description": "Push a model to a registry"
+      "description": "Push a model to a registry",
+      "name": "push"
     },
     {
-      "name": "list",
-      "description": "List models"
+      "description": "List models",
+      "name": "list"
     },
     {
-      "name": "ps",
-      "description": "List running models"
+      "description": "List running models",
+      "name": "ps"
     },
     {
-      "name": "cp",
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "ollama ls | awk '!/NAME/ { print $1 }'"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "SOURCE"
+      },
       "description": "Copy a model",
+      "name": "cp"
+    },
+    {
       "args": {
-        "name": "SOURCE",
         "generators": [
           {
             "script": [
@@ -127,95 +161,61 @@
               "trim"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "rm",
+        ],
+        "name": "model"
+      },
       "description": "Remove a model",
-      "args": {
-        "name": "model",
-        "generators": [
-          {
-            "script": [
-              "bash",
-              "-c",
-              "ollama ls | awk '!/NAME/ { print $1 }'"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              "trim"
-            ]
-          }
-        ]
-      }
+      "name": "rm"
     },
     {
-      "name": "help",
       "description": "Help about any command",
+      "name": "help",
       "subcommands": [
         {
-          "name": "serve",
-          "description": "Start ollama"
+          "description": "Start ollama",
+          "name": "serve"
         },
         {
-          "name": "create",
-          "description": "Create a model from a Modelfile"
+          "description": "Create a model from a Modelfile",
+          "name": "create"
         },
         {
-          "name": "show",
-          "description": "Show information for a model"
+          "description": "Show information for a model",
+          "name": "show"
         },
         {
-          "name": "run",
-          "description": "Run a model"
+          "description": "Run a model",
+          "name": "run"
         },
         {
-          "name": "stop",
-          "description": "Stop the ollama server"
+          "description": "Stop the ollama server",
+          "name": "stop"
         },
         {
-          "name": "pull",
-          "description": "Pull a model from a registry"
+          "description": "Pull a model from a registry",
+          "name": "pull"
         },
         {
-          "name": "push",
-          "description": "Push a model to a registry"
+          "description": "Push a model to a registry",
+          "name": "push"
         },
         {
-          "name": "list",
-          "description": "List models"
+          "description": "List models",
+          "name": "list"
         },
         {
-          "name": "ps",
-          "description": "List running models"
+          "description": "List running models",
+          "name": "ps"
         },
         {
-          "name": "cp",
-          "description": "Copy a model"
+          "description": "Copy a model",
+          "name": "cp"
         },
         {
-          "name": "rm",
-          "description": "Remove a model"
+          "description": "Remove a model",
+          "name": "rm"
         }
       ]
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Show help for ollama"
-    },
-    {
-      "name": [
-        "--version",
-        "-v"
-      ],
-      "description": "Show version information"
     }
   ]
 }

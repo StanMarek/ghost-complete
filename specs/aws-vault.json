@@ -1,29 +1,37 @@
 {
-  "name": "aws-vault",
   "description": "A vault for securely storing and accessing AWS credentials in development environments",
-  "subcommands": [
+  "name": "aws-vault",
+  "options": [
     {
-      "name": "add",
-      "description": "Add credentials to the secure keystore",
-      "args": {
-        "name": "profile",
-        "description": "The profile you want to add"
-      }
+      "description": "Show context-sensitive help (also try --help-long and --help-man)",
+      "name": [
+        "--help"
+      ]
     },
     {
-      "name": "remove",
-      "description": "Remove credentials from the secure keystore",
-      "options": [
-        {
-          "name": [
-            "-f",
-            "--force"
-          ],
-          "description": "Force-remove the profile without a prompt"
-        }
-      ],
+      "description": "Show application version",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Show debugging output",
+      "name": [
+        "--debug"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
       "args": {
-        "name": "profile",
+        "description": "The profile you want to add",
+        "name": "profile"
+      },
+      "description": "Add credentials to the secure keystore",
+      "name": "add"
+    },
+    {
+      "args": {
         "generators": [
           {
             "script": [
@@ -36,47 +44,47 @@
               "filter_empty"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "list",
-      "description": "List profiles, along with their credentials and sessions",
+        ],
+        "name": "profile"
+      },
+      "description": "Remove credentials from the secure keystore",
+      "name": "remove",
       "options": [
         {
+          "description": "Force-remove the profile without a prompt",
           "name": [
-            "--profiles"
-          ],
-          "description": "Show only the profile names"
-        },
-        {
-          "name": [
-            "--sessions"
-          ],
-          "description": "Show only the session names"
-        },
-        {
-          "name": [
-            "--credentials"
-          ],
-          "description": "Show only the profiles with stored credential"
+            "-f",
+            "--force"
+          ]
         }
       ]
     },
     {
-      "name": "rotate",
-      "description": "Rotate credentials",
+      "description": "List profiles, along with their credentials and sessions",
+      "name": "list",
       "options": [
         {
+          "description": "Show only the profile names",
           "name": [
-            "-n",
-            "--no-session"
-          ],
-          "description": "Use master credentials, no session or role used"
+            "--profiles"
+          ]
+        },
+        {
+          "description": "Show only the session names",
+          "name": [
+            "--sessions"
+          ]
+        },
+        {
+          "description": "Show only the profiles with stored credential",
+          "name": [
+            "--credentials"
+          ]
         }
-      ],
+      ]
+    },
+    {
       "args": {
-        "name": "profile",
         "generators": [
           {
             "script": [
@@ -89,53 +97,24 @@
               "filter_empty"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "exec",
-      "description": "Execute a command with AWS credentials",
+        ],
+        "name": "profile"
+      },
+      "description": "Rotate credentials",
+      "name": "rotate",
       "options": [
         {
-          "name": [
-            "-d",
-            "--duration"
-          ],
-          "description": "Duration of the temporary or assume-role session. Defaults to 1h",
-          "args": {
-            "name": "DURATION"
-          }
-        },
-        {
+          "description": "Use master credentials, no session or role used",
           "name": [
             "-n",
             "--no-session"
-          ],
-          "description": "Use master credentials, no session or role used"
-        },
-        {
-          "name": [
-            "--region"
-          ],
-          "description": "The AWS region",
-          "args": {
-            "name": "REGION"
-          }
-        },
-        {
-          "name": [
-            "-t",
-            "--mfa-token"
-          ],
-          "description": "The MFA token to use",
-          "args": {
-            "name": "MFA-TOKEN"
-          }
+          ]
         }
-      ],
+      ]
+    },
+    {
       "args": [
         {
-          "name": "profile",
           "generators": [
             {
               "script": [
@@ -148,18 +127,76 @@
                 "filter_empty"
               ]
             }
-          ]
+          ],
+          "name": "profile"
         },
         {
           "name": "command"
         }
+      ],
+      "description": "Execute a command with AWS credentials",
+      "name": "exec",
+      "options": [
+        {
+          "args": {
+            "name": "DURATION"
+          },
+          "description": "Duration of the temporary or assume-role session. Defaults to 1h",
+          "name": [
+            "-d",
+            "--duration"
+          ]
+        },
+        {
+          "description": "Use master credentials, no session or role used",
+          "name": [
+            "-n",
+            "--no-session"
+          ]
+        },
+        {
+          "args": {
+            "name": "REGION"
+          },
+          "description": "The AWS region",
+          "name": [
+            "--region"
+          ]
+        },
+        {
+          "args": {
+            "name": "MFA-TOKEN"
+          },
+          "description": "The MFA token to use",
+          "name": [
+            "-t",
+            "--mfa-token"
+          ]
+        }
       ]
     },
     {
-      "name": "export",
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "aws-vault",
+              "list",
+              "--profiles"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty"
+            ]
+          }
+        ],
+        "name": "profile"
+      },
       "description": "Export AWS credentials",
+      "name": "export"
+    },
+    {
       "args": {
-        "name": "profile",
         "generators": [
           {
             "script": [
@@ -172,14 +209,14 @@
               "filter_empty"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "clear",
+        ],
+        "name": "profile"
+      },
       "description": "Clear temporary credentials from the secure keystore",
+      "name": "clear"
+    },
+    {
       "args": {
-        "name": "profile",
         "generators": [
           {
             "script": [
@@ -192,56 +229,19 @@
               "filter_empty"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "login",
+        ],
+        "name": "profile"
+      },
       "description": "Generate a login link for the AWS Console",
-      "args": {
-        "name": "profile",
-        "generators": [
-          {
-            "script": [
-              "aws-vault",
-              "list",
-              "--profiles"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty"
-            ]
-          }
-        ]
-      }
+      "name": "login"
     },
     {
-      "name": "help",
-      "description": "Show help about the command",
       "args": {
         "name": "command",
         "template": "help"
-      }
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--help"
-      ],
-      "description": "Show context-sensitive help (also try --help-long and --help-man)"
-    },
-    {
-      "name": [
-        "--version"
-      ],
-      "description": "Show application version"
-    },
-    {
-      "name": [
-        "--debug"
-      ],
-      "description": "Show debugging output"
+      },
+      "description": "Show help about the command",
+      "name": "help"
     }
   ]
 }

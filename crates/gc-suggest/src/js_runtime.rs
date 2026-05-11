@@ -13,8 +13,8 @@
 //!    runtime evaluates a top-level expression, so we synthesise a
 //!    self-invoking call wrapping the body. The shape of the synthesised
 //!    program differs by [`gc_jsrt::JsExecutionKind`] — see
-//!    `build_post_process_program`, `build_script_function_program`, and
-//!    `build_custom_program`.
+//!    `build_post_process_program`, `build_script_function_program`,
+//!    `build_custom_program`, and `build_token_only_program`.
 //! 3. **Diagnostic logging.** Every [`gc_jsrt::JsDiagnostic`] is mapped to a
 //!    structured `tracing` event so the doctor / status surfaces can render
 //!    them without re-implementing the rendering.
@@ -22,11 +22,13 @@
 //! The adapter is intentionally narrow — no caching, no transform pipeline,
 //! no source-hashing. Those live in the engine; we only run JS.
 //!
-//! Three public methods route on [`gc_jsrt::JsExecutionKind`]:
+//! Four public methods route on [`gc_jsrt::JsExecutionKind`]:
 //! [`JsRuntimeAdapter::post_process`] (script stdout in, suggestions out),
 //! [`JsRuntimeAdapter::script_function`] (returns argv for an engine-side
-//! script invocation), and [`JsRuntimeAdapter::custom`] (returns
-//! suggestions directly via host-API calls).
+//! script invocation), [`JsRuntimeAdapter::custom`] (returns suggestions
+//! directly via host-API calls), and [`JsRuntimeAdapter::token_only`]
+//! (same suggestion output shape as `custom`, but asks gc-jsrt to install
+//! only token globals — no host APIs).
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -173,6 +175,25 @@ impl JsRuntimeAdapter {
         log_diagnostics(&generator_id, &output);
         Ok(output)
     }
+
+    /// Run a `token_only` JS source. The body may be either a function
+    /// accepting `(tokens, ctx)` or a direct expression that returns
+    /// suggestions. The runtime installs only `tokens`, `currentToken`, and
+    /// `previousToken`; no host API or Fig namespace is available.
+    pub async fn token_only(
+        &self,
+        source: &str,
+        ctx: JsExecContext,
+        timeout: Duration,
+        generator_id: String,
+    ) -> Result<JsRuntimeOutput, JsRuntimeError> {
+        let worker = self.worker()?;
+        let program = build_token_only_program(source);
+        let input = ctx.into_runtime_input(generator_id.clone(), JsExecutionKind::TokenOnly);
+        let output = worker.evaluate(program, input, timeout).await?;
+        log_diagnostics(&generator_id, &output);
+        Ok(output)
+    }
 }
 
 /// Caller-side shape that captures the host context the engine wants to
@@ -189,13 +210,27 @@ pub struct JsExecContext {
 
 impl JsExecContext {
     fn into_runtime_input(self, generator_id: String, kind: JsExecutionKind) -> JsRuntimeInput {
+        // TokenOnly is contractually denied host cwd/env: the worker installs
+        // no host bindings (see `install_token_only_globals` in
+        // gc-jsrt/host.rs), so any cwd/env we forwarded would be dead weight
+        // at best and a leak vector at worst. Clear them here so the
+        // invariant "TokenOnly never receives host cwd/env" is enforced at
+        // the data boundary the worker thread observes — a future copy-paste
+        // that wires env reads into TokenOnly cannot silently exfiltrate
+        // HOME/PATH/AWS_ACCESS_KEY_ID/GITHUB_TOKEN from a host-untrusted
+        // sandbox.
+        let (cwd, env) = if matches!(kind, JsExecutionKind::TokenOnly) {
+            (PathBuf::new(), BTreeMap::new())
+        } else {
+            (self.cwd, self.env)
+        };
         JsRuntimeInput {
             stdout: None,
             tokens: self.tokens,
             current_token: self.current_token,
             previous_token: self.previous_token,
-            cwd: self.cwd,
-            env: self.env,
+            cwd,
+            env,
             generator_id,
             kind,
             allow_shell_command: false,
@@ -299,6 +334,33 @@ fn build_custom_program(source: &str) -> String {
              searchTerm: typeof searchTerm !== 'undefined' ? searchTerm : '', \
            }}; \
            return __src(__ctx.tokens, executeShellCommand, __ctx); \
+         }})()",
+        src = source,
+    )
+}
+
+/// Construct the wrapper expression for a `token_only` generator.
+///
+/// Converter-promoted sources are commonly original Fig function bodies
+/// (`tokens => ...`), but hand-authored specs may also provide direct
+/// expressions (`tokens.map(...)`). Support both forms without requiring the
+/// converter to rewrite source text.
+fn build_token_only_program(source: &str) -> String {
+    format!(
+        "(function() {{ \
+           const __src = ({src}); \
+           const __ctx = {{ \
+             currentToken: typeof currentToken !== 'undefined' ? currentToken : '', \
+             previousToken: typeof previousToken !== 'undefined' ? previousToken : '', \
+             tokens: typeof tokens !== 'undefined' ? tokens : [], \
+           }}; \
+           if (typeof __src === 'function') {{ \
+             if (__src.length >= 3) {{ \
+               return __src(__ctx.tokens, undefined, __ctx); \
+             }} \
+             return __src(__ctx.tokens, __ctx); \
+           }} \
+           return __src; \
          }})()",
         src = source,
     )
@@ -444,6 +506,96 @@ mod tests {
         assert!(
             program.contains("\"a"),
             "expected encoded stdout literal in program: {program}"
+        );
+    }
+
+    #[test]
+    fn build_token_only_program_supports_function_sources() {
+        let program = build_token_only_program("tokens => tokens");
+        assert!(program.contains("const __src = (tokens => tokens);"));
+        assert!(program.contains("typeof __src === 'function'"));
+        assert!(program.contains("if (__src.length >= 3)"));
+        assert!(program.contains("return __src(__ctx.tokens, undefined, __ctx);"));
+        assert!(program.contains("return __src(__ctx.tokens, __ctx);"));
+    }
+
+    #[test]
+    fn build_token_only_program_supports_expression_sources() {
+        let program = build_token_only_program("tokens.map(name => ({ name }))");
+        assert!(program.contains("const __src = (tokens.map(name => ({ name })));"));
+        assert!(program.contains("return __src;"));
+    }
+
+    /// `JsExecContext::into_runtime_input` MUST drop `cwd` and `env` for
+    /// `TokenOnly` dispatch — the worker installs no host bindings, so any
+    /// forwarded host state is dead weight at best and a leak vector at
+    /// worst (HOME / PATH / AWS_ACCESS_KEY_ID / GITHUB_TOKEN must never
+    /// reach a `token_only` sandbox). This pins the conditional at the
+    /// data boundary so a refactor that flips the `matches!` branch or
+    /// short-circuits the clearing trips the test, not production.
+    ///
+    /// `gc-jsrt`'s `install_token_only_globals` is the other half of
+    /// defense-in-depth (it refuses to install host bindings even if the
+    /// payload carries them). Both halves are tested independently.
+    #[test]
+    fn into_runtime_input_clears_cwd_and_env_for_token_only() {
+        let mut env = BTreeMap::new();
+        env.insert("AWS_ACCESS_KEY_ID".to_string(), "secret".to_string());
+        env.insert("HOME".to_string(), "/leaky/home".to_string());
+        let ctx = JsExecContext {
+            tokens: vec!["aws".to_string(), "s3".to_string()],
+            current_token: "s3".to_string(),
+            previous_token: "aws".to_string(),
+            cwd: PathBuf::from("/leaky/cwd"),
+            env,
+        };
+
+        let input = ctx.into_runtime_input("gen-1".to_string(), JsExecutionKind::TokenOnly);
+
+        assert_eq!(
+            input.cwd,
+            PathBuf::new(),
+            "TokenOnly dispatch must clear cwd at the data boundary"
+        );
+        assert!(
+            input.env.is_empty(),
+            "TokenOnly dispatch must clear env at the data boundary"
+        );
+        // Tokens are still forwarded — only host cwd/env are sensitive.
+        assert_eq!(input.tokens, vec!["aws".to_string(), "s3".to_string()]);
+        assert_eq!(input.current_token, "s3");
+        assert_eq!(input.previous_token, "aws");
+    }
+
+    /// Companion to `into_runtime_input_clears_cwd_and_env_for_token_only`:
+    /// the SAME context fed through a non-`TokenOnly` kind MUST retain
+    /// cwd + env. This pins the `if matches!(kind, TokenOnly)` branch from
+    /// the other side — a refactor that always clears cwd/env (e.g.
+    /// dropping the conditional) would silently strip host context from
+    /// `script_function` / `custom` / `post_process` and break those
+    /// dispatches.
+    #[test]
+    fn into_runtime_input_retains_cwd_and_env_for_non_token_only() {
+        let mut env = BTreeMap::new();
+        env.insert("PATH".to_string(), "/usr/bin".to_string());
+        let ctx = JsExecContext {
+            tokens: vec!["aws".to_string()],
+            current_token: String::new(),
+            previous_token: "aws".to_string(),
+            cwd: PathBuf::from("/work"),
+            env: env.clone(),
+        };
+
+        let input = ctx.into_runtime_input("gen-2".to_string(), JsExecutionKind::Custom);
+
+        assert_eq!(
+            input.cwd,
+            PathBuf::from("/work"),
+            "non-TokenOnly dispatch must retain cwd"
+        );
+        assert_eq!(
+            input.env, env,
+            "non-TokenOnly dispatch must retain env verbatim"
         );
     }
 

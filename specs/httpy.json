@@ -1,73 +1,13 @@
 {
-  "name": "httpy",
-  "description": "Programmable command-line HTTP client for the API",
-  "options": [
-    {
-      "name": [
-        "--exec",
-        "-x"
-      ],
-      "description": "Execute httpy command"
-    },
-    {
-      "name": [
-        "--status",
-        "-S"
-      ],
-      "description": "Print only the response status"
-    },
-    {
-      "name": [
-        "--header",
-        "-H"
-      ],
-      "description": "Print only the response headers"
-    },
-    {
-      "name": [
-        "--body",
-        "-B"
-      ],
-      "description": "Print only the response body"
-    },
-    {
-      "name": [
-        "--allow-redirect",
-        "-r"
-      ],
-      "description": "Allow requests to be redirected"
-    },
-    {
-      "name": [
-        "--verbose",
-        "-V"
-      ],
-      "description": "Show request and response in verbose"
-    },
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Show help for httpy"
-    },
-    {
-      "name": [
-        "--version",
-        "-v"
-      ],
-      "description": "Show version for httpy"
-    }
-  ],
   "args": [
     {
-      "name": "URL",
-      "description": "The scheme defaults to 'http://' if the URL does not include one"
+      "description": "The scheme defaults to 'http://' if the URL does not include one",
+      "name": "URL"
     },
     {
-      "name": "METHOD",
       "description": "The HTTP method to be used for the request (GET, POST, PUT, DELETE, ...)",
       "isOptional": true,
+      "name": "METHOD",
       "suggestions": [
         {
           "name": "GET"
@@ -81,6 +21,66 @@
         {
           "name": "DELETE"
         }
+      ]
+    }
+  ],
+  "description": "Programmable command-line HTTP client for the API",
+  "name": "httpy",
+  "options": [
+    {
+      "description": "Execute httpy command",
+      "name": [
+        "--exec",
+        "-x"
+      ]
+    },
+    {
+      "description": "Print only the response status",
+      "name": [
+        "--status",
+        "-S"
+      ]
+    },
+    {
+      "description": "Print only the response headers",
+      "name": [
+        "--header",
+        "-H"
+      ]
+    },
+    {
+      "description": "Print only the response body",
+      "name": [
+        "--body",
+        "-B"
+      ]
+    },
+    {
+      "description": "Allow requests to be redirected",
+      "name": [
+        "--allow-redirect",
+        "-r"
+      ]
+    },
+    {
+      "description": "Show request and response in verbose",
+      "name": [
+        "--verbose",
+        "-V"
+      ]
+    },
+    {
+      "description": "Show help for httpy",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Show version for httpy",
+      "name": [
+        "--version",
+        "-v"
       ]
     }
   ]

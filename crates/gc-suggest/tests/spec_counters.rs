@@ -1,21 +1,28 @@
 //! Integration tests for [`SpecStore::counters`] — corpus-wide
-//! diagnostics for the ux-9b precursor migration plan.
+//! diagnostics for the requires_js migration plan.
 //!
 //! These pin the per-shape contributions to the [`SpecResolutionCounters`]
-//! fields so future converter work can extend the migration-future fields
-//! (`lowered_to_transforms`, `static_extracted_subprocess`,
-//! `token_only_promoted`, `aws_sdk_dispatched`,
+//! fields so future converter work can extend the remaining
+//! migration-future fields (`lowered_to_transforms`,
+//! `static_extracted_subprocess`, `aws_sdk_dispatched`,
 //! `native_provider_dispatched`) without re-deriving the requires_js
-//! totals.
+//! totals. `token_only_promoted` is already populated today and is
+//! exercised by [`token_only_without_self_contained_is_supported_and_counted`]
+//! and [`token_only_with_empty_source_does_not_increment_promoted_counter`]
+//! in this file.
 //!
 //! The "supported" classification mirrors the engine's runtime dispatch
 //! gate (see [`gc_suggest::specs::is_requires_js_supported`]):
 //! `script_function` / `custom` generators must carry both a non-empty
 //! `source` AND `self_contained: true`; `post_process` generators must
 //! carry an accompanying `script` / `script_template` plus a non-empty
-//! `source`. Without this alignment, the counters block would over-report
-//! supported generators relative to the legacy raw-JSON walker that the
-//! `ghost-complete status --json spec_counts` block already publishes.
+//! `source`; `token_only` generators only require a non-empty `source`
+//! (no `self_contained` proof) because the runtime installs no host
+//! bindings, and they additionally bump `token_only_promoted` alongside
+//! `requires_js_supported`. Without this alignment, the counters block
+//! would over-report supported generators relative to the legacy
+//! raw-JSON walker that the `ghost-complete status --json spec_counts`
+//! block already publishes.
 
 use std::fs;
 
@@ -108,8 +115,13 @@ fn counters_classify_each_known_generator_shape() {
         "one requires_js generator omits js_runtime metadata"
     );
 
-    // Migration-future fields stay at 0 in this PR — populated by
-    // ux-10/11/12/13/14 respectively.
+    // Migration-future fields stay at 0 for THIS fixture: the corpus has
+    // no `token_only` generators (only `script_function` + an unsupported
+    // shape), and the four other counters (`lowered_to_transforms`,
+    // `static_extracted_subprocess`, `aws_sdk_dispatched`,
+    // `native_provider_dispatched`) are not yet populated by any
+    // migration. Token-only contributions are pinned separately by
+    // `token_only_without_self_contained_is_supported_and_counted`.
     assert_eq!(counters.lowered_to_transforms, 0);
     assert_eq!(counters.static_extracted_subprocess, 0);
     assert_eq!(counters.token_only_promoted, 0);
@@ -250,6 +262,42 @@ fn custom_without_self_contained_is_unsupported() {
     assert_eq!(counters.requires_js_unsupported, 1);
 }
 
+/// `token_only` is safe because the runtime installs no host bindings, so
+/// it is dispatchable even when `self_contained` is false. The migration
+/// counter tracks these promotions separately from the generic supported
+/// requires_js count.
+#[test]
+fn token_only_without_self_contained_is_supported_and_counted() {
+    let dir = TempDir::new().unwrap();
+    write_spec(
+        dir.path(),
+        "token-only.json",
+        r#"{
+            "name": "token-only",
+            "args": [{
+                "name": "x",
+                "generators": [{
+                    "requires_js": true,
+                    "js_runtime": {
+                        "kind": "token_only",
+                        "source": "tokens.map(name => ({ name }))",
+                        "self_contained": false
+                    }
+                }]
+            }]
+        }"#,
+    );
+    let counters = SpecStore::load_from_dir(dir.path())
+        .unwrap()
+        .store
+        .counters();
+
+    assert_eq!(counters.requires_js_total, 1);
+    assert_eq!(counters.requires_js_supported, 1);
+    assert_eq!(counters.requires_js_unsupported, 0);
+    assert_eq!(counters.token_only_promoted, 1);
+}
+
 /// `post_process` does NOT need `self_contained: true`. It DOES need an
 /// accompanying `script` (or `script_template`) plus a non-empty source.
 #[test]
@@ -353,4 +401,61 @@ fn empty_source_is_unsupported() {
         "whitespace-only source has nothing to evaluate"
     );
     assert_eq!(counters.requires_js_unsupported, 1);
+}
+
+/// A whitespace-only `token_only` source is ineligible — `token_only_promoted`
+/// must only count generators that actually pass `is_requires_js_supported`.
+/// Pairing it with a supported `script_function` spec exercises the path
+/// where the supported counter ticks but the promoted counter does NOT.
+#[test]
+fn token_only_with_empty_source_does_not_increment_promoted_counter() {
+    let dir = TempDir::new().unwrap();
+    write_spec(
+        dir.path(),
+        "token-only-empty.json",
+        r#"{
+            "name": "token-only-empty",
+            "args": [{
+                "name": "x",
+                "generators": [{
+                    "requires_js": true,
+                    "js_runtime": {
+                        "kind": "token_only",
+                        "source": "   ",
+                        "self_contained": false
+                    }
+                }]
+            }]
+        }"#,
+    );
+    write_spec(
+        dir.path(),
+        "supported-script-function.json",
+        r#"{
+            "name": "supported-script-function",
+            "args": [{
+                "name": "x",
+                "generators": [{
+                    "requires_js": true,
+                    "js_runtime": {
+                        "kind": "script_function",
+                        "source": "ctx => ['a','b']",
+                        "self_contained": true
+                    }
+                }]
+            }]
+        }"#,
+    );
+    let counters = SpecStore::load_from_dir(dir.path())
+        .unwrap()
+        .store
+        .counters();
+
+    assert_eq!(counters.requires_js_total, 2);
+    assert_eq!(counters.requires_js_supported, 1);
+    assert_eq!(counters.requires_js_unsupported, 1);
+    assert_eq!(
+        counters.token_only_promoted, 0,
+        "whitespace-only token_only source must not count as promoted"
+    );
 }

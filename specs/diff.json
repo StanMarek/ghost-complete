@@ -1,415 +1,415 @@
 {
-  "name": "diff",
+  "args": {
+    "isVariadic": true,
+    "name": "file",
+    "template": "filepaths"
+  },
   "description": "Compare files line by line",
+  "name": "diff",
   "options": [
     {
+      "description": "Ignore case differences in file contents",
       "name": [
         "-i",
         "--ignore-case"
-      ],
-      "description": "Ignore case differences in file contents"
+      ]
     },
     {
+      "description": "Ignore case when comparing file names",
       "name": [
         "--ignore-file-name-case"
-      ],
-      "description": "Ignore case when comparing file names"
+      ]
     },
     {
+      "description": "Consider case when comparing file names",
       "name": [
         "--no-ignore-file-name-case"
-      ],
-      "description": "Consider case when comparing file names"
+      ]
     },
     {
+      "description": "Ignore changes due to tab expansion",
       "name": [
         "-E",
         "--ignore-tab-expansion"
-      ],
-      "description": "Ignore changes due to tab expansion"
+      ]
     },
     {
+      "description": "Ignore changes in the amount of white space",
       "name": [
         "-b",
         "--ignore-space-change"
-      ],
-      "description": "Ignore changes in the amount of white space"
+      ]
     },
     {
+      "description": "Ignore all white space",
       "name": [
         "-w",
         "--ignore-all-space"
-      ],
-      "description": "Ignore all white space"
+      ]
     },
     {
+      "description": "Ignore changes whose lines are all blank",
       "name": [
         "-B",
         "--ignore-blank-lines"
-      ],
-      "description": "Ignore changes whose lines are all blank"
+      ]
     },
     {
+      "args": {
+        "name": "RE"
+      },
+      "description": "Ignore changes whose lines all match RE",
       "name": [
         "-I",
         "--ignore-matching-lines"
-      ],
-      "description": "Ignore changes whose lines all match RE",
-      "args": {
-        "name": "RE"
-      }
+      ]
     },
     {
+      "description": "Strip trailing carriage return on input",
       "name": [
         "--strip-trailing-cr"
-      ],
-      "description": "Strip trailing carriage return on input"
+      ]
     },
     {
+      "description": "Treat all files as text",
       "name": [
         "-a",
         "--text"
-      ],
-      "description": "Treat all files as text"
+      ]
     },
     {
+      "args": {
+        "name": "NUM"
+      },
+      "description": "Output NUM lines of copied context",
       "name": [
         "-c",
         "-C",
         "--context"
-      ],
-      "description": "Output NUM lines of copied context",
-      "args": {
-        "name": "NUM"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "NUM"
+      },
+      "description": "Output NUM lines of unified context",
       "name": [
         "-u",
         "-U",
         "--unified"
-      ],
-      "description": "Output NUM lines of unified context",
-      "args": {
-        "name": "NUM"
-      }
+      ]
     },
     {
-      "name": [
-        "--label"
-      ],
-      "description": "Use LABEL instead of file name",
       "args": {
         "name": "LABEL"
-      }
+      },
+      "description": "Use LABEL instead of file name",
+      "name": [
+        "--label"
+      ]
     },
     {
+      "description": "Show which C function each change is in",
       "name": [
         "-p",
         "--show-c-function"
-      ],
-      "description": "Show which C function each change is in"
+      ]
     },
     {
+      "args": {
+        "name": "RE"
+      },
+      "description": "Show the most recent line matching RE",
       "name": [
         "-F",
         "--show-function-line"
-      ],
-      "description": "Show the most recent line matching RE",
-      "args": {
-        "name": "RE"
-      }
+      ]
     },
     {
+      "description": "Output only whether files differ",
       "name": [
         "-q",
         "--brief"
-      ],
-      "description": "Output only whether files differ"
+      ]
     },
     {
+      "description": "Output an ed script",
       "name": [
         "-e",
         "--ed"
-      ],
-      "description": "Output an ed script"
+      ]
     },
     {
+      "description": "Output a normal diff",
       "name": [
         "--normal"
-      ],
-      "description": "Output a normal diff"
+      ]
     },
     {
+      "description": "Output an RCS format diff",
       "name": [
         "-n",
         "--rcs"
-      ],
-      "description": "Output an RCS format diff"
+      ]
     },
     {
+      "description": "Output in two columns",
       "name": [
         "-y",
         "--side-by-side"
-      ],
-      "description": "Output in two columns"
+      ]
     },
     {
+      "args": {
+        "name": "NUM"
+      },
+      "description": "Output at most NUM (default 130) print columns",
       "name": [
         "-W",
         "--width"
-      ],
-      "description": "Output at most NUM (default 130) print columns",
-      "args": {
-        "name": "NUM"
-      }
+      ]
     },
     {
+      "description": "Output only the left column of common lines",
       "name": [
         "--left-column"
-      ],
-      "description": "Output only the left column of common lines"
+      ]
     },
     {
+      "description": "Do not output common lines",
       "name": [
         "--suppress-common-lines"
-      ],
-      "description": "Do not output common lines"
+      ]
     },
     {
+      "args": {
+        "name": "NAME"
+      },
+      "description": "Output merged file to show `#ifdef NAME' diffs",
       "name": [
         "-D",
         "--ifdef"
-      ],
-      "description": "Output merged file to show `#ifdef NAME' diffs",
-      "args": {
-        "name": "NAME"
-      }
+      ]
     },
     {
+      "description": "Pass the output through `pr' to paginate it",
       "name": [
         "-l",
         "--paginate"
-      ],
-      "description": "Pass the output through `pr' to paginate it"
+      ]
     },
     {
+      "description": "Expand tabs to spaces in output",
       "name": [
         "-t",
         "--expand-tabs"
-      ],
-      "description": "Expand tabs to spaces in output"
+      ]
     },
     {
+      "description": "Make tabs line up by prepending a tab",
       "name": [
         "-T",
         "--initial-tab"
-      ],
-      "description": "Make tabs line up by prepending a tab"
+      ]
     },
     {
+      "description": "Recursively compare any subdirectories found",
       "name": [
         "-r",
         "--recursive"
-      ],
-      "description": "Recursively compare any subdirectories found"
+      ]
     },
     {
+      "description": "Treat absent files as empty",
       "name": [
         "-N",
         "--new-file"
-      ],
-      "description": "Treat absent files as empty"
+      ]
     },
     {
+      "description": "Treat absent first files as empty",
       "name": [
         "--unidirectional-new-file"
-      ],
-      "description": "Treat absent first files as empty"
+      ]
     },
     {
+      "description": "Report when two files are the same",
       "name": [
         "-s",
         "--report-identical-files"
-      ],
-      "description": "Report when two files are the same"
+      ]
     },
     {
+      "args": {
+        "name": "PAT"
+      },
+      "description": "Exclude files that match PAT",
       "name": [
         "-x",
         "--exclude"
-      ],
-      "description": "Exclude files that match PAT",
-      "args": {
-        "name": "PAT"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "FILE",
+        "template": "filepaths"
+      },
+      "description": "Exclude files that match any pattern in FILE",
       "name": [
         "-X",
         "--exclude-from"
-      ],
-      "description": "Exclude files that match any pattern in FILE",
+      ]
+    },
+    {
       "args": {
         "name": "FILE",
         "template": "filepaths"
-      }
-    },
-    {
+      },
+      "description": "Start with FILE when comparing directories",
       "name": [
         "-S",
         "--starting-file"
-      ],
-      "description": "Start with FILE when comparing directories",
-      "args": {
-        "name": "FILE",
-        "template": "filepaths"
-      }
+      ]
     },
     {
-      "name": [
-        "--from-file"
-      ],
-      "description": "Compare FILE1 to all operands. FILE1 can be a directory",
       "args": {
         "name": "FILE1",
         "template": [
           "filepaths",
           "folders"
         ]
-      }
+      },
+      "description": "Compare FILE1 to all operands. FILE1 can be a directory",
+      "name": [
+        "--from-file"
+      ]
     },
     {
-      "name": [
-        "--to-file"
-      ],
-      "description": "Compare all operands to FILE2. FILE2 can be a directory",
       "args": {
         "name": "FILE2",
         "template": [
           "filepaths",
           "folders"
         ]
-      }
+      },
+      "description": "Compare all operands to FILE2. FILE2 can be a directory",
+      "name": [
+        "--to-file"
+      ]
     },
     {
-      "name": [
-        "--horizon-lines"
-      ],
-      "description": "Keep NUM lines of the common prefix and suffix",
       "args": {
         "name": "NUM"
-      }
+      },
+      "description": "Keep NUM lines of the common prefix and suffix",
+      "name": [
+        "--horizon-lines"
+      ]
     },
     {
+      "description": "Try hard to find a smaller set of changes",
       "name": [
         "-d",
         "--minimal"
-      ],
-      "description": "Try hard to find a smaller set of changes"
+      ]
     },
     {
+      "description": "Assume large files and many scattered small changes",
       "name": [
         "--speed-large-files"
-      ],
-      "description": "Assume large files and many scattered small changes"
+      ]
     },
     {
+      "description": "Output version info",
       "name": [
         "-v",
         "--version"
-      ],
-      "description": "Output version info"
+      ]
     },
     {
+      "description": "Show help",
       "name": [
         "--help"
-      ],
-      "description": "Show help"
+      ]
     },
     {
+      "args": {
+        "description": "%<  lines from FILE1\n%>  lines from FILE2\n%=  lines common to FILE1 and FILE2\n%[-][WIDTH][.[PREC]]{doxX}LETTER  printf-style spec for LETTER\nLETTERs are as follows for new group, lower case for old group:\nF  first line number\nL  last line number\nN  number of lines = L-F+1\nE  F-1\nM  L+1\n%%  %\n%c'C'  the single character C\n%c'OOO'  the character with octal code OOO",
+        "name": "GFTM"
+      },
+      "description": "Similar, but format old input groups with GFTM",
       "name": [
         "--old-group-format"
-      ],
-      "description": "Similar, but format old input groups with GFTM",
-      "args": {
-        "name": "GFTM",
-        "description": "%<  lines from FILE1\n%>  lines from FILE2\n%=  lines common to FILE1 and FILE2\n%[-][WIDTH][.[PREC]]{doxX}LETTER  printf-style spec for LETTER\nLETTERs are as follows for new group, lower case for old group:\nF  first line number\nL  last line number\nN  number of lines = L-F+1\nE  F-1\nM  L+1\n%%  %\n%c'C'  the single character C\n%c'OOO'  the character with octal code OOO"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "%<  lines from FILE1\n%>  lines from FILE2\n%=  lines common to FILE1 and FILE2\n%[-][WIDTH][.[PREC]]{doxX}LETTER  printf-style spec for LETTER\nLETTERs are as follows for new group, lower case for old group:\nF  first line number\nL  last line number\nN  number of lines = L-F+1\nE  F-1\nM  L+1\n%%  %\n%c'C'  the single character C\n%c'OOO'  the character with octal code OOO",
+        "name": "GFTM"
+      },
+      "description": "Similar, but format new input groups with GFTM",
       "name": [
         "--new-group-format"
-      ],
-      "description": "Similar, but format new input groups with GFTM",
-      "args": {
-        "name": "GFTM",
-        "description": "%<  lines from FILE1\n%>  lines from FILE2\n%=  lines common to FILE1 and FILE2\n%[-][WIDTH][.[PREC]]{doxX}LETTER  printf-style spec for LETTER\nLETTERs are as follows for new group, lower case for old group:\nF  first line number\nL  last line number\nN  number of lines = L-F+1\nE  F-1\nM  L+1\n%%  %\n%c'C'  the single character C\n%c'OOO'  the character with octal code OOO"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "%<  lines from FILE1\n%>  lines from FILE2\n%=  lines common to FILE1 and FILE2\n%[-][WIDTH][.[PREC]]{doxX}LETTER  printf-style spec for LETTER\nLETTERs are as follows for new group, lower case for old group:\nF  first line number\nL  last line number\nN  number of lines = L-F+1\nE  F-1\nM  L+1\n%%  %\n%c'C'  the single character C\n%c'OOO'  the character with octal code OOO",
+        "name": "GFTM"
+      },
+      "description": "Similar, but format unchanged input groups with GFTM",
       "name": [
         "--unchanged-group-format"
-      ],
-      "description": "Similar, but format unchanged input groups with GFTM",
-      "args": {
-        "name": "GFTM",
-        "description": "%<  lines from FILE1\n%>  lines from FILE2\n%=  lines common to FILE1 and FILE2\n%[-][WIDTH][.[PREC]]{doxX}LETTER  printf-style spec for LETTER\nLETTERs are as follows for new group, lower case for old group:\nF  first line number\nL  last line number\nN  number of lines = L-F+1\nE  F-1\nM  L+1\n%%  %\n%c'C'  the single character C\n%c'OOO'  the character with octal code OOO"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "%<  lines from FILE1\n%>  lines from FILE2\n%=  lines common to FILE1 and FILE2\n%[-][WIDTH][.[PREC]]{doxX}LETTER  printf-style spec for LETTER\nLETTERs are as follows for new group, lower case for old group:\nF  first line number\nL  last line number\nN  number of lines = L-F+1\nE  F-1\nM  L+1\n%%  %\n%c'C'  the single character C\n%c'OOO'  the character with octal code OOO",
+        "name": "GFTM"
+      },
+      "description": "Similar, but format changed input groups with GFTM",
       "name": [
         "--changed-group-format"
-      ],
-      "description": "Similar, but format changed input groups with GFTM",
-      "args": {
-        "name": "GFTM",
-        "description": "%<  lines from FILE1\n%>  lines from FILE2\n%=  lines common to FILE1 and FILE2\n%[-][WIDTH][.[PREC]]{doxX}LETTER  printf-style spec for LETTER\nLETTERs are as follows for new group, lower case for old group:\nF  first line number\nL  last line number\nN  number of lines = L-F+1\nE  F-1\nM  L+1\n%%  %\n%c'C'  the single character C\n%c'OOO'  the character with octal code OOO"
-      }
+      ]
     },
     {
-      "name": [
-        "--line-format"
-      ],
-      "description": "Format all input lines with LFMT",
       "args": {
         "name": "LFTM"
-      }
+      },
+      "description": "Format all input lines with LFMT",
+      "name": [
+        "--line-format"
+      ]
     },
     {
+      "args": {
+        "description": "%L  contents of line\n%l  contents of line, excluding any trailing newline\n%[-][WIDTH][.[PREC]]{doxX}n  printf-style spec for input line number\n%%  %\n%c'C'  the single character C\n%c'OOO'  the character with octal code OOO",
+        "name": "LFTM"
+      },
+      "description": "Format old input lines with LFTM",
       "name": [
         "--old-line-format"
-      ],
-      "description": "Format old input lines with LFTM",
-      "args": {
-        "name": "LFTM",
-        "description": "%L  contents of line\n%l  contents of line, excluding any trailing newline\n%[-][WIDTH][.[PREC]]{doxX}n  printf-style spec for input line number\n%%  %\n%c'C'  the single character C\n%c'OOO'  the character with octal code OOO"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "%L  contents of line\n%l  contents of line, excluding any trailing newline\n%[-][WIDTH][.[PREC]]{doxX}n  printf-style spec for input line number\n%%  %\n%c'C'  the single character C\n%c'OOO'  the character with octal code OOO",
+        "name": "LFTM"
+      },
+      "description": "Format new input lines with LFTM",
       "name": [
         "--new-line-format"
-      ],
-      "description": "Format new input lines with LFTM",
-      "args": {
-        "name": "LFTM",
-        "description": "%L  contents of line\n%l  contents of line, excluding any trailing newline\n%[-][WIDTH][.[PREC]]{doxX}n  printf-style spec for input line number\n%%  %\n%c'C'  the single character C\n%c'OOO'  the character with octal code OOO"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "%L  contents of line\n%l  contents of line, excluding any trailing newline\n%[-][WIDTH][.[PREC]]{doxX}n  printf-style spec for input line number\n%%  %\n%c'C'  the single character C\n%c'OOO'  the character with octal code OOO",
+        "name": "LFTM"
+      },
+      "description": "Format unchanged input lines with LFTM",
       "name": [
         "--unchanged-line-format"
-      ],
-      "description": "Format unchanged input lines with LFTM",
-      "args": {
-        "name": "LFTM",
-        "description": "%L  contents of line\n%l  contents of line, excluding any trailing newline\n%[-][WIDTH][.[PREC]]{doxX}n  printf-style spec for input line number\n%%  %\n%c'C'  the single character C\n%c'OOO'  the character with octal code OOO"
-      }
+      ]
     }
-  ],
-  "args": {
-    "name": "file",
-    "template": "filepaths",
-    "isVariadic": true
-  }
+  ]
 }

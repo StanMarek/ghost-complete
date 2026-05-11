@@ -1,15 +1,15 @@
 {
-  "name": "pkill",
+  "args": {
+    "description": "Specifies an Extended Regular Expression for matching against the process names or command lines",
+    "name": "pattern"
+  },
   "description": "Send  the  specified  signal  (by default SIGTERM) to each specified process",
+  "name": "pkill",
   "options": [
     {
-      "name": [
-        "--signal"
-      ],
-      "description": "Signal to send (either number or name)",
       "args": {
-        "name": "signal",
         "description": "Signal to send",
+        "name": "signal",
         "suggestions": [
           {
             "name": "SIGABRT"
@@ -126,195 +126,195 @@
             "name": "SIGWINCH"
           }
         ]
-      }
+      },
+      "description": "Signal to send (either number or name)",
+      "name": [
+        "--signal"
+      ]
     },
     {
+      "args": {
+        "name": "value"
+      },
+      "description": "Integer value to be sent with the signal",
       "name": [
         "-q",
         "--queue"
-      ],
-      "description": "Integer value to be sent with the signal",
-      "args": {
-        "name": "value"
-      }
+      ]
     },
     {
+      "description": "Display what is killed",
       "name": [
         "-e",
         "--echo"
-      ],
-      "description": "Display what is killed"
+      ]
     },
     {
+      "description": "Use full process name to match",
       "name": [
         "-f",
         "--full"
-      ],
-      "description": "Use full process name to match"
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "PGID"
+      },
+      "description": "Match listed process group IDs",
       "name": [
         "-g",
         "--pgroup"
-      ],
-      "description": "Match listed process group IDs",
-      "args": {
-        "name": "PGID",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "GID"
+      },
+      "description": "Match real group IDs",
       "name": [
         "-G",
         "--group"
-      ],
-      "description": "Match real group IDs",
-      "args": {
-        "name": "GID",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "description": "Match case insensitively",
       "name": [
         "-i",
         "--ignore-case"
       ],
-      "description": "Match case insensitively",
       "priority": 65
     },
     {
+      "description": "Select most recently started",
       "name": [
         "-n",
         "--newest"
       ],
-      "description": "Select most recently started",
       "priority": 65
     },
     {
+      "description": "Select least recently started",
       "name": [
         "-o",
         "--oldest"
-      ],
-      "description": "Select least recently started"
+      ]
     },
     {
+      "args": {
+        "name": "seconds"
+      },
+      "description": "Select where older than seconds",
       "name": [
         "-O",
         "--older"
-      ],
-      "description": "Select where older than seconds",
-      "args": {
-        "name": "seconds"
-      }
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "PPID"
+      },
+      "description": "Match only child processes of the given parent",
       "name": [
         "-P",
         "--parent"
-      ],
-      "description": "Match only child processes of the given parent",
-      "args": {
-        "name": "PPID",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "SID"
+      },
+      "description": "Match session IDs",
       "name": [
         "-s",
         "--session"
-      ],
-      "description": "Match session IDs",
-      "args": {
-        "name": "SID",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "tty"
+      },
+      "description": "Match by controlling terminal",
       "name": [
         "-t",
         "--terminal"
-      ],
-      "description": "Match by controlling terminal",
-      "args": {
-        "name": "tty",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "ID"
+      },
+      "description": "Match by effective IDs",
       "name": [
         "-u",
         "--euid"
-      ],
-      "description": "Match by effective IDs",
-      "args": {
-        "name": "ID",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "ID"
+      },
+      "description": "Match by real IDs",
       "name": [
         "-U",
         "--uid"
-      ],
-      "description": "Match by real IDs",
-      "args": {
-        "name": "ID",
-        "isVariadic": true
-      }
+      ]
     },
     {
+      "description": "Match exactly with the command name",
       "name": [
         "-x",
         "--exact"
-      ],
-      "description": "Match exactly with the command name"
+      ]
     },
     {
-      "name": [
-        "-F",
-        "--pidfile"
-      ],
-      "description": "Read PIDs from file",
       "args": {
         "name": "file",
         "template": "filepaths"
-      }
+      },
+      "description": "Read PIDs from file",
+      "name": [
+        "-F",
+        "--pidfile"
+      ]
     },
     {
+      "description": "Fail if PID file is not locked",
       "name": [
         "-L",
         "logpidfile"
-      ],
-      "description": "Fail if PID file is not locked"
+      ]
     },
     {
+      "args": {
+        "name": "state"
+      },
+      "description": "Match runstates",
       "name": [
         "-r",
         "--runstates"
       ],
-      "description": "Match runstates",
-      "args": {
-        "name": "state"
-      },
       "priority": 70
     },
     {
-      "name": [
-        "--ns"
-      ],
-      "description": "Match the processes that belong to a specified PID",
       "args": {
         "name": "PID"
-      }
+      },
+      "description": "Match the processes that belong to a specified PID",
+      "name": [
+        "--ns"
+      ]
     },
     {
-      "name": [
-        "--nslist"
-      ],
-      "description": "List which namespaces will be considered for the --ns option",
       "args": {
-        "name": "ns",
         "isVariadic": true,
+        "name": "ns",
         "suggestions": [
           {
             "name": "ipc"
@@ -335,26 +335,26 @@
             "name": "uts"
           }
         ]
-      }
+      },
+      "description": "List which namespaces will be considered for the --ns option",
+      "name": [
+        "--nslist"
+      ]
     },
     {
+      "description": "Output help message and exit",
       "name": [
         "-h",
         "--help"
       ],
-      "description": "Output help message and exit",
       "priority": 65
     },
     {
+      "description": "Output version information and exit",
       "name": [
         "-V",
         "--version"
-      ],
-      "description": "Output version information and exit"
+      ]
     }
-  ],
-  "args": {
-    "name": "pattern",
-    "description": "Specifies an Extended Regular Expression for matching against the process names or command lines"
-  }
+  ]
 }

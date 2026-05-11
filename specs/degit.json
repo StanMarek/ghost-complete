@@ -1,40 +1,55 @@
 {
-  "name": "degit",
-  "description": "Straightforward project scaffolding",
-  "options": [
+  "args": [
     {
-      "name": [
-        "--help"
+      "generators": [
+        {
+          "js_runtime": {
+            "kind": "custom",
+            "self_contained": true,
+            "source": "async(r,e)=>{let n=r[r.length-1];if(n.includes(\":\"))return[];let t=n.slice(0,n.indexOf(\"/\")),{stdout:i}=await e({command:\"curl\",args:[\"-sL\",`https://api.github.com/users/${t}/repos`]});return JSON.parse(i).map(s=>({name:s.full_name,description:s.description??\"Repository\",priority:s.is_template?51:50,displayName:s.name,icon:\"fig://icon?type=git\"}))}"
+          },
+          "requires_js": true
+        }
       ],
-      "description": "Print help"
+      "name": "user/repo"
     },
     {
+      "isOptional": true,
+      "name": "location",
+      "template": "folders"
+    }
+  ],
+  "description": "Straightforward project scaffolding",
+  "name": "degit",
+  "options": [
+    {
+      "description": "Print help",
+      "name": [
+        "--help"
+      ]
+    },
+    {
+      "description": "Overwrite existing files",
       "name": [
         "-f",
         "--force"
-      ],
-      "description": "Overwrite existing files"
+      ]
     },
     {
+      "description": "Use a cache",
       "name": [
         "-c",
         "--cache"
-      ],
-      "description": "Use a cache"
+      ]
     },
     {
+      "description": "Be verbose?",
       "name": [
         "-v",
         "--verbose"
-      ],
-      "description": "Be verbose?"
+      ]
     },
     {
-      "name": [
-        "-m",
-        "--mode"
-      ],
-      "description": "Clone mode",
       "args": {
         "name": "mode",
         "suggestions": [
@@ -45,26 +60,12 @@
             "name": "tar"
           }
         ]
-      }
-    }
-  ],
-  "args": [
-    {
-      "name": "user/repo",
-      "generators": [
-        {
-          "requires_js": true,
-          "js_runtime": {
-            "kind": "custom",
-            "source": "async(r,e)=>{let n=r[r.length-1];if(n.includes(\":\"))return[];let t=n.slice(0,n.indexOf(\"/\")),{stdout:i}=await e({command:\"curl\",args:[\"-sL\",`https://api.github.com/users/${t}/repos`]});return JSON.parse(i).map(s=>({name:s.full_name,description:s.description??\"Repository\",priority:s.is_template?51:50,displayName:s.name,icon:\"fig://icon?type=git\"}))}"
-          }
-        }
+      },
+      "description": "Clone mode",
+      "name": [
+        "-m",
+        "--mode"
       ]
-    },
-    {
-      "name": "location",
-      "template": "folders",
-      "isOptional": true
     }
   ]
 }

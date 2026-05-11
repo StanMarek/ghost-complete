@@ -1,32 +1,32 @@
 {
-  "name": "unzip",
+  "args": {
+    "name": "file",
+    "template": "filepaths"
+  },
   "description": "Extract compressed files in a ZIP archive",
+  "name": "unzip",
   "options": [
     {
-      "name": [
-        "-l"
-      ],
-      "description": "List the contents of a zip file without extracting",
       "args": {
         "name": "file",
         "template": "filepaths"
       },
+      "description": "List the contents of a zip file without extracting",
+      "name": [
+        "-l"
+      ],
       "priority": 65
     },
     {
-      "name": [
-        "-c"
-      ],
       "args": {
         "name": "file",
         "template": "filepaths"
-      }
+      },
+      "name": [
+        "-c"
+      ]
     },
     {
-      "name": [
-        "-0"
-      ],
-      "description": "Extract a zip file created in windows, containing files with non-ascii (chinese) filenames",
       "args": [
         {
           "name": "gbk"
@@ -35,20 +35,20 @@
           "name": "file",
           "template": "filepaths"
         }
+      ],
+      "description": "Extract a zip file created in windows, containing files with non-ascii (chinese) filenames",
+      "name": [
+        "-0"
       ]
     },
     {
-      "name": [
-        "-d"
-      ],
       "args": {
         "name": "destination",
         "template": "folders"
-      }
+      },
+      "name": [
+        "-d"
+      ]
     }
-  ],
-  "args": {
-    "name": "file",
-    "template": "filepaths"
-  }
+  ]
 }

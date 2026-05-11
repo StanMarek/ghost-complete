@@ -1,480 +1,487 @@
 {
-  "name": "dpkg",
   "description": "Debian package management system",
+  "name": "dpkg",
+  "options": [
+    {
+      "description": "Help for dpkg",
+      "name": [
+        "-h",
+        "--help"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "query",
       "description": "Query the dpkg database",
+      "name": "query",
       "options": [
         {
+          "args": {
+            "name": "pattern"
+          },
+          "description": "List packages matching a pattern",
           "name": [
             "-l",
             "--list"
-          ],
-          "description": "List packages matching a pattern",
-          "args": {
-            "name": "pattern"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "package"
+          },
+          "description": "Display the status of available packages",
           "name": [
             "-s",
             "--status"
-          ],
-          "description": "Display the status of available packages",
-          "args": {
-            "name": "package"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "package"
+          },
+          "description": "List files in a package",
           "name": [
             "-L",
             "--listfiles"
-          ],
-          "description": "List files in a package",
-          "args": {
-            "name": "package"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "file"
+          },
+          "description": "Search for a package owning a file",
           "name": [
             "-S",
             "--search"
-          ],
-          "description": "Search for a package owning a file",
-          "args": {
-            "name": "file"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "package"
+          },
+          "description": "Display details about a package in the dpkg database",
           "name": [
             "-p",
             "--print-avail"
-          ],
-          "description": "Display details about a package in the dpkg database",
-          "args": {
-            "name": "package"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "package"
+          },
+          "description": "Show a package in the dpkg database",
           "name": [
             "-W",
             "--show"
-          ],
-          "description": "Show a package in the dpkg database",
-          "args": {
-            "name": "package"
-          }
+          ]
         }
       ]
     },
     {
-      "name": "install",
+      "args": {
+        "name": "package"
+      },
       "description": "Install or upgrade packages",
+      "name": "install",
       "options": [
         {
+          "description": "Recursively handle packages",
           "name": [
             "-R",
             "--recursive"
-          ],
-          "description": "Recursively handle packages"
+          ]
         },
         {
+          "description": "Uninstall packages that depend on the target package",
           "name": [
             "-B",
             "--auto-deconfigure"
-          ],
-          "description": "Uninstall packages that depend on the target package"
+          ]
         },
         {
+          "description": "Don't upgrade if the same version is already installed",
           "name": [
             "--skip-same-version"
-          ],
-          "description": "Don't upgrade if the same version is already installed"
+          ]
         },
         {
+          "description": "Ignore dependency problems",
           "name": [
             "--force-depends"
-          ],
-          "description": "Ignore dependency problems"
+          ]
         },
         {
+          "description": "Always install the new version of configuration files",
           "name": [
             "--force-confnew"
-          ],
-          "description": "Always install the new version of configuration files"
+          ]
         },
         {
+          "description": "Always install the old version of configuration files",
           "name": [
             "--force-confold"
-          ],
-          "description": "Always install the old version of configuration files"
+          ]
         },
         {
+          "description": "Always install the default version of configuration files",
           "name": [
             "--force-confdef"
-          ],
-          "description": "Always install the default version of configuration files"
+          ]
         },
         {
+          "description": "Always install missing configuration files",
           "name": [
             "--force-confmiss"
-          ],
-          "description": "Always install missing configuration files"
+          ]
         },
         {
+          "description": "Skip processing triggers",
           "name": [
             "--no-triggers"
-          ],
-          "description": "Skip processing triggers"
+          ]
         },
         {
+          "description": "Simulate the action, but don't execute",
           "name": [
             "--no-act"
-          ],
-          "description": "Simulate the action, but don't execute"
-        }
-      ],
-      "args": {
-        "name": "package"
-      }
-    },
-    {
-      "name": "remove",
-      "description": "Remove packages",
-      "options": [
-        {
-          "name": [
-            "-R",
-            "--recursive"
-          ],
-          "description": "Recursively remove packages"
-        },
-        {
-          "name": [
-            "-B",
-            "--auto-deconfigure"
-          ],
-          "description": "Uninstall packages that depend on the target package"
-        },
-        {
-          "name": [
-            "--no-act"
-          ],
-          "description": "Simulate the action, but don't execute"
-        }
-      ],
-      "args": {
-        "name": "package"
-      }
-    },
-    {
-      "name": "purge",
-      "description": "Remove packages and their configuration files",
-      "options": [
-        {
-          "name": [
-            "-R",
-            "--recursive"
-          ],
-          "description": "Recursively remove packages"
-        },
-        {
-          "name": [
-            "--no-act"
-          ],
-          "description": "Simulate the action, but don't execute"
-        }
-      ],
-      "args": {
-        "name": "package"
-      }
-    },
-    {
-      "name": "configure",
-      "description": "Configure a package after installation",
-      "options": [
-        {
-          "name": [
-            "--pending"
-          ],
-          "description": "Configure all unconfigured packages"
-        },
-        {
-          "name": [
-            "--no-triggers"
-          ],
-          "description": "Skip processing triggers"
-        },
-        {
-          "name": [
-            "--no-act"
-          ],
-          "description": "Simulate the action, but don't execute"
-        }
-      ],
-      "args": {
-        "name": "package"
-      }
-    },
-    {
-      "name": "reconfigure",
-      "description": "Reconfigure a package",
-      "options": [
-        {
-          "name": [
-            "--no-triggers"
-          ],
-          "description": "Skip processing triggers"
-        },
-        {
-          "name": [
-            "--no-act"
-          ],
-          "description": "Simulate the action, but don't execute"
-        }
-      ],
-      "args": {
-        "name": "package"
-      }
-    },
-    {
-      "name": "list",
-      "description": "List packages in the dpkg database",
-      "options": [
-        {
-          "name": [
-            "-l",
-            "--list"
-          ],
-          "description": "List packages matching a pattern",
-          "args": {
-            "name": "pattern"
-          }
-        },
-        {
-          "name": [
-            "-s",
-            "--status"
-          ],
-          "description": "Display the status of available packages",
-          "args": {
-            "name": "package"
-          }
-        },
-        {
-          "name": [
-            "-L",
-            "--listfiles"
-          ],
-          "description": "List files in a package",
-          "args": {
-            "name": "package"
-          }
-        },
-        {
-          "name": [
-            "-S",
-            "--search"
-          ],
-          "description": "Search for a package owning a file",
-          "args": {
-            "name": "file"
-          }
-        },
-        {
-          "name": [
-            "-p",
-            "--print-avail"
-          ],
-          "description": "Display details about a package in the dpkg database",
-          "args": {
-            "name": "package"
-          }
-        },
-        {
-          "name": [
-            "-W",
-            "--show"
-          ],
-          "description": "Show a package in the dpkg database",
-          "args": {
-            "name": "package"
-          }
-        },
-        {
-          "name": [
-            "--installed"
-          ],
-          "description": "List installed packages"
-        },
-        {
-          "name": [
-            "--avail"
-          ],
-          "description": "List available packages"
-        },
-        {
-          "name": [
-            "--hold"
-          ],
-          "description": "List packages on hold"
-        },
-        {
-          "name": [
-            "--deferred"
-          ],
-          "description": "List deferred packages"
+          ]
         }
       ]
     },
     {
-      "name": "builddeb",
-      "description": "Build Debian package files from sources",
+      "args": {
+        "name": "package"
+      },
+      "description": "Remove packages",
+      "name": "remove",
       "options": [
         {
+          "description": "Recursively remove packages",
+          "name": [
+            "-R",
+            "--recursive"
+          ]
+        },
+        {
+          "description": "Uninstall packages that depend on the target package",
+          "name": [
+            "-B",
+            "--auto-deconfigure"
+          ]
+        },
+        {
+          "description": "Simulate the action, but don't execute",
+          "name": [
+            "--no-act"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "package"
+      },
+      "description": "Remove packages and their configuration files",
+      "name": "purge",
+      "options": [
+        {
+          "description": "Recursively remove packages",
+          "name": [
+            "-R",
+            "--recursive"
+          ]
+        },
+        {
+          "description": "Simulate the action, but don't execute",
+          "name": [
+            "--no-act"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "package"
+      },
+      "description": "Configure a package after installation",
+      "name": "configure",
+      "options": [
+        {
+          "description": "Configure all unconfigured packages",
+          "name": [
+            "--pending"
+          ]
+        },
+        {
+          "description": "Skip processing triggers",
+          "name": [
+            "--no-triggers"
+          ]
+        },
+        {
+          "description": "Simulate the action, but don't execute",
+          "name": [
+            "--no-act"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "package"
+      },
+      "description": "Reconfigure a package",
+      "name": "reconfigure",
+      "options": [
+        {
+          "description": "Skip processing triggers",
+          "name": [
+            "--no-triggers"
+          ]
+        },
+        {
+          "description": "Simulate the action, but don't execute",
+          "name": [
+            "--no-act"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List packages in the dpkg database",
+      "name": "list",
+      "options": [
+        {
+          "args": {
+            "name": "pattern"
+          },
+          "description": "List packages matching a pattern",
+          "name": [
+            "-l",
+            "--list"
+          ]
+        },
+        {
+          "args": {
+            "name": "package"
+          },
+          "description": "Display the status of available packages",
+          "name": [
+            "-s",
+            "--status"
+          ]
+        },
+        {
+          "args": {
+            "name": "package"
+          },
+          "description": "List files in a package",
+          "name": [
+            "-L",
+            "--listfiles"
+          ]
+        },
+        {
+          "args": {
+            "name": "file"
+          },
+          "description": "Search for a package owning a file",
+          "name": [
+            "-S",
+            "--search"
+          ]
+        },
+        {
+          "args": {
+            "name": "package"
+          },
+          "description": "Display details about a package in the dpkg database",
+          "name": [
+            "-p",
+            "--print-avail"
+          ]
+        },
+        {
+          "args": {
+            "name": "package"
+          },
+          "description": "Show a package in the dpkg database",
+          "name": [
+            "-W",
+            "--show"
+          ]
+        },
+        {
+          "description": "List installed packages",
+          "name": [
+            "--installed"
+          ]
+        },
+        {
+          "description": "List available packages",
+          "name": [
+            "--avail"
+          ]
+        },
+        {
+          "description": "List packages on hold",
+          "name": [
+            "--hold"
+          ]
+        },
+        {
+          "description": "List deferred packages",
+          "name": [
+            "--deferred"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "directory"
+      },
+      "description": "Build Debian package files from sources",
+      "name": "builddeb",
+      "options": [
+        {
+          "description": "Build unsigned .changes and .dsc files",
           "name": [
             "-us",
             "--unsigned"
-          ],
-          "description": "Build unsigned .changes and .dsc files"
+          ]
         },
         {
+          "description": "Build unsigned .changes file",
           "name": [
             "-uc",
             "--unsigned-changes"
-          ],
-          "description": "Build unsigned .changes file"
+          ]
         },
         {
+          "description": "Build source package",
           "name": [
             "-sa",
             "--source"
-          ],
-          "description": "Build source package"
+          ]
         },
         {
+          "description": "Use fakeroot when building the package",
           "name": [
             "-rfakeroot"
-          ],
-          "description": "Use fakeroot when building the package"
+          ]
         },
         {
+          "description": "Build binary package from source",
           "name": [
             "-b",
             "--binary"
-          ],
-          "description": "Build binary package from source"
+          ]
         },
         {
+          "description": "Force signing of changes file",
           "name": [
             "--force-sign"
-          ],
-          "description": "Force signing of changes file"
+          ]
         },
         {
+          "args": {
+            "name": "email"
+          },
+          "description": "Specify the package maintainer",
           "name": [
             "-m",
             "--maintainer"
-          ],
-          "description": "Specify the package maintainer",
-          "args": {
-            "name": "email"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "file"
+          },
+          "description": "Specify the changes file to use",
           "name": [
             "-c",
             "--changes"
-          ],
-          "description": "Specify the changes file to use",
-          "args": {
-            "name": "file"
-          }
+          ]
         },
         {
+          "args": {
+            "name": "version"
+          },
+          "description": "Specify the version to use",
           "name": [
             "-v",
             "--version"
-          ],
-          "description": "Specify the version to use",
-          "args": {
-            "name": "version"
-          }
+          ]
         },
         {
+          "description": "Increment the version number in the changelog",
           "name": [
             "--increment"
-          ],
-          "description": "Increment the version number in the changelog"
+          ]
         }
-      ],
-      "args": {
-        "name": "directory"
-      }
+      ]
     },
     {
-      "name": "check",
+      "args": {
+        "isOptional": true,
+        "name": "package"
+      },
       "description": "Check the dependencies of packages",
+      "name": "check",
       "options": [
         {
+          "description": "Check all installed packages",
           "name": [
             "-a",
             "--all"
-          ],
-          "description": "Check all installed packages"
+          ]
         },
         {
+          "description": "Check for unmet dependencies",
           "name": [
             "-d",
             "--unmet"
-          ],
-          "description": "Check for unmet dependencies"
+          ]
         },
         {
+          "description": "Check installed packages",
           "name": [
             "-i",
             "--check-installed"
-          ],
-          "description": "Check installed packages"
+          ]
         },
         {
+          "description": "Check unpacked packages",
           "name": [
             "-U",
             "--check-unpacked"
-          ],
-          "description": "Check unpacked packages"
+          ]
         },
         {
+          "description": "Skip checking for broken dependencies",
           "name": [
             "-c",
             "--nocheck"
-          ],
-          "description": "Skip checking for broken dependencies"
+          ]
         },
         {
+          "description": "Check reverse dependencies",
           "name": [
             "-r",
             "--reverse"
-          ],
-          "description": "Check reverse dependencies"
+          ]
         }
-      ],
-      "args": {
-        "name": "package",
-        "isOptional": true
-      }
+      ]
     },
     {
-      "name": "compare-versions",
-      "description": "Compare package versions",
       "args": [
         {
           "name": "version1"
         },
         {
-          "name": "relation",
           "isOptional": true,
+          "name": "relation",
           "suggestions": [
             {
               "name": "lt"
@@ -499,16 +506,9 @@
         {
           "name": "version2"
         }
-      ]
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "-h",
-        "--help"
       ],
-      "description": "Help for dpkg"
+      "description": "Compare package versions",
+      "name": "compare-versions"
     }
   ]
 }

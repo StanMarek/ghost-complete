@@ -71,7 +71,7 @@ The workspace contains 9 crates under `crates/`:
 | [`gc-overlay`](../crates/gc-overlay/) | ANSI popup rendering — cursor save/restore, synchronized output, scroll-to-make-room, scrollbar, fuzzy match highlighting | |
 | [`gc-config`](../crates/gc-config/) | TOML config, keybindings, themes (presets + custom styles), generator timeouts | serde, toml |
 | [`gc-terminal`](../crates/gc-terminal/) | Terminal detection and capability profiling — `TerminalProfile` with `RenderStrategy` and `PromptDetection` enums | |
-| [`gc-jsrt`](../crates/gc-jsrt/) | Bounded QuickJS evaluator for `requires_js` specs. Active and wired into `gc-suggest` for all three `js_runtime.kind` variants (`post_process`, `script_function`, `custom`). See [`docs/JS_RUNTIME.md`](JS_RUNTIME.md). | rquickjs |
+| [`gc-jsrt`](../crates/gc-jsrt/) | Bounded QuickJS evaluator for `requires_js` specs. Active and wired into `gc-suggest` for all four `js_runtime.kind` variants (`post_process`, `script_function`, `custom`, `token_only`). See [`docs/JS_RUNTIME.md`](JS_RUNTIME.md). | rquickjs |
 
 ### Dependency Graph
 

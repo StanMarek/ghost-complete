@@ -4,10 +4,6 @@
       "description": ".exs file",
       "generators": [
         {
-          "js_runtime": {
-            "kind": "custom",
-            "source": "(p,g,O)=>ue(this,void 0,void 0,function*(){var f;let{isDangerous:b,currentWorkingDirectory:_,searchTerm:h}=O,I=(f=(0,v.getCurrentInsertedDirectory)(u??_,h,O))!==null&&f!==void 0?f:\"/\";try{let C=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:I}),X=k(C.stdout.split(`\n`),[\".DS_Store\"]),N=[];for(let T of X)if(T){let F=T.endsWith(\"/\")?\"folders\":\"filepaths\";(F===\"filepaths\"&&c!==\"only\"||F===\"folders\"&&c!==\"never\")&&N.push({type:F===\"filepaths\"?\"file\":\"folder\",name:T,insertValue:T,isDangerous:b,context:{templateType:F}})}return S(m(N))}catch{return[]}})"
-          },
           "requires_js": true
         }
       ],

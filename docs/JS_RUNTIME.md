@@ -16,15 +16,15 @@ surface per-runtime diagnostics, and a coverage regression gate guards
 against silent drops in `requires_js_generators_supported`.
 
 `gc-suggest` dispatches all populated `js_runtime.kind` variants:
-`post_process`, `script_function`, and `custom`. The dispatch wiring
+`post_process`, `script_function`, `custom`, and `token_only`. The dispatch wiring
 is gated on `[suggest.providers] js_runtime` in `config.toml`.
 Default is `true`. Setting it to `false` skips JS-backed generators
 without disabling static spec data such as subcommands, options, and
 argument hints.
 
-## Class A / B / C distinctions
+## Runtime classes
 
-Every `requires_js` spec splits into one of three runtime classes,
+Every `requires_js` spec splits into one of four runtime classes,
 mirrored by [`JsRuntimeKind`](../crates/gc-suggest/src/specs.rs).
 The live count is reported by `ghost-complete status --json`:
 
@@ -33,9 +33,44 @@ The live count is reported by `ghost-complete status --json`:
 | A     | `PostProcess`    | `script: [...]` + `postProcess: out => [...]`      | Active |
 | B     | `ScriptFunction` | `script: (tokens) => [...args]`                    | Active |
 | C     | `Custom`         | `custom: async (tokens) => [{name, description?}]` | Active |
+| D     | `TokenOnly`      | token/string/array JS with no host API             | Active |
 
-All three reduce to the same `JsWorker.evaluate(program, input,
+All four reduce to the same `JsWorker.evaluate(program, input,
 deadline)` primitive — only the input shape and call-site differ.
+
+## TokenOnly
+
+`token_only` is for generators whose JavaScript only needs command-line
+tokens. It installs exactly three top-level globals:
+
+| Global | Value |
+| ------ | ----- |
+| `tokens` | `[command, ...completedArgs, currentToken]` |
+| `currentToken` | The word currently under the cursor |
+| `previousToken` | The token immediately before `currentToken` |
+
+It does not install `__ghost`, `fig`, `executeShellCommand`, cwd/env
+aliases, or the Fig helper preamble. The regular sandbox stripping still
+applies, so `fetch`, `require`, `process`, timers, `eval`, and
+`Function` are unavailable. A free identifier can throw, but it cannot
+reach a host capability.
+
+`token_only` accepts either a function source or a direct expression:
+
+```json
+{
+  "requires_js": true,
+  "js_runtime": {
+    "kind": "token_only",
+    "self_contained": false,
+    "source": "(tokens, ctx) => ctx.previousToken === 'get' ? ['pods', 'services'] : []"
+  }
+}
+```
+
+`self_contained` is intentionally not required for this kind. The safety
+boundary is the absence of host bindings, not proof that every identifier
+is bound.
 
 ## Sandbox model
 
@@ -95,6 +130,14 @@ The mitigations are layered:
   bomb from blowing the host stack.
 - **GC threshold** (2 MiB) — runs a sweep often enough to keep
   cyclic garbage from masking real growth against the memory cap.
+- **TokenOnly failure demotion** — if the same `token_only` generator
+  emits two consecutive hard failures — a `Timeout`, `Exception`,
+  `MemoryExceeded`, or `OversizedOutput` diagnostic — the engine skips
+  it for the rest of the process lifetime instead of retrying on every
+  keystroke. Soft outcomes (`EmptyOutput`, `InvalidShape`,
+  `UnsupportedHostApi`, `ShellCommand*`) and real successes between
+  failures neither bump nor reset the counter alone; a real
+  `Suggestions` payload resets it.
 
 ## Output normalization
 
@@ -150,8 +193,10 @@ argv. `custom` generators have no argv; their suggestion cache keys
 the command, optional cache directory, JS source, and token
 fingerprint.
 
-`cache_by_directory` in the spec's `cache` block continues to apply
-unchanged.
+`token_only` has no argv; its cache key includes the command, JS source,
+current token, previous token, and token list. `cache_by_directory` in the
+spec's `cache` block continues to apply unchanged for the other runtime
+classes.
 
 ## The kill switch
 
@@ -161,7 +206,7 @@ js_runtime = false   # disable the JS evaluator entirely
 ```
 
 When `false`, `requires_js` generators with a populated `js_runtime`
-shape (`post_process`, `script_function`, or `custom`) short-circuit
+shape (`post_process`, `script_function`, `custom`, or `token_only`) short-circuit
 to the skipped path. The engine does not spawn the backing script for
 JS-backed post-process generators and does not evaluate QuickJS for
 any JS-backed generator. Static spec data (subcommands, options,

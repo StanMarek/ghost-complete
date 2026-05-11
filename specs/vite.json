@@ -1,283 +1,94 @@
 {
-  "name": "vite",
+  "args": {
+    "isOptional": true,
+    "name": "root",
+    "template": "folders"
+  },
   "description": "Native ESM-powered web dev build tool",
-  "subcommands": [
-    {
-      "name": "build",
-      "description": "Build for production",
-      "options": [
-        {
-          "name": [
-            "--target"
-          ],
-          "description": "Transpile target (must be a valid esbuild target)",
-          "args": {
-            "name": "target"
-          }
-        },
-        {
-          "name": [
-            "--outDir"
-          ],
-          "description": "Output directory",
-          "args": {
-            "name": "dir",
-            "template": "folders"
-          }
-        },
-        {
-          "name": [
-            "--assetsDir"
-          ],
-          "description": "Directory under outDir to place assets in",
-          "args": {
-            "name": "dir",
-            "template": "folders"
-          }
-        },
-        {
-          "name": [
-            "--assetsInlineLimit"
-          ],
-          "description": "Static asset base64 inline threshold in bytes",
-          "args": {
-            "name": "number"
-          }
-        },
-        {
-          "name": [
-            "--ssr"
-          ],
-          "description": "Build specified entry for server-side rendering",
-          "args": {
-            "name": "entry",
-            "template": "filepaths",
-            "isOptional": true
-          }
-        },
-        {
-          "name": [
-            "--sourcemap"
-          ],
-          "description": "Output sourcemaps for build"
-        },
-        {
-          "name": [
-            "--minify"
-          ],
-          "description": "Enable minification",
-          "args": {
-            "name": "minifier",
-            "isOptional": true,
-            "suggestions": [
-              {
-                "name": "terser"
-              },
-              {
-                "name": "esbuild"
-              }
-            ]
-          }
-        },
-        {
-          "name": [
-            "--manifest"
-          ],
-          "description": "Emit build manifest json",
-          "args": {
-            "name": "name",
-            "isOptional": true
-          }
-        },
-        {
-          "name": [
-            "--ssrManifest"
-          ],
-          "description": "Emit ssr manifest json",
-          "args": {
-            "name": "name",
-            "isOptional": true
-          }
-        },
-        {
-          "name": [
-            "--emptyOutDir"
-          ],
-          "description": "Force empty outDir when it's outside of root"
-        },
-        {
-          "name": [
-            "-w",
-            "--watch"
-          ],
-          "description": "Rebuilds when modules have changed on disk"
-        }
-      ],
-      "args": {
-        "name": "root",
-        "template": "folders",
-        "isOptional": true
-      }
-    },
-    {
-      "name": "optimize",
-      "description": "Pre-bundle dependencies",
-      "options": [
-        {
-          "name": [
-            "--force"
-          ],
-          "description": "For the optimizer to re-bundle"
-        }
-      ],
-      "args": {
-        "name": "root",
-        "template": "folders",
-        "isOptional": true
-      }
-    },
-    {
-      "name": "preview",
-      "description": "Locally preview the production build",
-      "options": [
-        {
-          "name": [
-            "--host"
-          ],
-          "description": "Specify the hostname",
-          "args": {
-            "name": "host",
-            "isOptional": true
-          }
-        },
-        {
-          "name": [
-            "--port"
-          ],
-          "description": "Specify the port",
-          "args": {
-            "name": "port"
-          }
-        },
-        {
-          "name": [
-            "--https"
-          ],
-          "description": "Use TLS + HTTP/2"
-        },
-        {
-          "name": [
-            "--open"
-          ],
-          "description": "Open browser on startup",
-          "args": {
-            "name": "browser",
-            "template": "filepaths",
-            "isOptional": true
-          }
-        },
-        {
-          "name": [
-            "--strictPort"
-          ],
-          "description": "Exit if the port is already in use"
-        }
-      ],
-      "args": {
-        "name": "root",
-        "template": "folders",
-        "isOptional": true
-      }
-    }
-  ],
+  "name": "vite",
   "options": [
     {
+      "description": "Show help message",
       "name": [
         "-h",
         "--help"
-      ],
-      "description": "Show help message"
+      ]
     },
     {
+      "args": {
+        "isOptional": true,
+        "name": "host"
+      },
+      "description": "Specify the hostname",
       "name": [
         "--host"
-      ],
-      "description": "Specify the hostname",
-      "args": {
-        "name": "host",
-        "isOptional": true
-      }
+      ]
     },
     {
-      "name": [
-        "--port"
-      ],
-      "description": "Specify the port",
       "args": {
         "name": "port"
-      }
+      },
+      "description": "Specify the port",
+      "name": [
+        "--port"
+      ]
     },
     {
+      "description": "Use TLS + HTTP/2",
       "name": [
         "--https"
-      ],
-      "description": "Use TLS + HTTP/2"
+      ]
     },
     {
+      "args": {
+        "isOptional": true,
+        "name": "browser",
+        "template": "filepaths"
+      },
+      "description": "Open browser on startup",
       "name": [
         "--open"
-      ],
-      "description": "Open browser on startup",
-      "args": {
-        "name": "browser",
-        "template": "filepaths",
-        "isOptional": true
-      }
+      ]
     },
     {
+      "description": "Enable CORS",
       "name": [
         "--cors"
-      ],
-      "description": "Enable CORS"
+      ]
     },
     {
+      "description": "Exit if the port is already in use",
       "name": [
         "--strictPort"
-      ],
-      "description": "Exit if the port is already in use"
+      ]
     },
     {
+      "description": "For the optimizer to re-bundle",
       "name": [
         "--force"
-      ],
-      "description": "For the optimizer to re-bundle"
+      ]
     },
     {
-      "name": [
-        "-c",
-        "--config"
-      ],
-      "description": "Use the specified config file",
       "args": {
         "name": "file",
         "template": "filepaths"
-      }
+      },
+      "description": "Use the specified config file",
+      "name": [
+        "-c",
+        "--config"
+      ]
     },
     {
-      "name": [
-        "--base"
-      ],
-      "description": "Public base path",
       "args": {
         "name": "path"
-      }
+      },
+      "description": "Public base path",
+      "name": [
+        "--base"
+      ]
     },
     {
-      "name": [
-        "-l",
-        "--logLevel"
-      ],
-      "description": "Set the log level",
       "args": {
         "name": "level",
         "suggestions": [
@@ -294,43 +105,42 @@
             "name": "silent"
           }
         ]
-      }
+      },
+      "description": "Set the log level",
+      "name": [
+        "-l",
+        "--logLevel"
+      ]
     },
     {
+      "description": "Enable screen clearing when logging",
       "name": [
         "--clearScreen"
-      ],
-      "description": "Enable screen clearing when logging"
+      ]
     },
     {
+      "args": {
+        "isOptional": true,
+        "name": "feat"
+      },
+      "description": "Show debug logs",
       "name": [
         "-d",
         "--debug"
-      ],
-      "description": "Show debug logs",
-      "args": {
-        "name": "feat",
-        "isOptional": true
-      }
+      ]
     },
     {
+      "args": {
+        "name": "filter"
+      },
+      "description": "Filter debug logs",
       "name": [
         "-f",
         "--filter"
-      ],
-      "description": "Filter debug logs",
-      "args": {
-        "name": "filter"
-      }
+      ]
     },
     {
-      "name": [
-        "-m",
-        "--mode"
-      ],
-      "description": "Set env mode",
       "args": {
-        "name": "mode",
         "generators": [
           {
             "script": [
@@ -342,20 +152,210 @@
               "filter_empty"
             ]
           }
-        ]
-      }
+        ],
+        "name": "mode"
+      },
+      "description": "Set env mode",
+      "name": [
+        "-m",
+        "--mode"
+      ]
     },
     {
+      "description": "Display version number",
       "name": [
         "-v",
         "--version"
-      ],
-      "description": "Display version number"
+      ]
     }
   ],
-  "args": {
-    "name": "root",
-    "template": "folders",
-    "isOptional": true
-  }
+  "subcommands": [
+    {
+      "args": {
+        "isOptional": true,
+        "name": "root",
+        "template": "folders"
+      },
+      "description": "Build for production",
+      "name": "build",
+      "options": [
+        {
+          "args": {
+            "name": "target"
+          },
+          "description": "Transpile target (must be a valid esbuild target)",
+          "name": [
+            "--target"
+          ]
+        },
+        {
+          "args": {
+            "name": "dir",
+            "template": "folders"
+          },
+          "description": "Output directory",
+          "name": [
+            "--outDir"
+          ]
+        },
+        {
+          "args": {
+            "name": "dir",
+            "template": "folders"
+          },
+          "description": "Directory under outDir to place assets in",
+          "name": [
+            "--assetsDir"
+          ]
+        },
+        {
+          "args": {
+            "name": "number"
+          },
+          "description": "Static asset base64 inline threshold in bytes",
+          "name": [
+            "--assetsInlineLimit"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "entry",
+            "template": "filepaths"
+          },
+          "description": "Build specified entry for server-side rendering",
+          "name": [
+            "--ssr"
+          ]
+        },
+        {
+          "description": "Output sourcemaps for build",
+          "name": [
+            "--sourcemap"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "minifier",
+            "suggestions": [
+              {
+                "name": "terser"
+              },
+              {
+                "name": "esbuild"
+              }
+            ]
+          },
+          "description": "Enable minification",
+          "name": [
+            "--minify"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "name"
+          },
+          "description": "Emit build manifest json",
+          "name": [
+            "--manifest"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "name"
+          },
+          "description": "Emit ssr manifest json",
+          "name": [
+            "--ssrManifest"
+          ]
+        },
+        {
+          "description": "Force empty outDir when it's outside of root",
+          "name": [
+            "--emptyOutDir"
+          ]
+        },
+        {
+          "description": "Rebuilds when modules have changed on disk",
+          "name": [
+            "-w",
+            "--watch"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "root",
+        "template": "folders"
+      },
+      "description": "Pre-bundle dependencies",
+      "name": "optimize",
+      "options": [
+        {
+          "description": "For the optimizer to re-bundle",
+          "name": [
+            "--force"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "root",
+        "template": "folders"
+      },
+      "description": "Locally preview the production build",
+      "name": "preview",
+      "options": [
+        {
+          "args": {
+            "isOptional": true,
+            "name": "host"
+          },
+          "description": "Specify the hostname",
+          "name": [
+            "--host"
+          ]
+        },
+        {
+          "args": {
+            "name": "port"
+          },
+          "description": "Specify the port",
+          "name": [
+            "--port"
+          ]
+        },
+        {
+          "description": "Use TLS + HTTP/2",
+          "name": [
+            "--https"
+          ]
+        },
+        {
+          "args": {
+            "isOptional": true,
+            "name": "browser",
+            "template": "filepaths"
+          },
+          "description": "Open browser on startup",
+          "name": [
+            "--open"
+          ]
+        },
+        {
+          "description": "Exit if the port is already in use",
+          "name": [
+            "--strictPort"
+          ]
+        }
+      ]
+    }
+  ]
 }

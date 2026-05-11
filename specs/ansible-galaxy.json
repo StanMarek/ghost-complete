@@ -1,102 +1,43 @@
 {
-  "name": "ansible-galaxy",
   "description": "Perform various Role and Collection related operations",
+  "name": "ansible-galaxy",
+  "options": [
+    {
+      "description": "Show help and exit",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)",
+      "name": [
+        "-v"
+      ]
+    },
+    {
+      "description": "Shows version number, config file location, module search path, module location, executable location and exit",
+      "name": [
+        "--version"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "collection",
       "description": "Operate on collections",
+      "name": "collection",
       "subcommands": [
         {
-          "name": "download",
-          "description": "Download collections",
-          "options": [
-            {
-              "name": [
-                "--server",
-                "-s"
-              ],
-              "description": "The Galaxy API server URL",
-              "args": {
-                "name": "api_server",
-                "description": "The Galaxy API server URL"
-              }
-            },
-            {
-              "name": [
-                "--token",
-                "--api-key"
-              ],
-              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
-              "args": {
-                "name": "api_key",
-                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences"
-              }
-            },
-            {
-              "name": [
-                "--ignore-certs",
-                "-c"
-              ],
-              "description": "Ignore SSL certificate validation errors"
-            },
-            {
-              "name": [
-                "--clear-response-cache"
-              ],
-              "description": "Clear the existing server response cache"
-            },
-            {
-              "name": [
-                "--no-cache"
-              ],
-              "description": "Do not use the server response cache"
-            },
-            {
-              "name": [
-                "--no-deps",
-                "-n"
-              ],
-              "description": "Don't download collection(s) listed as dependencies"
-            },
-            {
-              "name": [
-                "--download-path",
-                "-p"
-              ],
-              "description": "The directory to download the collections to",
-              "args": {
-                "name": "download_path",
-                "description": "The directory to download the collections to",
-                "template": [
-                  "folders"
-                ]
-              }
-            },
-            {
-              "name": [
-                "--requirements-file",
-                "-r"
-              ],
-              "description": "A file containing a list of collections to be downloaded",
-              "args": {
-                "name": "requirements",
-                "description": "A file containing a list of collections to be downloaded",
-                "template": [
-                  "filepaths"
-                ]
-              }
-            },
-            {
-              "name": [
-                "--pre"
-              ],
-              "description": "Include pre-release versions"
-            }
-          ],
           "args": {
-            "name": "collection",
             "description": "Name of the collection",
             "isVariadic": true,
+            "name": "collection",
             "suggestions": [
               {
                 "name": "amazon.aws"
@@ -405,189 +346,278 @@
                 "name": "wti.remote"
               }
             ]
-          }
-        },
-        {
-          "name": "init",
-          "description": "Initialize collections",
+          },
+          "description": "Download collections",
+          "name": "download",
           "options": [
             {
+              "args": {
+                "description": "The Galaxy API server URL",
+                "name": "api_server"
+              },
+              "description": "The Galaxy API server URL",
               "name": [
                 "--server",
                 "-s"
-              ],
-              "description": "The Galaxy API server URL",
-              "args": {
-                "name": "api_server",
-                "description": "The Galaxy API server URL"
-              }
+              ]
             },
             {
+              "args": {
+                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+                "name": "api_key"
+              },
+              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
               "name": [
                 "--token",
                 "--api-key"
-              ],
-              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
-              "args": {
-                "name": "api_key",
-                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences"
-              }
+              ]
             },
             {
+              "description": "Ignore SSL certificate validation errors",
               "name": [
                 "--ignore-certs",
                 "-c"
-              ],
-              "description": "Ignore SSL certificate validation errors"
+              ]
             },
             {
+              "description": "Clear the existing server response cache",
+              "name": [
+                "--clear-response-cache"
+              ]
+            },
+            {
+              "description": "Do not use the server response cache",
+              "name": [
+                "--no-cache"
+              ]
+            },
+            {
+              "description": "Don't download collection(s) listed as dependencies",
+              "name": [
+                "--no-deps",
+                "-n"
+              ]
+            },
+            {
+              "args": {
+                "description": "The directory to download the collections to",
+                "name": "download_path",
+                "template": [
+                  "folders"
+                ]
+              },
+              "description": "The directory to download the collections to",
+              "name": [
+                "--download-path",
+                "-p"
+              ]
+            },
+            {
+              "args": {
+                "description": "A file containing a list of collections to be downloaded",
+                "name": "requirements",
+                "template": [
+                  "filepaths"
+                ]
+              },
+              "description": "A file containing a list of collections to be downloaded",
+              "name": [
+                "--requirements-file",
+                "-r"
+              ]
+            },
+            {
+              "description": "Include pre-release versions",
+              "name": [
+                "--pre"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Name of the collection",
+            "name": "collection_name"
+          },
+          "description": "Initialize collections",
+          "name": "init",
+          "options": [
+            {
+              "args": {
+                "description": "The Galaxy API server URL",
+                "name": "api_server"
+              },
+              "description": "The Galaxy API server URL",
+              "name": [
+                "--server",
+                "-s"
+              ]
+            },
+            {
+              "args": {
+                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+                "name": "api_key"
+              },
+              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+              "name": [
+                "--token",
+                "--api-key"
+              ]
+            },
+            {
+              "description": "Ignore SSL certificate validation errors",
+              "name": [
+                "--ignore-certs",
+                "-c"
+              ]
+            },
+            {
+              "description": "Force overwriting an existing role or collection",
               "name": [
                 "--force",
                 "-f"
-              ],
-              "description": "Force overwriting an existing role or collection"
+              ]
             },
             {
+              "args": {
+                "description": "The path in which the skeleton collection will be created",
+                "name": "init_path",
+                "template": [
+                  "folders"
+                ]
+              },
+              "description": "The path in which the skeleton collection will be created",
               "name": [
                 "--init-path"
-              ],
-              "description": "The path in which the skeleton collection will be created",
+              ]
+            },
+            {
               "args": {
-                "name": "init_path",
-                "description": "The path in which the skeleton collection will be created",
+                "description": "The path to a collection skeleton that the new collection should be based upon",
+                "name": "collection_skeleton",
                 "template": [
                   "folders"
                 ]
-              }
-            },
-            {
+              },
+              "description": "The path to a collection skeleton that the new collection should be based upon",
               "name": [
                 "--collection-skeleton"
-              ],
-              "description": "The path to a collection skeleton that the new collection should be based upon",
-              "args": {
-                "name": "collection_skeleton",
-                "description": "The path to a collection skeleton that the new collection should be based upon",
-                "template": [
-                  "folders"
-                ]
-              }
+              ]
             }
-          ],
-          "args": {
-            "name": "collection_name",
-            "description": "Name of the collection"
-          }
+          ]
         },
         {
-          "name": "build",
-          "description": "Build collections",
-          "options": [
-            {
-              "name": [
-                "--server",
-                "-s"
-              ],
-              "description": "The Galaxy API server URL",
-              "args": {
-                "name": "api_server",
-                "description": "The Galaxy API server URL"
-              }
-            },
-            {
-              "name": [
-                "--token",
-                "--api-key"
-              ],
-              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
-              "args": {
-                "name": "api_key",
-                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences"
-              }
-            },
-            {
-              "name": [
-                "--ignore-certs",
-                "-c"
-              ],
-              "description": "Ignore SSL certificate validation errors"
-            },
-            {
-              "name": [
-                "--force",
-                "-f"
-              ],
-              "description": "Force overwriting an existing role or collection"
-            },
-            {
-              "name": [
-                "--output-path"
-              ],
-              "description": "The path in which the collection is built to",
-              "args": {
-                "name": "output_path",
-                "description": "The path in which the collection is built to",
-                "template": [
-                  "folders"
-                ]
-              }
-            }
-          ],
           "args": {
-            "name": "collection",
             "description": "Path(s) to the collection to be built",
+            "name": "collection",
             "template": [
               "folders"
             ]
-          }
-        },
-        {
-          "name": "publish",
-          "description": "Publish collections",
+          },
+          "description": "Build collections",
+          "name": "build",
           "options": [
             {
+              "args": {
+                "description": "The Galaxy API server URL",
+                "name": "api_server"
+              },
+              "description": "The Galaxy API server URL",
               "name": [
                 "--server",
                 "-s"
-              ],
-              "description": "The Galaxy API server URL",
-              "args": {
-                "name": "api_server",
-                "description": "The Galaxy API server URL"
-              }
+              ]
             },
             {
+              "args": {
+                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+                "name": "api_key"
+              },
+              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
               "name": [
                 "--token",
                 "--api-key"
-              ],
-              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
-              "args": {
-                "name": "api_key",
-                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences"
-              }
+              ]
             },
             {
+              "description": "Ignore SSL certificate validation errors",
               "name": [
                 "--ignore-certs",
                 "-c"
-              ],
-              "description": "Ignore SSL certificate validation errors"
+              ]
             },
             {
+              "description": "Force overwriting an existing role or collection",
+              "name": [
+                "--force",
+                "-f"
+              ]
+            },
+            {
+              "args": {
+                "description": "The path in which the collection is built to",
+                "name": "output_path",
+                "template": [
+                  "folders"
+                ]
+              },
+              "description": "The path in which the collection is built to",
+              "name": [
+                "--output-path"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "The path to the collection tarball to publish",
+            "name": "collection_path",
+            "template": [
+              "folders"
+            ]
+          },
+          "description": "Publish collections",
+          "name": "publish",
+          "options": [
+            {
+              "args": {
+                "description": "The Galaxy API server URL",
+                "name": "api_server"
+              },
+              "description": "The Galaxy API server URL",
+              "name": [
+                "--server",
+                "-s"
+              ]
+            },
+            {
+              "args": {
+                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+                "name": "api_key"
+              },
+              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+              "name": [
+                "--token",
+                "--api-key"
+              ]
+            },
+            {
+              "description": "Ignore SSL certificate validation errors",
+              "name": [
+                "--ignore-certs",
+                "-c"
+              ]
+            },
+            {
+              "description": "Don't wait for import validation results",
               "name": [
                 "--no-wait"
-              ],
-              "description": "Don't wait for import validation results"
+              ]
             },
             {
-              "name": [
-                "--import-timeout"
-              ],
-              "description": "The time to wait for the collection import process to finish",
               "args": {
-                "name": "import_timeout",
                 "description": "The time to wait for the collection import process to finish",
+                "name": "import_timeout",
                 "suggestions": [
                   {
                     "name": "60"
@@ -602,77 +632,75 @@
                     "name": "900"
                   }
                 ]
-              }
+              },
+              "description": "The time to wait for the collection import process to finish",
+              "name": [
+                "--import-timeout"
+              ]
             }
-          ],
-          "args": {
-            "name": "collection_path",
-            "description": "The path to the collection tarball to publish",
-            "template": [
-              "folders"
-            ]
-          }
+          ]
         },
         {
-          "name": "list",
+          "args": {
+            "description": "The collections to list",
+            "isOptional": true,
+            "name": "collection"
+          },
           "description": "List collections",
+          "name": "list",
           "options": [
             {
+              "args": {
+                "description": "The Galaxy API server URL",
+                "name": "api_server"
+              },
+              "description": "The Galaxy API server URL",
               "name": [
                 "--server",
                 "-s"
-              ],
-              "description": "The Galaxy API server URL",
-              "args": {
-                "name": "api_server",
-                "description": "The Galaxy API server URL"
-              }
+              ]
             },
             {
+              "args": {
+                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+                "name": "api_key"
+              },
+              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
               "name": [
                 "--token",
                 "--api-key"
-              ],
-              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
-              "args": {
-                "name": "api_key",
-                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences"
-              }
+              ]
             },
             {
+              "description": "Ignore SSL certificate validation errors",
               "name": [
                 "--ignore-certs",
                 "-c"
-              ],
-              "description": "Ignore SSL certificate validation errors"
+              ]
             },
             {
-              "name": [
-                "--collections-path",
-                "-p"
-              ],
-              "description": "One or more directories to search for collections in addition to the default COLLECTIONS_PATHS; separate multiple paths with ':'",
               "args": {
-                "name": "collections_path",
                 "description": "One or more directories to search for collections in addition to the default COLLECTIONS_PATHS; separate multiple paths with ':'",
-                "template": [
-                  "folders"
-                ],
+                "name": "collections_path",
                 "suggestions": [
                   {
                     "name": "~/.ansible/collections:/usr/share/ansible/collections"
                   }
+                ],
+                "template": [
+                  "folders"
                 ]
-              }
+              },
+              "description": "One or more directories to search for collections in addition to the default COLLECTIONS_PATHS; separate multiple paths with ':'",
+              "name": [
+                "--collections-path",
+                "-p"
+              ]
             },
             {
-              "name": [
-                "--format"
-              ],
-              "description": "Format to display the list of collections in",
               "args": {
-                "name": "format",
                 "description": "Format to display the list of collections in",
+                "name": "format",
                 "suggestions": [
                   {
                     "name": "human"
@@ -684,181 +712,180 @@
                     "name": "json"
                   }
                 ]
-              }
+              },
+              "description": "Format to display the list of collections in",
+              "name": [
+                "--format"
+              ]
             }
-          ],
-          "args": {
-            "name": "collection",
-            "description": "The collections to list",
-            "isOptional": true
-          }
+          ]
         },
         {
-          "name": "verify",
+          "args": {
+            "description": "The collections to verify",
+            "isOptional": true,
+            "name": "collection_name"
+          },
           "description": "Verify collections",
+          "name": "verify",
           "options": [
             {
+              "args": {
+                "description": "The Galaxy API server URL",
+                "name": "api_server"
+              },
+              "description": "The Galaxy API server URL",
               "name": [
                 "--server",
                 "-s"
-              ],
-              "description": "The Galaxy API server URL",
-              "args": {
-                "name": "api_server",
-                "description": "The Galaxy API server URL"
-              }
+              ]
             },
             {
+              "args": {
+                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+                "name": "api_key"
+              },
+              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
               "name": [
                 "--token",
                 "--api-key"
-              ],
-              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
-              "args": {
-                "name": "api_key",
-                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences"
-              }
+              ]
             },
             {
+              "description": "Ignore SSL certificate validation errors",
               "name": [
                 "--ignore-certs",
                 "-c"
-              ],
-              "description": "Ignore SSL certificate validation errors"
+              ]
             },
             {
-              "name": [
-                "--collections-path",
-                "-p"
-              ],
-              "description": "One or more directories to search for collections in addition to the default COLLECTIONS_PATHS; separate multiple paths with ':'",
               "args": {
-                "name": "collections_path",
                 "description": "One or more directories to search for collections in addition to the default COLLECTIONS_PATHS; separate multiple paths with ':'",
-                "template": [
-                  "folders"
-                ],
+                "name": "collections_path",
                 "suggestions": [
                   {
                     "name": "~/.ansible/collections:/usr/share/ansible/collections"
                   }
+                ],
+                "template": [
+                  "folders"
                 ]
-              }
+              },
+              "description": "One or more directories to search for collections in addition to the default COLLECTIONS_PATHS; separate multiple paths with ':'",
+              "name": [
+                "--collections-path",
+                "-p"
+              ]
             },
             {
+              "description": "Ignore errors during verification and continue with the next specified collection",
               "name": [
                 "--ignore-errors",
                 "-i"
-              ],
-              "description": "Ignore errors during verification and continue with the next specified collection"
+              ]
             },
             {
-              "name": [
-                "--requirements-file",
-                "-r"
-              ],
-              "description": "A file containing a list of collections to be downloaded",
               "args": {
-                "name": "requirements",
                 "description": "A file containing a list of collections to be downloaded",
+                "name": "requirements",
                 "template": [
                   "filepaths"
                 ]
-              }
+              },
+              "description": "A file containing a list of collections to be downloaded",
+              "name": [
+                "--requirements-file",
+                "-r"
+              ]
             }
-          ],
-          "args": {
-            "name": "collection_name",
-            "description": "The collections to verify",
-            "isOptional": true
-          }
+          ]
         }
       ]
     },
     {
-      "name": "role",
       "description": "Operate on roles",
+      "name": "role",
       "subcommands": [
         {
-          "name": "init",
+          "args": {
+            "description": "Name of the role",
+            "name": "role_name"
+          },
           "description": "Initialize roles",
+          "name": "init",
           "options": [
             {
+              "args": {
+                "description": "The Galaxy API server URL",
+                "name": "api_server"
+              },
+              "description": "The Galaxy API server URL",
               "name": [
                 "--server",
                 "-s"
-              ],
-              "description": "The Galaxy API server URL",
-              "args": {
-                "name": "api_server",
-                "description": "The Galaxy API server URL"
-              }
+              ]
             },
             {
+              "args": {
+                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+                "name": "api_key"
+              },
+              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
               "name": [
                 "--token",
                 "--api-key"
-              ],
-              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
-              "args": {
-                "name": "api_key",
-                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences"
-              }
+              ]
             },
             {
+              "description": "Ignore SSL certificate validation errors",
               "name": [
                 "--ignore-certs",
                 "-c"
-              ],
-              "description": "Ignore SSL certificate validation errors"
+              ]
             },
             {
+              "description": "Force overwriting an existing role or collection",
               "name": [
                 "--force",
                 "-f"
-              ],
-              "description": "Force overwriting an existing role or collection"
+              ]
             },
             {
+              "description": "Don't query the galaxy API when creating roles",
               "name": [
                 "--offline"
-              ],
-              "description": "Don't query the galaxy API when creating roles"
+              ]
             },
             {
+              "args": {
+                "description": "The path in which the skeleton collection will be created",
+                "name": "init_path",
+                "template": [
+                  "folders"
+                ]
+              },
+              "description": "The path in which the skeleton collection will be created",
               "name": [
                 "--init-path"
-              ],
-              "description": "The path in which the skeleton collection will be created",
+              ]
+            },
+            {
               "args": {
-                "name": "init_path",
-                "description": "The path in which the skeleton collection will be created",
+                "description": "The path in which the skeleton role will be created",
+                "name": "role_skeleton",
                 "template": [
                   "folders"
                 ]
-              }
-            },
-            {
+              },
+              "description": "The path in which the skeleton role will be created",
               "name": [
                 "--role-skeleton"
-              ],
-              "description": "The path in which the skeleton role will be created",
-              "args": {
-                "name": "role_skeleton",
-                "description": "The path in which the skeleton role will be created",
-                "template": [
-                  "folders"
-                ]
-              }
+              ]
             },
             {
-              "name": [
-                "--type"
-              ],
-              "description": "Initialize using an alternate role type",
               "args": {
-                "name": "role_type",
                 "description": "Initialize using an alternate role type",
+                "name": "role_type",
                 "suggestions": [
                   {
                     "name": "container"
@@ -870,236 +897,243 @@
                     "name": "network"
                   }
                 ]
-              }
+              },
+              "description": "Initialize using an alternate role type",
+              "name": [
+                "--type"
+              ]
             }
-          ],
-          "args": {
-            "name": "role_name",
-            "description": "Name of the role"
-          }
+          ]
         },
         {
-          "name": "remove",
+          "args": {
+            "description": "The role to remove",
+            "name": "role_name"
+          },
           "description": "Remove roles",
+          "name": "remove",
           "options": [
             {
+              "args": {
+                "description": "The Galaxy API server URL",
+                "name": "api_server"
+              },
+              "description": "The Galaxy API server URL",
               "name": [
                 "--server",
                 "-s"
-              ],
-              "description": "The Galaxy API server URL",
-              "args": {
-                "name": "api_server",
-                "description": "The Galaxy API server URL"
-              }
+              ]
             },
             {
+              "args": {
+                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+                "name": "api_key"
+              },
+              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
               "name": [
                 "--token",
                 "--api-key"
-              ],
-              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
-              "args": {
-                "name": "api_key",
-                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences"
-              }
+              ]
             },
             {
+              "description": "Ignore SSL certificate validation errors",
               "name": [
                 "--ignore-certs",
                 "-c"
-              ],
-              "description": "Ignore SSL certificate validation errors"
+              ]
             },
             {
-              "name": [
-                "--roles-path",
-                "--role-path"
-              ],
-              "description": "The path to the directory containing your roles",
               "args": {
-                "name": "roles_path",
                 "description": "The path to the directory containing your roles",
+                "name": "roles_path",
                 "suggestions": [
                   {
                     "name": "~/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles"
                   }
                 ]
-              }
+              },
+              "description": "The path to the directory containing your roles",
+              "name": [
+                "--roles-path",
+                "--role-path"
+              ]
             }
-          ],
-          "args": {
-            "name": "role_name",
-            "description": "The role to remove"
-          }
+          ]
         },
         {
-          "name": "list",
-          "description": "List roles",
-          "options": [
-            {
-              "name": [
-                "--server",
-                "-s"
-              ],
-              "description": "The Galaxy API server URL",
-              "args": {
-                "name": "api_server",
-                "description": "The Galaxy API server URL"
-              }
-            },
-            {
-              "name": [
-                "--token",
-                "--api-key"
-              ],
-              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
-              "args": {
-                "name": "api_key",
-                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences"
-              }
-            },
-            {
-              "name": [
-                "--ignore-certs",
-                "-c"
-              ],
-              "description": "Ignore SSL certificate validation errors"
-            },
-            {
-              "name": [
-                "--roles-path",
-                "--role-path"
-              ],
-              "description": "The path to the directory containing your roles",
-              "args": {
-                "name": "roles_path",
-                "description": "The path to the directory containing your roles",
-                "suggestions": [
-                  {
-                    "name": "~/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles"
-                  }
-                ]
-              }
-            }
-          ],
           "args": {
-            "name": "role",
             "description": "The role to list",
-            "isOptional": true
-          }
-        },
-        {
-          "name": "search",
-          "description": "Search roles",
+            "isOptional": true,
+            "name": "role"
+          },
+          "description": "List roles",
+          "name": "list",
           "options": [
             {
+              "args": {
+                "description": "The Galaxy API server URL",
+                "name": "api_server"
+              },
+              "description": "The Galaxy API server URL",
               "name": [
                 "--server",
                 "-s"
-              ],
-              "description": "The Galaxy API server URL",
-              "args": {
-                "name": "api_server",
-                "description": "The Galaxy API server URL"
-              }
+              ]
             },
             {
+              "args": {
+                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+                "name": "api_key"
+              },
+              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
               "name": [
                 "--token",
                 "--api-key"
-              ],
-              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
-              "args": {
-                "name": "api_key",
-                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences"
-              }
+              ]
             },
             {
+              "description": "Ignore SSL certificate validation errors",
               "name": [
                 "--ignore-certs",
                 "-c"
-              ],
-              "description": "Ignore SSL certificate validation errors"
+              ]
             },
             {
+              "args": {
+                "description": "The path to the directory containing your roles",
+                "name": "roles_path",
+                "suggestions": [
+                  {
+                    "name": "~/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles"
+                  }
+                ]
+              },
+              "description": "The path to the directory containing your roles",
+              "name": [
+                "--roles-path",
+                "--role-path"
+              ]
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Search terms",
+            "isOptional": true,
+            "name": "searchterm"
+          },
+          "description": "Search roles",
+          "name": "search",
+          "options": [
+            {
+              "args": {
+                "description": "The Galaxy API server URL",
+                "name": "api_server"
+              },
+              "description": "The Galaxy API server URL",
+              "name": [
+                "--server",
+                "-s"
+              ]
+            },
+            {
+              "args": {
+                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+                "name": "api_key"
+              },
+              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+              "name": [
+                "--token",
+                "--api-key"
+              ]
+            },
+            {
+              "description": "Ignore SSL certificate validation errors",
+              "name": [
+                "--ignore-certs",
+                "-c"
+              ]
+            },
+            {
+              "args": {
+                "description": "List of OS platforms to filter by",
+                "name": "platforms"
+              },
+              "description": "List of OS platforms to filter by",
               "name": [
                 "--platforms"
-              ],
-              "description": "List of OS platforms to filter by",
-              "args": {
-                "name": "platforms",
-                "description": "List of OS platforms to filter by"
-              }
+              ]
             },
             {
+              "args": {
+                "description": "List of Galaxy tags to filter by",
+                "name": "galaxy_tags"
+              },
+              "description": "List of Galaxy tags to filter by",
               "name": [
                 "--galaxy-tags"
-              ],
-              "description": "List of Galaxy tags to filter by",
-              "args": {
-                "name": "galaxy_tags",
-                "description": "List of Galaxy tags to filter by"
-              }
+              ]
             },
             {
+              "args": {
+                "description": "GitHub username",
+                "name": "author"
+              },
+              "description": "GitHub username",
               "name": [
                 "--author"
-              ],
-              "description": "GitHub username",
-              "args": {
-                "name": "author",
-                "description": "GitHub username"
-              }
+              ]
             }
-          ],
-          "args": {
-            "name": "searchterm",
-            "description": "Search terms",
-            "isOptional": true
-          }
+          ]
         },
         {
-          "name": "import",
+          "args": [
+            {
+              "description": "GitHub username",
+              "isOptional": true,
+              "name": "github_user"
+            },
+            {
+              "description": "GitHub repository",
+              "name": "github_repo"
+            }
+          ],
           "description": "Import roles",
+          "name": "import",
           "options": [
             {
+              "args": {
+                "description": "The Galaxy API server URL",
+                "name": "api_server"
+              },
+              "description": "The Galaxy API server URL",
               "name": [
                 "--server",
                 "-s"
-              ],
-              "description": "The Galaxy API server URL",
-              "args": {
-                "name": "api_server",
-                "description": "The Galaxy API server URL"
-              }
+              ]
             },
             {
+              "args": {
+                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+                "name": "api_key"
+              },
+              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
               "name": [
                 "--token",
                 "--api-key"
-              ],
-              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
-              "args": {
-                "name": "api_key",
-                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences"
-              }
+              ]
             },
             {
+              "description": "Ignore SSL certificate validation errors",
               "name": [
                 "--ignore-certs",
                 "-c"
-              ],
-              "description": "Ignore SSL certificate validation errors"
+              ]
             },
             {
-              "name": [
-                "--branch"
-              ],
-              "description": "The name of a branch to import. Defaults to the repository's default branch (usually master)",
               "args": {
-                "name": "reference",
                 "description": "The name of a branch to import. Defaults to the repository's default branch (usually master)",
+                "name": "reference",
                 "suggestions": [
                   {
                     "name": "master"
@@ -1111,274 +1145,240 @@
                     "name": "develop"
                   }
                 ]
-              }
+              },
+              "description": "The name of a branch to import. Defaults to the repository's default branch (usually master)",
+              "name": [
+                "--branch"
+              ]
             },
             {
+              "args": {
+                "description": "The name the role should have, if different than the repo name",
+                "name": "role_name"
+              },
+              "description": "The name the role should have, if different than the repo name",
               "name": [
                 "--role-name"
-              ],
-              "description": "The name the role should have, if different than the repo name",
-              "args": {
-                "name": "role_name",
-                "description": "The name the role should have, if different than the repo name"
-              }
+              ]
             },
             {
+              "description": "Check the status of the most recent import request for given github_user/github_repo",
               "name": [
                 "--status"
-              ],
-              "description": "Check the status of the most recent import request for given github_user/github_repo"
-            }
-          ],
-          "args": [
-            {
-              "name": "github_user",
-              "description": "GitHub username",
-              "isOptional": true
-            },
-            {
-              "name": "github_repo",
-              "description": "GitHub repository"
+              ]
             }
           ]
         },
         {
-          "name": "setup",
           "description": "Set up roles",
+          "name": "setup",
           "options": [
             {
+              "args": {
+                "description": "The Galaxy API server URL",
+                "name": "api_server"
+              },
+              "description": "The Galaxy API server URL",
               "name": [
                 "--server",
                 "-s"
-              ],
-              "description": "The Galaxy API server URL",
-              "args": {
-                "name": "api_server",
-                "description": "The Galaxy API server URL"
-              }
+              ]
             },
             {
+              "args": {
+                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+                "name": "api_key"
+              },
+              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
               "name": [
                 "--token",
                 "--api-key"
-              ],
-              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
-              "args": {
-                "name": "api_key",
-                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences"
-              }
+              ]
             },
             {
+              "description": "Ignore SSL certificate validation errors",
               "name": [
                 "--ignore-certs",
                 "-c"
-              ],
-              "description": "Ignore SSL certificate validation errors"
+              ]
             },
             {
-              "name": [
-                "--roles-path",
-                "--role-path"
-              ],
-              "description": "The path to the directory containing your roles",
               "args": {
-                "name": "roles_path",
                 "description": "The path to the directory containing your roles",
+                "name": "roles_path",
                 "suggestions": [
                   {
                     "name": "~/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles"
                   }
                 ]
-              }
+              },
+              "description": "The path to the directory containing your roles",
+              "name": [
+                "--roles-path",
+                "--role-path"
+              ]
             },
             {
+              "args": {
+                "description": "Remove the integration matching the provided ID value. Use --list to see ID values",
+                "name": "remove_id"
+              },
+              "description": "Remove the integration matching the provided ID value. Use --list to see ID values",
               "name": [
                 "--remove"
-              ],
-              "description": "Remove the integration matching the provided ID value. Use --list to see ID values",
-              "args": {
-                "name": "remove_id",
-                "description": "Remove the integration matching the provided ID value. Use --list to see ID values"
-              }
+              ]
             },
             {
+              "description": "List all of your integrations",
               "name": [
                 "--list"
-              ],
-              "description": "List all of your integrations"
+              ]
             }
           ]
         },
         {
-          "name": "info",
           "description": "Role information",
+          "name": "info",
           "options": [
             {
+              "args": {
+                "description": "The Galaxy API server URL",
+                "name": "api_server"
+              },
+              "description": "The Galaxy API server URL",
               "name": [
                 "--server",
                 "-s"
-              ],
-              "description": "The Galaxy API server URL",
-              "args": {
-                "name": "api_server",
-                "description": "The Galaxy API server URL"
-              }
+              ]
             },
             {
+              "args": {
+                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+                "name": "api_key"
+              },
+              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
               "name": [
                 "--token",
                 "--api-key"
-              ],
-              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
-              "args": {
-                "name": "api_key",
-                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences"
-              }
+              ]
             },
             {
+              "description": "Ignore SSL certificate validation errors",
               "name": [
                 "--ignore-certs",
                 "-c"
-              ],
-              "description": "Ignore SSL certificate validation errors"
+              ]
             },
             {
-              "name": [
-                "--roles-path",
-                "--role-path"
-              ],
-              "description": "The path to the directory containing your roles",
               "args": {
-                "name": "roles_path",
                 "description": "The path to the directory containing your roles",
+                "name": "roles_path",
                 "suggestions": [
                   {
                     "name": "~/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles"
                   }
                 ]
-              }
+              },
+              "description": "The path to the directory containing your roles",
+              "name": [
+                "--roles-path",
+                "--role-path"
+              ]
             },
             {
+              "description": "Don't query the galaxy API when creating roles",
               "name": [
                 "--offline"
-              ],
-              "description": "Don't query the galaxy API when creating roles"
+              ]
             }
           ]
         },
         {
-          "name": "install",
           "description": "Install roles",
+          "name": "install",
           "options": [
             {
+              "args": {
+                "description": "The Galaxy API server URL",
+                "name": "api_server"
+              },
+              "description": "The Galaxy API server URL",
               "name": [
                 "--server",
                 "-s"
-              ],
-              "description": "The Galaxy API server URL",
-              "args": {
-                "name": "api_server",
-                "description": "The Galaxy API server URL"
-              }
+              ]
             },
             {
+              "args": {
+                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
+                "name": "api_key"
+              },
+              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
               "name": [
                 "--token",
                 "--api-key"
-              ],
-              "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences",
-              "args": {
-                "name": "api_key",
-                "description": "The Ansible Galaxy API key which can be found at https://galaxy.ansible.com/me/preferences"
-              }
+              ]
             },
             {
+              "description": "Ignore SSL certificate validation errors",
               "name": [
                 "--ignore-certs",
                 "-c"
-              ],
-              "description": "Ignore SSL certificate validation errors"
+              ]
             },
             {
-              "name": [
-                "--roles-path",
-                "--role-path"
-              ],
-              "description": "The path to the directory containing your roles",
               "args": {
-                "name": "roles_path",
                 "description": "The path to the directory containing your roles",
+                "name": "roles_path",
                 "suggestions": [
                   {
                     "name": "~/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles"
                   }
                 ]
-              }
+              },
+              "description": "The path to the directory containing your roles",
+              "name": [
+                "--roles-path",
+                "--role-path"
+              ]
             },
             {
+              "description": "Don't download roles listed as dependencies",
               "name": [
                 "--no-deps",
                 "-n"
-              ],
-              "description": "Don't download roles listed as dependencies"
+              ]
             },
             {
+              "description": "Force overwriting an existing role and its dependencies",
               "name": [
                 "--force-with-deps"
-              ],
-              "description": "Force overwriting an existing role and its dependencies"
+              ]
             },
             {
-              "name": [
-                "--requirements-file",
-                "-r"
-              ],
-              "description": "A file containing a list of collections to be downloaded",
               "args": {
-                "name": "requirements",
                 "description": "A file containing a list of collections to be downloaded",
+                "name": "requirements",
                 "template": [
                   "filepaths"
                 ]
-              }
+              },
+              "description": "A file containing a list of collections to be downloaded",
+              "name": [
+                "--requirements-file",
+                "-r"
+              ]
             },
             {
+              "description": "Use tar instead of the scm archive option when packaging the role",
               "name": [
                 "--keep-scm-meta",
                 "-g"
-              ],
-              "description": "Use tar instead of the scm archive option when packaging the role"
+              ]
             }
           ]
         }
       ]
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Show help and exit"
-    },
-    {
-      "name": [
-        "--verbose"
-      ],
-      "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)"
-    },
-    {
-      "name": [
-        "-v"
-      ],
-      "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)"
-    },
-    {
-      "name": [
-        "--version"
-      ],
-      "description": "Shows version number, config file location, module search path, module location, executable location and exit"
     }
   ]
 }

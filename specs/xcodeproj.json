@@ -1,69 +1,100 @@
 {
-  "name": "xcodeproj",
   "description": "Xcodeproj lets you create and modify Xcode projects",
+  "name": "xcodeproj",
+  "options": [
+    {
+      "description": "Show more debugging information",
+      "name": [
+        "--verbose"
+      ]
+    },
+    {
+      "description": "Show the version of the tool",
+      "name": [
+        "--version"
+      ]
+    },
+    {
+      "description": "Show output without ANSI codes",
+      "name": [
+        "--no-ansi"
+      ]
+    },
+    {
+      "description": "Show help banner of specified command",
+      "name": [
+        "--help"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "config-dump",
-      "description": "Dumps the build settings of all project targets for all configurations in directories named by the target in the given output directory",
       "args": [
         {
-          "name": "PROJECT",
-          "isOptional": true,
           "generators": [
             {
               "template": "folders"
             }
-          ]
+          ],
+          "isOptional": true,
+          "name": "PROJECT"
         },
         {
+          "isOptional": true,
           "name": "OUTPUT",
-          "template": "folders",
-          "isOptional": true
-        }
-      ]
-    },
-    {
-      "name": "project-diff",
-      "description": "Shows the difference between two projects",
-      "options": [
-        {
-          "name": [
-            "--ignore"
-          ],
-          "description": "A key to ignore in the comparison. Can be specified multiple times",
-          "args": {
-            "name": "KEY"
-          }
+          "template": "folders"
         }
       ],
+      "description": "Dumps the build settings of all project targets for all configurations in directories named by the target in the given output directory",
+      "name": "config-dump"
+    },
+    {
       "args": [
         {
-          "name": "PROJECT1",
           "generators": [
             {
               "template": "folders"
             }
-          ]
+          ],
+          "name": "PROJECT1"
         },
         {
-          "name": "PROJECT2",
           "generators": [
             {
               "template": "folders"
             }
+          ],
+          "name": "PROJECT2"
+        }
+      ],
+      "description": "Shows the difference between two projects",
+      "name": "project-diff",
+      "options": [
+        {
+          "args": {
+            "name": "KEY"
+          },
+          "description": "A key to ignore in the comparison. Can be specified multiple times",
+          "name": [
+            "--ignore"
           ]
         }
       ]
     },
     {
-      "name": "show",
+      "args": {
+        "generators": [
+          {
+            "template": "folders"
+          }
+        ],
+        "isOptional": true,
+        "name": "PROJECT"
+      },
       "description": "Shows an overview of a project in a YAML representation",
+      "name": "show",
       "options": [
         {
-          "name": [
-            "--format"
-          ],
-          "description": "YAML output format",
           "args": {
             "name": "FORMAT",
             "suggestions": [
@@ -77,28 +108,28 @@
                 "name": "raw"
               }
             ]
-          }
+          },
+          "description": "YAML output format",
+          "name": [
+            "--format"
+          ]
         }
-      ],
+      ]
+    },
+    {
       "args": {
-        "name": "PROJECT",
-        "isOptional": true,
         "generators": [
           {
             "template": "folders"
           }
-        ]
-      }
-    },
-    {
-      "name": "sort",
+        ],
+        "isOptional": true,
+        "name": "PROJECT"
+      },
       "description": "Sorts the given project",
+      "name": "sort",
       "options": [
         {
-          "name": [
-            "--group-option"
-          ],
-          "description": "The position of the groups when sorting. If no option is specified sorting will interleave groups and files",
           "args": {
             "name": "POSITION",
             "suggestions": [
@@ -109,38 +140,15 @@
                 "name": "below"
               }
             ]
-          }
+          },
+          "description": "The position of the groups when sorting. If no option is specified sorting will interleave groups and files",
+          "name": [
+            "--group-option"
+          ]
         }
-      ],
-      "args": {
-        "name": "PROJECT",
-        "isOptional": true,
-        "generators": [
-          {
-            "template": "folders"
-          }
-        ]
-      }
+      ]
     },
     {
-      "name": "target-diff",
-      "description": "Shows the difference between two targets",
-      "options": [
-        {
-          "name": [
-            "--project"
-          ],
-          "description": "The Xcode project document to use",
-          "args": {
-            "name": "PATH",
-            "generators": [
-              {
-                "template": "folders"
-              }
-            ]
-          }
-        }
-      ],
       "args": [
         {
           "name": "TARGET1"
@@ -148,33 +156,25 @@
         {
           "name": "TARGET2"
         }
+      ],
+      "description": "Shows the difference between two targets",
+      "name": "target-diff",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "template": "folders"
+              }
+            ],
+            "name": "PATH"
+          },
+          "description": "The Xcode project document to use",
+          "name": [
+            "--project"
+          ]
+        }
       ]
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--verbose"
-      ],
-      "description": "Show more debugging information"
-    },
-    {
-      "name": [
-        "--version"
-      ],
-      "description": "Show the version of the tool"
-    },
-    {
-      "name": [
-        "--no-ansi"
-      ],
-      "description": "Show output without ANSI codes"
-    },
-    {
-      "name": [
-        "--help"
-      ],
-      "description": "Show help banner of specified command"
     }
   ]
 }

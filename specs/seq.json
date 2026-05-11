@@ -1,62 +1,62 @@
 {
-  "name": "seq",
+  "args": [
+    {
+      "description": "Starting number in sequence",
+      "name": "first"
+    },
+    {
+      "description": "Increment interval",
+      "isOptional": true,
+      "name": "step"
+    },
+    {
+      "description": "Last number in sequence",
+      "isOptional": true,
+      "name": "last"
+    }
+  ],
   "description": "Print sequences of numbers. (Defaults to increments of 1)",
+  "name": "seq",
   "options": [
     {
+      "description": "Equalize the widths of all numbers by padding with zeros as necessary",
       "name": [
         "-w",
         "--fixed-width"
-      ],
-      "description": "Equalize the widths of all numbers by padding with zeros as necessary"
+      ]
     },
     {
+      "args": {
+        "description": "Separator",
+        "name": "string"
+      },
+      "description": "String separator between numbers. Default is newline",
       "name": [
         "-s",
         "--separator"
-      ],
-      "description": "String separator between numbers. Default is newline",
-      "args": {
-        "name": "string",
-        "description": "Separator"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "Print all numbers using format",
+        "name": "format"
+      },
+      "description": "Use a printf(3) style format to print each number",
       "name": [
         "-f",
         "--format"
-      ],
-      "description": "Use a printf(3) style format to print each number",
-      "args": {
-        "name": "format",
-        "description": "Print all numbers using format"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "Terminator",
+        "name": "string"
+      },
+      "description": "Use string to terminate sequence of numbers",
       "name": [
         "-t",
         "--terminator"
-      ],
-      "description": "Use string to terminate sequence of numbers",
-      "args": {
-        "name": "string",
-        "description": "Terminator"
-      }
-    }
-  ],
-  "args": [
-    {
-      "name": "first",
-      "description": "Starting number in sequence"
-    },
-    {
-      "name": "step",
-      "description": "Increment interval",
-      "isOptional": true
-    },
-    {
-      "name": "last",
-      "description": "Last number in sequence",
-      "isOptional": true
+      ]
     }
   ]
 }

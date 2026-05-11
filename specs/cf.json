@@ -1,20 +1,24 @@
 {
-  "name": "cf",
   "description": "Cloudfoundry cli",
+  "name": "cf",
+  "options": [
+    {
+      "description": "Show help for Cloud Foundry command line tool",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Print API request diagnostics to stdout",
+      "name": [
+        "-v"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "app",
-      "description": "Display health and status for app",
-      "options": [
-        {
-          "name": [
-            "--guid"
-          ],
-          "description": "Retrieve and display the given app's guid.  All other health and status output for the app is suppressed"
-        }
-      ],
       "args": {
-        "name": "APP_NAME",
         "description": "The app you want to get health and status for",
         "generators": [
           {
@@ -29,22 +33,22 @@
               "trim"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "ssh",
+        ],
+        "name": "APP_NAME"
+      },
       "description": "Display health and status for app",
+      "name": "app",
       "options": [
         {
+          "description": "Retrieve and display the given app's guid.  All other health and status output for the app is suppressed",
           "name": [
-            "-v"
-          ],
-          "description": "Verbose output"
+            "--guid"
+          ]
         }
-      ],
+      ]
+    },
+    {
       "args": {
-        "name": "APP_NAME",
         "description": "The app you want to ssh into",
         "generators": [
           {
@@ -59,14 +63,22 @@
               "trim"
             ]
           }
-        ]
-      }
+        ],
+        "name": "APP_NAME"
+      },
+      "description": "Display health and status for app",
+      "name": "ssh",
+      "options": [
+        {
+          "description": "Verbose output",
+          "name": [
+            "-v"
+          ]
+        }
+      ]
     },
     {
-      "name": "env",
-      "description": "Show all env variables for an app",
       "args": {
-        "name": "APP_NAME",
         "description": "The app you want to get env vars for",
         "generators": [
           {
@@ -81,37 +93,35 @@
               "trim"
             ]
           }
-        ]
-      }
+        ],
+        "name": "APP_NAME"
+      },
+      "description": "Show all env variables for an app",
+      "name": "env"
     },
     {
-      "name": "orgs",
-      "description": "List all orgs"
+      "description": "List all orgs",
+      "name": "orgs"
     },
     {
-      "name": "version",
-      "description": "Print the version of cf"
+      "description": "Print the version of cf",
+      "name": "version"
     },
     {
-      "name": "login",
       "description": "Log user in",
+      "name": "login",
       "options": [
         {
-          "name": [
-            "-a"
-          ],
-          "description": "API endpoint (e.g. https://api.example.com)",
           "args": {
             "name": "API endpoint"
-          }
+          },
+          "description": "API endpoint (e.g. https://api.example.com)",
+          "name": [
+            "-a"
+          ]
         },
         {
-          "name": [
-            "-o"
-          ],
-          "description": "Org",
           "args": {
-            "name": "Org",
             "generators": [
               {
                 "script": [
@@ -124,16 +134,16 @@
                   "trim"
                 ]
               }
-            ]
-          }
+            ],
+            "name": "Org"
+          },
+          "description": "Org",
+          "name": [
+            "-o"
+          ]
         },
         {
-          "name": [
-            "-s"
-          ],
-          "description": "Space",
           "args": {
-            "name": "Space",
             "generators": [
               {
                 "script": [
@@ -146,48 +156,48 @@
                   "trim"
                 ]
               }
-            ]
-          }
+            ],
+            "name": "Space"
+          },
+          "description": "Space",
+          "name": [
+            "-s"
+          ]
         },
         {
-          "name": [
-            "-p"
-          ],
-          "description": "Password",
           "args": {
             "name": "Password"
-          }
+          },
+          "description": "Password",
+          "name": [
+            "-p"
+          ]
         },
         {
-          "name": [
-            "-u"
-          ],
-          "description": "Username",
           "args": {
             "name": "Username"
-          }
+          },
+          "description": "Username",
+          "name": [
+            "-u"
+          ]
         }
       ]
     },
     {
-      "name": "logout",
-      "description": "Log user out"
+      "description": "Log user out",
+      "name": "logout"
     },
     {
-      "name": "password",
-      "description": "Change user password"
+      "description": "Change user password",
+      "name": "password"
     },
     {
-      "name": "target",
       "description": "Set or view the targeted org or space",
+      "name": "target",
       "options": [
         {
-          "name": [
-            "-o"
-          ],
-          "description": "Org",
           "args": {
-            "name": "Org",
             "generators": [
               {
                 "script": [
@@ -200,16 +210,16 @@
                   "trim"
                 ]
               }
-            ]
-          }
+            ],
+            "name": "Org"
+          },
+          "description": "Org",
+          "name": [
+            "-o"
+          ]
         },
         {
-          "name": [
-            "-s"
-          ],
-          "description": "Space",
           "args": {
-            "name": "Space",
             "generators": [
               {
                 "script": [
@@ -222,37 +232,40 @@
                   "trim"
                 ]
               }
-            ]
-          }
+            ],
+            "name": "Space"
+          },
+          "description": "Space",
+          "name": [
+            "-s"
+          ]
         }
       ]
     },
     {
-      "name": "api",
+      "args": {
+        "description": "API endpoint",
+        "isOptional": true,
+        "name": "url"
+      },
       "description": "Set or view target api url",
+      "name": "api",
       "options": [
         {
+          "description": "Skip verification of the API endpoint. Not recommended!",
           "name": [
             "--skip-ssl-validation"
-          ],
-          "description": "Skip verification of the API endpoint. Not recommended!"
+          ]
         },
         {
+          "description": "Remove all api endpoint targeting",
           "name": [
             "--unset"
-          ],
-          "description": "Remove all api endpoint targeting"
+          ]
         }
-      ],
-      "args": {
-        "name": "url",
-        "description": "API endpoint",
-        "isOptional": true
-      }
+      ]
     },
     {
-      "name": "auth",
-      "description": "Auth user non-interactively",
       "args": [
         {
           "name": "username"
@@ -260,160 +273,145 @@
         {
           "name": "password"
         }
-      ]
+      ],
+      "description": "Auth user non-interactively",
+      "name": "auth"
     },
     {
-      "name": "apps",
-      "description": "List all apps in the target space"
+      "description": "List all apps in the target space",
+      "name": "apps"
     },
     {
-      "name": "push",
       "description": "Push a new app or sync changes to an existing app",
+      "name": "push",
       "options": [
         {
-          "name": [
-            "-b"
-          ],
-          "description": "Custom buildpack by name or git url",
           "args": {
             "name": "Buildpack"
-          }
+          },
+          "description": "Custom buildpack by name or git url",
+          "name": [
+            "-b"
+          ]
         },
         {
+          "args": {
+            "isOptional": true,
+            "name": "Command"
+          },
+          "description": "Startup command, set to null to reset to default start command",
           "name": [
             "-c"
-          ],
-          "description": "Startup command, set to null to reset to default start command",
-          "args": {
-            "name": "Command",
-            "isOptional": true
-          }
+          ]
         },
         {
-          "name": [
-            "-d"
-          ],
-          "description": "Domain",
           "args": {
             "name": "Domain"
-          }
+          },
+          "description": "Domain",
+          "name": [
+            "-d"
+          ]
         },
         {
+          "args": {
+            "name": "Docker image"
+          },
+          "description": "Docker image",
           "name": [
             "-o",
             "--docker-image"
-          ],
-          "description": "Docker image",
-          "args": {
-            "name": "Docker image"
-          }
+          ]
         },
         {
-          "name": [
-            "-f"
-          ],
-          "description": "Path to manifest",
           "args": {
             "name": "Path to manifest"
-          }
+          },
+          "description": "Path to manifest",
+          "name": [
+            "-f"
+          ]
         },
         {
+          "args": {
+            "name": "Hostname"
+          },
+          "description": "Hostname",
           "name": [
             "-n",
             "--host-name"
-          ],
-          "description": "Hostname",
-          "args": {
-            "name": "Hostname"
-          }
+          ]
         },
         {
-          "name": [
-            "-i"
-          ],
-          "description": "Number of instances",
           "args": {
             "name": "Number of instances"
-          }
+          },
+          "description": "Number of instances",
+          "name": [
+            "-i"
+          ]
         },
         {
-          "name": [
-            "-k"
-          ],
-          "description": "Disk limit",
           "args": {
             "name": "Disk limit"
-          }
+          },
+          "description": "Disk limit",
+          "name": [
+            "-k"
+          ]
         },
         {
-          "name": [
-            "-m"
-          ],
-          "description": "Memory limit",
           "args": {
             "name": "Memory limit"
-          }
+          },
+          "description": "Memory limit",
+          "name": [
+            "-m"
+          ]
         }
       ]
     },
     {
-      "name": "scale",
       "description": "Change or view the instance count, disk space limit, and memory limit for an app",
+      "name": "scale",
       "options": [
         {
+          "description": "Force restart of app without prompt",
           "name": [
             "-f"
-          ],
-          "description": "Force restart of app without prompt"
+          ]
         },
         {
-          "name": [
-            "-i"
-          ],
-          "description": "Number of instances",
           "args": {
             "name": "Number of instances"
-          }
+          },
+          "description": "Number of instances",
+          "name": [
+            "-i"
+          ]
         },
         {
-          "name": [
-            "-k"
-          ],
-          "description": "Disk limit",
           "args": {
             "name": "Disk limit"
-          }
+          },
+          "description": "Disk limit",
+          "name": [
+            "-k"
+          ]
         },
         {
-          "name": [
-            "-m"
-          ],
-          "description": "Memory limit",
           "args": {
             "name": "Memory limit"
-          }
+          },
+          "description": "Memory limit",
+          "name": [
+            "-m"
+          ]
         }
       ]
     },
     {
-      "name": "delete",
-      "description": "Delete an app",
-      "options": [
-        {
-          "name": [
-            "-f"
-          ],
-          "description": "Force deletion without confirmation"
-        },
-        {
-          "name": [
-            "-r"
-          ],
-          "description": "Also delete any mapped routes"
-        }
-      ],
       "args": {
-        "name": "APP_NAME",
         "description": "The app you want to get health and status for",
         "generators": [
           {
@@ -428,15 +426,29 @@
               "trim"
             ]
           }
-        ]
-      }
+        ],
+        "name": "APP_NAME"
+      },
+      "description": "Delete an app",
+      "name": "delete",
+      "options": [
+        {
+          "description": "Force deletion without confirmation",
+          "name": [
+            "-f"
+          ]
+        },
+        {
+          "description": "Also delete any mapped routes",
+          "name": [
+            "-r"
+          ]
+        }
+      ]
     },
     {
-      "name": "rename",
-      "description": "Rename an app",
       "args": [
         {
-          "name": "APP_NAME",
           "generators": [
             {
               "script": [
@@ -450,18 +462,39 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "APP_NAME"
         },
         {
           "name": "new app name"
         }
-      ]
+      ],
+      "description": "Rename an app",
+      "name": "rename"
     },
     {
-      "name": "start",
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "cf apps | cut -d \" \" -f1"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "APP_NAME"
+      },
       "description": "Start an app",
+      "name": "start"
+    },
+    {
       "args": {
-        "name": "APP_NAME",
         "generators": [
           {
             "script": [
@@ -475,14 +508,14 @@
               "trim"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "stop",
+        ],
+        "name": "APP_NAME"
+      },
       "description": "Stop an app",
+      "name": "stop"
+    },
+    {
       "args": {
-        "name": "APP_NAME",
         "generators": [
           {
             "script": [
@@ -496,14 +529,14 @@
               "trim"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "restart",
+        ],
+        "name": "APP_NAME"
+      },
       "description": "Stop all instances of the app, then start them again. This may cause downtime",
+      "name": "restart"
+    },
+    {
       "args": {
-        "name": "APP_NAME",
         "generators": [
           {
             "script": [
@@ -517,36 +550,15 @@
               "trim"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "restage",
+        ],
+        "name": "APP_NAME"
+      },
       "description": "Recreate the app's executable artifact using the latest pushed app files and the latest environment (variables, service bindings, buildpack, stack, etc.)",
-      "args": {
-        "name": "APP_NAME",
-        "generators": [
-          {
-            "script": [
-              "bash",
-              "-c",
-              "cf apps | cut -d \" \" -f1"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              "trim"
-            ]
-          }
-        ]
-      }
+      "name": "restage"
     },
     {
-      "name": "restart-app-instance",
-      "description": "Terminate the running application Instance at the given index and instantiate a new instance of the application with the same index",
       "args": [
         {
-          "name": "APP_NAME",
           "generators": [
             {
               "script": [
@@ -560,48 +572,19 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "APP_NAME"
         },
         {
           "name": "index"
         }
-      ]
+      ],
+      "description": "Terminate the running application Instance at the given index and instantiate a new instance of the application with the same index",
+      "name": "restart-app-instance"
     },
     {
-      "name": "run-task",
-      "description": "Run a one-off task on an app",
-      "options": [
-        {
-          "name": [
-            "-k"
-          ],
-          "description": "Disk limit",
-          "args": {
-            "name": "Disk limit"
-          }
-        },
-        {
-          "name": [
-            "-m"
-          ],
-          "description": "Memory limit",
-          "args": {
-            "name": "Memory limit"
-          }
-        },
-        {
-          "name": [
-            "--name"
-          ],
-          "description": "Name for task",
-          "args": {
-            "name": "Name for task"
-          }
-        }
-      ],
       "args": [
         {
-          "name": "APP_NAME",
           "generators": [
             {
               "script": [
@@ -615,18 +598,47 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "APP_NAME"
         },
         {
           "name": "command"
         }
+      ],
+      "description": "Run a one-off task on an app",
+      "name": "run-task",
+      "options": [
+        {
+          "args": {
+            "name": "Disk limit"
+          },
+          "description": "Disk limit",
+          "name": [
+            "-k"
+          ]
+        },
+        {
+          "args": {
+            "name": "Memory limit"
+          },
+          "description": "Memory limit",
+          "name": [
+            "-m"
+          ]
+        },
+        {
+          "args": {
+            "name": "Name for task"
+          },
+          "description": "Name for task",
+          "name": [
+            "--name"
+          ]
+        }
       ]
     },
     {
-      "name": "tasks",
-      "description": "List tasks of an app",
       "args": {
-        "name": "APP_NAME",
         "generators": [
           {
             "script": [
@@ -640,15 +652,15 @@
               "trim"
             ]
           }
-        ]
-      }
+        ],
+        "name": "APP_NAME"
+      },
+      "description": "List tasks of an app",
+      "name": "tasks"
     },
     {
-      "name": "terminate-task",
-      "description": "Terminate a running task of an app",
       "args": [
         {
-          "name": "APP_NAME",
           "generators": [
             {
               "script": [
@@ -662,18 +674,18 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "APP_NAME"
         },
         {
           "name": "task id"
         }
-      ]
+      ],
+      "description": "Terminate a running task of an app",
+      "name": "terminate-task"
     },
     {
-      "name": "events",
-      "description": "Show recent app events",
       "args": {
-        "name": "APP_NAME",
         "generators": [
           {
             "script": [
@@ -687,26 +699,15 @@
               "trim"
             ]
           }
-        ]
-      }
+        ],
+        "name": "APP_NAME"
+      },
+      "description": "Show recent app events",
+      "name": "events"
     },
     {
-      "name": "files",
-      "description": "Print out a list of files in a directory or the contents of a specific file of an app running on the DEA backend",
-      "options": [
-        {
-          "name": [
-            "-i"
-          ],
-          "description": "Instance",
-          "args": {
-            "name": "instance"
-          }
-        }
-      ],
       "args": [
         {
-          "name": "APP_NAME",
           "generators": [
             {
               "script": [
@@ -720,27 +721,30 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "APP_NAME"
         },
         {
-          "name": "path",
-          "isOptional": true
+          "isOptional": true,
+          "name": "path"
+        }
+      ],
+      "description": "Print out a list of files in a directory or the contents of a specific file of an app running on the DEA backend",
+      "name": "files",
+      "options": [
+        {
+          "args": {
+            "name": "instance"
+          },
+          "description": "Instance",
+          "name": [
+            "-i"
+          ]
         }
       ]
     },
     {
-      "name": "logs",
-      "description": "Trail or show recent logs for an app",
-      "options": [
-        {
-          "name": [
-            "--recent"
-          ],
-          "description": "Dump recent logs instead of tailing"
-        }
-      ],
       "args": {
-        "name": "APP_NAME",
         "generators": [
           {
             "script": [
@@ -754,15 +758,23 @@
               "trim"
             ]
           }
-        ]
-      }
+        ],
+        "name": "APP_NAME"
+      },
+      "description": "Trail or show recent logs for an app",
+      "name": "logs",
+      "options": [
+        {
+          "description": "Dump recent logs instead of tailing",
+          "name": [
+            "--recent"
+          ]
+        }
+      ]
     },
     {
-      "name": "set-env",
-      "description": "Set an environment variable for an app",
       "args": [
         {
-          "name": "APP_NAME",
           "generators": [
             {
               "script": [
@@ -776,7 +788,8 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "APP_NAME"
         },
         {
           "name": "env var name"
@@ -784,14 +797,13 @@
         {
           "name": "env var value"
         }
-      ]
+      ],
+      "description": "Set an environment variable for an app",
+      "name": "set-env"
     },
     {
-      "name": "unset-env",
-      "description": "Remove an environment variable",
       "args": [
         {
-          "name": "APP_NAME",
           "generators": [
             {
               "script": [
@@ -805,28 +817,34 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "APP_NAME"
         },
         {
           "name": "env var name"
         }
-      ]
+      ],
+      "description": "Remove an environment variable",
+      "name": "unset-env"
     },
     {
-      "name": "stacks",
-      "description": "List all stacks (a stack is a pre-built file system, including an operating system, that can run apps)"
+      "description": "List all stacks (a stack is a pre-built file system, including an operating system, that can run apps)",
+      "name": "stacks"
     },
     {
-      "name": "copy-source",
+      "args": [
+        {
+          "name": "source app"
+        },
+        {
+          "name": "target app"
+        }
+      ],
       "description": "Copies the source code of an application to another existing application (and restarts that application)",
+      "name": "copy-source",
       "options": [
         {
-          "name": [
-            "-s"
-          ],
-          "description": "Space that contains the target application",
           "args": {
-            "name": "space",
             "generators": [
               {
                 "script": [
@@ -839,16 +857,16 @@
                   "trim"
                 ]
               }
-            ]
-          }
+            ],
+            "name": "space"
+          },
+          "description": "Space that contains the target application",
+          "name": [
+            "-s"
+          ]
         },
         {
-          "name": [
-            "-o"
-          ],
-          "description": "Org that contains the target application",
           "args": {
-            "name": "org",
             "generators": [
               {
                 "script": [
@@ -861,41 +879,56 @@
                   "trim"
                 ]
               }
-            ]
-          }
+            ],
+            "name": "org"
+          },
+          "description": "Org that contains the target application",
+          "name": [
+            "-o"
+          ]
         },
         {
+          "description": "Override restart of the application in target environment after copy-source completes",
           "name": [
             "--no-restart"
-          ],
-          "description": "Override restart of the application in target environment after copy-source completes"
-        }
-      ],
-      "args": [
-        {
-          "name": "source app"
-        },
-        {
-          "name": "target app"
+          ]
         }
       ]
     },
     {
-      "name": "create-app-manifest",
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "cf apps | cut -d \" \" -f1"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "APP_NAME"
+      },
       "description": "Create an app manifest for an app that has been pushed successfully",
+      "name": "create-app-manifest",
       "options": [
         {
-          "name": [
-            "-p"
-          ],
-          "description": "Path for file creation",
           "args": {
             "name": "path"
-          }
+          },
+          "description": "Path for file creation",
+          "name": [
+            "-p"
+          ]
         }
-      ],
+      ]
+    },
+    {
       "args": {
-        "name": "APP_NAME",
         "generators": [
           {
             "script": [
@@ -909,36 +942,15 @@
               "trim"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "get-health-check",
+        ],
+        "name": "APP_NAME"
+      },
       "description": "Show the type of health check performed on an app",
-      "args": {
-        "name": "APP_NAME",
-        "generators": [
-          {
-            "script": [
-              "bash",
-              "-c",
-              "cf apps | cut -d \" \" -f1"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              "trim"
-            ]
-          }
-        ]
-      }
+      "name": "get-health-check"
     },
     {
-      "name": "set-health-check",
-      "description": "Change type of health check performed on an app",
       "args": [
         {
-          "name": "APP_NAME",
           "generators": [
             {
               "script": [
@@ -952,119 +964,100 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "APP_NAME"
         },
         {
-          "name": "type of health check",
-          "description": "Process, port or http"
-        }
-      ]
-    },
-    {
-      "name": "enable-ssh",
-      "description": "Enable ssh for the application",
-      "args": {
-        "name": "APP_NAME",
-        "generators": [
-          {
-            "script": [
-              "bash",
-              "-c",
-              "cf apps | cut -d \" \" -f1"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              "trim"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "name": "disable-ssh",
-      "description": "Disable ssh for the application",
-      "args": {
-        "name": "APP_NAME",
-        "generators": [
-          {
-            "script": [
-              "bash",
-              "-c",
-              "cf apps | cut -d \" \" -f1"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              "trim"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "name": "ssh-enabled",
-      "description": "Reports whether SSH is enabled on an application container instance",
-      "args": {
-        "name": "APP_NAME",
-        "generators": [
-          {
-            "script": [
-              "bash",
-              "-c",
-              "cf apps | cut -d \" \" -f1"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              "trim"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "name": "marketplace",
-      "description": "List available offerings in the marketplace",
-      "options": [
-        {
-          "name": [
-            "-s"
-          ],
-          "description": "Show plan details for a particular service offering",
-          "args": {
-            "name": "service"
-          }
-        }
-      ]
-    },
-    {
-      "name": "services",
-      "description": "List all service instances in the target space"
-    },
-    {
-      "name": "create-service",
-      "description": "Create a service instance",
-      "options": [
-        {
-          "name": [
-            "-c"
-          ],
-          "description": "Valid JSON object containing service-specific configuration parameters, provided either in-line or in a file",
-          "args": {
-            "name": "JSON object"
-          }
-        },
-        {
-          "name": [
-            "-t"
-          ],
-          "description": "User provided tags",
-          "args": {
-            "name": "tags"
-          }
+          "description": "Process, port or http",
+          "name": "type of health check"
         }
       ],
+      "description": "Change type of health check performed on an app",
+      "name": "set-health-check"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "cf apps | cut -d \" \" -f1"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "APP_NAME"
+      },
+      "description": "Enable ssh for the application",
+      "name": "enable-ssh"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "cf apps | cut -d \" \" -f1"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "APP_NAME"
+      },
+      "description": "Disable ssh for the application",
+      "name": "disable-ssh"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "cf apps | cut -d \" \" -f1"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "APP_NAME"
+      },
+      "description": "Reports whether SSH is enabled on an application container instance",
+      "name": "ssh-enabled"
+    },
+    {
+      "description": "List available offerings in the marketplace",
+      "name": "marketplace",
+      "options": [
+        {
+          "args": {
+            "name": "service"
+          },
+          "description": "Show plan details for a particular service offering",
+          "name": [
+            "-s"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List all service instances in the target space",
+      "name": "services"
+    },
+    {
       "args": [
         {
           "name": "service"
@@ -1075,42 +1068,82 @@
         {
           "name": "service instance"
         }
+      ],
+      "description": "Create a service instance",
+      "name": "create-service",
+      "options": [
+        {
+          "args": {
+            "name": "JSON object"
+          },
+          "description": "Valid JSON object containing service-specific configuration parameters, provided either in-line or in a file",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "tags"
+          },
+          "description": "User provided tags",
+          "name": [
+            "-t"
+          ]
+        }
       ]
     },
     {
-      "name": "update-service",
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "bash",
+              "-c",
+              "cf services | cut -d \" \" -f1 "
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "service"
+      },
       "description": "Update a service instance",
+      "name": "update-service",
       "options": [
         {
-          "name": [
-            "-c"
-          ],
-          "description": "Valid JSON object containing service-specific configuration parameters, provided either in-line or in a file",
           "args": {
             "name": "JSON object"
-          }
+          },
+          "description": "Valid JSON object containing service-specific configuration parameters, provided either in-line or in a file",
+          "name": [
+            "-c"
+          ]
         },
         {
-          "name": [
-            "-p"
-          ],
-          "description": "Change service plan for a service instance",
           "args": {
             "name": "new plan"
-          }
+          },
+          "description": "Change service plan for a service instance",
+          "name": [
+            "-p"
+          ]
         },
         {
-          "name": [
-            "-t"
-          ],
-          "description": "User provided tags",
           "args": {
             "name": "tags"
-          }
+          },
+          "description": "User provided tags",
+          "name": [
+            "-t"
+          ]
         }
-      ],
+      ]
+    },
+    {
       "args": {
-        "name": "service",
         "generators": [
           {
             "script": [
@@ -1124,44 +1157,23 @@
               "trim"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "delete-service",
+        ],
+        "name": "service instance"
+      },
       "description": "Delete a service instance",
+      "name": "delete-service",
       "options": [
         {
+          "description": "Force deletion without confirmation",
           "name": [
             "-f"
-          ],
-          "description": "Force deletion without confirmation"
+          ]
         }
-      ],
-      "args": {
-        "name": "service instance",
-        "generators": [
-          {
-            "script": [
-              "bash",
-              "-c",
-              "cf services | cut -d \" \" -f1 "
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              "trim"
-            ]
-          }
-        ]
-      }
+      ]
     },
     {
-      "name": "rename-service",
-      "description": "Rename a service instance",
       "args": [
         {
-          "name": "service instance",
           "generators": [
             {
               "script": [
@@ -1175,30 +1187,19 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "service instance"
         },
         {
           "name": "new service instance"
         }
-      ]
+      ],
+      "description": "Rename a service instance",
+      "name": "rename-service"
     },
     {
-      "name": "create-service-key",
-      "description": "Create key for a service instance",
-      "options": [
-        {
-          "name": [
-            "-c"
-          ],
-          "description": "Valid JSON object containing service-specific configuration parameters, provided either in-line or in a file",
-          "args": {
-            "name": "JSON object"
-          }
-        }
-      ],
       "args": [
         {
-          "name": "service instance",
           "generators": [
             {
               "script": [
@@ -1212,18 +1213,29 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "service instance"
         },
         {
           "name": "service key"
         }
+      ],
+      "description": "Create key for a service instance",
+      "name": "create-service-key",
+      "options": [
+        {
+          "args": {
+            "name": "JSON object"
+          },
+          "description": "Valid JSON object containing service-specific configuration parameters, provided either in-line or in a file",
+          "name": [
+            "-c"
+          ]
+        }
       ]
     },
     {
-      "name": "service-keys",
-      "description": "List keys for a service instance",
       "args": {
-        "name": "service instance",
         "generators": [
           {
             "script": [
@@ -1237,15 +1249,41 @@
               "trim"
             ]
           }
-        ]
-      }
+        ],
+        "name": "service instance"
+      },
+      "description": "List keys for a service instance",
+      "name": "service-keys"
     },
     {
-      "name": "service-key",
+      "args": [
+        {
+          "generators": [
+            {
+              "script": [
+                "bash",
+                "-c",
+                "cf services | cut -d \" \" -f1 "
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty",
+                "trim"
+              ]
+            }
+          ],
+          "name": "service instance"
+        },
+        {
+          "name": "service key"
+        }
+      ],
       "description": "Show service key info",
+      "name": "service-key"
+    },
+    {
       "args": [
         {
-          "name": "service instance",
           "generators": [
             {
               "script": [
@@ -1259,27 +1297,44 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "service instance"
         },
         {
           "name": "service key"
         }
-      ]
-    },
-    {
-      "name": "delete-service-key",
+      ],
       "description": "Delete a service key",
+      "name": "delete-service-key",
       "options": [
         {
+          "description": "Force deletion without confirmation",
           "name": [
             "-f"
-          ],
-          "description": "Force deletion without confirmation"
+          ]
         }
-      ],
+      ]
+    },
+    {
       "args": [
         {
-          "name": "service instance",
+          "generators": [
+            {
+              "script": [
+                "bash",
+                "-c",
+                "cf apps | cut -d \" \" -f1"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty",
+                "trim"
+              ]
+            }
+          ],
+          "name": "APP_NAME"
+        },
+        {
           "generators": [
             {
               "script": [
@@ -1293,30 +1348,27 @@
                 "trim"
               ]
             }
-          ]
-        },
-        {
-          "name": "service key"
+          ],
+          "name": "service instance"
         }
-      ]
-    },
-    {
-      "name": "bind-service",
+      ],
       "description": "Bind a service instance to an app",
+      "name": "bind-service",
       "options": [
         {
-          "name": [
-            "-c"
-          ],
-          "description": "Valid JSON object containing service-specific configuration parameters, provided either in-line or in a file",
           "args": {
             "name": "JSON object"
-          }
+          },
+          "description": "Valid JSON object containing service-specific configuration parameters, provided either in-line or in a file",
+          "name": [
+            "-c"
+          ]
         }
-      ],
+      ]
+    },
+    {
       "args": [
         {
-          "name": "APP_NAME",
           "generators": [
             {
               "script": [
@@ -1330,10 +1382,10 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "APP_NAME"
         },
         {
-          "name": "service instance",
           "generators": [
             {
               "script": [
@@ -1347,89 +1399,19 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "service instance"
         }
-      ]
-    },
-    {
-      "name": "unbind-service",
+      ],
       "description": "Unbind a service instance from an app",
-      "args": [
-        {
-          "name": "APP_NAME",
-          "generators": [
-            {
-              "script": [
-                "bash",
-                "-c",
-                "cf apps | cut -d \" \" -f1"
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty",
-                "trim"
-              ]
-            }
-          ]
-        },
-        {
-          "name": "service instance",
-          "generators": [
-            {
-              "script": [
-                "bash",
-                "-c",
-                "cf services | cut -d \" \" -f1 "
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty",
-                "trim"
-              ]
-            }
-          ]
-        }
-      ]
+      "name": "unbind-service"
     },
     {
-      "name": "bind-route-service",
-      "description": "Bind a service instance to an HTTP route",
-      "options": [
-        {
-          "name": [
-            "-c"
-          ],
-          "description": "Valid JSON object containing service-specific configuration parameters, provided either in-line or in a file",
-          "args": {
-            "name": "JSON object"
-          }
-        },
-        {
-          "name": [
-            "-n",
-            "--hostname"
-          ],
-          "description": "Hostname used in combination with DOMAIN to specify the route to bind",
-          "args": {
-            "name": "hostname"
-          }
-        },
-        {
-          "name": [
-            "--path"
-          ],
-          "description": "Path used in combination with HOSTNAME and DOMAIN to specify the route to bind",
-          "args": {
-            "name": "path"
-          }
-        }
-      ],
       "args": [
         {
           "name": "domain"
         },
         {
-          "name": "service instance",
           "generators": [
             {
               "script": [
@@ -1443,194 +1425,216 @@
                 "trim"
               ]
             }
+          ],
+          "name": "service instance"
+        }
+      ],
+      "description": "Bind a service instance to an HTTP route",
+      "name": "bind-route-service",
+      "options": [
+        {
+          "args": {
+            "name": "JSON object"
+          },
+          "description": "Valid JSON object containing service-specific configuration parameters, provided either in-line or in a file",
+          "name": [
+            "-c"
+          ]
+        },
+        {
+          "args": {
+            "name": "hostname"
+          },
+          "description": "Hostname used in combination with DOMAIN to specify the route to bind",
+          "name": [
+            "-n",
+            "--hostname"
+          ]
+        },
+        {
+          "args": {
+            "name": "path"
+          },
+          "description": "Path used in combination with HOSTNAME and DOMAIN to specify the route to bind",
+          "name": [
+            "--path"
           ]
         }
       ]
     },
     {
-      "name": "unbind-route-service",
+      "args": [
+        {
+          "name": "domain"
+        },
+        {
+          "generators": [
+            {
+              "script": [
+                "bash",
+                "-c",
+                "cf services | cut -d \" \" -f1 "
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty",
+                "trim"
+              ]
+            }
+          ],
+          "name": "service instance"
+        }
+      ],
       "description": "Unbind a service instance from an HTTP route",
+      "name": "unbind-route-service",
       "options": [
         {
+          "description": "Force unbinding without confirmation",
           "name": [
             "-f"
-          ],
-          "description": "Force unbinding without confirmation"
+          ]
         },
         {
+          "args": {
+            "name": "hostname"
+          },
+          "description": "Hostname used in combination with DOMAIN to specify the route to bind",
           "name": [
             "-n",
             "--hostname"
-          ],
-          "description": "Hostname used in combination with DOMAIN to specify the route to bind",
-          "args": {
-            "name": "hostname"
-          }
+          ]
         },
         {
-          "name": [
-            "--path"
-          ],
-          "description": "Path used in combination with HOSTNAME and DOMAIN to specify the route to bind",
           "args": {
             "name": "path"
-          }
-        }
-      ],
-      "args": [
-        {
-          "name": "domain"
-        },
-        {
-          "name": "service instance",
-          "generators": [
-            {
-              "script": [
-                "bash",
-                "-c",
-                "cf services | cut -d \" \" -f1 "
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty",
-                "trim"
-              ]
-            }
+          },
+          "description": "Path used in combination with HOSTNAME and DOMAIN to specify the route to bind",
+          "name": [
+            "--path"
           ]
         }
       ]
     },
     {
-      "name": "create-user-provided-service",
+      "args": {
+        "name": "service instance"
+      },
       "description": "Make a user-provided service instance available to CF apps",
+      "name": "create-user-provided-service",
       "options": [
         {
-          "name": [
-            "-p"
-          ],
-          "description": "Credentials, provided inline or in a file, to be exposed in the VCAP_SERVICES environment variable for bound applications",
           "args": {
             "name": "credentials"
-          }
+          },
+          "description": "Credentials, provided inline or in a file, to be exposed in the VCAP_SERVICES environment variable for bound applications",
+          "name": [
+            "-p"
+          ]
         },
         {
-          "name": [
-            "-l"
-          ],
-          "description": "URL to which logs for bound applications will be streamed",
           "args": {
             "name": "sys log drain url"
-          }
+          },
+          "description": "URL to which logs for bound applications will be streamed",
+          "name": [
+            "-l"
+          ]
         },
         {
-          "name": [
-            "-r"
-          ],
-          "description": "URL to which requests for bound routes will be forwarded. Scheme for this URL must be https",
           "args": {
             "name": "serice url"
-          }
+          },
+          "description": "URL to which requests for bound routes will be forwarded. Scheme for this URL must be https",
+          "name": [
+            "-r"
+          ]
         }
-      ],
-      "args": {
-        "name": "service instance"
-      }
+      ]
     },
     {
-      "name": "update-user-provided-service",
+      "args": {
+        "name": "service instance"
+      },
       "description": "Update user-provided service instance",
+      "name": "update-user-provided-service",
       "options": [
         {
-          "name": [
-            "-p"
-          ],
-          "description": "Credentials, provided inline or in a file, to be exposed in the VCAP_SERVICES environment variable for bound applications",
           "args": {
             "name": "credentials"
-          }
+          },
+          "description": "Credentials, provided inline or in a file, to be exposed in the VCAP_SERVICES environment variable for bound applications",
+          "name": [
+            "-p"
+          ]
         },
         {
-          "name": [
-            "-l"
-          ],
-          "description": "URL to which logs for bound applications will be streamed",
           "args": {
             "name": "sys log drain url"
-          }
+          },
+          "description": "URL to which logs for bound applications will be streamed",
+          "name": [
+            "-l"
+          ]
         },
         {
-          "name": [
-            "-r"
-          ],
-          "description": "URL to which requests for bound routes will be forwarded. Scheme for this URL must be https",
           "args": {
             "name": "serice url"
-          }
+          },
+          "description": "URL to which requests for bound routes will be forwarded. Scheme for this URL must be https",
+          "name": [
+            "-r"
+          ]
         }
-      ],
-      "args": {
-        "name": "service instance"
-      }
+      ]
     },
     {
-      "name": "org",
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "cf",
+              "orgs"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "org"
+      },
       "description": "Show org info",
+      "name": "org",
       "options": [
         {
+          "description": "Retrieve and display the given org's guid.  All other output for the org is suppressed",
           "name": [
             "--guid"
-          ],
-          "description": "Retrieve and display the given org's guid.  All other output for the org is suppressed"
+          ]
         }
-      ],
-      "args": {
-        "name": "org",
-        "generators": [
-          {
-            "script": [
-              "cf",
-              "orgs"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              "trim"
-            ]
-          }
-        ]
-      }
+      ]
     },
     {
-      "name": "create-org",
-      "description": "Create an org",
-      "options": [
-        {
-          "name": [
-            "-p"
-          ],
-          "description": "Quota to assign to the newly created org (excluding this option results in assignment of default quota)",
-          "args": {
-            "name": "quota"
-          }
-        }
-      ],
       "args": {
         "name": "org"
-      }
-    },
-    {
-      "name": "delete-org",
-      "description": "Delete an org",
+      },
+      "description": "Create an org",
+      "name": "create-org",
       "options": [
         {
+          "args": {
+            "name": "quota"
+          },
+          "description": "Quota to assign to the newly created org (excluding this option results in assignment of default quota)",
           "name": [
-            "-f"
-          ],
-          "description": "Force deletion without confirmation"
+            "-p"
+          ]
         }
-      ],
+      ]
+    },
+    {
       "args": {
-        "name": "org",
         "generators": [
           {
             "script": [
@@ -1643,15 +1647,23 @@
               "trim"
             ]
           }
-        ]
-      }
+        ],
+        "name": "org"
+      },
+      "description": "Delete an org",
+      "name": "delete-org",
+      "options": [
+        {
+          "description": "Force deletion without confirmation",
+          "name": [
+            "-f"
+          ]
+        }
+      ]
     },
     {
-      "name": "rename-org",
-      "description": "Rename an org",
       "args": [
         {
-          "name": "org",
           "generators": [
             {
               "script": [
@@ -1664,102 +1676,63 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "org"
         },
         {
           "name": "new org"
         }
+      ],
+      "description": "Rename an org",
+      "name": "rename-org"
+    },
+    {
+      "description": "List all spaces in an org",
+      "name": "spaces"
+    },
+    {
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "cf",
+              "spaces"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "space"
+      },
+      "description": "Show space info",
+      "name": "space",
+      "options": [
+        {
+          "description": "Retrieve and display the given org's guid.  All other output for the org is suppressed",
+          "name": [
+            "--guid"
+          ]
+        },
+        {
+          "description": "Retrieve the rules for all the security groups associated with the space's guid.  All other output for the org is suppressed",
+          "name": [
+            "--security-group-rules"
+          ]
+        }
       ]
     },
     {
-      "name": "spaces",
-      "description": "List all spaces in an org"
-    },
-    {
-      "name": "space",
-      "description": "Show space info",
-      "options": [
-        {
-          "name": [
-            "--guid"
-          ],
-          "description": "Retrieve and display the given org's guid.  All other output for the org is suppressed"
-        },
-        {
-          "name": [
-            "--security-group-rules"
-          ],
-          "description": "Retrieve the rules for all the security groups associated with the space's guid.  All other output for the org is suppressed"
-        }
-      ],
-      "args": {
-        "name": "space",
-        "generators": [
-          {
-            "script": [
-              "cf",
-              "spaces"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              "trim"
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "name": "create-space",
-      "description": "Create a space",
-      "options": [
-        {
-          "name": [
-            "-o"
-          ],
-          "description": "Org",
-          "args": {
-            "name": "org",
-            "generators": [
-              {
-                "script": [
-                  "cf",
-                  "orgs"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  "trim"
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": [
-            "-p"
-          ],
-          "description": "Quota to assign to the newly created space",
-          "args": {
-            "name": "quota"
-          }
-        }
-      ],
       "args": {
         "name": "space"
-      }
-    },
-    {
-      "name": "delete-space",
-      "description": "Delete a space",
+      },
+      "description": "Create a space",
+      "name": "create-space",
       "options": [
         {
-          "name": [
-            "-o"
-          ],
-          "description": "Delete space within specified org",
           "args": {
-            "name": "org",
             "generators": [
               {
                 "script": [
@@ -1772,18 +1745,27 @@
                   "trim"
                 ]
               }
-            ]
-          }
+            ],
+            "name": "org"
+          },
+          "description": "Org",
+          "name": [
+            "-o"
+          ]
         },
         {
+          "args": {
+            "name": "quota"
+          },
+          "description": "Quota to assign to the newly created space",
           "name": [
-            "-f"
-          ],
-          "description": "Force deletion without confirmation"
+            "-p"
+          ]
         }
-      ],
+      ]
+    },
+    {
       "args": {
-        "name": "space",
         "generators": [
           {
             "script": [
@@ -1796,15 +1778,45 @@
               "trim"
             ]
           }
-        ]
-      }
+        ],
+        "name": "space"
+      },
+      "description": "Delete a space",
+      "name": "delete-space",
+      "options": [
+        {
+          "args": {
+            "generators": [
+              {
+                "script": [
+                  "cf",
+                  "orgs"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
+            "name": "org"
+          },
+          "description": "Delete space within specified org",
+          "name": [
+            "-o"
+          ]
+        },
+        {
+          "description": "Force deletion without confirmation",
+          "name": [
+            "-f"
+          ]
+        }
+      ]
     },
     {
-      "name": "rename-space",
-      "description": "Rename a space",
       "args": [
         {
-          "name": "space",
           "generators": [
             {
               "script": [
@@ -1817,18 +1829,38 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "space"
         },
         {
           "name": "new space"
         }
-      ]
+      ],
+      "description": "Rename a space",
+      "name": "rename-space"
     },
     {
-      "name": "allow-space-ssh",
+      "args": {
+        "generators": [
+          {
+            "script": [
+              "cf",
+              "spaces"
+            ],
+            "transforms": [
+              "split_lines",
+              "filter_empty",
+              "trim"
+            ]
+          }
+        ],
+        "name": "space"
+      },
       "description": "Allow SSH access for the space",
+      "name": "allow-space-ssh"
+    },
+    {
       "args": {
-        "name": "space",
         "generators": [
           {
             "script": [
@@ -1841,14 +1873,14 @@
               "trim"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "disallow-space-ssh",
+        ],
+        "name": "space"
+      },
       "description": "Disallow SSH access for the space",
+      "name": "disallow-space-ssh"
+    },
+    {
       "args": {
-        "name": "space",
         "generators": [
           {
             "script": [
@@ -1861,39 +1893,19 @@
               "trim"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "space-ssh-allowed",
+        ],
+        "name": "space"
+      },
       "description": "Reports whether SSH is allowed in a space",
-      "args": {
-        "name": "space",
-        "generators": [
-          {
-            "script": [
-              "cf",
-              "spaces"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              "trim"
-            ]
-          }
-        ]
-      }
+      "name": "space-ssh-allowed"
     },
     {
-      "name": "domains",
-      "description": "List domains in the target org"
+      "description": "List domains in the target org",
+      "name": "domains"
     },
     {
-      "name": "create-domain",
-      "description": "Create a domain in an org for later use",
       "args": [
         {
-          "name": "org",
           "generators": [
             {
               "script": [
@@ -1906,26 +1918,18 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "org"
         },
         {
           "name": "domain"
         }
-      ]
+      ],
+      "description": "Create a domain in an org for later use",
+      "name": "create-domain"
     },
     {
-      "name": "delete-domain",
-      "description": "Delete a domain",
-      "options": [
-        {
-          "name": [
-            "-f"
-          ],
-          "description": "Force deletion without confirmation"
-        }
-      ],
       "args": {
-        "name": "space",
         "generators": [
           {
             "script": [
@@ -1938,97 +1942,69 @@
               "trim"
             ]
           }
-        ]
-      }
-    },
-    {
-      "name": "create-shared-domain",
-      "description": "Create a domain that can be used by all orgs (admin-only)",
+        ],
+        "name": "space"
+      },
+      "description": "Delete a domain",
+      "name": "delete-domain",
       "options": [
         {
-          "name": [
-            "--router-group"
-          ],
-          "description": "Routes for this domain will be configured only on the specified router group"
-        }
-      ],
-      "args": {
-        "name": "domain"
-      }
-    },
-    {
-      "name": "delete-shared-domain",
-      "description": "Delete a shared domain",
-      "options": [
-        {
+          "description": "Force deletion without confirmation",
           "name": [
             "-f"
-          ],
-          "description": "Force deletion without confirmation"
-        }
-      ],
-      "args": {
-        "name": "domain"
-      }
-    },
-    {
-      "name": "router-groups",
-      "description": "List router groups"
-    },
-    {
-      "name": "routes",
-      "description": "List all routes in the current space or the current organization",
-      "options": [
-        {
-          "name": [
-            "--orglevel"
-          ],
-          "description": "List all the routes for all spaces of current organization"
+          ]
         }
       ]
     },
     {
-      "name": "create-route",
-      "description": "Create a url route in a space for later use",
+      "args": {
+        "name": "domain"
+      },
+      "description": "Create a domain that can be used by all orgs (admin-only)",
+      "name": "create-shared-domain",
       "options": [
         {
+          "description": "Routes for this domain will be configured only on the specified router group",
           "name": [
-            "--hostname",
-            "-n"
-          ],
-          "description": "Hostname for the HTTP route (required for shared domains)",
-          "args": {
-            "name": "hostname"
-          }
-        },
-        {
-          "name": [
-            "--path"
-          ],
-          "description": "Path for the HTTP route",
-          "args": {
-            "name": "path"
-          }
-        },
-        {
-          "name": [
-            "--port"
-          ],
-          "description": "Port for the TCP route",
-          "args": {
-            "name": "port"
-          }
-        },
-        {
-          "name": [
-            "--random-port"
-          ],
-          "description": "Create a random port for the TCP route"
+            "--router-group"
+          ]
         }
-      ],
+      ]
+    },
+    {
+      "args": {
+        "name": "domain"
+      },
+      "description": "Delete a shared domain",
+      "name": "delete-shared-domain",
+      "options": [
+        {
+          "description": "Force deletion without confirmation",
+          "name": [
+            "-f"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List router groups",
+      "name": "router-groups"
+    },
+    {
+      "description": "List all routes in the current space or the current organization",
+      "name": "routes",
+      "options": [
+        {
+          "description": "List all the routes for all spaces of current organization",
+          "name": [
+            "--orglevel"
+          ]
+        }
+      ]
+    },
+    {
       "args": [
         {
-          "name": "space",
           "generators": [
             {
               "script": [
@@ -2041,27 +2017,53 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "space"
         },
         {
           "name": "domain"
         }
+      ],
+      "description": "Create a url route in a space for later use",
+      "name": "create-route",
+      "options": [
+        {
+          "args": {
+            "name": "hostname"
+          },
+          "description": "Hostname for the HTTP route (required for shared domains)",
+          "name": [
+            "--hostname",
+            "-n"
+          ]
+        },
+        {
+          "args": {
+            "name": "path"
+          },
+          "description": "Path for the HTTP route",
+          "name": [
+            "--path"
+          ]
+        },
+        {
+          "args": {
+            "name": "port"
+          },
+          "description": "Port for the TCP route",
+          "name": [
+            "--port"
+          ]
+        },
+        {
+          "description": "Create a random port for the TCP route",
+          "name": [
+            "--random-port"
+          ]
+        }
       ]
     },
     {
-      "name": "check-route",
-      "description": "Perform a simple check to determine whether a route currently exists or not",
-      "options": [
-        {
-          "name": [
-            "--path"
-          ],
-          "description": "Path for the route",
-          "args": {
-            "name": "path"
-          }
-        }
-      ],
       "args": [
         {
           "name": "host"
@@ -2069,50 +2071,86 @@
         {
           "name": "domain"
         }
+      ],
+      "description": "Perform a simple check to determine whether a route currently exists or not",
+      "name": "check-route",
+      "options": [
+        {
+          "args": {
+            "name": "path"
+          },
+          "description": "Path for the route",
+          "name": [
+            "--path"
+          ]
+        }
       ]
     },
     {
-      "name": "map-route",
+      "args": [
+        {
+          "generators": [
+            {
+              "script": [
+                "bash",
+                "-c",
+                "cf apps | cut -d \" \" -f1"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty",
+                "trim"
+              ]
+            }
+          ],
+          "name": "APP_NAME"
+        },
+        {
+          "name": "domain"
+        }
+      ],
       "description": "Add a url route to an app",
+      "name": "map-route",
       "options": [
         {
+          "args": {
+            "name": "hostname"
+          },
+          "description": "Hostname for the HTTP route (required for shared domains)",
           "name": [
             "--hostname",
             "-n"
-          ],
-          "description": "Hostname for the HTTP route (required for shared domains)",
-          "args": {
-            "name": "hostname"
-          }
+          ]
         },
         {
-          "name": [
-            "--path"
-          ],
-          "description": "Path for the HTTP route",
           "args": {
             "name": "path"
-          }
+          },
+          "description": "Path for the HTTP route",
+          "name": [
+            "--path"
+          ]
         },
         {
-          "name": [
-            "--port"
-          ],
-          "description": "Port for the TCP route",
           "args": {
             "name": "port"
-          }
+          },
+          "description": "Port for the TCP route",
+          "name": [
+            "--port"
+          ]
         },
         {
+          "description": "Create a random port for the TCP route",
           "name": [
             "--random-port"
-          ],
-          "description": "Create a random port for the TCP route"
+          ]
         }
-      ],
+      ]
+    },
+    {
       "args": [
         {
-          "name": "APP_NAME",
           "generators": [
             {
               "script": [
@@ -2126,138 +2164,102 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "APP_NAME"
         },
         {
           "name": "domain"
         }
-      ]
-    },
-    {
-      "name": "unmap-route",
+      ],
       "description": "Remove a url route from an app",
+      "name": "unmap-route",
       "options": [
         {
+          "args": {
+            "name": "hostname"
+          },
+          "description": "Hostname used to identify the HTTP route",
           "name": [
             "--hostname",
             "-n"
-          ],
-          "description": "Hostname used to identify the HTTP route",
-          "args": {
-            "name": "hostname"
-          }
-        },
-        {
-          "name": [
-            "--path"
-          ],
-          "description": "Path used to identify the HTTP route",
-          "args": {
-            "name": "path"
-          }
-        },
-        {
-          "name": [
-            "--port"
-          ],
-          "description": "Port used to identify the TCP route",
-          "args": {
-            "name": "port"
-          }
-        }
-      ],
-      "args": [
-        {
-          "name": "APP_NAME",
-          "generators": [
-            {
-              "script": [
-                "bash",
-                "-c",
-                "cf apps | cut -d \" \" -f1"
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty",
-                "trim"
-              ]
-            }
           ]
         },
         {
-          "name": "domain"
+          "args": {
+            "name": "path"
+          },
+          "description": "Path used to identify the HTTP route",
+          "name": [
+            "--path"
+          ]
+        },
+        {
+          "args": {
+            "name": "port"
+          },
+          "description": "Port used to identify the TCP route",
+          "name": [
+            "--port"
+          ]
         }
       ]
     },
     {
-      "name": "delete-route",
-      "description": "Delete a route",
-      "options": [
-        {
-          "name": [
-            "--hostname",
-            "-n"
-          ],
-          "description": "Hostname used to identify the HTTP route",
-          "args": {
-            "name": "hostname"
-          }
-        },
-        {
-          "name": [
-            "--path"
-          ],
-          "description": "Path used to identify the HTTP route",
-          "args": {
-            "name": "path"
-          }
-        },
-        {
-          "name": [
-            "--port"
-          ],
-          "description": "Port used to identify the TCP route",
-          "args": {
-            "name": "port"
-          }
-        },
-        {
-          "name": [
-            "-f"
-          ],
-          "description": "Force deletion without confirmation"
-        }
-      ],
       "args": {
         "name": "domain"
-      }
-    },
-    {
-      "name": "delete-orphaned-routes",
-      "description": "Delete all orphaned routes (i.e. those that are not mapped to an app)",
+      },
+      "description": "Delete a route",
+      "name": "delete-route",
       "options": [
         {
+          "args": {
+            "name": "hostname"
+          },
+          "description": "Hostname used to identify the HTTP route",
+          "name": [
+            "--hostname",
+            "-n"
+          ]
+        },
+        {
+          "args": {
+            "name": "path"
+          },
+          "description": "Path used to identify the HTTP route",
+          "name": [
+            "--path"
+          ]
+        },
+        {
+          "args": {
+            "name": "port"
+          },
+          "description": "Port used to identify the TCP route",
+          "name": [
+            "--port"
+          ]
+        },
+        {
+          "description": "Force deletion without confirmation",
           "name": [
             "-f"
-          ],
-          "description": "Force deletion without confirmation"
+          ]
         }
       ]
     },
     {
-      "name": "create-user",
-      "description": "Create a new user",
+      "description": "Delete all orphaned routes (i.e. those that are not mapped to an app)",
+      "name": "delete-orphaned-routes",
       "options": [
         {
+          "description": "Force deletion without confirmation",
           "name": [
-            "--origin"
-          ],
-          "description": "Origin for mapping a user account to a user in an external identity provider",
-          "args": {
-            "name": "provider"
-          }
+            "-f"
+          ]
         }
-      ],
+      ]
+    },
+    {
       "args": [
         {
           "name": "username"
@@ -2265,36 +2267,38 @@
         {
           "name": "password"
         }
+      ],
+      "description": "Create a new user",
+      "name": "create-user",
+      "options": [
+        {
+          "args": {
+            "name": "provider"
+          },
+          "description": "Origin for mapping a user account to a user in an external identity provider",
+          "name": [
+            "--origin"
+          ]
+        }
       ]
     },
     {
-      "name": "delete-user",
-      "description": "Delete a user",
-      "options": [
-        {
-          "name": [
-            "-f"
-          ],
-          "description": "Force deletion without confirmation"
-        }
-      ],
       "args": {
         "name": "username"
-      }
-    },
-    {
-      "name": "org-users",
-      "description": "Show org users by role",
+      },
+      "description": "Delete a user",
+      "name": "delete-user",
       "options": [
         {
+          "description": "Force deletion without confirmation",
           "name": [
-            "-a"
-          ],
-          "description": "List all users in the org"
+            "-f"
+          ]
         }
-      ],
+      ]
+    },
+    {
       "args": {
-        "name": "org",
         "generators": [
           {
             "script": [
@@ -2307,18 +2311,54 @@
               "trim"
             ]
           }
-        ]
-      }
+        ],
+        "name": "org"
+      },
+      "description": "Show org users by role",
+      "name": "org-users",
+      "options": [
+        {
+          "description": "List all users in the org",
+          "name": [
+            "-a"
+          ]
+        }
+      ]
     },
     {
-      "name": "set-org-role",
+      "args": [
+        {
+          "name": "username"
+        },
+        {
+          "generators": [
+            {
+              "script": [
+                "cf",
+                "orgs"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty",
+                "trim"
+              ]
+            }
+          ],
+          "name": "org"
+        },
+        {
+          "name": "role"
+        }
+      ],
       "description": "Assign an org role to a user",
+      "name": "set-org-role"
+    },
+    {
       "args": [
         {
           "name": "username"
         },
         {
-          "name": "org",
           "generators": [
             {
               "script": [
@@ -2331,22 +2371,26 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "org"
         },
         {
           "name": "role"
         }
-      ]
-    },
-    {
-      "name": "unset-org-role",
+      ],
       "description": "Remove an org role from a user",
+      "name": "unset-org-role"
+    },
+    {
+      "description": "Show space users by role",
+      "name": "space-users"
+    },
+    {
       "args": [
         {
           "name": "username"
         },
         {
-          "name": "org",
           "generators": [
             {
               "script": [
@@ -2359,26 +2403,38 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "org"
+        },
+        {
+          "generators": [
+            {
+              "script": [
+                "cf",
+                "spaces"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty",
+                "trim"
+              ]
+            }
+          ],
+          "name": "space"
         },
         {
           "name": "role"
         }
-      ]
-    },
-    {
-      "name": "space-users",
-      "description": "Show space users by role"
-    },
-    {
-      "name": "set-space-role",
+      ],
       "description": "Assign a space role to a user",
+      "name": "set-space-role"
+    },
+    {
       "args": [
         {
           "name": "username"
         },
         {
-          "name": "org",
           "generators": [
             {
               "script": [
@@ -2391,10 +2447,10 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "org"
         },
         {
-          "name": "space",
           "generators": [
             {
               "script": [
@@ -2407,74 +2463,30 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "space"
         },
         {
           "name": "role"
         }
-      ]
-    },
-    {
-      "name": "unset-space-role",
+      ],
       "description": "Remove a space role from a user",
-      "args": [
-        {
-          "name": "username"
-        },
-        {
-          "name": "org",
-          "generators": [
-            {
-              "script": [
-                "cf",
-                "orgs"
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty",
-                "trim"
-              ]
-            }
-          ]
-        },
-        {
-          "name": "space",
-          "generators": [
-            {
-              "script": [
-                "cf",
-                "spaces"
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty",
-                "trim"
-              ]
-            }
-          ]
-        },
-        {
-          "name": "role"
-        }
-      ]
+      "name": "unset-space-role"
     },
     {
-      "name": "quotas",
-      "description": "List available usage quotas"
+      "description": "List available usage quotas",
+      "name": "quotas"
     },
     {
-      "name": "quota",
+      "args": {
+        "name": "quota"
+      },
       "description": "Show quota info",
-      "args": {
-        "name": "quota"
-      }
+      "name": "quota"
     },
     {
-      "name": "set-quota",
-      "description": "Assign a quota to an org",
       "args": [
         {
-          "name": "org",
           "generators": [
             {
               "script": [
@@ -2487,366 +2499,391 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "org"
         },
         {
           "name": "quota"
         }
-      ]
+      ],
+      "description": "Assign a quota to an org",
+      "name": "set-quota"
     },
     {
-      "name": "create-quota",
+      "args": {
+        "name": "quota"
+      },
       "description": "Define a new resource quota",
+      "name": "create-quota",
       "options": [
         {
-          "name": [
-            "-a"
-          ],
-          "description": "Total number of application instances",
           "args": {
             "name": "number of application instances"
-          }
+          },
+          "description": "Total number of application instances",
+          "name": [
+            "-a"
+          ]
         },
         {
-          "name": [
-            "-i"
-          ],
-          "description": "Maximum amount of memory an application instance can have",
           "args": {
             "name": "instance memory"
-          }
+          },
+          "description": "Maximum amount of memory an application instance can have",
+          "name": [
+            "-i"
+          ]
         },
         {
-          "name": [
-            "-m"
-          ],
-          "description": "Total amount of memory a space can have",
           "args": {
             "name": "total memory"
-          }
+          },
+          "description": "Total amount of memory a space can have",
+          "name": [
+            "-m"
+          ]
         },
         {
-          "name": [
-            "--reserved-route-ports"
-          ],
-          "description": "Maximum number of routes that may be created with reserved ports (Default: 0)",
           "args": {
             "name": "reserved route ports"
-          }
+          },
+          "description": "Maximum number of routes that may be created with reserved ports (Default: 0)",
+          "name": [
+            "--reserved-route-ports"
+          ]
         },
         {
-          "name": [
-            "-s"
-          ],
-          "description": "Total number of service instances",
           "args": {
             "name": "service instances"
-          }
+          },
+          "description": "Total number of service instances",
+          "name": [
+            "-s"
+          ]
         },
         {
-          "name": [
-            "-r"
-          ],
-          "description": "Total number of routes",
           "args": {
             "name": "routes"
-          }
+          },
+          "description": "Total number of routes",
+          "name": [
+            "-r"
+          ]
         },
         {
+          "description": "Can provision instances of paid service plans",
           "name": [
             "--allow-paid-service-plans"
-          ],
-          "description": "Can provision instances of paid service plans"
+          ]
         }
-      ],
-      "args": {
-        "name": "quota"
-      }
+      ]
     },
     {
-      "name": "delete-quota",
+      "args": {
+        "name": "quota"
+      },
       "description": "Delete a quota",
+      "name": "delete-quota",
       "options": [
         {
+          "description": "Force deletion without confirmation",
           "name": [
             "-f"
-          ],
-          "description": "Force deletion without confirmation"
+          ]
         }
-      ],
-      "args": {
-        "name": "quota"
-      }
+      ]
     },
     {
-      "name": "update-quota",
+      "args": {
+        "name": "quota"
+      },
       "description": "Update an existing resource quota",
+      "name": "update-quota",
       "options": [
         {
-          "name": [
-            "-a"
-          ],
-          "description": "Total number of application instances",
           "args": {
             "name": "number of application instances"
-          }
+          },
+          "description": "Total number of application instances",
+          "name": [
+            "-a"
+          ]
         },
         {
-          "name": [
-            "-i"
-          ],
-          "description": "Maximum amount of memory an application instance can have",
           "args": {
             "name": "instance memory"
-          }
+          },
+          "description": "Maximum amount of memory an application instance can have",
+          "name": [
+            "-i"
+          ]
         },
         {
-          "name": [
-            "-m"
-          ],
-          "description": "Total amount of memory a space can have",
           "args": {
             "name": "total memory"
-          }
+          },
+          "description": "Total amount of memory a space can have",
+          "name": [
+            "-m"
+          ]
         },
         {
-          "name": [
-            "--reserved-route-ports"
-          ],
-          "description": "Maximum number of routes that may be created with reserved ports (Default: 0)",
           "args": {
             "name": "reserved route ports"
-          }
+          },
+          "description": "Maximum number of routes that may be created with reserved ports (Default: 0)",
+          "name": [
+            "--reserved-route-ports"
+          ]
         },
         {
-          "name": [
-            "-s"
-          ],
-          "description": "Total number of service instances",
           "args": {
             "name": "service instances"
-          }
+          },
+          "description": "Total number of service instances",
+          "name": [
+            "-s"
+          ]
         },
         {
-          "name": [
-            "-r"
-          ],
-          "description": "Total number of routes",
           "args": {
             "name": "routes"
-          }
+          },
+          "description": "Total number of routes",
+          "name": [
+            "-r"
+          ]
         },
         {
-          "name": [
-            "-n"
-          ],
-          "description": "New name",
           "args": {
             "name": "name"
-          }
+          },
+          "description": "New name",
+          "name": [
+            "-n"
+          ]
         },
         {
+          "description": "Can provision instances of paid service plans",
           "name": [
             "--allow-paid-service-plans"
-          ],
-          "description": "Can provision instances of paid service plans"
+          ]
         },
         {
+          "description": "Cannot provision instances of paid service plans",
           "name": [
             "--disallow-paid-service-plans"
-          ],
-          "description": "Cannot provision instances of paid service plans"
+          ]
         }
-      ],
+      ]
+    },
+    {
+      "description": "List available space resource quotas",
+      "name": "space-quotas"
+    },
+    {
       "args": {
-        "name": "quota"
-      }
-    },
-    {
-      "name": "space-quotas",
-      "description": "List available space resource quotas"
-    },
-    {
-      "name": "space-quota",
+        "name": "space quota"
+      },
       "description": "Show space quota info",
-      "args": {
-        "name": "space quota"
-      }
+      "name": "space-quota"
     },
     {
-      "name": "create-space-quota",
-      "description": "Define a new space resource quota",
-      "options": [
-        {
-          "name": [
-            "-a"
-          ],
-          "description": "Total number of application instances",
-          "args": {
-            "name": "number of application instances"
-          }
-        },
-        {
-          "name": [
-            "-i"
-          ],
-          "description": "Maximum amount of memory an application instance can have",
-          "args": {
-            "name": "instance memory"
-          }
-        },
-        {
-          "name": [
-            "-m"
-          ],
-          "description": "Total amount of memory a space can have",
-          "args": {
-            "name": "total memory"
-          }
-        },
-        {
-          "name": [
-            "--reserved-route-ports"
-          ],
-          "description": "Maximum number of routes that may be created with reserved ports (Default: 0)",
-          "args": {
-            "name": "reserved route ports"
-          }
-        },
-        {
-          "name": [
-            "-s"
-          ],
-          "description": "Total number of service instances",
-          "args": {
-            "name": "service instances"
-          }
-        },
-        {
-          "name": [
-            "-r"
-          ],
-          "description": "Total number of routes",
-          "args": {
-            "name": "routes"
-          }
-        },
-        {
-          "name": [
-            "--allow-paid-service-plans"
-          ],
-          "description": "Can provision instances of paid service plans"
-        }
-      ],
       "args": {
         "name": "quota"
-      }
-    },
-    {
-      "name": "update-space-quota",
-      "description": "Update an existing space quota",
+      },
+      "description": "Define a new space resource quota",
+      "name": "create-space-quota",
       "options": [
         {
-          "name": [
-            "-a"
-          ],
-          "description": "Total number of application instances",
           "args": {
             "name": "number of application instances"
-          }
+          },
+          "description": "Total number of application instances",
+          "name": [
+            "-a"
+          ]
         },
         {
-          "name": [
-            "-i"
-          ],
-          "description": "Maximum amount of memory an application instance can have",
           "args": {
             "name": "instance memory"
-          }
+          },
+          "description": "Maximum amount of memory an application instance can have",
+          "name": [
+            "-i"
+          ]
         },
         {
-          "name": [
-            "-m"
-          ],
-          "description": "Total amount of memory a space can have",
           "args": {
             "name": "total memory"
-          }
+          },
+          "description": "Total amount of memory a space can have",
+          "name": [
+            "-m"
+          ]
         },
         {
-          "name": [
-            "--reserved-route-ports"
-          ],
-          "description": "Maximum number of routes that may be created with reserved ports (Default: 0)",
           "args": {
             "name": "reserved route ports"
-          }
+          },
+          "description": "Maximum number of routes that may be created with reserved ports (Default: 0)",
+          "name": [
+            "--reserved-route-ports"
+          ]
         },
         {
-          "name": [
-            "-s"
-          ],
-          "description": "Total number of service instances",
           "args": {
             "name": "service instances"
-          }
+          },
+          "description": "Total number of service instances",
+          "name": [
+            "-s"
+          ]
         },
         {
-          "name": [
-            "-r"
-          ],
-          "description": "Total number of routes",
           "args": {
             "name": "routes"
-          }
-        },
-        {
+          },
+          "description": "Total number of routes",
           "name": [
-            "-n"
-          ],
-          "description": "New name",
-          "args": {
-            "name": "name"
-          }
+            "-r"
+          ]
         },
         {
+          "description": "Can provision instances of paid service plans",
           "name": [
             "--allow-paid-service-plans"
-          ],
-          "description": "Can provision instances of paid service plans"
-        },
-        {
-          "name": [
-            "--disallow-paid-service-plans"
-          ],
-          "description": "Cannot provision instances of paid service plans"
+          ]
         }
-      ],
-      "args": {
-        "name": "space quota"
-      }
+      ]
     },
     {
-      "name": "delete-space-quota",
-      "description": "Delete a space quota definition and unassign the space quota from all spaces",
+      "args": {
+        "name": "space quota"
+      },
+      "description": "Update an existing space quota",
+      "name": "update-space-quota",
       "options": [
         {
+          "args": {
+            "name": "number of application instances"
+          },
+          "description": "Total number of application instances",
+          "name": [
+            "-a"
+          ]
+        },
+        {
+          "args": {
+            "name": "instance memory"
+          },
+          "description": "Maximum amount of memory an application instance can have",
+          "name": [
+            "-i"
+          ]
+        },
+        {
+          "args": {
+            "name": "total memory"
+          },
+          "description": "Total amount of memory a space can have",
+          "name": [
+            "-m"
+          ]
+        },
+        {
+          "args": {
+            "name": "reserved route ports"
+          },
+          "description": "Maximum number of routes that may be created with reserved ports (Default: 0)",
+          "name": [
+            "--reserved-route-ports"
+          ]
+        },
+        {
+          "args": {
+            "name": "service instances"
+          },
+          "description": "Total number of service instances",
+          "name": [
+            "-s"
+          ]
+        },
+        {
+          "args": {
+            "name": "routes"
+          },
+          "description": "Total number of routes",
+          "name": [
+            "-r"
+          ]
+        },
+        {
+          "args": {
+            "name": "name"
+          },
+          "description": "New name",
+          "name": [
+            "-n"
+          ]
+        },
+        {
+          "description": "Can provision instances of paid service plans",
+          "name": [
+            "--allow-paid-service-plans"
+          ]
+        },
+        {
+          "description": "Cannot provision instances of paid service plans",
+          "name": [
+            "--disallow-paid-service-plans"
+          ]
+        }
+      ]
+    },
+    {
+      "args": {
+        "name": "space quota"
+      },
+      "description": "Delete a space quota definition and unassign the space quota from all spaces",
+      "name": "delete-space-quota",
+      "options": [
+        {
+          "description": "Force deletion without confirmation",
           "name": [
             "-f"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "generators": [
+            {
+              "script": [
+                "cf",
+                "spaces"
+              ],
+              "transforms": [
+                "split_lines",
+                "filter_empty",
+                "trim"
+              ]
+            }
           ],
-          "description": "Force deletion without confirmation"
+          "name": "space"
+        },
+        {
+          "name": "quota"
         }
       ],
-      "args": {
-        "name": "space quota"
-      }
-    },
-    {
-      "name": "set-space-quota",
       "description": "Assign a space quota definition to a space",
+      "name": "set-space-quota"
+    },
+    {
       "args": [
         {
-          "name": "space",
           "generators": [
             {
               "script": [
@@ -2859,101 +2896,77 @@
                 "trim"
               ]
             }
-          ]
+          ],
+          "name": "space"
         },
         {
           "name": "quota"
         }
-      ]
-    },
-    {
-      "name": "unset-space-quota",
+      ],
       "description": "Unassign a quota from a space",
-      "args": [
-        {
-          "name": "space",
-          "generators": [
-            {
-              "script": [
-                "cf",
-                "spaces"
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty",
-                "trim"
-              ]
-            }
-          ]
-        },
-        {
-          "name": "quota"
-        }
-      ]
+      "name": "unset-space-quota"
     },
     {
-      "name": "curl",
+      "args": {
+        "description": "Path to curl",
+        "name": "path"
+      },
       "description": "Executes a request to the targeted API endpoint",
+      "name": "curl",
       "options": [
         {
-          "name": [
-            "-H"
-          ],
-          "description": "Custom headers to include in the request, flag can be specified multiple times",
           "args": {
             "name": "headers"
-          }
+          },
+          "description": "Custom headers to include in the request, flag can be specified multiple times",
+          "name": [
+            "-H"
+          ]
         },
         {
-          "name": [
-            "-X"
-          ],
-          "description": "HTTP method (GET,POST,PUT,DELETE,etc)",
           "args": {
             "name": "HTTP method"
-          }
+          },
+          "description": "HTTP method (GET,POST,PUT,DELETE,etc)",
+          "name": [
+            "-X"
+          ]
         },
         {
-          "name": [
-            "-d"
-          ],
-          "description": "HTTP data to include in the request body, or '@' followed by a file name to read the data from",
           "args": {
             "name": "data"
-          }
+          },
+          "description": "HTTP data to include in the request body, or '@' followed by a file name to read the data from",
+          "name": [
+            "-d"
+          ]
         },
         {
-          "name": [
-            "--output"
-          ],
-          "description": "Write curl body to FILE instead of stdout",
           "args": {
             "name": "path to file"
-          }
+          },
+          "description": "Write curl body to FILE instead of stdout",
+          "name": [
+            "--output"
+          ]
         },
         {
+          "description": "Include response headers in the output",
           "name": [
             "-i"
-          ],
-          "description": "Include response headers in the output"
+          ]
         }
-      ],
-      "args": {
-        "name": "path",
-        "description": "Path to curl"
-      }
+      ]
     },
     {
-      "name": "oauth-token",
-      "description": "Retrieve and display the OAuth token for the current session"
+      "description": "Retrieve and display the OAuth token for the current session",
+      "name": "oauth-token"
     },
     {
-      "name": "ssh-code",
-      "description": "Get a one time password for ssh clients"
+      "description": "Get a one time password for ssh clients",
+      "name": "ssh-code"
     },
     {
-      "name": "add-plugin-repo",
-      "description": "Add a new plugin repository",
       "args": [
         {
           "name": "repo name"
@@ -2961,55 +2974,63 @@
         {
           "name": "url"
         }
-      ]
+      ],
+      "description": "Add a new plugin repository",
+      "name": "add-plugin-repo"
     },
     {
-      "name": "remove-plugin-repo",
-      "description": "Remove a plugin repository",
       "args": {
         "name": "repo name"
-      }
+      },
+      "description": "Remove a plugin repository",
+      "name": "remove-plugin-repo"
     },
     {
-      "name": "list-plugin-repos",
-      "description": "List all the added plugin repositories"
+      "description": "List all the added plugin repositories",
+      "name": "list-plugin-repos"
     },
     {
-      "name": "repo-plugins",
       "description": "List all available plugins in specified repository or in all added repositories",
+      "name": "repo-plugins",
       "options": [
         {
-          "name": [
-            "-r"
-          ],
-          "description": "Name of a registered repository",
           "args": {
             "name": "repo"
-          }
-        }
-      ]
-    },
-    {
-      "name": "plugins",
-      "description": "List all available plugin commands",
-      "options": [
-        {
-          "name": [
-            "--checksum"
-          ],
-          "description": "Compute and show the sha1 value of the plugin binary file"
-        }
-      ]
-    },
-    {
-      "name": "install-plugin",
-      "description": "Install CLI plugin",
-      "options": [
-        {
+          },
+          "description": "Name of a registered repository",
           "name": [
             "-r"
-          ],
-          "description": "Name of a registered repository where the specified plugin is located",
+          ]
+        }
+      ]
+    },
+    {
+      "description": "List all available plugin commands",
+      "name": "plugins",
+      "options": [
+        {
+          "description": "Compute and show the sha1 value of the plugin binary file",
+          "name": [
+            "--checksum"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "description": "Local path to plugin",
+          "name": "path"
+        },
+        {
+          "description": "URL for plugin",
+          "name": "url"
+        }
+      ],
+      "description": "Install CLI plugin",
+      "name": "install-plugin",
+      "options": [
+        {
           "args": [
             {
               "name": "repo name"
@@ -3017,47 +3038,26 @@
             {
               "name": "plugin name"
             }
+          ],
+          "description": "Name of a registered repository where the specified plugin is located",
+          "name": [
+            "-r"
           ]
         },
         {
+          "description": "Force install of plugin without confirmation",
           "name": [
             "-f"
-          ],
-          "description": "Force install of plugin without confirmation"
-        }
-      ],
-      "args": [
-        {
-          "name": "path",
-          "description": "Local path to plugin"
-        },
-        {
-          "name": "url",
-          "description": "URL for plugin"
+          ]
         }
       ]
     },
     {
-      "name": "uninstall-plugin",
-      "description": "Uninstall the plugin defined in command argument",
       "args": {
         "name": "plugin name"
-      }
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Show help for Cloud Foundry command line tool"
-    },
-    {
-      "name": [
-        "-v"
-      ],
-      "description": "Print API request diagnostics to stdout"
+      },
+      "description": "Uninstall the plugin defined in command argument",
+      "name": "uninstall-plugin"
     }
   ]
 }

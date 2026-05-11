@@ -1,63 +1,59 @@
 {
-  "name": "m",
   "description": "Swiss Army Knife for macOS",
+  "name": "m",
+  "options": [
+    {
+      "description": "Update m-cli to the latest version",
+      "name": [
+        "--update"
+      ]
+    },
+    {
+      "description": "Uninstall m-cli",
+      "name": [
+        "--uninstall"
+      ]
+    }
+  ],
   "subcommands": [
     {
-      "name": "airdrop",
       "description": "Manage AirDrop",
+      "name": "airdrop",
       "subcommands": [
         {
-          "name": "status",
-          "description": "Show AirDrop status"
+          "description": "Show AirDrop status",
+          "name": "status"
         },
         {
-          "name": "on",
-          "description": "Enable AirDrop"
+          "description": "Enable AirDrop",
+          "name": "on"
         },
         {
-          "name": "enable",
-          "description": "Enable AirDrop"
+          "description": "Enable AirDrop",
+          "name": "enable"
         },
         {
-          "name": "off",
-          "description": "Disable AirDrop"
+          "description": "Disable AirDrop",
+          "name": "off"
         },
         {
-          "name": "disable",
-          "description": "Disable AirDrop"
+          "description": "Disable AirDrop",
+          "name": "disable"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "appearance",
       "description": "Manage appearance",
+      "name": "appearance",
       "subcommands": [
         {
-          "name": "darkmode",
-          "description": "Manage dark mode",
           "args": {
-            "name": "status",
             "description": "Whether to use dark versions of interface elements",
-            "suggestions": [
-              {
-                "name": "YES"
-              },
-              {
-                "name": "NO"
-              }
-            ]
-          }
-        },
-        {
-          "name": "transparency",
-          "description": "Manage transparency",
-          "args": {
             "name": "status",
-            "description": "Whether to allow the OS to make certain elements semi-transparent",
             "suggestions": [
               {
                 "name": "YES"
@@ -66,22 +62,38 @@
                 "name": "NO"
               }
             ]
-          }
+          },
+          "description": "Manage dark mode",
+          "name": "darkmode"
         },
         {
-          "name": "antialiasthreshold",
+          "args": {
+            "description": "Whether to allow the OS to make certain elements semi-transparent",
+            "name": "status",
+            "suggestions": [
+              {
+                "name": "YES"
+              },
+              {
+                "name": "NO"
+              }
+            ]
+          },
+          "description": "Manage transparency",
+          "name": "transparency"
+        },
+        {
+          "args": {
+            "description": "The threshold above which antialiasing is turned on",
+            "name": "threshold"
+          },
           "description": "Manage antialiasing threshold",
-          "args": {
-            "name": "threshold",
-            "description": "The threshold above which antialiasing is turned on"
-          }
+          "name": "antialiasthreshold"
         },
         {
-          "name": "sidebariconsize",
-          "description": "Manage sidebar icon size",
           "args": {
-            "name": "size",
             "description": "The size of the icons in various window sidebars",
+            "name": "size",
             "suggestions": [
               {
                 "name": "small"
@@ -93,14 +105,14 @@
                 "name": "large"
               }
             ]
-          }
+          },
+          "description": "Manage sidebar icon size",
+          "name": "sidebariconsize"
         },
         {
-          "name": "maincolor",
-          "description": "Manage main color",
           "args": {
-            "name": "color",
             "description": "The color used for the majority of the interface elements",
+            "name": "color",
             "suggestions": [
               {
                 "name": "blue"
@@ -109,14 +121,14 @@
                 "name": "graphite"
               }
             ]
-          }
+          },
+          "description": "Manage main color",
+          "name": "maincolor"
         },
         {
-          "name": "highlightcolor",
-          "description": "Manage highlight color",
           "args": {
-            "name": "color",
             "description": "The color used for highlights",
+            "name": "color",
             "suggestions": [
               {
                 "name": "graphite"
@@ -266,139 +278,137 @@
                 "name": "snow"
               }
             ]
-          }
+          },
+          "description": "Manage highlight color",
+          "name": "highlightcolor"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "battery",
       "description": "Manage battery",
+      "name": "battery",
       "subcommands": [
         {
-          "name": "status",
-          "description": "Show battery status"
+          "description": "Show battery status",
+          "name": "status"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "bluetooth",
       "description": "Manage Bluetooth",
+      "name": "bluetooth",
       "subcommands": [
         {
-          "name": "status",
-          "description": "Show bluetooth status"
+          "description": "Show bluetooth status",
+          "name": "status"
         },
         {
-          "name": "on",
-          "description": "Enable bluetooth"
+          "description": "Enable bluetooth",
+          "name": "on"
         },
         {
-          "name": "enable",
-          "description": "Enable bluetooth"
+          "description": "Enable bluetooth",
+          "name": "enable"
         },
         {
-          "name": "off",
-          "description": "Disable bluetooth"
+          "description": "Disable bluetooth",
+          "name": "off"
         },
         {
-          "name": "disable",
-          "description": "Disable bluetooth"
+          "description": "Disable bluetooth",
+          "name": "disable"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "dir",
       "description": "Manage directories",
+      "name": "dir",
       "subcommands": [
         {
-          "name": "tree",
-          "description": "Show tree view of folders in the current path",
           "args": {
-            "name": "path",
             "description": "Path to show tree view of folders",
-            "template": "folders",
-            "isOptional": true
-          }
-        },
-        {
-          "name": "delete",
-          "description": "Delete folders",
-          "subcommands": [
-            {
-              "name": "empty",
-              "description": "Delete empty folders recursively in the current path",
-              "args": {
-                "name": "path",
-                "description": "Path to delete empty folders",
-                "template": "folders",
-                "isOptional": true
-              }
-            },
-            {
-              "name": "dsfiles",
-              "description": "Delete .DS_Store files recursively in the current path",
-              "args": {
-                "name": "path",
-                "description": "Delete .DS_Store files recursively in a specific path",
-                "template": "folders",
-                "isOptional": true
-              }
-            }
-          ]
-        },
-        {
-          "name": "dsfiles",
-          "description": "Manage .DS_Store files",
-          "subcommands": [
-            {
-              "name": "on",
-              "description": "Restore generation of .DS_Store"
-            },
-            {
-              "name": "off",
-              "description": "Prohibit generation of .DS_Store"
-            }
-          ]
-        },
-        {
-          "name": "size",
-          "description": "Calculate current folder size",
-          "args": {
+            "isOptional": true,
             "name": "path",
-            "description": "Path to calculate folder size",
-            "template": "folders",
-            "isOptional": true
-          }
+            "template": "folders"
+          },
+          "description": "Show tree view of folders in the current path",
+          "name": "tree"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Delete folders",
+          "name": "delete",
+          "subcommands": [
+            {
+              "args": {
+                "description": "Path to delete empty folders",
+                "isOptional": true,
+                "name": "path",
+                "template": "folders"
+              },
+              "description": "Delete empty folders recursively in the current path",
+              "name": "empty"
+            },
+            {
+              "args": {
+                "description": "Delete .DS_Store files recursively in a specific path",
+                "isOptional": true,
+                "name": "path",
+                "template": "folders"
+              },
+              "description": "Delete .DS_Store files recursively in the current path",
+              "name": "dsfiles"
+            }
+          ]
+        },
+        {
+          "description": "Manage .DS_Store files",
+          "name": "dsfiles",
+          "subcommands": [
+            {
+              "description": "Restore generation of .DS_Store",
+              "name": "on"
+            },
+            {
+              "description": "Prohibit generation of .DS_Store",
+              "name": "off"
+            }
+          ]
+        },
+        {
+          "args": {
+            "description": "Path to calculate folder size",
+            "isOptional": true,
+            "name": "path",
+            "template": "folders"
+          },
+          "description": "Calculate current folder size",
+          "name": "size"
+        },
+        {
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "disk",
       "description": "Manage disks",
+      "name": "disk",
       "subcommands": [
         {
-          "name": "ls",
-          "description": "List disk partitions",
           "args": {
-            "name": "path",
             "description": "Path to the disk file",
-            "isOptional": true,
             "generators": [
               {
                 "template": "filepaths"
@@ -414,14 +424,15 @@
                   "trim"
                 ]
               }
-            ]
-          }
+            ],
+            "isOptional": true,
+            "name": "path"
+          },
+          "description": "List disk partitions",
+          "name": "ls"
         },
         {
-          "name": "info",
-          "description": "Show disk information",
           "args": {
-            "name": "path",
             "description": "Path to show disk information",
             "generators": [
               {
@@ -438,22 +449,22 @@
                   "trim"
                 ]
               }
-            ]
-          }
+            ],
+            "name": "path"
+          },
+          "description": "Show disk information",
+          "name": "info"
         },
         {
-          "name": "ejectall",
-          "description": "Eject all mountable volumes"
+          "description": "Eject all mountable volumes",
+          "name": "ejectall"
         },
         {
-          "name": "verify",
           "description": "Verify disk",
+          "name": "verify",
           "subcommands": [
             {
-              "name": "volume",
-              "description": "Verify volume",
               "args": {
-                "name": "path",
                 "description": "Path to verify volume",
                 "generators": [
                   {
@@ -470,14 +481,14 @@
                       "trim"
                     ]
                   }
-                ]
-              }
+                ],
+                "name": "path"
+              },
+              "description": "Verify volume",
+              "name": "volume"
             },
             {
-              "name": "disk",
-              "description": "Verify disk",
               "args": {
-                "name": "path",
                 "description": "Path to verify disk",
                 "generators": [
                   {
@@ -494,20 +505,20 @@
                       "trim"
                     ]
                   }
-                ]
-              }
+                ],
+                "name": "path"
+              },
+              "description": "Verify disk",
+              "name": "disk"
             }
           ]
         },
         {
-          "name": "repair",
           "description": "Repair disk",
+          "name": "repair",
           "subcommands": [
             {
-              "name": "volume",
-              "description": "Repair volume",
               "args": {
-                "name": "path",
                 "description": "Path to repair volume",
                 "generators": [
                   {
@@ -524,14 +535,14 @@
                       "trim"
                     ]
                   }
-                ]
-              }
+                ],
+                "name": "path"
+              },
+              "description": "Repair volume",
+              "name": "volume"
             },
             {
-              "name": "disk",
-              "description": "Repair disk",
               "args": {
-                "name": "path",
                 "description": "Path to repair disk",
                 "generators": [
                   {
@@ -548,25 +559,25 @@
                       "trim"
                     ]
                   }
-                ]
-              }
+                ],
+                "name": "path"
+              },
+              "description": "Repair disk",
+              "name": "disk"
             }
           ]
         },
         {
-          "name": "format",
           "description": "Format disk",
+          "name": "format",
           "subcommands": [
             {
-              "name": "MS-DOS",
-              "description": "Format the entire disk with a windows format (MS-DOS)",
               "args": [
                 {
-                  "name": "name",
-                  "description": "Name of the volume"
+                  "description": "Name of the volume",
+                  "name": "name"
                 },
                 {
-                  "name": "path",
                   "description": "Path to format the entire disk",
                   "generators": [
                     {
@@ -583,20 +594,20 @@
                         "trim"
                       ]
                     }
-                  ]
+                  ],
+                  "name": "path"
                 }
-              ]
+              ],
+              "description": "Format the entire disk with a windows format (MS-DOS)",
+              "name": "MS-DOS"
             },
             {
-              "name": "volume",
-              "description": "Format the volume with a windows format (MS-DOS)",
               "args": [
                 {
-                  "name": "name",
-                  "description": "Name of the volume"
+                  "description": "Name of the volume",
+                  "name": "name"
                 },
                 {
-                  "name": "path",
                   "description": "Path to format the volume",
                   "generators": [
                     {
@@ -613,17 +624,17 @@
                         "trim"
                       ]
                     }
-                  ]
+                  ],
+                  "name": "path"
                 }
-              ]
+              ],
+              "description": "Format the volume with a windows format (MS-DOS)",
+              "name": "volume"
             }
           ]
         },
         {
-          "name": "reformat",
-          "description": "Reformat a volume",
           "args": {
-            "name": "path",
             "description": "Path to reformat a volume",
             "generators": [
               {
@@ -640,15 +651,15 @@
                   "trim"
                 ]
               }
-            ]
-          }
+            ],
+            "name": "path"
+          },
+          "description": "Reformat a volume",
+          "name": "reformat"
         },
         {
-          "name": "rename",
-          "description": "Rename a volume",
           "args": [
             {
-              "name": "currentName",
               "description": "Current name of the volume",
               "generators": [
                 {
@@ -665,98 +676,75 @@
                     "trim"
                   ]
                 }
-              ]
+              ],
+              "name": "currentName"
             },
             {
-              "name": "newName",
-              "description": "New name of the volume"
+              "description": "New name of the volume",
+              "name": "newName"
             }
-          ]
+          ],
+          "description": "Rename a volume",
+          "name": "rename"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "display",
       "description": "Manage displays",
+      "name": "display",
       "subcommands": [
         {
-          "name": "status",
-          "description": "Show display status"
+          "description": "Show display status",
+          "name": "status"
         },
         {
-          "name": "help",
-          "description": "Show usage"
+          "description": "Show usage",
+          "name": "help"
         },
         {
-          "name": "up",
-          "description": "Turn up the brightness"
+          "description": "Turn up the brightness",
+          "name": "up"
         },
         {
-          "name": "down",
-          "description": "Turn down the brightness"
+          "description": "Turn down the brightness",
+          "name": "down"
         }
       ]
     },
     {
-      "name": "dns",
       "description": "Manage dns",
+      "name": "dns",
       "subcommands": [
         {
-          "name": "flush",
-          "description": "Flush local DNS cache"
+          "description": "Flush local DNS cache",
+          "name": "flush"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "dock",
       "description": "Manage dock",
+      "name": "dock",
       "subcommands": [
         {
-          "name": "showdelay",
+          "args": {
+            "description": "Seconds to show delay",
+            "name": "seconds"
+          },
           "description": "Changes how long the Dock takes to show up when auto-hide is enabled",
-          "args": {
-            "name": "seconds",
-            "description": "Seconds to show delay"
-          }
+          "name": "showdelay"
         },
         {
-          "name": "autohide",
-          "description": "Enable or disable Dock's auto hide feature",
           "args": {
-            "name": "YES/NO",
             "description": "YES/NO to enable/disable Dock's auto hide feature",
-            "suggestions": [
-              {
-                "name": "YES"
-              },
-              {
-                "name": "NO"
-              }
-            ]
-          }
-        },
-        {
-          "name": "autohidedelay",
-          "description": "Changes how long it takes to detect you want to show up the dock",
-          "args": {
-            "name": "seconds",
-            "description": "Seconds to auto hide delay"
-          }
-        },
-        {
-          "name": "magnification",
-          "description": "Turn magnification on or off",
-          "args": {
             "name": "YES/NO",
-            "description": "YES/NO to turn magnification on or off",
             "suggestions": [
               {
                 "name": "YES"
@@ -765,14 +753,38 @@
                 "name": "NO"
               }
             ]
-          }
+          },
+          "description": "Enable or disable Dock's auto hide feature",
+          "name": "autohide"
         },
         {
-          "name": "position",
-          "description": "Change Dock's position",
           "args": {
-            "name": "position",
+            "description": "Seconds to auto hide delay",
+            "name": "seconds"
+          },
+          "description": "Changes how long it takes to detect you want to show up the dock",
+          "name": "autohidedelay"
+        },
+        {
+          "args": {
+            "description": "YES/NO to turn magnification on or off",
+            "name": "YES/NO",
+            "suggestions": [
+              {
+                "name": "YES"
+              },
+              {
+                "name": "NO"
+              }
+            ]
+          },
+          "description": "Turn magnification on or off",
+          "name": "magnification"
+        },
+        {
+          "args": {
             "description": "Position to change Dock's position",
+            "name": "position",
             "suggestions": [
               {
                 "name": "BOTTOM"
@@ -784,36 +796,36 @@
                 "name": "RIGHT"
               }
             ]
-          }
+          },
+          "description": "Change Dock's position",
+          "name": "position"
         },
         {
-          "name": "addblankspace",
-          "description": "Add a blank space (separator) to the Dock"
+          "description": "Add a blank space (separator) to the Dock",
+          "name": "addblankspace"
         },
         {
-          "name": "addrecentitems",
-          "description": "Add a stack containg your recent items to the Dock"
+          "description": "Add a stack containg your recent items to the Dock",
+          "name": "addrecentitems"
         },
         {
-          "name": "prune",
-          "description": "Remove all items from dock"
+          "description": "Remove all items from dock",
+          "name": "prune"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "finder",
       "description": "Manage finder",
+      "name": "finder",
       "subcommands": [
         {
-          "name": "showhiddenfiles",
-          "description": "Show hidden files Status",
           "args": {
-            "name": "YES/NO",
             "description": "YES/NO to show hidden files",
+            "name": "YES/NO",
             "suggestions": [
               {
                 "name": "YES"
@@ -822,14 +834,14 @@
                 "name": "NO"
               }
             ]
-          }
+          },
+          "description": "Show hidden files Status",
+          "name": "showhiddenfiles"
         },
         {
-          "name": "showextensions",
-          "description": "Show all file extensions Status",
           "args": {
-            "name": "YES/NO",
             "description": "YES/NO to show all file extensions",
+            "name": "YES/NO",
             "suggestions": [
               {
                 "name": "YES"
@@ -838,30 +850,14 @@
                 "name": "NO"
               }
             ]
-          }
+          },
+          "description": "Show all file extensions Status",
+          "name": "showextensions"
         },
         {
-          "name": "showdesktop",
-          "description": "Show the desktop Status",
           "args": {
-            "name": "YES/NO",
             "description": "YES/NO to show the desktop",
-            "suggestions": [
-              {
-                "name": "YES"
-              },
-              {
-                "name": "NO"
-              }
-            ]
-          }
-        },
-        {
-          "name": "showpath",
-          "description": "Show the current opened folder path on the top bar of the Finder window",
-          "args": {
             "name": "YES/NO",
-            "description": "YES/NO to show the current opened folder path on the top bar of the Finder window",
             "suggestions": [
               {
                 "name": "YES"
@@ -870,147 +866,162 @@
                 "name": "NO"
               }
             ]
-          }
+          },
+          "description": "Show the desktop Status",
+          "name": "showdesktop"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "args": {
+            "description": "YES/NO to show the current opened folder path on the top bar of the Finder window",
+            "name": "YES/NO",
+            "suggestions": [
+              {
+                "name": "YES"
+              },
+              {
+                "name": "NO"
+              }
+            ]
+          },
+          "description": "Show the current opened folder path on the top bar of the Finder window",
+          "name": "showpath"
+        },
+        {
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "firewall",
       "description": "Manage firewall",
+      "name": "firewall",
       "subcommands": [
         {
-          "name": "status",
-          "description": "Show status"
+          "description": "Show status",
+          "name": "status"
         },
         {
-          "name": "enable",
-          "description": "Enable firewall"
+          "description": "Enable firewall",
+          "name": "enable"
         },
         {
-          "name": "disable",
-          "description": "Disable firewall"
+          "description": "Disable firewall",
+          "name": "disable"
         },
         {
-          "name": "list",
-          "description": "List applications handled by firewall"
+          "description": "List applications handled by firewall",
+          "name": "list"
         },
         {
-          "name": "add",
-          "description": "Add app to firewall",
           "args": {
-            "name": "path",
             "description": "Path of the app to add to firewall",
-            "template": "filepaths"
-          }
-        },
-        {
-          "name": "remove",
-          "description": "Remove app from firewall",
-          "args": {
             "name": "path",
-            "description": "Path of the app to remove from firewall"
-          }
+            "template": "filepaths"
+          },
+          "description": "Add app to firewall",
+          "name": "add"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "args": {
+            "description": "Path of the app to remove from firewall",
+            "name": "path"
+          },
+          "description": "Remove app from firewall",
+          "name": "remove"
+        },
+        {
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "flightmode",
       "description": "Manage flight mode",
+      "name": "flightmode",
       "subcommands": [
         {
-          "name": "off",
-          "description": "Turn flight mode off"
+          "description": "Turn flight mode off",
+          "name": "off"
         },
         {
-          "name": "on",
-          "description": "Turn flight mode on"
+          "description": "Turn flight mode on",
+          "name": "on"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "gatekeeper",
       "description": "Manage gatekeeper",
+      "name": "gatekeeper",
       "subcommands": [
         {
-          "name": "status",
-          "description": "Show status"
+          "description": "Show status",
+          "name": "status"
         },
         {
-          "name": "enable",
-          "description": "Enable gatekeeper",
           "args": {
-            "name": "rule",
             "description": "Rule to enable",
-            "isOptional": true
-          }
+            "isOptional": true,
+            "name": "rule"
+          },
+          "description": "Enable gatekeeper",
+          "name": "enable"
         },
         {
-          "name": "disable",
-          "description": "Disable gatekeeper",
           "args": {
-            "name": "rule",
             "description": "Rule to disable",
-            "isOptional": true
-          }
+            "isOptional": true,
+            "name": "rule"
+          },
+          "description": "Disable gatekeeper",
+          "name": "disable"
         },
         {
-          "name": "list",
-          "description": "List rules"
+          "description": "List rules",
+          "name": "list"
         },
         {
-          "name": "create",
-          "description": "Create a rule for the application",
           "args": [
             {
-              "name": "RULENAME",
-              "description": "Name of the rule"
+              "description": "Name of the rule",
+              "name": "RULENAME"
             },
             {
-              "name": "/path/to/program",
-              "description": "Path to the program"
+              "description": "Path to the program",
+              "name": "/path/to/program"
             }
-          ]
+          ],
+          "description": "Create a rule for the application",
+          "name": "create"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "group",
       "description": "Manage groups",
+      "name": "group",
       "subcommands": [
         {
-          "name": "list",
-          "description": "List groups"
+          "description": "List groups",
+          "name": "list"
         },
         {
-          "name": "info",
-          "description": "Get group information",
           "args": {
-            "name": "group",
-            "description": "Group to get information"
-          }
+            "description": "Group to get information",
+            "name": "group"
+          },
+          "description": "Get group information",
+          "name": "info"
         },
         {
-          "name": "adduser",
-          "description": "Add user to group",
           "args": [
             {
-              "name": "user",
               "description": "User to add to group",
               "generators": [
                 {
@@ -1025,10 +1036,10 @@
                     "trim"
                   ]
                 }
-              ]
+              ],
+              "name": "user"
             },
             {
-              "name": "group",
               "description": "Group to add user to",
               "generators": [
                 {
@@ -1043,16 +1054,16 @@
                     "trim"
                   ]
                 }
-              ]
+              ],
+              "name": "group"
             }
-          ]
+          ],
+          "description": "Add user to group",
+          "name": "adduser"
         },
         {
-          "name": "removeuser",
-          "description": "Remove user from group",
           "args": [
             {
-              "name": "user",
               "description": "User to remove from group",
               "generators": [
                 {
@@ -1067,10 +1078,10 @@
                     "trim"
                   ]
                 }
-              ]
+              ],
+              "name": "user"
             },
             {
-              "name": "group",
               "description": "Group to remove user from",
               "generators": [
                 {
@@ -1085,16 +1096,16 @@
                     "trim"
                   ]
                 }
-              ]
+              ],
+              "name": "group"
             }
-          ]
+          ],
+          "description": "Remove user from group",
+          "name": "removeuser"
         },
         {
-          "name": "ismember",
-          "description": "Check if user is a member of group",
           "args": [
             {
-              "name": "user",
               "description": "User to check membership",
               "generators": [
                 {
@@ -1109,10 +1120,10 @@
                     "trim"
                   ]
                 }
-              ]
+              ],
+              "name": "user"
             },
             {
-              "name": "group",
               "description": "Group to check membership",
               "generators": [
                 {
@@ -1127,77 +1138,78 @@
                     "trim"
                   ]
                 }
-              ]
+              ],
+              "name": "group"
             }
-          ]
+          ],
+          "description": "Check if user is a member of group",
+          "name": "ismember"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "hostname",
       "description": "Manage hostname",
+      "name": "hostname",
       "subcommands": [
         {
-          "name": "newhostname",
-          "description": "Set new hostname"
+          "description": "Set new hostname",
+          "name": "newhostname"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "info",
-      "description": "Show system information"
+      "description": "Show system information",
+      "name": "info"
     },
     {
-      "name": "help",
-      "description": "Show help"
+      "description": "Show help",
+      "name": "help"
     },
     {
-      "name": "itunes",
       "description": "Manage iTunes",
+      "name": "itunes",
       "subcommands": [
         {
-          "name": "status",
-          "description": "Show status"
+          "description": "Show status",
+          "name": "status"
         },
         {
-          "name": "play",
-          "description": "Play track"
+          "description": "Play track",
+          "name": "play"
         },
         {
-          "name": "pause",
-          "description": "Pause track"
+          "description": "Pause track",
+          "name": "pause"
         },
         {
-          "name": "next",
-          "description": "Play next track"
+          "description": "Play next track",
+          "name": "next"
         },
         {
-          "name": "prev",
-          "description": "Play previous track"
+          "description": "Play previous track",
+          "name": "prev"
         },
         {
-          "name": "mute",
-          "description": "Mute iTunes"
+          "description": "Mute iTunes",
+          "name": "mute"
         },
         {
-          "name": "unmute",
-          "description": "Unmute iTunes"
+          "description": "Unmute iTunes",
+          "name": "unmute"
         },
         {
-          "name": "vol",
-          "description": "Volume",
           "args": {
-            "name": "up/down/#",
             "description": "Up/Down/Number",
             "isOptional": true,
+            "name": "up/down/#",
             "suggestions": [
               {
                 "name": "up"
@@ -1206,91 +1218,90 @@
                 "name": "down"
               }
             ]
-          }
+          },
+          "description": "Volume",
+          "name": "vol"
         },
         {
-          "name": "stop",
-          "description": "Stop track"
+          "description": "Stop track",
+          "name": "stop"
         },
         {
-          "name": "quit",
-          "description": "Quit iTunes"
+          "description": "Quit iTunes",
+          "name": "quit"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "localhost",
       "description": "Manage localhost",
+      "name": "localhost",
       "subcommands": [
         {
-          "name": "ls",
-          "description": "List current records in localhost"
+          "description": "List current records in localhost",
+          "name": "ls"
         },
         {
-          "name": "add",
-          "description": "Add a new host to the localhost file",
           "args": [
             {
-              "name": "IP",
-              "description": "IP of the host"
+              "description": "IP of the host",
+              "name": "IP"
             },
             {
-              "name": "HOSTNAME",
-              "description": "Hostname of the host"
+              "description": "Hostname of the host",
+              "name": "HOSTNAME"
             }
-          ]
+          ],
+          "description": "Add a new host to the localhost file",
+          "name": "add"
         },
         {
-          "name": "remove",
-          "description": "Remove a host from the localhost file",
           "args": {
-            "name": "HOSTNAME",
-            "description": "Hostname of the host"
-          }
+            "description": "Hostname of the host",
+            "name": "HOSTNAME"
+          },
+          "description": "Remove a host from the localhost file",
+          "name": "remove"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "lock",
-      "description": "Lock session"
+      "description": "Lock session",
+      "name": "lock"
     },
     {
-      "name": "network",
       "description": "Manage network",
+      "name": "network",
       "subcommands": [
         {
-          "name": "ls",
-          "description": "List network interfaces"
+          "description": "List network interfaces",
+          "name": "ls"
         },
         {
-          "name": "location",
           "description": "Manage location",
+          "name": "location",
           "subcommands": [
             {
-              "name": "ls",
-              "description": "List locations"
+              "description": "List locations",
+              "name": "ls"
             },
             {
-              "name": "create",
+              "args": {
+                "description": "Name of the location",
+                "name": "name"
+              },
               "description": "Create a location",
-              "args": {
-                "name": "name",
-                "description": "Name of the location"
-              }
+              "name": "create"
             },
             {
-              "name": "delete",
-              "description": "Delete a location",
               "args": {
-                "name": "name",
                 "description": "Name of the location",
                 "generators": [
                   {
@@ -1304,38 +1315,42 @@
                       "filter_empty"
                     ]
                   }
-                ]
-              }
+                ],
+                "name": "name"
+              },
+              "description": "Delete a location",
+              "name": "delete"
             },
             {
-              "name": "switch",
-              "description": "Switch location",
               "args": {
-                "name": "name",
-                "description": "Name of the location"
-              }
+                "description": "Name of the location",
+                "name": "name"
+              },
+              "description": "Switch location",
+              "name": "switch"
             }
           ]
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "nosleep",
       "description": "Manage no sleep",
+      "name": "nosleep",
       "subcommands": [
         {
-          "name": "until",
+          "args": {
+            "name": "time or script",
+            "template": "filepaths"
+          },
           "description": "No sleep until",
+          "name": "until",
           "subcommands": [
             {
-              "name": "pid",
-              "description": "No sleep until process id ends",
               "args": {
-                "name": "pid",
                 "description": "Process id",
                 "generators": [
                   {
@@ -1350,32 +1365,29 @@
                       "trim"
                     ]
                   }
-                ]
-              }
+                ],
+                "name": "pid"
+              },
+              "description": "No sleep until process id ends",
+              "name": "pid"
             }
-          ],
-          "args": {
-            "name": "time or script",
-            "template": "filepaths"
-          }
+          ]
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "notification",
       "description": "Manage notification",
+      "name": "notification",
       "subcommands": [
         {
-          "name": "showcenter",
-          "description": "Show notification center",
           "args": {
-            "name": "YES/NO",
             "description": "Enable/Disable notification center",
             "isOptional": true,
+            "name": "YES/NO",
             "suggestions": [
               {
                 "name": "YES"
@@ -1384,125 +1396,125 @@
                 "name": "NO"
               }
             ]
-          }
+          },
+          "description": "Show notification center",
+          "name": "showcenter"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "ntp",
       "description": "Manage ntp",
+      "name": "ntp",
       "subcommands": [
         {
-          "name": "status",
-          "description": "Status of the network time service"
+          "description": "Status of the network time service",
+          "name": "status"
         },
         {
-          "name": "enable",
-          "description": "Enable clock to use network time"
+          "description": "Enable clock to use network time",
+          "name": "enable"
         },
         {
-          "name": "disable",
-          "description": "Disable clock to use network time"
+          "description": "Disable clock to use network time",
+          "name": "disable"
         },
         {
-          "name": "set",
+          "args": {
+            "description": "Network time server",
+            "name": "hostname"
+          },
           "description": "Set network time server",
-          "args": {
-            "name": "hostname",
-            "description": "Network time server"
-          }
+          "name": "set"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "printer",
       "description": "Manage printer",
+      "name": "printer",
       "subcommands": [
         {
-          "name": "settings",
-          "description": "Printer settings"
+          "description": "Printer settings",
+          "name": "settings"
         },
         {
-          "name": "name",
-          "description": "Display printer names on system"
+          "description": "Display printer names on system",
+          "name": "name"
         },
         {
-          "name": "queue",
-          "description": "Display items in printer queue on system"
+          "description": "Display items in printer queue on system",
+          "name": "queue"
         },
         {
-          "name": "drivers",
-          "description": "Display all printer drivers"
+          "description": "Display all printer drivers",
+          "name": "drivers"
         },
         {
-          "name": "web",
-          "description": "Enable and show web interface"
+          "description": "Enable and show web interface",
+          "name": "web"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "restart",
       "description": "Restart computer (needs confirmation)",
+      "name": "restart",
       "subcommands": [
         {
-          "name": "-f",
-          "description": "Restart computer (without confirmation)"
+          "description": "Restart computer (without confirmation)",
+          "name": "-f"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "safeboot",
       "description": "Manage safe boot",
+      "name": "safeboot",
       "subcommands": [
         {
-          "name": "status",
-          "description": "Get the boot args"
+          "description": "Get the boot args",
+          "name": "status"
         },
         {
-          "name": "enable",
-          "description": "Enable safe boot"
+          "description": "Enable safe boot",
+          "name": "enable"
         },
         {
-          "name": "disable",
-          "description": "Disable safeboot"
+          "description": "Disable safeboot",
+          "name": "disable"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "screensaver",
       "description": "Manage screensaver",
+      "name": "screensaver",
       "subcommands": [
         {
-          "name": "status",
-          "description": "Get the current status"
+          "description": "Get the current status",
+          "name": "status"
         },
         {
-          "name": "askforpassword",
-          "description": "Get password requirement to unlock",
           "args": {
-            "name": "YES/NO",
             "description": "Enable/Disable password requirement to unlock",
             "isOptional": true,
+            "name": "YES/NO",
             "suggestions": [
               {
                 "name": "YES"
@@ -1511,36 +1523,56 @@
                 "name": "NO"
               }
             ]
-          }
+          },
+          "description": "Get password requirement to unlock",
+          "name": "askforpassword"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "service",
       "description": "Manage service",
+      "name": "service",
       "subcommands": [
         {
-          "name": "--status-all",
-          "description": "List all services"
-        },
-        {
-          "name": "--ls",
           "description": "List all services",
-          "args": {
-            "name": "service",
-            "description": "Service name",
-            "isOptional": true
-          }
+          "name": "--status-all"
         },
         {
-          "name": "start",
+          "args": {
+            "description": "Service name",
+            "isOptional": true,
+            "name": "service"
+          },
+          "description": "List all services",
+          "name": "--ls"
+        },
+        {
+          "args": {
+            "description": "Service name",
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "launchctl list | awk '{ print $3 }'"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty"
+                ]
+              }
+            ],
+            "name": "service"
+          },
           "description": "Start a service",
+          "name": "start"
+        },
+        {
           "args": {
-            "name": "service",
             "description": "Service name",
             "generators": [
               {
@@ -1554,14 +1586,14 @@
                   "filter_empty"
                 ]
               }
-            ]
-          }
-        },
-        {
-          "name": "stop",
+            ],
+            "name": "service"
+          },
           "description": "Stop a service",
+          "name": "stop"
+        },
+        {
           "args": {
-            "name": "service",
             "description": "Service name",
             "generators": [
               {
@@ -1575,14 +1607,14 @@
                   "filter_empty"
                 ]
               }
-            ]
-          }
-        },
-        {
-          "name": "load",
+            ],
+            "name": "service"
+          },
           "description": "Load a service",
+          "name": "load"
+        },
+        {
           "args": {
-            "name": "service",
             "description": "Service name",
             "generators": [
               {
@@ -1596,74 +1628,54 @@
                   "filter_empty"
                 ]
               }
-            ]
-          }
-        },
-        {
-          "name": "unload",
+            ],
+            "name": "service"
+          },
           "description": "Unload a service",
-          "args": {
-            "name": "service",
-            "description": "Service name",
-            "generators": [
-              {
-                "script": [
-                  "bash",
-                  "-c",
-                  "launchctl list | awk '{ print $3 }'"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty"
-                ]
-              }
-            ]
-          }
+          "name": "unload"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "shutdown",
       "description": "Shutdown computer (needs confirmation)",
+      "name": "shutdown",
       "subcommands": [
         {
-          "name": "-f",
-          "description": "Shutdown computer (without confirmation)"
+          "description": "Shutdown computer (without confirmation)",
+          "name": "-f"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "sleep",
       "description": "Put computer to sleep",
+      "name": "sleep",
       "subcommands": [
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "timezone",
       "description": "Get current timezone",
+      "name": "timezone",
       "subcommands": [
         {
-          "name": "ls",
-          "description": "List available timezones"
+          "description": "List available timezones",
+          "name": "ls"
         },
         {
-          "name": "set",
-          "description": "Set timezone",
           "args": {
-            "name": "timezone",
             "description": "Timezone",
+            "name": "timezone",
             "suggestions": [
               {
                 "name": "Africa/Abidjan"
@@ -2989,59 +3001,84 @@
                 "name": "Pacific/Wallis"
               }
             ]
-          }
+          },
+          "description": "Set timezone",
+          "name": "set"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "touchbar",
       "description": "Manage touchbar",
+      "name": "touchbar",
       "subcommands": [
         {
-          "name": "reset",
-          "description": "Reset touchbar"
+          "description": "Reset touchbar",
+          "name": "reset"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "trash",
       "description": "Manage trash",
+      "name": "trash",
       "subcommands": [
         {
-          "name": "status",
-          "description": "Get trash info"
+          "description": "Get trash info",
+          "name": "status"
         },
         {
-          "name": "clean",
-          "description": "Clean trash"
+          "description": "Clean trash",
+          "name": "clean"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "user",
       "description": "Manage user",
+      "name": "user",
       "subcommands": [
         {
-          "name": "ls",
-          "description": "List all users"
+          "description": "List all users",
+          "name": "ls"
         },
         {
-          "name": "info",
+          "args": {
+            "description": "Username",
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "m user list | awk '{ print $1 }'"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
+            "name": "username"
+          },
           "description": "Get user info",
+          "name": "info"
+        },
+        {
+          "description": "Create a new user",
+          "name": "create"
+        },
+        {
           "args": {
-            "name": "username",
             "description": "Username",
             "generators": [
               {
@@ -3056,192 +3093,166 @@
                   "trim"
                 ]
               }
-            ]
-          }
-        },
-        {
-          "name": "create",
-          "description": "Create a new user"
-        },
-        {
-          "name": "delete",
+            ],
+            "name": "username"
+          },
           "description": "Delete a user",
-          "args": {
-            "name": "username",
-            "description": "Username",
-            "generators": [
-              {
-                "script": [
-                  "bash",
-                  "-c",
-                  "m user list | awk '{ print $1 }'"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  "trim"
-                ]
-              }
-            ]
-          }
+          "name": "delete"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "volume",
+      "args": {
+        "description": "Volume level up/down/(+/-)number",
+        "name": "volume"
+      },
       "description": "Manage volume level",
+      "name": "volume",
       "subcommands": [
         {
-          "name": "mute",
-          "description": "Set mute"
+          "description": "Set mute",
+          "name": "mute"
         },
         {
-          "name": "unmute",
-          "description": "Unset mute"
+          "description": "Unset mute",
+          "name": "unmute"
         },
         {
-          "name": "ismute",
-          "description": "Check the volume status"
+          "description": "Check the volume status",
+          "name": "ismute"
         },
         {
-          "name": "up",
-          "description": "Increase the volume by 6.25"
+          "description": "Increase the volume by 6.25",
+          "name": "up"
         },
         {
-          "name": "down",
-          "description": "Decrease the volume by 6.25"
+          "description": "Decrease the volume by 6.25",
+          "name": "down"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
-      ],
-      "args": {
-        "name": "volume",
-        "description": "Volume level up/down/(+/-)number"
-      }
+      ]
     },
     {
-      "name": "vpn",
       "description": "Manage VPN connections",
+      "name": "vpn",
       "subcommands": [
         {
-          "name": "ls",
-          "description": "List VPN connections"
+          "description": "List VPN connections",
+          "name": "ls"
         },
         {
-          "name": "start",
-          "description": "Start a VPN connection",
           "args": [
             {
-              "name": "VPN",
               "description": "VPN connection name",
-              "isOptional": true
+              "isOptional": true,
+              "name": "VPN"
             },
             {
-              "name": "USER",
               "description": "VPN connection user",
-              "isOptional": true
+              "isOptional": true,
+              "name": "USER"
             },
             {
-              "name": "PASS",
               "description": "VPN connection password",
-              "isOptional": true
+              "isOptional": true,
+              "name": "PASS"
             },
             {
-              "name": "SECRET",
               "description": "VPN connection secret",
-              "isOptional": true
+              "isOptional": true,
+              "name": "SECRET"
             }
-          ]
+          ],
+          "description": "Start a VPN connection",
+          "name": "start"
         },
         {
-          "name": "stop",
+          "args": {
+            "description": "VPN connection name",
+            "isOptional": true,
+            "name": "VPN"
+          },
           "description": "Stop a VPN connection",
-          "args": {
-            "name": "VPN",
-            "description": "VPN connection name",
-            "isOptional": true
-          }
+          "name": "stop"
         },
         {
-          "name": "status",
+          "args": {
+            "description": "VPN connection name",
+            "isOptional": true,
+            "name": "VPN"
+          },
           "description": "Get the status of a VPN connection",
-          "args": {
-            "name": "VPN",
-            "description": "VPN connection name",
-            "isOptional": true
-          }
+          "name": "status"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
     },
     {
-      "name": "wallpaper",
+      "args": {
+        "description": "Path to the wallpaper",
+        "name": "image",
+        "template": "filepaths"
+      },
       "description": "Change wallpaper",
+      "name": "wallpaper",
       "subcommands": [
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
-      ],
-      "args": {
-        "name": "image",
-        "description": "Path to the wallpaper",
-        "template": "filepaths"
-      }
+      ]
     },
     {
-      "name": "wifi",
       "description": "Manage wifi",
+      "name": "wifi",
       "subcommands": [
         {
-          "name": "status",
-          "description": "Get wifi status"
+          "description": "Get wifi status",
+          "name": "status"
         },
         {
-          "name": "scan",
-          "description": "Scan wifi"
+          "description": "Scan wifi",
+          "name": "scan"
         },
         {
-          "name": "showpassword",
-          "description": "Show wifi network password",
           "args": {
-            "name": "ESSID",
             "description": "ESSID",
+            "generators": [
+              {
+                "script": [
+                  "bash",
+                  "-c",
+                  "networksetup -listallhardwareports | awk '/Wi-Fi/{getline; print $2}' | xargs networksetup -listpreferredwirelessnetworks | tail -n +2"
+                ],
+                "transforms": [
+                  "split_lines",
+                  "filter_empty",
+                  "trim"
+                ]
+              }
+            ],
             "isOptional": true,
-            "generators": [
-              {
-                "script": [
-                  "bash",
-                  "-c",
-                  "networksetup -listallhardwareports | awk '/Wi-Fi/{getline; print $2}' | xargs networksetup -listpreferredwirelessnetworks | tail -n +2"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  "trim"
-                ]
-              }
-            ]
-          }
+            "name": "ESSID"
+          },
+          "description": "Show wifi network password",
+          "name": "showpassword"
         },
         {
-          "name": "ls",
-          "description": "List known wifi networks"
+          "description": "List known wifi networks",
+          "name": "ls"
         },
         {
-          "name": "forget",
-          "description": "Forget a wifi network",
           "args": {
-            "name": "ESSID",
             "description": "ESSID",
             "generators": [
               {
@@ -3256,55 +3267,44 @@
                   "trim"
                 ]
               }
-            ]
-          }
+            ],
+            "name": "ESSID"
+          },
+          "description": "Forget a wifi network",
+          "name": "forget"
         },
         {
-          "name": "history",
-          "description": "Wifi connection history"
+          "description": "Wifi connection history",
+          "name": "history"
         },
         {
-          "name": "off",
-          "description": "Turn off your wifi"
+          "description": "Turn off your wifi",
+          "name": "off"
         },
         {
-          "name": "on",
-          "description": "Turn on your wifi"
+          "description": "Turn on your wifi",
+          "name": "on"
         },
         {
-          "name": "connect",
-          "description": "Join a wifi network",
           "args": [
             {
-              "name": "ESSID",
-              "description": "ESSID"
+              "description": "ESSID",
+              "name": "ESSID"
             },
             {
-              "name": "PASSWORD",
               "description": "Password",
-              "isOptional": true
+              "isOptional": true,
+              "name": "PASSWORD"
             }
-          ]
+          ],
+          "description": "Join a wifi network",
+          "name": "connect"
         },
         {
-          "name": "help",
-          "description": "Show help"
+          "description": "Show help",
+          "name": "help"
         }
       ]
-    }
-  ],
-  "options": [
-    {
-      "name": [
-        "--update"
-      ],
-      "description": "Update m-cli to the latest version"
-    },
-    {
-      "name": [
-        "--uninstall"
-      ],
-      "description": "Uninstall m-cli"
     }
   ]
 }

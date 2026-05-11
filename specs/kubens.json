@@ -1,25 +1,5 @@
 {
-  "name": "kubens",
-  "description": "Switch between Kubernetes-namespaces",
-  "options": [
-    {
-      "name": [
-        "--help",
-        "-h"
-      ],
-      "description": "Show help for kubens"
-    },
-    {
-      "name": [
-        "--current",
-        "-c"
-      ],
-      "description": "Show current namespace"
-    }
-  ],
   "args": {
-    "name": "namespace",
-    "isOptional": true,
     "generators": [
       {
         "script": [
@@ -33,16 +13,36 @@
         ]
       },
       {
-        "script": [
-          "kubens",
-          "-c"
-        ],
-        "requires_js": true,
         "js_runtime": {
           "kind": "post_process",
           "source": "e=>e?[{name:e,priority:100,icon:\"\\u2B50\\uFE0F\"}]:[]"
-        }
+        },
+        "requires_js": true,
+        "script": [
+          "kubens",
+          "-c"
+        ]
       }
-    ]
-  }
+    ],
+    "isOptional": true,
+    "name": "namespace"
+  },
+  "description": "Switch between Kubernetes-namespaces",
+  "name": "kubens",
+  "options": [
+    {
+      "description": "Show help for kubens",
+      "name": [
+        "--help",
+        "-h"
+      ]
+    },
+    {
+      "description": "Show current namespace",
+      "name": [
+        "--current",
+        "-c"
+      ]
+    }
+  ]
 }

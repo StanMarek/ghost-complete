@@ -193,6 +193,28 @@ pub(crate) fn install_host_api<'js>(
     Ok(())
 }
 
+/// Install the token-only runtime surface onto `ctx`'s globals.
+///
+/// This deliberately does not call [`install_fig_helpers`], create
+/// `__ghost`, create `fig`, or expose any cwd/env/shell bindings.
+pub(crate) fn install_token_only_globals<'js>(
+    ctx: &Ctx<'js>,
+    input: &JsRuntimeInput,
+) -> rquickjs::Result<()> {
+    let globals: Object<'js> = ctx.globals();
+
+    let tokens_arr = rquickjs::Array::new(ctx.clone())?;
+    for (idx, tok) in input.tokens.iter().enumerate() {
+        tokens_arr.set(idx, tok.as_str())?;
+    }
+
+    globals.set("tokens", tokens_arr)?;
+    globals.set("currentToken", input.current_token.as_str())?;
+    globals.set("previousToken", input.previous_token.as_str())?;
+
+    Ok(())
+}
+
 /// Evaluate the Fig helper preamble against `ctx`'s globals.
 ///
 /// The preamble is embedded at compile time via `include_str!` so it

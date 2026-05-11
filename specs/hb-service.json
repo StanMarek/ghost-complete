@@ -1,116 +1,66 @@
 {
-  "name": "hb-service",
   "description": "The hb-service command is provided by homebridge-config-ui-x",
-  "subcommands": [
-    {
-      "name": "install",
-      "description": "Install homebridge as a service"
-    },
-    {
-      "name": "uninstall",
-      "description": "Remove the homebridge service"
-    },
-    {
-      "name": "start",
-      "description": "Start the homebridge service"
-    },
-    {
-      "name": "stop",
-      "description": "Stop the homebridge service"
-    },
-    {
-      "name": "restart",
-      "description": "Restart the homebridge service"
-    },
-    {
-      "name": "rebuild",
-      "description": "Rebuild UI",
-      "options": [
-        {
-          "name": [
-            "--all"
-          ],
-          "description": "Rebuild all npm modules (use after updating Node.js)"
-        }
-      ]
-    },
-    {
-      "name": "run",
-      "description": "Run homebridge daemon"
-    },
-    {
-      "name": "logs",
-      "description": "Tails the homebridge service logs"
-    },
-    {
-      "name": "update-node",
-      "description": "Update Node.js",
-      "args": {
-        "name": "version",
-        "isOptional": true
-      }
-    }
-  ],
+  "name": "hb-service",
   "options": [
     {
+      "description": "Display help for command",
       "name": [
         "--help",
         "-h"
-      ],
-      "description": "Display help for command"
+      ]
     },
     {
+      "description": "Output the version number",
       "name": [
         "--version",
         "-v"
-      ],
-      "description": "Output the version number"
+      ]
     },
     {
+      "args": {
+        "name": "service name"
+      },
+      "description": "The name of the homebridge service to install or control",
       "name": [
         "--service-name",
         "-S"
-      ],
-      "description": "The name of the homebridge service to install or control",
-      "args": {
-        "name": "service name"
-      }
+      ]
     },
     {
-      "name": [
-        "--port"
-      ],
-      "description": "The port to set to the Homebridge UI when installing as a service",
       "args": {
         "name": "port"
-      }
+      },
+      "description": "The port to set to the Homebridge UI when installing as a service",
+      "name": [
+        "--port"
+      ]
     },
     {
-      "name": [
-        "--user"
-      ],
-      "description": "The user account the Homebridge service will be installed as (Linux, macOS only)",
       "args": {
         "name": "user"
-      }
+      },
+      "description": "The user account the Homebridge service will be installed as (Linux, macOS only)",
+      "name": [
+        "--user"
+      ]
     },
     {
+      "args": {
+        "name": "path"
+      },
       "name": [
         "--plugin-path",
         "-P"
-      ],
-      "args": {
-        "name": "path"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "path"
+      },
       "name": [
         "--user-storage-path",
         "-U"
-      ],
-      "args": {
-        "name": "path"
-      }
+      ]
     },
     {
       "name": [
@@ -119,20 +69,20 @@
       ]
     },
     {
+      "args": {
+        "name": "number"
+      },
       "name": [
         "--gid"
-      ],
-      "args": {
-        "name": "number"
-      }
+      ]
     },
     {
-      "name": [
-        "--uid"
-      ],
       "args": {
         "name": "number"
-      }
+      },
+      "name": [
+        "--uid"
+      ]
     },
     {
       "name": [
@@ -153,6 +103,56 @@
       "name": [
         "--strict-plugin-resolution"
       ]
+    }
+  ],
+  "subcommands": [
+    {
+      "description": "Install homebridge as a service",
+      "name": "install"
+    },
+    {
+      "description": "Remove the homebridge service",
+      "name": "uninstall"
+    },
+    {
+      "description": "Start the homebridge service",
+      "name": "start"
+    },
+    {
+      "description": "Stop the homebridge service",
+      "name": "stop"
+    },
+    {
+      "description": "Restart the homebridge service",
+      "name": "restart"
+    },
+    {
+      "description": "Rebuild UI",
+      "name": "rebuild",
+      "options": [
+        {
+          "description": "Rebuild all npm modules (use after updating Node.js)",
+          "name": [
+            "--all"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Run homebridge daemon",
+      "name": "run"
+    },
+    {
+      "description": "Tails the homebridge service logs",
+      "name": "logs"
+    },
+    {
+      "args": {
+        "isOptional": true,
+        "name": "version"
+      },
+      "description": "Update Node.js",
+      "name": "update-node"
     }
   ]
 }

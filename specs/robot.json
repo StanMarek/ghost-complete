@@ -1,30 +1,34 @@
 {
-  "name": "robot",
+  "args": {
+    "generators": [
+      {
+        "requires_js": true
+      }
+    ],
+    "isVariadic": true,
+    "name": "robot script"
+  },
   "description": "CLI for running Robot Framework automation tests",
+  "name": "robot",
   "options": [
     {
+      "description": "Print usage instructions",
       "name": [
         "-h",
         "-?",
         "--help"
-      ],
-      "description": "Print usage instructions"
+      ]
     },
     {
+      "description": "Turn on the generic automation mode. Mainly affects terminology so that \"test\" is replaced with \"task\" in logs and reports",
       "name": [
         "--rpa"
-      ],
-      "description": "Turn on the generic automation mode. Mainly affects terminology so that \"test\" is replaced with \"task\" in logs and reports"
+      ]
     },
     {
-      "name": [
-        "-F",
-        "--extension"
-      ],
-      "description": "Parse only files with this extension when executing a directory",
       "args": {
-        "name": "extension",
         "description": "File extensions divided by colon",
+        "name": "extension",
         "suggestions": [
           {
             "name": "txt"
@@ -33,295 +37,284 @@
             "name": "robot:txt"
           }
         ]
-      }
+      },
+      "description": "Parse only files with this extension when executing a directory",
+      "name": [
+        "-F",
+        "--extension"
+      ]
     },
     {
+      "args": {
+        "name": "name"
+      },
+      "description": "Set a name of the top level suite",
       "name": [
         "-N",
         "--name"
-      ],
-      "description": "Set a name of the top level suite",
-      "args": {
-        "name": "name"
-      }
+      ]
     },
     {
+      "description": "Set a documentation of the top level suite",
       "name": [
         "-D",
         "--doc"
-      ],
-      "description": "Set a documentation of the top level suite"
+      ]
     },
     {
+      "args": {
+        "name": "name:value"
+      },
+      "description": "Set metadata of the top level suite",
       "name": [
         "-M",
         "--metadata"
-      ],
-      "description": "Set metadata of the top level suite",
-      "args": {
-        "name": "name:value"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "tag"
+      },
+      "description": "Sets given tag to all executed tests",
       "name": [
         "-G",
         "--settag"
-      ],
-      "description": "Sets given tag to all executed tests",
-      "args": {
-        "name": "tag"
-      }
+      ]
     },
     {
+      "args": {
+        "generators": [
+          {
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:\\*{3} ?Test Cases ?\\*{3})([\\S\\s]*)(?:\\*{3}(\\w+\\s?)+\\*{3})*/gim),n=new Set,i=[];for(let[s,o]of t){let r=o.matchAll(/^(\\w+( |-)*)+(?!.\\#.*)(?!.\\#.*)/gm);for(let[l]of r)l=l.trim(),l.search(/\\s\\s+/)==-1&&(n.has(l)||(n.add(l),i.push({name:l,description:\"Test case\"})))}return i}"
+            },
+            "requires_js": true,
+            "script": [
+              "bash",
+              "-c",
+              "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
+            ]
+          }
+        ],
+        "name": "name"
+      },
+      "description": "Select tests by name or by long name containing also parent suite name like `Parent.Test`",
       "name": [
         "-t",
         "--test"
-      ],
-      "description": "Select tests by name or by long name containing also parent suite name like `Parent.Test`",
+      ]
+    },
+    {
       "args": {
-        "name": "name",
         "generators": [
           {
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:\\*{3} ?Test Cases ?\\*{3})([\\S\\s]*)(?:\\*{3}(\\w+\\s?)+\\*{3})*/gim),n=new Set,i=[];for(let[s,o]of t){let r=o.matchAll(/^(\\w+( |-)*)+(?!.\\#.*)(?!.\\#.*)/gm);for(let[l]of r)l=l.trim(),l.search(/\\s\\s+/)==-1&&(n.has(l)||(n.add(l),i.push({name:l,description:\"Test case\"})))}return i}"
+            },
+            "requires_js": true,
             "script": [
               "bash",
               "-c",
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
-            ],
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "e=>{let t=e.matchAll(/(?:\\*{3} ?Test Cases ?\\*{3})([\\S\\s]*)(?:\\*{3}(\\w+\\s?)+\\*{3})*/gim),n=new Set,i=[];for(let[s,o]of t){let r=o.matchAll(/^(\\w+( |-)*)+(?!.\\#.*)(?!.\\#.*)/gm);for(let[l]of r)l=l.trim(),l.search(/\\s\\s+/)==-1&&(n.has(l)||(n.add(l),i.push({name:l,description:\"Test case\"})))}return i}"
-            }
+            ]
           }
-        ]
-      }
-    },
-    {
+        ],
+        "name": "name"
+      },
+      "description": "Alias to --test. Especially applicable with --rpa",
       "name": [
         "--task"
-      ],
-      "description": "Alias to --test. Especially applicable with --rpa",
-      "args": {
-        "name": "name",
-        "generators": [
-          {
-            "script": [
-              "bash",
-              "-c",
-              "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
-            ],
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "e=>{let t=e.matchAll(/(?:\\*{3} ?Test Cases ?\\*{3})([\\S\\s]*)(?:\\*{3}(\\w+\\s?)+\\*{3})*/gim),n=new Set,i=[];for(let[s,o]of t){let r=o.matchAll(/^(\\w+( |-)*)+(?!.\\#.*)(?!.\\#.*)/gm);for(let[l]of r)l=l.trim(),l.search(/\\s\\s+/)==-1&&(n.has(l)||(n.add(l),i.push({name:l,description:\"Test case\"})))}return i}"
-            }
-          }
-        ]
-      }
+      ]
     },
     {
+      "args": {
+        "name": "name"
+      },
+      "description": "Select suites by name",
       "name": [
         "-s",
         "--suite"
-      ],
-      "description": "Select suites by name",
-      "args": {
-        "name": "name"
-      }
+      ]
     },
     {
+      "args": {
+        "generators": [
+          {
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            },
+            "requires_js": true,
+            "script": [
+              "bash",
+              "-c",
+              "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
+            ]
+          }
+        ],
+        "name": "tag"
+      },
+      "description": "Select test cases by tag",
       "name": [
         "-i",
         "--include"
-      ],
-      "description": "Select test cases by tag",
+      ]
+    },
+    {
       "args": {
-        "name": "tag",
         "generators": [
           {
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            },
+            "requires_js": true,
             "script": [
               "bash",
               "-c",
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
-            ],
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
-            }
+            ]
           }
-        ]
-      }
-    },
-    {
+        ],
+        "name": "tag"
+      },
+      "description": "Select test cases not to run by tag",
       "name": [
         "-e",
         "--exclude"
-      ],
-      "description": "Select test cases not to run by tag",
-      "args": {
-        "name": "tag",
-        "generators": [
-          {
-            "script": [
-              "bash",
-              "-c",
-              "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
-            ],
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
-            }
-          }
-        ]
-      }
+      ]
     },
     {
+      "args": {
+        "generators": [
+          {
+            "requires_js": true
+          }
+        ],
+        "name": "output file"
+      },
+      "description": "Select failed tests from an earlier output file to be re-executed",
       "name": [
         "-R",
         "--rerunfailed"
-      ],
-      "description": "Select failed tests from an earlier output file to be re-executed",
-      "args": {
-        "name": "output file",
-        "generators": [
-          {
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "custom",
-              "source": "(m,g,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,y.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Z=G(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let E of Z)if(E){let V=E.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:b,context:{templateType:V}})}return S(h(W))}catch{return[]}})"
-            }
-          }
-        ]
-      }
+      ]
     },
     {
+      "args": {
+        "generators": [
+          {
+            "requires_js": true
+          }
+        ],
+        "name": "output file"
+      },
+      "description": "Select failed suites from an earlier output file to be re-executed",
       "name": [
         "-S",
         "--rerunfailedsuites"
-      ],
-      "description": "Select failed suites from an earlier output file to be re-executed",
-      "args": {
-        "name": "output file",
-        "generators": [
-          {
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "custom",
-              "source": "(m,g,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,y.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Z=G(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let E of Z)if(E){let V=E.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:b,context:{templateType:V}})}return S(h(W))}catch{return[]}})"
-            }
-          }
-        ]
-      }
+      ]
     },
     {
+      "description": "Executes suite even if it contains no tests",
       "name": [
         "--runemptysuite"
-      ],
-      "description": "Executes suite even if it contains no tests"
+      ]
     },
     {
+      "args": {
+        "generators": [
+          {
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            },
+            "requires_js": true,
+            "script": [
+              "bash",
+              "-c",
+              "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
+            ]
+          }
+        ],
+        "name": "tag"
+      },
+      "description": "Tests having given tag will be skipped",
       "name": [
         "--skip"
-      ],
-      "description": "Tests having given tag will be skipped",
+      ]
+    },
+    {
       "args": {
-        "name": "tag",
         "generators": [
           {
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            },
+            "requires_js": true,
             "script": [
               "bash",
               "-c",
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
-            ],
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
-            }
+            ]
           }
-        ]
-      }
-    },
-    {
+        ],
+        "name": "tag"
+      },
+      "description": "Tests having given tag will be skipped if they fail",
       "name": [
         "--skiponfailure"
-      ],
-      "description": "Tests having given tag will be skipped if they fail",
-      "args": {
-        "name": "tag",
-        "generators": [
-          {
-            "script": [
-              "bash",
-              "-c",
-              "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
-            ],
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
-            }
-          }
-        ]
-      }
+      ]
     },
     {
+      "args": {
+        "generators": [
+          {
+            "js_runtime": {
+              "kind": "custom",
+              "self_contained": true,
+              "source": "async(e,t)=>{if(!!e[e.length-1].includes(\":\"))return[];let{stdout:s}=await t({command:\"bash\",args:[\"-c\",'for i in $(find -E . -regex \".*.(robot|resource)\" -type f); do cat -s $i ; done']});return[...s.matchAll(/^\\$\\{(.*?)\\}/gm)].map(r=>r[1]).map(r=>({name:r,description:\"Variable\"}))}"
+            },
+            "requires_js": true
+          }
+        ],
+        "name": "variable"
+      },
+      "description": "Set variables in the test data",
       "name": [
         "-v",
         "--variable"
-      ],
-      "description": "Set variables in the test data",
-      "args": {
-        "name": "variable",
-        "generators": [
-          {
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "custom",
-              "source": "async(e,t)=>{if(!!e[e.length-1].includes(\":\"))return[];let{stdout:s}=await t({command:\"bash\",args:[\"-c\",'for i in $(find -E . -regex \".*.(robot|resource)\" -type f); do cat -s $i ; done']});return[...s.matchAll(/^\\$\\{(.*?)\\}/gm)].map(r=>r[1]).map(r=>({name:r,description:\"Variable\"}))}"
-            }
-          }
-        ]
-      }
+      ]
     },
     {
+      "args": {
+        "generators": [
+          {
+            "requires_js": true
+          }
+        ],
+        "name": "file"
+      },
+      "description": "Python or YAML file file to read variables from",
       "name": [
         "-V",
         "--variablefile"
-      ],
-      "description": "Python or YAML file file to read variables from",
-      "args": {
-        "name": "file",
-        "generators": [
-          {
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "custom",
-              "source": "(m,g,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,y.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Z=G(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let E of Z)if(E){let V=E.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:b,context:{templateType:V}})}return S(h(W))}catch{return[]}})"
-            }
-          }
-        ]
-      }
+      ]
     },
     {
-      "name": [
-        "-d",
-        "--outputdir"
-      ],
-      "description": "Where to create output files. The default is the directory where tests are run from",
       "args": {
         "name": "directory",
         "template": "folders"
-      }
+      },
+      "description": "Where to create output files. The default is the directory where tests are run from",
+      "name": [
+        "-d",
+        "--outputdir"
+      ]
     },
     {
-      "name": [
-        "-o",
-        "--output"
-      ],
-      "description": "XML output file relative to --outputdir unless given as an absolute path. Default: output.xml",
       "args": {
         "name": "file",
         "suggestions": [
@@ -329,14 +322,14 @@
             "name": "output.xml"
           }
         ]
-      }
+      },
+      "description": "XML output file relative to --outputdir unless given as an absolute path. Default: output.xml",
+      "name": [
+        "-o",
+        "--output"
+      ]
     },
     {
-      "name": [
-        "-l",
-        "--log"
-      ],
-      "description": "HTML log file. Can be disabled by giving a special value `NONE`. Default: log.html",
       "args": {
         "name": "file",
         "suggestions": [
@@ -347,14 +340,14 @@
             "name": "NONE"
           }
         ]
-      }
+      },
+      "description": "HTML log file. Can be disabled by giving a special value `NONE`. Default: log.html",
+      "name": [
+        "-l",
+        "--log"
+      ]
     },
     {
-      "name": [
-        "-r",
-        "--report"
-      ],
-      "description": "HTML report file. Can be disabled with `NONE` similarly as --log. Default: report.html",
       "args": {
         "name": "file",
         "suggestions": [
@@ -365,14 +358,14 @@
             "name": "NONE"
           }
         ]
-      }
+      },
+      "description": "HTML report file. Can be disabled with `NONE` similarly as --log. Default: report.html",
+      "name": [
+        "-r",
+        "--report"
+      ]
     },
     {
-      "name": [
-        "-x",
-        "--xunit"
-      ],
-      "description": "XUnit compatible result file. Not created unless this option is specified",
       "args": {
         "name": "file",
         "suggestions": [
@@ -380,106 +373,106 @@
             "name": "xunit.xml"
           }
         ]
-      }
+      },
+      "description": "XUnit compatible result file. Not created unless this option is specified",
+      "name": [
+        "-x",
+        "--xunit"
+      ]
     },
     {
+      "args": {
+        "name": "file"
+      },
+      "description": "Debug file written during execution. Not created unless this option is specified",
       "name": [
         "-b",
         "--debugfile"
-      ],
-      "description": "Debug file written during execution. Not created unless this option is specified",
-      "args": {
-        "name": "file"
-      }
+      ]
     },
     {
+      "description": "Adds timestamp in a format `YYYYMMDD-hhmmss` to all generated output files between their basename and extension",
       "name": [
         "-T",
         "--timestampoutputs"
-      ],
-      "description": "Adds timestamp in a format `YYYYMMDD-hhmmss` to all generated output files between their basename and extension"
+      ]
     },
     {
+      "description": "Split the log file into smaller pieces that open in browsers transparently",
       "name": [
         "--splitlog"
-      ],
-      "description": "Split the log file into smaller pieces that open in browsers transparently"
+      ]
     },
     {
+      "args": {
+        "name": "title"
+      },
+      "description": "Title for the generated log file. The default title is `<SuiteName> Log.`",
       "name": [
         "--logtitle"
-      ],
-      "description": "Title for the generated log file. The default title is `<SuiteName> Log.`",
-      "args": {
-        "name": "title"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "title"
+      },
+      "description": "Title for the generated report file. The default title is `<SuiteName> Report`",
       "name": [
         "--reporttitle"
-      ],
-      "description": "Title for the generated report file. The default title is `<SuiteName> Report`",
-      "args": {
-        "name": "title"
-      }
+      ]
     },
     {
-      "name": [
-        "--reportbackground"
-      ],
-      "description": "Background colors to use in the report file. Given in format `passed:failed:skipped` where the `:skipped` part can be omitted",
       "args": {
         "name": "colors"
-      }
+      },
+      "description": "Background colors to use in the report file. Given in format `passed:failed:skipped` where the `:skipped` part can be omitted",
+      "name": [
+        "--reportbackground"
+      ]
     },
     {
-      "name": [
-        "--maxerrorlines"
-      ],
-      "description": "Maximum number of error message lines to show in report when tests fail. Default is 40, minimum is 10 and `NONE` can be used to show the full message",
       "args": {
         "name": "lines",
         "suggestions": [
           {
-            "name": "40",
-            "description": "Default number of lines"
+            "description": "Default number of lines",
+            "name": "40"
           },
           {
-            "name": "10",
-            "description": "Minimum number of lines"
+            "description": "Minimum number of lines",
+            "name": "10"
           },
           {
-            "name": "NONE",
-            "description": "Unlimited number of lines. Shows the full message"
+            "description": "Unlimited number of lines. Shows the full message",
+            "name": "NONE"
           }
         ]
-      }
+      },
+      "description": "Maximum number of error message lines to show in report when tests fail. Default is 40, minimum is 10 and `NONE` can be used to show the full message",
+      "name": [
+        "--maxerrorlines"
+      ]
     },
     {
-      "name": [
-        "--maxassignlength"
-      ],
-      "description": "Maximum number of characters to show in log when variables are assigned. Zero or negative values can be used to avoid showing assigned values at all. Default is 200",
       "args": {
         "name": "characters",
         "suggestions": [
           {
-            "name": "200",
-            "description": "Default number of characters"
+            "description": "Default number of characters",
+            "name": "200"
           },
           {
-            "name": "0",
-            "description": "No values at all"
+            "description": "No values at all",
+            "name": "0"
           }
         ]
-      }
+      },
+      "description": "Maximum number of characters to show in log when variables are assigned. Zero or negative values can be used to avoid showing assigned values at all. Default is 200",
+      "name": [
+        "--maxassignlength"
+      ]
     },
     {
-      "name": [
-        "-L",
-        "--loglevel"
-      ],
-      "description": "Threshold level for logging",
       "args": {
         "name": "level",
         "suggestions": [
@@ -499,140 +492,178 @@
             "name": "NONE"
           }
         ]
-      }
+      },
+      "description": "Threshold level for logging",
+      "name": [
+        "-L",
+        "--loglevel"
+      ]
     },
     {
-      "name": [
-        "--suitestatlevel"
-      ],
-      "description": "How many levels to show in `Statistics by Suite` in log and report",
       "args": {
         "name": "level"
-      }
+      },
+      "description": "How many levels to show in `Statistics by Suite` in log and report",
+      "name": [
+        "--suitestatlevel"
+      ]
     },
     {
+      "args": {
+        "generators": [
+          {
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            },
+            "requires_js": true,
+            "script": [
+              "bash",
+              "-c",
+              "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
+            ]
+          }
+        ],
+        "name": "tag"
+      },
+      "description": "Include only matching tags in `Statistics by Tag` in log and report",
       "name": [
         "--tagstatinclude"
-      ],
-      "description": "Include only matching tags in `Statistics by Tag` in log and report",
+      ]
+    },
+    {
       "args": {
-        "name": "tag",
         "generators": [
           {
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            },
+            "requires_js": true,
             "script": [
               "bash",
               "-c",
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
-            ],
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
-            }
+            ]
           }
-        ]
-      }
-    },
-    {
+        ],
+        "name": "tag"
+      },
+      "description": "Exclude matching tags from `Statistics by Tag`",
       "name": [
         "--tagstatexclude"
-      ],
-      "description": "Exclude matching tags from `Statistics by Tag`",
+      ]
+    },
+    {
       "args": {
-        "name": "tag",
         "generators": [
           {
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            },
+            "requires_js": true,
             "script": [
               "bash",
               "-c",
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
-            ],
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
-            }
+            ]
           }
-        ]
-      }
-    },
-    {
+        ],
+        "name": "tags:name"
+      },
+      "description": "Create combined statistics based on tags. These statistics are added into `Statistics by Tag`",
       "name": [
         "--tagstatcombine"
-      ],
-      "description": "Create combined statistics based on tags. These statistics are added into `Statistics by Tag`",
+      ]
+    },
+    {
       "args": {
-        "name": "tags:name",
         "generators": [
           {
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            },
+            "requires_js": true,
             "script": [
               "bash",
               "-c",
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
-            ],
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
-            }
+            ]
           }
-        ]
-      }
-    },
-    {
+        ],
+        "name": "pattern:doc"
+      },
+      "description": "Add documentation to tags matching the given pattern",
       "name": [
         "--tagdoc"
-      ],
-      "description": "Add documentation to tags matching the given pattern",
+      ]
+    },
+    {
       "args": {
-        "name": "pattern:doc",
         "generators": [
           {
+            "js_runtime": {
+              "kind": "post_process",
+              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
+            },
+            "requires_js": true,
             "script": [
               "bash",
               "-c",
               "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
-            ],
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
-            }
+            ]
           }
-        ]
-      }
-    },
-    {
+        ],
+        "name": "pattern:link:title"
+      },
+      "description": "Add external links into `Statistics by Tag`. Pattern can use `*`, `?` and `[]` as wildcards",
       "name": [
         "--tagstatlink"
-      ],
-      "description": "Add external links into `Statistics by Tag`. Pattern can use `*`, `?` and `[]` as wildcards",
-      "args": {
-        "name": "pattern:link:title",
-        "generators": [
-          {
-            "script": [
-              "bash",
-              "-c",
-              "for i in $(find -E . -regex \".*.robot\" -type f); do cat -s $i ; done"
-            ],
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "e=>{let t=e.matchAll(/(?:^\\s\\s+\\[Tags\\])\\s\\s+(\\w+ *)*(?!.\\#.*)/gm),n=new Set,i=[];for(let[s]of t)for(let o of s.trim().substring(6).trim().split(/\\s\\s+/))n.has(o)||(n.add(o),i.push({name:o,description:\"Tag\",icon:\"\\u{1F3F7}\"}));return i}"
-            }
-          }
-        ]
-      }
+      ]
     },
     {
+      "args": {
+        "name": "pattern",
+        "suggestions": [
+          {
+            "name": "name:<pattern>"
+          },
+          {
+            "name": "tag:<pattern>"
+          }
+        ]
+      },
+      "description": "Matching keywords will be automatically expanded in the log file",
       "name": [
         "--expandkeywords"
-      ],
-      "description": "Matching keywords will be automatically expanded in the log file",
+      ]
+    },
+    {
       "args": {
         "name": "pattern",
         "suggestions": [
+          {
+            "description": "Remove data from all keywords",
+            "name": "all"
+          },
+          {
+            "description": "Remove data only from keywords in passed test cases and suites",
+            "name": "passed"
+          },
+          {
+            "description": "Remove passed iterations from for loops",
+            "name": "for"
+          },
+          {
+            "description": "Remove passed iterations from while loops",
+            "name": "while"
+          },
+          {
+            "description": "Remove all but the last failing keyword inside `BuiltIn.Wait Until Keyword Succeeds`",
+            "name": "wuks"
+          },
           {
             "name": "name:<pattern>"
           },
@@ -640,35 +671,27 @@
             "name": "tag:<pattern>"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Remove keyword data from the generated log file",
       "name": [
         "--removekeywords"
-      ],
-      "description": "Remove keyword data from the generated log file",
+      ]
+    },
+    {
       "args": {
         "name": "pattern",
         "suggestions": [
           {
-            "name": "all",
-            "description": "Remove data from all keywords"
+            "description": "Flatten FOR loops fully",
+            "name": "for"
           },
           {
-            "name": "passed",
-            "description": "Remove data only from keywords in passed test cases and suites"
+            "description": "Flatten WHILE loops fully",
+            "name": "while"
           },
           {
-            "name": "for",
-            "description": "Remove passed iterations from for loops"
-          },
-          {
-            "name": "while",
-            "description": "Remove passed iterations from while loops"
-          },
-          {
-            "name": "wuks",
-            "description": "Remove all but the last failing keyword inside `BuiltIn.Wait Until Keyword Succeeds`"
+            "description": "Flatten FOR/WHILE loop iterations",
+            "name": "iteration"
           },
           {
             "name": "name:<pattern>"
@@ -677,168 +700,138 @@
             "name": "tag:<pattern>"
           }
         ]
-      }
-    },
-    {
+      },
+      "description": "Flattens matching keywords in the generated log file",
       "name": [
         "--flattenkeywords"
-      ],
-      "description": "Flattens matching keywords in the generated log file",
-      "args": {
-        "name": "pattern",
-        "suggestions": [
-          {
-            "name": "for",
-            "description": "Flatten FOR loops fully"
-          },
-          {
-            "name": "while",
-            "description": "Flatten WHILE loops fully"
-          },
-          {
-            "name": "iteration",
-            "description": "Flatten FOR/WHILE loop iterations"
-          },
-          {
-            "name": "name:<pattern>"
-          },
-          {
-            "name": "tag:<pattern>"
-          }
-        ]
-      }
+      ]
     },
     {
-      "name": [
-        "--listener"
-      ],
-      "description": "A class for monitoring test execution. Gets notifications e.g. when tests start and end",
       "args": {
         "name": "class"
-      }
+      },
+      "description": "A class for monitoring test execution. Gets notifications e.g. when tests start and end",
+      "name": [
+        "--listener"
+      ]
     },
     {
+      "description": "Sets the return code to zero regardless of failures in test cases. Error codes are returned normally",
       "name": [
         "--nostatusrc"
-      ],
-      "description": "Sets the return code to zero regardless of failures in test cases. Error codes are returned normally"
+      ]
     },
     {
+      "description": "Sets the return code to zero regardless of failures in test cases. Error codes are returned normally",
       "name": [
         "--dryrun"
-      ],
-      "description": "Sets the return code to zero regardless of failures in test cases. Error codes are returned normally"
+      ]
     },
     {
+      "description": "Stops test execution if any test fails",
       "name": [
         "-X",
         "--exitonfailure"
-      ],
-      "description": "Stops test execution if any test fails"
+      ]
     },
     {
+      "description": "Stops test execution if any error occurs when parsing test data, importing libraries, and so on",
       "name": [
         "--exitonerror"
-      ],
-      "description": "Stops test execution if any error occurs when parsing test data, importing libraries, and so on"
+      ]
     },
     {
+      "description": "Causes teardowns to be skipped if test execution is stopped prematurely",
       "name": [
         "--skipteardownonexit"
-      ],
-      "description": "Causes teardowns to be skipped if test execution is stopped prematurely"
+      ]
     },
     {
+      "args": {
+        "name": "type",
+        "suggestions": [
+          {
+            "description": "Randomizes both suites and tests",
+            "name": "all"
+          },
+          {
+            "description": "Randomizes suites",
+            "name": "suites"
+          },
+          {
+            "description": "Randomizes tests",
+            "name": "tests"
+          },
+          {
+            "description": "No randomization (default)",
+            "name": "none"
+          }
+        ]
+      },
+      "description": "Randomizes the test execution order",
       "name": [
         "--randomize"
-      ],
-      "description": "Randomizes the test execution order",
-      "args": {
-        "name": "type",
-        "suggestions": [
-          {
-            "name": "all",
-            "description": "Randomizes both suites and tests"
-          },
-          {
-            "name": "suites",
-            "description": "Randomizes suites"
-          },
-          {
-            "name": "tests",
-            "description": "Randomizes tests"
-          },
-          {
-            "name": "none",
-            "description": "No randomization (default)"
-          }
-        ]
-      }
+      ]
     },
     {
+      "args": {
+        "name": "class"
+      },
+      "description": "Class to programmatically modify the suite structure before execution",
       "name": [
         "--prerunmodifier"
-      ],
-      "description": "Class to programmatically modify the suite structure before execution",
-      "args": {
-        "name": "class"
-      }
+      ]
     },
     {
+      "args": {
+        "name": "class"
+      },
+      "description": "Class to programmatically modify the result model before creating reports and logs",
       "name": [
         "--prerebotmodifier"
-      ],
-      "description": "Class to programmatically modify the result model before creating reports and logs",
-      "args": {
-        "name": "class"
-      }
+      ]
     },
     {
-      "name": [
-        "--console"
-      ],
-      "description": "How to report execution on the console",
       "args": {
         "name": "type",
         "suggestions": [
           {
-            "name": "verbose",
-            "description": "Report every suite and test (default)"
+            "description": "Report every suite and test (default)",
+            "name": "verbose"
           },
           {
-            "name": "dotted",
-            "description": "Only show `.` for passed test, `s` for skipped tests, and `F` for failed tests"
+            "description": "Only show `.` for passed test, `s` for skipped tests, and `F` for failed tests",
+            "name": "dotted"
           },
           {
-            "name": "quiet",
-            "description": "No output except for errors and warnings"
+            "description": "No output except for errors and warnings",
+            "name": "quiet"
           },
           {
-            "name": "none",
-            "description": "No output whatsoever"
+            "description": "No output whatsoever",
+            "name": "none"
           }
         ]
-      }
+      },
+      "description": "How to report execution on the console",
+      "name": [
+        "--console"
+      ]
     },
     {
+      "description": "Shortcut for `--console dotted`",
       "name": [
         "-.",
         "--dotted"
-      ],
-      "description": "Shortcut for `--console dotted`"
+      ]
     },
     {
+      "description": "Shortcut for `--console quiet`",
       "name": [
         "--quiet"
-      ],
-      "description": "Shortcut for `--console quiet`"
+      ]
     },
     {
-      "name": [
-        "-W",
-        "--consolewidth"
-      ],
-      "description": "Width of the console output. Default is 78",
       "args": {
         "name": "chars",
         "suggestions": [
@@ -846,42 +839,42 @@
             "name": "78"
           }
         ]
-      }
+      },
+      "description": "Width of the console output. Default is 78",
+      "name": [
+        "-W",
+        "--consolewidth"
+      ]
     },
     {
-      "name": [
-        "-C",
-        "--consolecolors"
-      ],
-      "description": "Use colors on console output or not",
       "args": {
         "name": "option",
         "suggestions": [
           {
-            "name": "auto",
-            "description": "Use colors when output not redirected (default)"
+            "description": "Use colors when output not redirected (default)",
+            "name": "auto"
           },
           {
-            "name": "on",
-            "description": "Always use colors"
+            "description": "Always use colors",
+            "name": "on"
           },
           {
-            "name": "ansi",
-            "description": "Like `on` but use ANSI colors also on Windows"
+            "description": "Like `on` but use ANSI colors also on Windows",
+            "name": "ansi"
           },
           {
-            "name": "off",
-            "description": "Disable colors altogether"
+            "description": "Disable colors altogether",
+            "name": "off"
           }
         ]
-      }
+      },
+      "description": "Use colors on console output or not",
+      "name": [
+        "-C",
+        "--consolecolors"
+      ]
     },
     {
-      "name": [
-        "-K",
-        "--consolemarkers"
-      ],
-      "description": "Show markers on the console when top level keywords in a test case end",
       "args": {
         "name": "option",
         "suggestions": [
@@ -895,56 +888,44 @@
             "name": "off"
           }
         ]
-      }
+      },
+      "description": "Show markers on the console when top level keywords in a test case end",
+      "name": [
+        "-K",
+        "--consolemarkers"
+      ]
     },
     {
+      "args": {
+        "generators": [
+          {
+            "requires_js": true
+          }
+        ],
+        "name": "path"
+      },
+      "description": "Additional locations (directories, ZIPs) where to search libraries and other extensions when they are imported",
       "name": [
         "-P",
         "--pythonpath"
-      ],
-      "description": "Additional locations (directories, ZIPs) where to search libraries and other extensions when they are imported",
-      "args": {
-        "name": "path",
-        "generators": [
-          {
-            "requires_js": true,
-            "js_runtime": {
-              "kind": "custom",
-              "source": "(m,g,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,y.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Z=G(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let E of Z)if(E){let V=E.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:b,context:{templateType:V}})}return S(h(W))}catch{return[]}})"
-            }
-          }
-        ]
-      }
+      ]
     },
     {
-      "name": [
-        "-A",
-        "--argumentfile"
-      ],
-      "description": "Text file to read more arguments from. Use special path `STDIN` to read contents from the standard input stream",
       "args": {
         "name": "path",
         "template": "filepaths"
-      }
+      },
+      "description": "Text file to read more arguments from. Use special path `STDIN` to read contents from the standard input stream",
+      "name": [
+        "-A",
+        "--argumentfile"
+      ]
     },
     {
+      "description": "Print version information",
       "name": [
         "--version"
-      ],
-      "description": "Print version information"
+      ]
     }
-  ],
-  "args": {
-    "name": "robot script",
-    "isVariadic": true,
-    "generators": [
-      {
-        "requires_js": true,
-        "js_runtime": {
-          "kind": "custom",
-          "source": "(m,g,w)=>de(this,void 0,void 0,function*(){var p;let{isDangerous:b,currentWorkingDirectory:x,searchTerm:f}=w,O=(p=(0,y.getCurrentInsertedDirectory)(l??x,f,w))!==null&&p!==void 0?p:\"/\";try{let P=yield g({command:\"ls\",args:[\"-1ApL\"],cwd:O}),Z=G(P.stdout.split(`\n`),[\".DS_Store\"]),W=[];for(let E of Z)if(E){let V=E.endsWith(\"/\")?\"folders\":\"filepaths\";(V===\"filepaths\"&&u!==\"only\"||V===\"folders\"&&u!==\"never\")&&W.push({type:V===\"filepaths\"?\"file\":\"folder\",name:E,insertValue:E,isDangerous:b,context:{templateType:V}})}return S(h(W))}catch{return[]}})"
-        }
-      }
-    ]
-  }
+  ]
 }

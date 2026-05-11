@@ -1,118 +1,122 @@
 {
-  "name": "ansible-doc",
+  "args": {
+    "generators": [
+      {
+        "type": "ansible_doc_modules"
+      }
+    ],
+    "isVariadic": true,
+    "name": "plugin"
+  },
   "description": "Displays information on modules installed in Ansible libraries",
+  "name": "ansible-doc",
   "options": [
     {
-      "name": [
-        "--metadata-dump"
-      ],
-      "description": "For internal testing only Dump json metadata for all plugins",
       "args": {
         "isOptional": true
-      }
+      },
+      "description": "For internal testing only Dump json metadata for all plugins",
+      "name": [
+        "--metadata-dump"
+      ]
     },
     {
-      "name": [
-        "--playbook-dir"
-      ],
-      "description": "Sets the relative path for many features including roles/ group_vars/ etc",
       "args": {
-        "name": "BASEDIR",
         "description": "Base directory",
+        "name": "BASEDIR",
         "template": [
           "filepaths"
         ]
-      }
+      },
+      "description": "Sets the relative path for many features including roles/ group_vars/ etc",
+      "name": [
+        "--playbook-dir"
+      ]
     },
     {
-      "name": [
-        "--version"
-      ],
-      "description": "Shows version number, config file location, module search path, module location, executable location and exit",
       "args": {
         "isOptional": true
-      }
+      },
+      "description": "Shows version number, config file location, module search path, module location, executable location and exit",
+      "name": [
+        "--version"
+      ]
     },
     {
+      "args": {
+        "isOptional": true
+      },
+      "description": "Show plugin names and their source files without summaries (implies --list)",
       "name": [
         "--list_files",
         "-F"
-      ],
-      "description": "Show plugin names and their source files without summaries (implies --list)",
-      "args": {
-        "isOptional": true
-      }
+      ]
     },
     {
+      "args": {
+        "isOptional": true
+      },
+      "description": "Prepend colon-separated path(s) to module library",
       "name": [
         "--module-path",
         "-M"
-      ],
-      "description": "Prepend colon-separated path(s) to module library",
-      "args": {
-        "isOptional": true
-      }
+      ]
     },
     {
+      "args": {
+        "name": "ENTRY_POINT"
+      },
+      "description": "Select the entry point for role(s)",
       "name": [
         "--entry-point",
         "-E"
-      ],
-      "description": "Select the entry point for role(s)",
-      "args": {
-        "name": "ENTRY_POINT"
-      }
+      ]
     },
     {
+      "args": {
+        "isOptional": true
+      },
+      "description": "Show help and exit",
       "name": [
         "--help",
         "-h"
-      ],
-      "description": "Show help and exit",
-      "args": {
-        "isOptional": true
-      }
+      ]
     },
     {
+      "args": {
+        "isOptional": true
+      },
+      "description": "Change output into json format",
       "name": [
         "--json",
         "-j"
-      ],
-      "description": "Change output into json format",
-      "args": {
-        "isOptional": true
-      }
+      ]
     },
     {
+      "args": {
+        "isOptional": true,
+        "name": "NAMESPACE|COLLECTION"
+      },
+      "description": "List available plugins; a supplied argument will be used for filtering (can be a namespace or full collection name)",
       "name": [
         "--list",
         "-l"
-      ],
-      "description": "List available plugins; a supplied argument will be used for filtering (can be a namespace or full collection name)",
-      "args": {
-        "name": "NAMESPACE|COLLECTION",
-        "isOptional": true
-      }
+      ]
     },
     {
-      "name": [
-        "--roles-path",
-        "-r"
-      ],
-      "description": "The path to the directory containing your roles",
       "args": {
         "name": "PATH",
         "template": [
           "filepaths"
         ]
-      }
+      },
+      "description": "The path to the directory containing your roles",
+      "name": [
+        "--roles-path",
+        "-r"
+      ]
     },
     {
-      "name": [
-        "--snippet",
-        "-s"
-      ],
-      "description": "Show playbook snippet for these plugin types: inventory, lookup, module",
       "args": {
         "name": "PLUGIN_TYPE",
         "suggestions": [
@@ -126,14 +130,14 @@
             "name": "module"
           }
         ]
-      }
+      },
+      "description": "Show playbook snippet for these plugin types: inventory, lookup, module",
+      "name": [
+        "--snippet",
+        "-s"
+      ]
     },
     {
-      "name": [
-        "--type",
-        "-t"
-      ],
-      "description": "Choose which plugin type (defaults to \"module\")",
       "args": {
         "name": "PLUGIN_TYPE",
         "suggestions": [
@@ -183,34 +187,30 @@
             "name": "keyword"
           }
         ]
-      }
+      },
+      "description": "Choose which plugin type (defaults to \"module\")",
+      "name": [
+        "--type",
+        "-t"
+      ]
     },
     {
+      "args": {
+        "isOptional": true
+      },
+      "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)",
       "name": [
         "--verbose"
-      ],
-      "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)",
-      "args": {
-        "isOptional": true
-      }
+      ]
     },
     {
-      "name": [
-        "-v"
-      ],
-      "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)",
       "args": {
         "isOptional": true
-      }
+      },
+      "description": "Verbose mode (-vvv for more, -vvvv to enable connection debugging)",
+      "name": [
+        "-v"
+      ]
     }
-  ],
-  "args": {
-    "name": "plugin",
-    "isVariadic": true,
-    "generators": [
-      {
-        "type": "ansible_doc_modules"
-      }
-    ]
-  }
+  ]
 }

@@ -1,37 +1,5 @@
 {
-  "name": "login",
-  "description": "Begin session on the system",
-  "options": [
-    {
-      "name": [
-        "-p"
-      ],
-      "description": "Preserve environment"
-    },
-    {
-      "name": [
-        "-r"
-      ],
-      "description": "Perform autologin protocol for rlogin"
-    },
-    {
-      "name": [
-        "-h"
-      ],
-      "description": "Specify host",
-      "args": {
-        "name": "host"
-      }
-    },
-    {
-      "name": [
-        "-f"
-      ],
-      "description": "Don't authenticate user, user is preauthenticated"
-    }
-  ],
   "args": {
-    "name": "username",
     "generators": [
       {
         "script": [
@@ -43,6 +11,38 @@
           "filter_empty"
         ]
       }
-    ]
-  }
+    ],
+    "name": "username"
+  },
+  "description": "Begin session on the system",
+  "name": "login",
+  "options": [
+    {
+      "description": "Preserve environment",
+      "name": [
+        "-p"
+      ]
+    },
+    {
+      "description": "Perform autologin protocol for rlogin",
+      "name": [
+        "-r"
+      ]
+    },
+    {
+      "args": {
+        "name": "host"
+      },
+      "description": "Specify host",
+      "name": [
+        "-h"
+      ]
+    },
+    {
+      "description": "Don't authenticate user, user is preauthenticated",
+      "name": [
+        "-f"
+      ]
+    }
+  ]
 }

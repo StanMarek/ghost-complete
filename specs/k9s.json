@@ -1,179 +1,129 @@
 {
-  "name": "k9s",
   "description": "K9s is a terminal based UI to interact with your Kubernetes clusters",
-  "subcommands": [
-    {
-      "name": "help",
-      "description": "Help about any command",
-      "args": {
-        "name": "command",
-        "template": "help",
-        "isOptional": true
-      }
-    },
-    {
-      "name": "info",
-      "description": "Print configuration info",
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Help for info"
-        }
-      ]
-    },
-    {
-      "name": "version",
-      "description": "Print version/build info",
-      "options": [
-        {
-          "name": [
-            "-h",
-            "--help"
-          ],
-          "description": "Help for version"
-        },
-        {
-          "name": [
-            "-s",
-            "--short"
-          ],
-          "description": "Prints K9s version info in short format"
-        }
-      ],
-      "priority": 50
-    }
-  ],
+  "name": "k9s",
   "options": [
     {
+      "description": "Launch K9s in all namespaces",
       "name": [
         "-A",
         "--all-namespaces"
       ],
-      "description": "Launch K9s in all namespaces",
       "priority": 65
     },
     {
+      "args": {
+        "description": "The username you want to impersonate",
+        "name": "string"
+      },
+      "description": "Username to impersonate for the operation",
       "name": [
         "--as"
-      ],
-      "description": "Username to impersonate for the operation",
-      "args": {
-        "name": "string",
-        "description": "The username you want to impersonate"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "The group you want to impersonate",
+        "name": "stringArray"
+      },
+      "description": "Group to impersonate for the operation",
       "name": [
         "--as-group"
-      ],
-      "description": "Group to impersonate for the operation",
-      "args": {
-        "name": "stringArray",
-        "description": "The group you want to impersonate"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "The path to a cert file",
+        "name": "string",
+        "template": "filepaths"
+      },
+      "description": "Path to a cert file for the certificate authority",
       "name": [
         "--certificate-authority"
-      ],
-      "description": "Path to a cert file for the certificate authority",
-      "args": {
-        "name": "string",
-        "description": "The path to a cert file",
-        "template": "filepaths"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "The path to a client key file",
+        "name": "string",
+        "template": "filepaths"
+      },
+      "description": "Path to a client key file for TLS",
       "name": [
         "--client-key"
-      ],
-      "description": "Path to a client key file for TLS",
-      "args": {
-        "name": "string",
-        "description": "The path to a client key file",
-        "template": "filepaths"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "The command you want to execute",
+        "name": "string"
+      },
+      "description": "Overrides the default resource to load when the application launches",
       "name": [
         "-c",
         "--command"
-      ],
-      "description": "Overrides the default resource to load when the application launches",
-      "args": {
-        "name": "string",
-        "description": "The command you want to execute"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "The name of the kubeconfig context",
+        "name": "string"
+      },
+      "description": "The name of the kubeconfig context to use",
       "name": [
         "--context"
-      ],
-      "description": "The name of the kubeconfig context to use",
-      "args": {
-        "name": "string",
-        "description": "The name of the kubeconfig context"
-      }
+      ]
     },
     {
+      "description": "Turn K9s crumbs off",
       "name": [
         "--crumbsless"
-      ],
-      "description": "Turn K9s crumbs off"
+      ]
     },
     {
+      "description": "Turn K9s header off",
       "name": [
         "--headless"
-      ],
-      "description": "Turn K9s header off"
+      ]
     },
     {
+      "description": "Show help for k9s",
       "name": [
         "-h",
         "--help"
-      ],
-      "description": "Show help for k9s"
+      ]
     },
     {
+      "description": "If true, the server's caCertFile will not be checked for validity",
       "name": [
         "--insecure-skip-tls-verify"
-      ],
-      "description": "If true, the server's caCertFile will not be checked for validity"
+      ]
     },
     {
+      "args": {
+        "description": "The path to the kubeconfig file",
+        "name": "string",
+        "template": "filepaths"
+      },
+      "description": "Path to the kubeconfig file to use for CLI requests",
       "name": [
         "--kubeconfig"
-      ],
-      "description": "Path to the kubeconfig file to use for CLI requests",
-      "args": {
-        "name": "string",
-        "description": "The path to the kubeconfig file",
-        "template": "filepaths"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "The path of the log file",
+        "name": "string",
+        "template": "filepaths"
+      },
+      "description": "Specify the log file",
       "name": [
         "--logFile"
-      ],
-      "description": "Specify the log file",
-      "args": {
-        "name": "string",
-        "description": "The path of the log file",
-        "template": "filepaths"
-      }
+      ]
     },
     {
-      "name": [
-        "-l",
-        "--logLevel"
-      ],
-      "description": "Specify a log level (info, warn, debug, trace, error) (default 'info')",
       "args": {
-        "name": "string",
         "description": "The log level",
+        "name": "string",
         "suggestions": [
           {
             "name": "info"
@@ -191,22 +141,21 @@
             "name": "error"
           }
         ]
-      }
+      },
+      "description": "Specify a log level (info, warn, debug, trace, error) (default 'info')",
+      "name": [
+        "-l",
+        "--logLevel"
+      ]
     },
     {
+      "description": "Turn K9s logo off",
       "name": [
         "--logoless"
-      ],
-      "description": "Turn K9s logo off"
+      ]
     },
     {
-      "name": [
-        "-n",
-        "--namespace"
-      ],
-      "description": "If present, the namespace scope for this CLI request",
       "args": {
-        "name": "string",
         "description": "The namespace",
         "generators": [
           {
@@ -220,72 +169,123 @@
               "filter_empty"
             ]
           }
-        ]
+        ],
+        "name": "string"
       },
+      "description": "If present, the namespace scope for this CLI request",
+      "name": [
+        "-n",
+        "--namespace"
+      ],
       "priority": 78
     },
     {
+      "description": "Sets readOnly mode by overriding readOnly configuration setting",
       "name": [
         "--readonly"
-      ],
-      "description": "Sets readOnly mode by overriding readOnly configuration setting"
+      ]
     },
     {
+      "args": {
+        "description": "The refresh rate (sec)",
+        "name": "int"
+      },
+      "description": "Specify the default refresh rate as an integer (sec) (default 2)",
       "name": [
         "-r",
         "--refresh"
-      ],
-      "description": "Specify the default refresh rate as an integer (sec) (default 2)",
-      "args": {
-        "name": "int",
-        "description": "The refresh rate (sec)"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "The length of time to wait",
+        "name": "string"
+      },
+      "description": "The length of time to wait before giving up on a single server request",
       "name": [
         "--request-timeout"
-      ],
-      "description": "The length of time to wait before giving up on a single server request",
-      "args": {
-        "name": "string",
-        "description": "The length of time to wait"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "The path to a dir for a screen dumps",
+        "name": "string"
+      },
+      "description": "Sets a path to a dir for a screen dumps",
       "name": [
         "--screen-dump-dir"
-      ],
-      "description": "Sets a path to a dir for a screen dumps",
-      "args": {
-        "name": "string",
-        "description": "The path to a dir for a screen dumps"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "The Bearer token",
+        "name": "string"
+      },
+      "description": "Bearer token for authentication to the API server",
       "name": [
         "--token"
-      ],
-      "description": "Bearer token for authentication to the API server",
-      "args": {
-        "name": "string",
-        "description": "The Bearer token"
-      }
+      ]
     },
     {
+      "args": {
+        "description": "The name of the kubeconfig user",
+        "name": "string"
+      },
+      "description": "The name of the kubeconfig user to use",
       "name": [
         "--user"
-      ],
-      "description": "The name of the kubeconfig user to use",
-      "args": {
-        "name": "string",
-        "description": "The name of the kubeconfig user"
-      }
+      ]
     },
     {
+      "description": "Sets write mode by overriding the readOnly configuration setting",
       "name": [
         "--write"
+      ]
+    }
+  ],
+  "subcommands": [
+    {
+      "args": {
+        "isOptional": true,
+        "name": "command",
+        "template": "help"
+      },
+      "description": "Help about any command",
+      "name": "help"
+    },
+    {
+      "description": "Print configuration info",
+      "name": "info",
+      "options": [
+        {
+          "description": "Help for info",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        }
+      ]
+    },
+    {
+      "description": "Print version/build info",
+      "name": "version",
+      "options": [
+        {
+          "description": "Help for version",
+          "name": [
+            "-h",
+            "--help"
+          ]
+        },
+        {
+          "description": "Prints K9s version info in short format",
+          "name": [
+            "-s",
+            "--short"
+          ]
+        }
       ],
-      "description": "Sets write mode by overriding the readOnly configuration setting"
+      "priority": 50
     }
   ]
 }
