@@ -210,13 +210,27 @@ pub struct JsExecContext {
 
 impl JsExecContext {
     fn into_runtime_input(self, generator_id: String, kind: JsExecutionKind) -> JsRuntimeInput {
+        // TokenOnly is contractually denied host cwd/env: the worker installs
+        // no host bindings (see `install_token_only_globals` in
+        // gc-jsrt/host.rs), so any cwd/env we forwarded would be dead weight
+        // at best and a leak vector at worst. Clear them here so the
+        // invariant "TokenOnly never receives host cwd/env" is enforced at
+        // the data boundary the worker thread observes — a future copy-paste
+        // that wires env reads into TokenOnly cannot silently exfiltrate
+        // HOME/PATH/AWS_ACCESS_KEY_ID/GITHUB_TOKEN from a host-untrusted
+        // sandbox.
+        let (cwd, env) = if matches!(kind, JsExecutionKind::TokenOnly) {
+            (PathBuf::new(), BTreeMap::new())
+        } else {
+            (self.cwd, self.env)
+        };
         JsRuntimeInput {
             stdout: None,
             tokens: self.tokens,
             current_token: self.current_token,
             previous_token: self.previous_token,
-            cwd: self.cwd,
-            env: self.env,
+            cwd,
+            env,
             generator_id,
             kind,
             allow_shell_command: false,

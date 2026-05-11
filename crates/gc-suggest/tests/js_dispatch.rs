@@ -267,6 +267,31 @@ fn cached_token_only_generator(source: &str) -> Arc<GeneratorSpec> {
     })
 }
 
+fn cached_token_only_generator_by_directory(source: &str) -> Arc<GeneratorSpec> {
+    Arc::new(GeneratorSpec {
+        generator_type: None,
+        script: None,
+        script_template: None,
+        transforms: Vec::new(),
+        cache: Some(gc_suggest::specs::CacheConfig {
+            ttl_seconds: 3600,
+            cache_by_directory: true,
+        }),
+        requires_js: true,
+        js_source: None,
+        js_runtime: Some(Arc::new(JsRuntimeSpec {
+            kind: JsRuntimeKind::TokenOnly,
+            source: source.to_string(),
+            self_contained: false,
+            timeout_ms: None,
+            allow_shell_command: false,
+        })),
+        corrected_in: None,
+        template: None,
+        params: std::collections::BTreeMap::new(),
+    })
+}
+
 #[tokio::test]
 async fn script_function_returns_dynamic_suggestions() {
     // JS produces argv `["sh", "-c", "printf alpha\nbeta\n"]`.
@@ -508,7 +533,7 @@ async fn token_only_repeated_timeouts_are_demoted() {
         "expected token_only demotion log:\n{logs}"
     );
     assert!(
-        logs.contains("token_only generator is demoted after repeated timeouts"),
+        logs.contains("token_only generator is demoted after repeated failures"),
         "expected token_only skip log:\n{logs}"
     );
 }
@@ -557,7 +582,7 @@ async fn token_only_success_resets_consecutive_timeout_count() {
          have reset the consecutive-failure counter:\n{logs}"
     );
     assert!(
-        !logs.contains("token_only generator is demoted after repeated timeouts"),
+        !logs.contains("token_only generator is demoted after repeated failures"),
         "demotion warning must NOT fire when a success interleaves the timeouts:\n{logs}"
     );
 }
@@ -587,8 +612,165 @@ async fn token_only_repeated_exceptions_are_demoted() {
         "exception-only loop must demote the generator:\n{logs}"
     );
     assert!(
-        logs.contains("token_only generator is demoted after repeated timeouts"),
+        logs.contains("token_only generator is demoted after repeated failures"),
         "demoted generator must subsequently be skipped:\n{logs}"
+    );
+}
+
+/// MemoryExceeded counts as a hard failure on the same demotion path as
+/// Exception. Three back-to-back memory-cap hits must demote the generator
+/// — a refactor that drops MemoryExceeded from the `had_hard_failure` match
+/// arm would only be caught here, not by the Exception-only test above.
+#[tokio::test]
+async fn token_only_repeated_memory_exceeded_are_demoted() {
+    let (captured, _guard) = install_log_capture();
+    // Same trigger used in `crates/gc-jsrt/tests/token_only.rs::token_only_memory_cap_returns_memory_exceeded`:
+    // the QuickJS memory limit is below 64 MiB so the allocation throws and
+    // the worker surfaces MemoryExceeded.
+    let gen = token_only_generator("'x'.repeat(64 * 1024 * 1024)", false);
+    let engine = make_engine();
+    let ctx = make_ctx("kubectl", vec!["get"], "");
+
+    for _ in 0..3 {
+        let results = engine
+            .run_generators(&[Arc::clone(&gen)], &ctx, Path::new("/tmp"), 5_000)
+            .await
+            .expect("dispatch tolerates repeated memory cap hits");
+        assert!(results.is_empty());
+    }
+
+    let logs =
+        String::from_utf8_lossy(&captured.lock().expect("capture buffer poisoned")).into_owned();
+    assert!(
+        logs.contains("code=\"memory_exceeded\""),
+        "expected MemoryExceeded diagnostic in logs:\n{logs}"
+    );
+    assert!(
+        logs.contains("token_only generator demoted after repeated runtime failures"),
+        "memory-cap loop must demote the generator:\n{logs}"
+    );
+    assert!(
+        logs.contains("token_only generator is demoted after repeated failures"),
+        "demoted generator must subsequently be skipped:\n{logs}"
+    );
+}
+
+/// A real Suggestions payload after a non-timeout hard failure must reset the
+/// consecutive-failure counter. Without this, an exception → success → exception
+/// → exception sequence would still demote (because `record_success` writes to
+/// the same map as `record_failure`). Pins the cross-mode reset invariant so a
+/// future split of the failure map into per-mode maps cannot silently break it.
+#[tokio::test]
+async fn token_only_success_resets_consecutive_failure_count() {
+    let (captured, _guard) = install_log_capture();
+    let throwing = token_only_generator("(() => { throw new Error('boom'); })()", false);
+    let fast = token_only_generator("tokens.map(name => ({ name }))", false);
+    let engine = make_engine();
+    let ctx = make_ctx("kubectl", vec!["get"], "");
+
+    // 1st: exception — counter at 1.
+    let r1 = engine
+        .run_generators(&[Arc::clone(&throwing)], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("first dispatch tolerates exception");
+    assert!(r1.is_empty());
+
+    // 2nd: real Suggestions payload — counter resets to 0.
+    let r2 = engine
+        .run_generators(&[Arc::clone(&fast)], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("recovery dispatch produces suggestions");
+    assert!(!r2.is_empty(), "fast generator must produce suggestions");
+
+    // 3rd and 4th: two more exceptions. Counter runs 0 → 1 → 2, hitting the
+    // demote threshold ONLY on the fourth dispatch — but the threshold test
+    // is the absence of the demotion warning across the whole sequence.
+    for _ in 0..2 {
+        let r = engine
+            .run_generators(&[Arc::clone(&throwing)], &ctx, Path::new("/tmp"), 5_000)
+            .await
+            .expect("dispatch tolerates exception");
+        assert!(r.is_empty());
+    }
+
+    let logs =
+        String::from_utf8_lossy(&captured.lock().expect("capture buffer poisoned")).into_owned();
+    assert_eq!(
+        logs.matches("code=\"exception\"").count(),
+        3,
+        "all three exception dispatches should evaluate JS — the success must \
+         have reset the consecutive-failure counter:\n{logs}"
+    );
+    assert!(
+        !logs.contains("token_only generator is demoted after repeated failures"),
+        "demotion warning must NOT fire when a success interleaves the exceptions:\n{logs}"
+    );
+}
+
+/// The `[suggest.providers] js_runtime = false` kill switch must drop
+/// TokenOnly dispatch alongside ScriptFunction/Custom/PostProcess. A
+/// refactor that drops `JsRuntimeKind::TokenOnly` from the gate would
+/// silently keep evaluating JS even when the user disabled the runtime.
+#[tokio::test]
+async fn token_only_kill_switch_disables_dispatch() {
+    let source = "[{ name: 'should-not-run' }]";
+    let gen = token_only_generator(source, false);
+    let engine = make_engine().with_suggest_config(50, true, 5, true, true, true, false);
+    let ctx = make_ctx("phase12-test", Vec::new(), "");
+    let results = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch");
+    assert!(
+        results.is_empty(),
+        "kill switch must drop token_only generators entirely"
+    );
+}
+
+/// TokenOnly does NOT consult cwd in its cache key (`run_token_only_dispatch`
+/// passes `None` as the cwd argument to `CacheKey::js_processed`). Two calls
+/// from different cwds — even with `cache_by_directory: true` on the spec —
+/// must share the cached suggestion list and the second call must surface
+/// a cache hit in the debug log. Pins both the cwd-insensitive invariant
+/// and the cache-hit log so a future refactor that wires cache_by_directory
+/// into the key (or, conversely, accidentally cwd-keys it) trips this test.
+#[tokio::test]
+async fn token_only_cache_ignores_cwd_even_when_cache_by_directory_is_true() {
+    let (captured, _guard) = install_log_capture();
+    let gen = cached_token_only_generator_by_directory(
+        "tokens.map(name => ({ name: 'cached:' + name }))",
+    );
+    let engine = make_engine();
+    let ctx = make_ctx("kubectl", vec!["get"], "");
+
+    // Two different cwds.
+    let first = engine
+        .run_generators(
+            std::slice::from_ref(&gen),
+            &ctx,
+            Path::new("/tmp/cwd-a"),
+            5_000,
+        )
+        .await
+        .expect("first dispatch");
+    let second = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp/cwd-b"), 5_000)
+        .await
+        .expect("second dispatch");
+
+    // Same content from both calls — proves TokenOnly cache is cwd-insensitive.
+    let first_names: Vec<&str> = first.iter().map(|s| s.text.as_str()).collect();
+    let second_names: Vec<&str> = second.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(
+        first_names, second_names,
+        "TokenOnly cache must ignore cwd even with cache_by_directory=true"
+    );
+
+    let logs =
+        String::from_utf8_lossy(&captured.lock().expect("capture buffer poisoned")).into_owned();
+    assert!(
+        logs.contains("token_only cache hit for spec"),
+        "second dispatch must produce a token_only cache-hit debug log:\n{logs}"
     );
 }
 

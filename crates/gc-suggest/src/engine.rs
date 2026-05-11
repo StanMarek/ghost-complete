@@ -68,30 +68,30 @@ const MAX_DYNAMIC_CANDIDATES: usize = 1000;
 /// Consecutive token-only failures (timeouts or other hard runtime errors)
 /// allowed before a generator is skipped for the rest of the engine
 /// process lifetime.
-const TOKEN_ONLY_TIMEOUT_DEMOTE_AFTER: u8 = 2;
+const TOKEN_ONLY_DEMOTE_AFTER_FAILURES: u8 = 2;
 
 #[derive(Debug, Default)]
-struct TokenOnlyTimeoutState {
-    consecutive_timeouts: Mutex<HashMap<String, u8>>,
+struct TokenOnlyDemotionState {
+    consecutive_failures: Mutex<HashMap<String, u8>>,
 }
 
-impl TokenOnlyTimeoutState {
+impl TokenOnlyDemotionState {
     fn is_demoted(&self, generator_id: &str) -> bool {
-        self.consecutive_timeouts
+        self.consecutive_failures
             .lock()
-            .expect("token_only timeout state poisoned")
+            .expect("token_only demotion state poisoned")
             .get(generator_id)
             .copied()
             .unwrap_or(0)
-            >= TOKEN_ONLY_TIMEOUT_DEMOTE_AFTER
+            >= TOKEN_ONLY_DEMOTE_AFTER_FAILURES
     }
 
     fn record_timeout(&self, generator_id: &str) -> u8 {
-        let mut timeouts = self
-            .consecutive_timeouts
+        let mut failures = self
+            .consecutive_failures
             .lock()
-            .expect("token_only timeout state poisoned");
-        let count = timeouts.entry(generator_id.to_string()).or_insert(0);
+            .expect("token_only demotion state poisoned");
+        let count = failures.entry(generator_id.to_string()).or_insert(0);
         *count = count.saturating_add(1);
         *count
     }
@@ -105,14 +105,25 @@ impl TokenOnlyTimeoutState {
     }
 
     /// Clear the consecutive-failure counter after a real success — JS
-    /// evaluated to a non-empty Suggestions payload. Outcomes that
-    /// neither succeeded nor hard-failed (e.g. EmptyOutput, InvalidShape)
-    /// leave the counter untouched so a recovery still requires real
-    /// output.
+    /// evaluated to a non-empty Suggestions payload.
+    ///
+    /// Only [`JsDiagnosticCode::Timeout`] (via [`Self::record_timeout`])
+    /// and [`JsDiagnosticCode::Exception`] /
+    /// [`JsDiagnosticCode::MemoryExceeded`] /
+    /// [`JsDiagnosticCode::OversizedOutput`] (via
+    /// [`Self::record_failure`]) bump the counter; only a non-empty
+    /// `Suggestions` payload resets it. Every other diagnostic
+    /// (`EmptyOutput`, `InvalidShape`, `UnsupportedHostApi`,
+    /// `UnsupportedApi`, `ShellCommandStringDenied`,
+    /// `ShellCommandLimitExceeded`, `ShellCommandFailed`, `InvalidArgv`)
+    /// leaves the counter untouched so a recovery still requires real
+    /// output. `UnsupportedHostApi` is load-bearing for the token_only
+    /// design — token_only sources that touch a host API surface that
+    /// diagnostic and we deliberately do not treat that as a failure.
     fn record_success(&self, generator_id: &str) {
-        self.consecutive_timeouts
+        self.consecutive_failures
             .lock()
-            .expect("token_only timeout state poisoned")
+            .expect("token_only demotion state poisoned")
             .remove(generator_id);
     }
 }
@@ -322,7 +333,7 @@ pub struct SuggestionEngine {
     /// fires. Held in an `Arc` so per-generator tasks can share it without
     /// taking `&self` references across `tokio::spawn`.
     js_runtime: Arc<JsRuntimeAdapter>,
-    token_only_timeout_state: Arc<TokenOnlyTimeoutState>,
+    token_only_demotion_state: Arc<TokenOnlyDemotionState>,
     frecency_db: FrecencyDb,
     max_results: usize,
     max_history_results: usize,
@@ -369,7 +380,7 @@ impl SuggestionEngine {
             alias_map: AliasStore::load_async(),
             generator_cache: Arc::new(GeneratorCache::new()),
             js_runtime: Arc::new(JsRuntimeAdapter::new()),
-            token_only_timeout_state: Arc::new(TokenOnlyTimeoutState::default()),
+            token_only_demotion_state: Arc::new(TokenOnlyDemotionState::default()),
             frecency_db: FrecencyDb::load(),
             max_results: fuzzy::DEFAULT_MAX_RESULTS,
             max_history_results: 5,
@@ -424,7 +435,7 @@ impl SuggestionEngine {
             alias_map: AliasStore::empty(),
             generator_cache: Arc::new(GeneratorCache::new()),
             js_runtime: Arc::new(JsRuntimeAdapter::new()),
-            token_only_timeout_state: Arc::new(TokenOnlyTimeoutState::default()),
+            token_only_demotion_state: Arc::new(TokenOnlyDemotionState::default()),
             frecency_db: FrecencyDb::empty(),
             max_results: fuzzy::DEFAULT_MAX_RESULTS,
             max_history_results: 5,
@@ -548,9 +559,10 @@ impl SuggestionEngine {
                 continue;
             }
 
-            // For PostProcess + non-JS we resolve argv up front; for
-            // ScriptFunction and Custom we either compute argv from JS
-            // or skip the script execution entirely.
+            // PostProcess and non-JS generators resolve argv up front;
+            // ScriptFunction computes argv from JS; Custom and TokenOnly
+            // skip script execution entirely and produce suggestions
+            // directly.
             let argv = resolve_script_argv(gen, ctx);
             let needs_argv = !matches!(
                 js_kind,
@@ -678,19 +690,19 @@ impl SuggestionEngine {
                 let cmd_name = command.to_string();
                 let generator_index = idx;
                 let generator_id = token_only_generator_id(&cmd_name, generator_index);
-                if self.token_only_timeout_state.is_demoted(&generator_id) {
+                if self.token_only_demotion_state.is_demoted(&generator_id) {
                     tracing::warn!(
                         spec = %command,
                         generator_index,
                         generator_id = %generator_id,
-                        "token_only generator is demoted after repeated timeouts — skipping"
+                        "token_only generator is demoted after repeated failures — skipping"
                     );
                     continue;
                 }
                 let js_runtime = Arc::clone(&self.js_runtime);
                 let cache = gen.cache.clone();
                 let cache_store = Arc::clone(&self.generator_cache);
-                let timeout_state = Arc::clone(&self.token_only_timeout_state);
+                let demotion_state = Arc::clone(&self.token_only_demotion_state);
                 let permit = Arc::clone(&semaphore);
                 handles.push(tokio::spawn(async move {
                     let _permit = permit
@@ -706,7 +718,7 @@ impl SuggestionEngine {
                         cache,
                         cache_store,
                         js_runtime,
-                        timeout_state,
+                        demotion_state,
                         generator_id,
                     )
                     .await
@@ -1930,7 +1942,7 @@ async fn run_token_only_dispatch(
     cache: Option<crate::specs::CacheConfig>,
     cache_store: Arc<crate::cache::GeneratorCache>,
     js_runtime: Arc<JsRuntimeAdapter>,
-    timeout_state: Arc<TokenOnlyTimeoutState>,
+    demotion_state: Arc<TokenOnlyDemotionState>,
     generator_id: String,
 ) -> Result<Vec<Suggestion>> {
     let timeout = Duration::from_millis(rt.timeout_ms.unwrap_or(timeout_ms));
@@ -1987,8 +1999,8 @@ async fn run_token_only_dispatch(
     );
 
     if had_timeout {
-        let consecutive = timeout_state.record_timeout(&generator_id);
-        if consecutive >= TOKEN_ONLY_TIMEOUT_DEMOTE_AFTER {
+        let consecutive = demotion_state.record_timeout(&generator_id);
+        if consecutive >= TOKEN_ONLY_DEMOTE_AFTER_FAILURES {
             tracing::warn!(
                 spec = %cmd_name,
                 generator_index,
@@ -1998,8 +2010,8 @@ async fn run_token_only_dispatch(
             );
         }
     } else if had_hard_failure {
-        let consecutive = timeout_state.record_failure(&generator_id);
-        if consecutive >= TOKEN_ONLY_TIMEOUT_DEMOTE_AFTER {
+        let consecutive = demotion_state.record_failure(&generator_id);
+        if consecutive >= TOKEN_ONLY_DEMOTE_AFTER_FAILURES {
             tracing::warn!(
                 spec = %cmd_name,
                 generator_index,
@@ -2009,7 +2021,7 @@ async fn run_token_only_dispatch(
             );
         }
     } else if has_real_success {
-        timeout_state.record_success(&generator_id);
+        demotion_state.record_success(&generator_id);
     }
     let suggestions: Vec<Suggestion> = match js_output.into_suggestions() {
         Some(suggs) => suggs

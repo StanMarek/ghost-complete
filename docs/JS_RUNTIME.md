@@ -130,9 +130,14 @@ The mitigations are layered:
   bomb from blowing the host stack.
 - **GC threshold** (2 MiB) — runs a sweep often enough to keep
   cyclic garbage from masking real growth against the memory cap.
-- **TokenOnly timeout demotion** — if the same `token_only` generator
-  times out twice consecutively, the engine skips it for the rest of
-  the process lifetime instead of retrying on every keystroke.
+- **TokenOnly failure demotion** — if the same `token_only` generator
+  emits two consecutive hard failures — a `Timeout`, `Exception`,
+  `MemoryExceeded`, or `OversizedOutput` diagnostic — the engine skips
+  it for the rest of the process lifetime instead of retrying on every
+  keystroke. Soft outcomes (`EmptyOutput`, `InvalidShape`,
+  `UnsupportedHostApi`, `ShellCommand*`) and real successes between
+  failures neither bump nor reset the counter alone; a real
+  `Suggestions` payload resets it.
 
 ## Output normalization
 
