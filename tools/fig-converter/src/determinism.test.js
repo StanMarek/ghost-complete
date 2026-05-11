@@ -22,9 +22,11 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { stringifySorted, canonicalize } from './serialize.js';
 import { writeCorpusHash } from './index.js';
 
@@ -47,6 +49,44 @@ const FIXTURE = {
 };
 
 const RUNS = 5;
+const INDEX_JS = fileURLToPath(new URL('./index.js', import.meta.url));
+
+function runConverter(args) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [INDEX_JS, ...args], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (buf) => {
+      stdout += buf.toString('utf8');
+    });
+    child.stderr.on('data', (buf) => {
+      stderr += buf.toString('utf8');
+    });
+    child.on('error', reject);
+    child.on('close', (code) => {
+      resolve({ code, stdout, stderr });
+    });
+  });
+}
+
+async function assertHashFileMissing(dir) {
+  await assert.rejects(
+    readFile(join(dir, 'corpus-hash.txt'), 'utf8'),
+    { code: 'ENOENT' },
+    'corpus-hash.txt must not be written for incomplete conversions',
+  );
+}
+
+async function writeJsonFiles(dir, files, creationOrder) {
+  for (const relPath of creationOrder) {
+    const path = join(dir, relPath);
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, files[relPath]);
+  }
+}
 
 describe('stringifySorted', () => {
   it('produces byte-identical output across 5 runs (per spec)', () => {
@@ -151,6 +191,43 @@ describe('writeCorpusHash', () => {
     }
   });
 
+  it('hashes sorted relative paths independent of file creation order', async () => {
+    const files = {
+      'root.json': stringifySorted({ name: 'root', options: [{ name: '--root' }] }, 2) + '\n',
+      'nested/alpha.json': stringifySorted({ name: 'alpha' }, 2) + '\n',
+      'nested/deeper/zeta.json': stringifySorted({
+        name: 'zeta',
+        subcommands: [{ name: 'last' }],
+      }, 2) + '\n',
+    };
+    const dirA = await mkdtemp(join(tmpdir(), 'fig-determinism-'));
+    const dirB = await mkdtemp(join(tmpdir(), 'fig-determinism-'));
+    try {
+      await writeJsonFiles(dirA, files, [
+        'nested/deeper/zeta.json',
+        'root.json',
+        'nested/alpha.json',
+      ]);
+      await writeJsonFiles(dirB, files, [
+        'nested/alpha.json',
+        'nested/deeper/zeta.json',
+        'root.json',
+      ]);
+
+      const digestA = await writeCorpusHash(dirA);
+      const digestB = await writeCorpusHash(dirB);
+      const writtenA = (await readFile(join(dirA, 'corpus-hash.txt'), 'utf8')).trim();
+      const writtenB = (await readFile(join(dirB, 'corpus-hash.txt'), 'utf8')).trim();
+
+      assert.equal(digestA, digestB);
+      assert.equal(writtenA, writtenB);
+      assert.equal(writtenA, digestA);
+    } finally {
+      await rm(dirA, { recursive: true, force: true });
+      await rm(dirB, { recursive: true, force: true });
+    }
+  });
+
   it('hash changes when a spec changes (smoke: not a no-op)', async () => {
     const dirA = await mkdtemp(join(tmpdir(), 'fig-determinism-'));
     const dirB = await mkdtemp(join(tmpdir(), 'fig-determinism-'));
@@ -170,6 +247,57 @@ describe('writeCorpusHash', () => {
     } finally {
       await rm(dirA, { recursive: true, force: true });
       await rm(dirB, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('converter CLI failure handling', () => {
+  it('exits non-zero and skips corpus hash when the fast path records failures', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'fig-determinism-'));
+    try {
+      const result = await runConverter([
+        '--output',
+        dir,
+        '--specs',
+        'this_spec_does_not_exist_xyz',
+      ]);
+
+      assert.equal(
+        result.code,
+        1,
+        `expected converter to fail on invalid --specs entry\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+      );
+      assert.match(result.stdout, /Failed:\s+1/);
+      assert.match(result.stdout, /this_spec_does_not_exist_xyz/);
+      await assertHashFileMissing(dir);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('exits non-zero and skips corpus hash when the batched path records failures', { timeout: 60000 }, async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'fig-determinism-'));
+    try {
+      const result = await runConverter([
+        '--output',
+        dir,
+        '--specs',
+        'cat,this_spec_does_not_exist_xyz,echo',
+        '--batch-size',
+        '1',
+      ]);
+
+      assert.equal(
+        result.code,
+        1,
+        `expected converter to fail when a worker reports a failed spec\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+      );
+      assert.match(result.stdout, /Converted:\s+2/);
+      assert.match(result.stdout, /Failed:\s+1/);
+      assert.match(result.stdout, /this_spec_does_not_exist_xyz/);
+      await assertHashFileMissing(dir);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
     }
   });
 });

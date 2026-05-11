@@ -2900,9 +2900,21 @@ pub fn estimated_heap_bytes(spec: &CompletionSpec) -> usize {
         // carry the former.
         let js_runtime = g.js_runtime.as_ref().map(|jr| jr.source.len()).unwrap_or(0);
         let tmpl = opt_string_heap(&g.template);
+        let params: usize = g
+            .params
+            .iter()
+            .map(|(key, value)| key.len() + value.len() + std::mem::size_of::<(String, String)>())
+            .sum();
         let transforms_vec = g.transforms.capacity() * std::mem::size_of::<Transform>();
         let transforms_inner: usize = g.transforms.iter().map(transform_heap).sum();
-        gt + script + script_tmpl + js + js_runtime + tmpl + transforms_vec + transforms_inner
+        gt + script
+            + script_tmpl
+            + js
+            + js_runtime
+            + tmpl
+            + params
+            + transforms_vec
+            + transforms_inner
     }
     fn arg_spec_heap(arg: &ArgSpec) -> usize {
         let name = opt_string_heap(&arg.name);
@@ -4504,6 +4516,52 @@ mod tests {
     }
 
     #[test]
+    fn test_resolve_spec_carries_provider_params_to_provider_resolution() {
+        let spec: CompletionSpec = serde_json::from_str(
+            r#"{
+                "name": "test-provider-params",
+                "args": [{
+                    "name": "target",
+                    "generators": [{
+                        "type": "npm_scripts",
+                        "params": {
+                            "package_manager": "pnpm",
+                            "script_kind": "build"
+                        }
+                    }]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let ctx = CommandContext {
+            command: Some("test-provider-params".into()),
+            args: vec![],
+            current_word: String::new(),
+            word_index: 1,
+            is_flag: false,
+            is_long_flag: false,
+            preceding_flag: None,
+            in_pipe: false,
+            in_redirect: false,
+            quote_state: gc_buffer::QuoteState::None,
+            is_first_segment: true,
+        };
+        let res = resolve_spec(&spec, &ctx);
+
+        assert_eq!(res.provider_generators.len(), 1);
+        assert_eq!(
+            res.provider_generators[0].kind,
+            providers::ProviderKind::NpmScripts
+        );
+
+        let expected = BTreeMap::from([
+            ("package_manager".to_string(), "pnpm".to_string()),
+            ("script_kind".to_string(), "build".to_string()),
+        ]);
+        assert_eq!(res.provider_generators[0].params.as_ref(), &expected);
+    }
+
+    #[test]
     fn test_generator_spec_rejects_unknown_fields() {
         // Silent-drop class of bug: a spec that uses a singular "transform"
         // key (rather than the correct "transforms") previously parsed
@@ -4967,6 +5025,37 @@ mod tests {
         assert!(
             warnings.is_empty(),
             "reserved Fig fields must not produce warnings, got: {warnings:?}"
+        );
+    }
+
+    #[test]
+    fn estimated_heap_bytes_counts_generator_params() {
+        let without_params: CompletionSpec = serde_json::from_value(serde_json::json!({
+            "name": "heap-params",
+            "args": [{
+                "name": "target",
+                "generators": [{"type": "npm_scripts"}]
+            }]
+        }))
+        .unwrap();
+        let large_param = "x".repeat(16 * 1024);
+        let with_params: CompletionSpec = serde_json::from_value(serde_json::json!({
+            "name": "heap-params",
+            "args": [{
+                "name": "target",
+                "generators": [{
+                    "type": "npm_scripts",
+                    "params": {"selector": large_param}
+                }]
+            }]
+        }))
+        .unwrap();
+
+        let without = estimated_heap_bytes(&without_params);
+        let with = estimated_heap_bytes(&with_params);
+        assert!(
+            with >= without + 16 * 1024,
+            "params payload should contribute to heap estimate: without={without}, with={with}"
         );
     }
 

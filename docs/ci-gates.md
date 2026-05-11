@@ -2,7 +2,7 @@
 
 ## Overview
 
-Five CI gates live in `.github/workflows/ci.yml`: binary size, snapshot diff, fig-converter oracle, coverage baseline drift, and coverage regression. Benchmark-regression checking is intentionally **not** a CI gate — it is run manually at release time (see [Release-time benchmark checking](#release-time-benchmark-checking) below). The gates are wired via `needs:` dependencies, which controls **ordering within a workflow run** — i.e. a gate waits for its prerequisite jobs before it starts. That is a separate concern from **branch protection**, which is what blocks the GitHub merge button on a PR. A repo admin must explicitly configure each status check as required in GitHub's branch-protection settings (see [Branch-protection configuration](#branch-protection-configuration) below). Without that step, the gates run and report results but cannot block a merge.
+Seven CI gates live in `.github/workflows/ci.yml`: binary size, snapshot diff, fig-converter oracle, corpus hash determinism (fig-converter PR subset), corpus hash determinism (full corpus on trunk pushes), coverage baseline drift, and coverage regression. Benchmark-regression checking is intentionally **not** a CI gate — it is run manually at release time (see [Release-time benchmark checking](#release-time-benchmark-checking) below). The gates are wired via `needs:` dependencies, which controls **ordering within a workflow run** — i.e. a gate waits for its prerequisite jobs before it starts. That is a separate concern from **branch protection**, which is what blocks the GitHub merge button on a PR. A repo admin must explicitly configure each PR status check as required in GitHub's branch-protection settings (see [Branch-protection configuration](#branch-protection-configuration) below). Without that step, the gates run and report results but cannot block a merge.
 
 ---
 
@@ -96,6 +96,32 @@ scripts/check-snapshots.sh
 
 ```bash
 cd tools/fig-converter && npm run oracle:changed
+```
+
+---
+
+### Corpus hash determinism gates
+
+**Job names in CI:** `Corpus hash determinism (fig-converter)`, `Corpus hash determinism (full corpus)`
+**YAML keys:** `corpus-hash-gate`, `corpus-hash-gate-master`
+**Trigger:** the PR job runs after `check` on `pull_request` events and uses a path filter so the expensive converter steps only run when `tools/fig-converter/**` changes. The full-corpus job runs after `check` only on pushes to `master` or `main`; it is not a PR check.
+
+**Purpose:** verifies that deterministic fig-converter output is reproducible. The PR gate runs `check-corpus-hash.mjs` twice over a representative spec subset, then runs `src/determinism.test.js`. The trunk-push gate runs the same hash check across the full corpus. Both hash checks depend on the converter exiting non-zero for any per-spec conversion failure, so CI cannot accept two matching hashes from a partial or empty corpus.
+
+**Failure modes:**
+
+- Converter failure: any requested spec fails to load or convert, including missing specs and worker-batch failures.
+- Hash mismatch: two deterministic runs over the same requested corpus produce different `corpus-hash.txt` values.
+- Hash file failure: `corpus-hash.txt` is missing or unreadable after a converter run.
+
+**Status today:** production-live. `Corpus hash determinism (fig-converter)` is the PR check to add to branch protection. `Corpus hash determinism (full corpus)` is a trunk-push safety net and should not be added as a PR branch-protection check.
+
+**How to debug locally:**
+
+```bash
+node tools/fig-converter/scripts/check-corpus-hash.mjs --specs git,docker,kubectl,brew,cargo,make,npm,ls
+node tools/fig-converter/scripts/check-corpus-hash.mjs
+cd tools/fig-converter && node --test src/determinism.test.js
 ```
 
 ---
@@ -200,6 +226,8 @@ These checks are added **alongside** any existing required checks (e.g. `Check`,
 | `Snapshot diff gate` | Ready to add. |
 | `Oracle gate (fig-converter)` | Ready to add. |
 | `Binary size gate` | Ready to add. |
+| `Corpus hash determinism (fig-converter)` | Ready to add. This is the PR corpus-hash check. |
+| `Corpus hash determinism (full corpus)` | Push-to-trunk safety net only. Do not add as a PR branch-protection check. |
 | `Coverage baseline drift` | Informational only (non-blocking warning). Do not add to branch protection. |
 | `Coverage regression` | Wired as `continue-on-error: true` during the initial rollout. Promotion to a hard gate is a separate follow-up; the maintainer who promotes it is responsible for refreshing the baseline first. |
 

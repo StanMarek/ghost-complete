@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Migration precursor (ux-9b): `SpecResolutionCounters` exposed in
+  `ghost-complete status --json` (schema 1.6) with `requires_js_total`,
+  `requires_js_supported`, `requires_js_unsupported`,
+  `lowered_to_transforms`, `static_extracted_subprocess`,
+  `token_only_promoted`, `aws_sdk_dispatched`, and
+  `native_provider_dispatched` counters.
+- `ProviderCtx::params` (`Arc<BTreeMap<String, String>>`) and the matching
+  `GeneratorSpec.params` field for spec-driven providers, plus a
+  `params_hash()` helper for cache keys. Existing providers ignore the
+  field; the channel is purely additive plumbing for ux-13/14.
+- Deterministic `fig-converter` mode (`--deterministic`) that emits a
+  reproducible `corpus-hash.txt` and cleans up tempdirs on hash mismatch.
+- Binary-size CI gate now records `size.txt` as a workflow artifact and
+  honours a `binary-size-allow-delta` PR label that lifts the per-PR
+  delta budget from 2 MB to 5 MB.
+
+### Changed
+
+- Release profile sets `strip = "symbols"`. The release binary measures
+  ~103.5 MB stripped (was ~104.8 MB unstripped); `benchmarks/binary-size-baseline.txt`
+  refreshed to match. The 110 MB absolute ceiling is unchanged, leaving
+  ~6.5 MB of headroom for further spec restoration or compression work.
+
 ## [0.15.0] - 2026-05-08
 
 ### Added
@@ -33,31 +60,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Prioritize current git branch (#117).
-
-### Added
-
-- Migration precursor (ux-9b): `SpecResolutionCounters` exposed in
-  `ghost-complete status --json` (schema 1.6) with `requires_js_total`,
-  `requires_js_supported`, `requires_js_unsupported`,
-  `lowered_to_transforms`, `static_extracted_subprocess`,
-  `token_only_promoted`, `aws_sdk_dispatched`, and
-  `native_provider_dispatched` counters.
-- `ProviderCtx::params` (`Arc<BTreeMap<String, String>>`) and the matching
-  `GeneratorSpec.params` field for spec-driven providers, plus a
-  `params_hash()` helper for cache keys. Existing providers ignore the
-  field; the channel is purely additive plumbing for ux-13/14.
-- Deterministic `fig-converter` mode (`--deterministic`) that emits a
-  reproducible `corpus-hash.txt` and cleans up tempdirs on hash mismatch.
-- Binary-size CI gate now records `size.txt` as a workflow artifact and
-  honours a `binary-size-allow-delta` PR label that lifts the per-PR
-  delta budget from 2 MB to 5 MB.
-
-### Changed
-
-- Release profile sets `strip = "symbols"`. The release binary measures
-  ~103.5 MB stripped (was ~104.8 MB unstripped); `benchmarks/binary-size-baseline.txt`
-  refreshed to match. The 110 MB absolute ceiling is unchanged, leaving
-  ~6.5 MB of headroom for further spec restoration or compression work.
 
 ## [0.13.0] - 2026-05-06
 

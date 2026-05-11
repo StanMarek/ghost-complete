@@ -660,6 +660,19 @@ function printSummary(totals, errors) {
   }
 }
 
+function exitOnConversionFailure(totals, errors) {
+  if ((totals.failed ?? 0) === 0 && errors.length === 0) {
+    return false;
+  }
+
+  const failed = Math.max(totals.failed ?? 0, errors.length);
+  console.error(
+    `Conversion failed for ${failed} spec${failed === 1 ? '' : 's'}; refusing to write corpus hash.`
+  );
+  process.exitCode = 1;
+  return true;
+}
+
 /**
  * Split an array into contiguous batches of up to `size` elements. Last
  * batch may be smaller. `size` is assumed ≥ 1 (caller validates).
@@ -947,6 +960,9 @@ async function main() {
       deterministic,
     });
     printSummary(totals, errors);
+    if (exitOnConversionFailure(totals, errors)) {
+      return;
+    }
     if (deterministic && outputDir && !isDryRun) {
       const digest = await writeCorpusHash(outputDir);
       console.log(`Corpus hash:        ${digest}`);
@@ -980,6 +996,9 @@ async function main() {
   }
 
   printSummary(aggregateTotals, aggregateErrors);
+  if (exitOnConversionFailure(aggregateTotals, aggregateErrors)) {
+    return;
+  }
   if (deterministic && outputDir && !isDryRun) {
     const digest = await writeCorpusHash(outputDir);
     console.log(`Corpus hash:        ${digest}`);
