@@ -8,19 +8,20 @@
 // directly; without them defined, the QuickJS sandbox throws
 // `ReferenceError` and the engine silently produces zero suggestions.
 //
-// Helpers are PURE — they touch no host APIs (no executeShellCommand,
-// no fetch). They only do JSON parsing + property access. Behaviour
-// derived empirically from the call sites in specs/aws.json.
+// Helpers are pure — no host APIs (no executeShellCommand, no fetch,
+// no fig.*). They only use built-in JS: JSON.parse, decodeURIComponent,
+// Array methods, and property access. Behaviour derived empirically
+// from the call sites in specs/aws.json.
 //
-// Pinned upstream commit: derived empirically from
-// @withfig/autocomplete bundle output observed in specs/aws.json
-// (53 MB, regenerated 2026-05-11). Refresh helpers.js whenever the
-// upstream bundle changes shape.
+// Derivation: read off the bundle in
+// tools/fig-converter/node_modules/@withfig/autocomplete/build/aws/*.js.
+// Refresh helpers.js whenever the upstream bundle changes shape.
 //
 // Shapes:
-//   l(stdout, "Field", "Sub")  -> [{name: row[Sub]}] for row in stdout.Field
-//   l(stdout, "Field")          -> [{name: x}] for x in stdout.Field
-//   p, c, d, h                  -> aliases for l (same shape; bundler renames)
+//   l(stdout, "Field", "Sub")  -> [{name: String(row[Sub])}] for row in stdout.Field where row[Sub] != null
+//   l(stdout, "Field")          -> [{name: String(x)}] for x in stdout.Field where x != null
+//   p, c, d, h                  -> bound at install time to the same listExtract implementation as l
+//                                   (independent bindings; the bundler renames per sub-spec)
 //   f(stdout, "principalDomain")
 //      filters Roles whose AssumeRolePolicyDocument permits the given
 //      Principal.Service. Used by `aws iam list-roles` bodies.

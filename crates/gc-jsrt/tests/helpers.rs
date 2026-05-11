@@ -5,16 +5,19 @@
 //! modules with helper functions (typed as `ListOutputGenerator`,
 //! `PathOutputGenerator`, etc.) minified down to single letters
 //! (`l`, `p`, `c`, `d`, `h`, `f`). The post_process bodies the converter
-//! preserved reference those letters by name. Before ux-10a, the QuickJS
-//! sandbox did not define them, so the bodies threw `ReferenceError` and
-//! the engine silently emitted zero suggestions.
+//! preserved reference those letters by name. Without these definitions,
+//! the QuickJS sandbox throws `ReferenceError` on every preserved
+//! post_process body that references a helper and silently emits zero
+//! suggestions. The preamble (see crates/gc-jsrt/src/helpers.js) installs
+//! pure-JS definitions before each evaluation.
 //!
 //! These tests pin down the helper semantics derived from the AWS
-//! corpus: each is a pure JSON walker over a `JSON.stringify`'d stdout
+//! corpus: each is a pure JSON walker over a JSON-formatted stdout
 //! payload. None of them call `executeShellCommand`, `fetch`, or any
-//! other host binding — that is enforced indirectly by the
-//! `unsupported_host_api_diagnostic` test, which verifies that helper
-//! evaluation produces no UnsupportedHostApi diagnostic.
+//! other host binding — that property is enforced by construction in
+//! helpers.js, which references neither `executeShellCommand`, `fetch`,
+//! nor `fig.*`; the dedicated isolation test `helpers_are_isolated_across_jobs`
+//! pins the per-job freshness invariant.
 
 use std::time::Duration;
 
@@ -152,9 +155,10 @@ async fn helper_h_two_arg_form() {
 
 // --- f: filter IAM roles by AssumeRolePolicyDocument Principal.Service ----
 
-/// Tiny percent-encoder for the bytes AWS's API actually escapes in
-/// AssumeRolePolicyDocument. The full RFC 3986 spec is overkill — the
-/// document is JSON, so we only see `{}":,/ ` plus alphanumerics.
+/// Percent-encode non-unreserved bytes (RFC 3986 unreserved set).
+/// `aws iam list-roles` returns AssumeRolePolicyDocument URL-encoded;
+/// this matches what the AWS API emits closely enough for fixture
+/// purposes.
 fn percent_encode(s: &str) -> String {
     let mut out = String::with_capacity(s.len() * 3);
     for b in s.bytes() {
@@ -189,6 +193,100 @@ async fn helper_f_filters_iam_roles_by_principal_service() {
         names,
         ["EksRole"],
         "f should keep only the role whose trust policy lists eks.amazonaws.com; diagnostics: {:?}",
+        out.diagnostics
+    );
+}
+
+#[tokio::test]
+async fn helper_f_filters_when_principal_service_is_array() {
+    // AWS IAM trust policies routinely use the array form for
+    // `Principal.Service` when a role can be assumed by multiple
+    // services. The `f` helper's `Array.isArray(svc)` branch handles
+    // this; this test pins it.
+    let worker = JsWorker::spawn().expect("spawn worker");
+    let trust_doc = r#"{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":["eks.amazonaws.com","ecs-tasks.amazonaws.com"]},"Action":"sts:AssumeRole"}]}"#;
+    let stdout = format!(
+        r#"{{"Roles":[{{"RoleName":"MultiServiceRole","AssumeRolePolicyDocument":"{}"}}]}}"#,
+        percent_encode(trust_doc),
+    );
+
+    let body_match = r#"t=>f(t,"ecs-tasks.amazonaws.com")"#;
+    let out = run(&worker, &post_process_program(body_match, &stdout)).await;
+    let names: Vec<_> = out.suggestions().iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(
+        names,
+        ["MultiServiceRole"],
+        "f should match when the requested principal is in the Service array; diagnostics: {:?}",
+        out.diagnostics
+    );
+
+    let body_miss = r#"t=>f(t,"sns.amazonaws.com")"#;
+    let out = run(&worker, &post_process_program(body_miss, &stdout)).await;
+    assert!(
+        out.suggestions().is_empty(),
+        "f should not match when the requested principal is absent from the Service array; got {:?}, diagnostics: {:?}",
+        out.suggestions(),
+        out.diagnostics,
+    );
+}
+
+#[tokio::test]
+async fn helper_f_accepts_preparsed_document_object() {
+    // Some AWS SDK responses surface `AssumeRolePolicyDocument` as an
+    // already-deserialized object rather than a URL-encoded string. The
+    // `f` helper's `if (typeof doc === "string")` guard intentionally
+    // falls through in that case; this test pins the object-form path.
+    let worker = JsWorker::spawn().expect("spawn worker");
+    let stdout = r#"{"Roles":[{"RoleName":"R","AssumeRolePolicyDocument":{"Version":"2012-10-17","Statement":[{"Principal":{"Service":"eks.amazonaws.com"},"Effect":"Allow"}]}}]}"#;
+    let body = r#"t=>f(t,"eks.amazonaws.com")"#;
+    let out = run(&worker, &post_process_program(body, stdout)).await;
+    let names: Vec<_> = out.suggestions().iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(
+        names,
+        ["R"],
+        "f should accept a pre-parsed object form of AssumeRolePolicyDocument; diagnostics: {:?}",
+        out.diagnostics
+    );
+}
+
+// --- listExtract: defensive null / coercion paths -------------------------
+
+#[tokio::test]
+async fn helpers_skip_items_missing_named_field() {
+    // Real AWS responses include items missing the requested field
+    // during eventual-consistency windows. `listExtract` defensively
+    // skips null items, non-object items, and items whose named field
+    // is null/undefined. This test pins those branches: nothing should
+    // surface as `{name: "null"}` or `{name: "undefined"}`.
+    let worker = JsWorker::spawn().expect("spawn worker");
+    let stdout =
+        r#"{"Roles":[{"RoleName":"a"},{"RoleName":null},null,{"OtherKey":"x"},{"RoleName":"b"}]}"#;
+    let body = r#"function(t){return l(t,"Roles","RoleName")}"#;
+    let out = run(&worker, &post_process_program(body, stdout)).await;
+    let names: Vec<_> = out.suggestions().iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(
+        names,
+        ["a", "b"],
+        "listExtract should silently drop null-name, null-item, and missing-field rows; diagnostics: {:?}",
+        out.diagnostics
+    );
+}
+
+#[tokio::test]
+async fn helper_two_arg_form_coerces_and_skips_null() {
+    // Per helpers.js, the 2-arg form coerces every kept element via
+    // `String(v)` and skips `null`. All five aliases share the same
+    // `listExtract` body, so exercising the `l` binding covers the
+    // 2-arg branch for the whole family.
+    let worker = JsWorker::spawn().expect("spawn worker");
+    let stdout = r#"{"Versions":[1,null,"three"]}"#;
+    let body = r#"function(t){return l(t,"Versions")}"#;
+    let out = run(&worker, &post_process_program(body, stdout)).await;
+    let names: Vec<_> = out.suggestions().iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(
+        names,
+        ["1", "three"],
+        "2-arg listExtract should coerce numbers via String() and skip null; diagnostics: {:?}",
         out.diagnostics
     );
 }
@@ -229,11 +327,32 @@ async fn helpers_are_isolated_across_jobs() {
     // into a later job's freshly-created context. This is implicit from
     // the per-job Context::full(runtime) call in worker.rs, but we pin it
     // down: a body that monkey-patches `l` in job 1 must not affect job 2.
+    //
+    // The monkey_patch program also self-checks that its replacement of
+    // `l` took effect within job 1 — without this check, a future
+    // strict-mode flip that turned undeclared-global assignment into a
+    // TypeError would let the test pass while quietly no longer
+    // exercising the isolation invariant.
     let worker = JsWorker::spawn().expect("spawn worker");
 
-    let monkey_patch =
-        r#"(function(){ l = function(){ return [{name:'pwned'}]; }; return []; })()"#;
-    let _ = run(&worker, monkey_patch).await;
+    let monkey_patch = r#"(function(){
+        l = function(){ return [{name:'pwned'}]; };
+        return [{name: l('','','').length === 1 && l('','','')[0].name === 'pwned'
+            ? 'patch-installed'
+            : 'patch-failed'}];
+    })()"#;
+    let job1_out = run(&worker, monkey_patch).await;
+    let job1_names: Vec<_> = job1_out
+        .suggestions()
+        .iter()
+        .map(|s| s.name.as_str())
+        .collect();
+    assert_eq!(
+        job1_names,
+        ["patch-installed"],
+        "job 1 must successfully install the monkey-patch for the isolation test to be meaningful; diagnostics: {:?}",
+        job1_out.diagnostics
+    );
 
     let stdout = r#"{"Roles":[{"RoleName":"clean"}]}"#;
     let body = r#"function(t){return l(t,"Roles","RoleName")}"#;

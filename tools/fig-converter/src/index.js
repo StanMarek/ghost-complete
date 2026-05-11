@@ -49,12 +49,22 @@ import { stringifySorted } from './serialize.js';
  * (see crates/gc-jsrt/src/helpers.js). When the AST analyzer flags a
  * body's free identifiers and ALL of them are in this set, we preserve
  * the source — the runtime guarantees the names will resolve.
+ *
+ * Shape-validated at module load so a corrupted or schema-changed
+ * known-helpers.json fails loudly here instead of silently degrading
+ * every helper-bearing body to `js_runtime: undefined` downstream.
  */
-const KNOWN_HELPERS = new Set(
-  JSON.parse(
+const KNOWN_HELPERS = (() => {
+  const parsed = JSON.parse(
     readFileSync(new URL('./known-helpers.json', import.meta.url), 'utf8'),
-  ).helpers,
-);
+  );
+  if (!Array.isArray(parsed.helpers) || parsed.helpers.length === 0) {
+    throw new Error(
+      'known-helpers.json missing or empty `helpers` array (expected a non-empty string list)',
+    );
+  }
+  return new Set(parsed.helpers);
+})();
 
 const BUILD_DIR = join(
   import.meta.dirname,
@@ -263,9 +273,10 @@ function buildSelfContainedJsRuntime(kind, source) {
   const analysis = analyzeGenerator(source);
   if (analysis.parse_error) return null;
   // Free identifiers normally disqualify a body — they would throw
-  // ReferenceError in the sandbox. ux-10a installs pure-JS definitions
-  // for Fig's minified helpers in every gc-jsrt job, so free refs whose
-  // names are entirely covered by that preamble are safe to preserve.
+  // ReferenceError in the sandbox. The runtime now installs pure-JS
+  // definitions for Fig's minified helpers in every job (see
+  // crates/gc-jsrt/src/helpers.js), so free refs whose names are
+  // entirely covered by that preamble are safe to preserve.
   const freeRefs = analysis.fig_api_refs.filter((ref) => ref.kind === 'free');
   if (freeRefs.some((ref) => !KNOWN_HELPERS.has(ref.name))) return null;
   return { kind, source, self_contained: true };

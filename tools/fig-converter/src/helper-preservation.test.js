@@ -10,11 +10,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Generators referencing Fig's minified single-letter helpers (`l`, `p`,
 // `c`, `d`, `h`, `f`) are flagged as having free identifiers by the AST
-// analyzer. Before ux-10a, `buildSelfContainedJsRuntime` returned null
-// for those bodies and `processGenerator` emitted `{ requires_js: true }`
-// with NO `js_runtime` attached — the runtime then had no source to
-// evaluate. The runtime now defines those helpers globally, so we lift
-// the converter's rejection and preserve the source.
+// analyzer. Because the runtime installs pure-JS definitions for those
+// names in every gc-jsrt job (see crates/gc-jsrt/src/helpers.js),
+// `buildSelfContainedJsRuntime` preserves bodies whose only free
+// identifiers are in `known-helpers.json`. These tests pin that
+// allow-list contract.
 
 describe('processGenerator — helper-bearing _custom bodies', () => {
   it('preserves the JS source when the only free identifiers are known helpers', () => {
@@ -43,6 +43,8 @@ describe('processGenerator — helper-bearing _custom bodies', () => {
       result.js_runtime,
       'expected js_runtime to be attached for helper-only references',
     );
+    assert.equal(result.js_runtime.kind, 'script_function');
+    assert.equal(result.js_runtime.source, gen._scriptSource);
     assert.equal(result.js_runtime.self_contained, true);
   });
 
@@ -86,9 +88,51 @@ describe('known-helpers.json', () => {
       assert.equal(typeof name, 'string');
       assert.match(name, /^[a-z]$/, `helper "${name}" should be a single lower-case letter`);
     }
-    // Plan-pinned helpers per docs/plans/ux-10-helper-recovery-and-transforms/SPEC.md § A
+    // Required helpers must stay in sync with crates/gc-jsrt/src/helpers.js
     for (const required of ['l', 'p', 'c', 'd', 'h', 'f']) {
       assert.ok(data.helpers.includes(required), `missing required helper "${required}"`);
+    }
+  });
+
+  it('every name is bound on globalScope in crates/gc-jsrt/src/helpers.js', async () => {
+    // Cross-validation: every helper allow-listed here MUST have a
+    // corresponding `globalScope.<name> = ...` binding in the runtime
+    // preamble. Without it, the converter would preserve a post_process
+    // body referencing the name and the QuickJS sandbox would throw
+    // ReferenceError at job dispatch — a silent regression that produces
+    // zero suggestions.
+    //
+    // We READ helpers.js (no edits) and grep for top-level assignments
+    // to globalScope. The pattern is the actual binding contract used
+    // by the IIFE wrapper: see crates/gc-jsrt/src/helpers.js.
+    const allowlistRaw = await readFile(
+      join(__dirname, 'known-helpers.json'),
+      'utf8',
+    );
+    const allowlist = JSON.parse(allowlistRaw).helpers;
+
+    const helpersJsPath = join(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      'crates',
+      'gc-jsrt',
+      'src',
+      'helpers.js',
+    );
+    const helpersSrc = await readFile(helpersJsPath, 'utf8');
+
+    for (const name of allowlist) {
+      // Match `globalScope.<name> = ...` with any whitespace around `=`.
+      // Name is a single lower-case letter per the schema test above, so
+      // a literal substring check is sufficient and unambiguous.
+      const re = new RegExp(`\\bglobalScope\\.${name}\\s*=`);
+      assert.match(
+        helpersSrc,
+        re,
+        `helper "${name}" is allow-listed in known-helpers.json but has no globalScope.${name} = ... binding in crates/gc-jsrt/src/helpers.js`,
+      );
     }
   });
 });

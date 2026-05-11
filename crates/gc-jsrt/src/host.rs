@@ -114,9 +114,10 @@ pub(crate) fn install_host_api<'js>(
     // ---- Fig helper preamble --------------------------------------------
     // Bind the single-letter helpers (`l`, `p`, `c`, `d`, `h`, `f`) before
     // exposing __ghost so user-supplied post_process bodies resolve them.
-    // The preamble is pure JSON-manipulation JS — it cannot escape the
-    // sandbox even if a future helper becomes buggy, because no host
-    // bindings have been installed yet.
+    // The preamble is pure JSON-manipulation JS (see helpers.js); the
+    // helper bodies reference no host globals, so a buggy revision cannot
+    // reach `executeShellCommand`/`fig.*`. If a future revision adds
+    // host-API lookups, the safety story changes.
     install_fig_helpers(ctx)?;
 
     let globals: Object<'js> = ctx.globals();
@@ -203,10 +204,18 @@ pub(crate) fn install_host_api<'js>(
 /// caller's `Ok(...)` envelope in `run_job` converts it into an
 /// `Exception` diagnostic; user code cannot observe a partial install.
 pub(crate) fn install_fig_helpers<'js>(ctx: &Ctx<'js>) -> rquickjs::Result<()> {
-    ctx.eval::<(), _>(FIG_HELPERS_JS).catch(ctx).map_err(|e| {
-        tracing::error!(error = ?e, "fig helper preamble failed to evaluate");
-        rquickjs::Error::Exception
-    })
+    match ctx.eval::<(), _>(FIG_HELPERS_JS).catch(ctx) {
+        Ok(()) => Ok(()),
+        Err(e) => {
+            tracing::error!(error = ?e, "fig helper preamble failed to evaluate");
+            // Re-throw so the still-pending exception (message, stack,
+            // line) survives back to the worker; `.catch(ctx)` cleared
+            // the ctx's pending exception slot when it built the
+            // CaughtError, and discarding `e` here would strip that
+            // detail entirely.
+            Err(e.throw(ctx))
+        }
+    }
 }
 
 /// Build the `executeShellCommand` closure.

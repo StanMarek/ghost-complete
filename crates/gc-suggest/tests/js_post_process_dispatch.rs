@@ -595,17 +595,12 @@ async fn post_process_ttl_zero_means_no_caching() {
 }
 
 // ---------------------------------------------------------------------------
-// ux-10a — user-workflow goldens: helper-bearing post_process bodies
-//
-// These five tests exercise the AWS-style `function(t){return l(t,...)}`
-// shapes against canned `printf` stdout. Before ux-10a, every one of these
-// produced zero suggestions because the QuickJS sandbox had no `l`/`p`/`c`/
-// `d`/`h` defined and the body threw `ReferenceError`. After ux-10a, the
-// helper preamble installs pure-JS definitions and each body returns the
-// expected suggestions. The bodies are byte-for-byte copies of strings
-// observed in the on-disk `specs/aws.json` (sampled from the post_process
-// scan that motivated this phase) so a future converter change cannot
-// silently rename a helper without breaking these tests.
+// User-workflow goldens: helper-bearing post_process bodies copied
+// byte-for-byte from specs/aws.json. The QuickJS sandbox must define
+// `l`/`p`/`c`/`d`/`h`/`f` (see crates/gc-jsrt/src/helpers.js) or these bodies
+// throw ReferenceError and the engine produces zero suggestions. The bodies
+// are kept verbatim so a future converter change cannot silently rename a
+// helper without breaking these tests.
 // ---------------------------------------------------------------------------
 
 /// Build a printf shell command that reproduces a fixed JSON document on
@@ -654,8 +649,8 @@ async fn aws_iam_attach_role_policy_role_name_returns_role_suggestions() {
     assert_eq!(
         names,
         ["AdminRole", "ReadOnly"],
-        "ux-10a regression: `aws iam attach-role-policy --role-name <Tab>` body \
-         no longer produces role suggestions. The helper `l` preamble in \
+        "`aws iam attach-role-policy --role-name <Tab>` body no longer \
+         produces role suggestions. The helper `l` preamble in \
          gc-jsrt/src/helpers.js is the source of truth."
     );
 }
@@ -711,5 +706,49 @@ async fn aws_ecs_delete_service_cluster_returns_cluster_suggestions() {
             "arn:aws:ecs:us-east-1:111:cluster/web",
             "arn:aws:ecs:us-east-1:111:cluster/workers",
         ],
+    );
+}
+
+#[tokio::test]
+async fn aws_iam_list_roles_principal_returns_role_suggestions() {
+    // Mirrors body for completions filtered by trust-policy principal on
+    // `iam list-roles` outputs:
+    //   script: ["aws", "iam", "list-roles"]
+    //   body:   t=>f(t,"eks.amazonaws.com")
+    // The `f` helper decodes each role's URL-encoded AssumeRolePolicyDocument
+    // and keeps only those whose Statement[].Principal.Service matches the
+    // requested service — here, the lambda role must be filtered out.
+    //
+    // The stdout JSON contains URL-encoded `%xx` sequences, so we can't use
+    // the `printf_json_argv` helper (its `%` → `%%` escape would corrupt the
+    // encoded document). Write the JSON to a tempfile and `cat` it instead —
+    // bytes round-trip cleanly through the filesystem.
+    let eks_doc = "%7B%22Version%22%3A%222012-10-17%22%2C%22Statement%22%3A%5B%7B%22Effect%22%3A%22Allow%22%2C%22Principal%22%3A%7B%22Service%22%3A%22eks.amazonaws.com%22%7D%2C%22Action%22%3A%22sts%3AAssumeRole%22%7D%5D%7D";
+    let lambda_doc = "%7B%22Version%22%3A%222012-10-17%22%2C%22Statement%22%3A%5B%7B%22Effect%22%3A%22Allow%22%2C%22Principal%22%3A%7B%22Service%22%3A%22lambda.amazonaws.com%22%7D%2C%22Action%22%3A%22sts%3AAssumeRole%22%7D%5D%7D";
+    let stdout = format!(
+        r#"{{"Roles":[{{"RoleName":"EksRole","AssumeRolePolicyDocument":"{eks_doc}"}},{{"RoleName":"LambdaRole","AssumeRolePolicyDocument":"{lambda_doc}"}}]}}"#,
+    );
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let stdout_path = tmp.path().join("list-roles.json");
+    std::fs::write(&stdout_path, &stdout).expect("write canned stdout");
+    let argv = ["cat", stdout_path.to_str().expect("utf-8 path")];
+
+    let body = r#"t=>f(t,"eks.amazonaws.com")"#;
+    let gen = post_process_generator(&argv, body);
+    let engine = make_engine();
+    let ctx = make_ctx("aws-test", Vec::new(), "");
+    let results = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch");
+
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(
+        names,
+        ["EksRole"],
+        "`f` must filter roles by Principal.Service; only the eks-trusted \
+         role should remain. The helper `f` preamble in \
+         gc-jsrt/src/helpers.js is the source of truth."
     );
 }
