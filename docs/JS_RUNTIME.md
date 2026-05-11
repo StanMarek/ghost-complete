@@ -22,6 +22,11 @@ Default is `true`. Setting it to `false` skips JS-backed generators
 without disabling static spec data such as subcommands, options, and
 argument hints.
 
+Generators lowered from a Fig `postProcess` body to native script transforms
+do not enter this runtime at all. The converter may tag those generators with
+`_lowered_from_requires_js: true`; `status --json` reports them through
+`requires_js_generators_lowered_to_transforms` and `counters.lowered_to_transforms`.
+
 ## Runtime classes
 
 Every `requires_js` spec splits into one of four runtime classes,

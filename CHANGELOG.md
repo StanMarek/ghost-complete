@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Native completion migration - Phase 1 (ux-10b): `json_path_extract`
+  transforms, JSONPath `[*]` wildcard projection, Fig helper recovery in the
+  converter, comma-list postProcess lowering, and status accounting for
+  `requires_js_generators_lowered_to_transforms`.
 - Migration precursor (ux-9b): `SpecResolutionCounters` exposed in
   `ghost-complete status --json` (schema 1.6) with `requires_js_total`,
   `requires_js_supported`, `requires_js_unsupported`,

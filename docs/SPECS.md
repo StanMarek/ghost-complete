@@ -49,7 +49,8 @@ Stages:
    [`tools/fig-converter/src/index.js`](../tools/fig-converter/src/index.js)
    runs `cleanSpec` over each spec, then routes generator nodes through
    [`post-process-matcher.js`](../tools/fig-converter/src/post-process-matcher.js)
-   (declarative transform fingerprints) and
+   (declarative transform fingerprints, including Fig helper recovery through
+   `helper-registry.json` / `helper-matcher.js`) and
    [`native-map.js`](../tools/fig-converter/src/native-map.js) (script →
    native provider lookup). Run `npm --prefix tools/fig-converter test` when
    touching converter logic — the Rust `cargo test` suite does not cover it.
@@ -87,6 +88,9 @@ runtime machinery we already have. Two examples of this in action:
 dotted-path `json_extract` / `json_extract_array` (14 generators across
 `expo`, `expo-cli`, `pnpx`, `react-native`, `scarb`) and the new `suffix`
 transform that unlocked declarative output for template-literal concatenation.
+ux-10b applies the same rule to Fig's minified AWS helper calls, comma-list
+cleanup shapes, and earlier postProcess-to-transform matches: 1,558 generators
+now carry `_lowered_from_requires_js: true` for status accounting.
 
 Hand-port when the JS is idiosyncratic (one or two generators), the pattern
 can't be mechanically recognized (e.g. the shape hides behind a string
@@ -121,10 +125,13 @@ with `schema_version: "1.0"` and one row per release. Each row records:
   `spec_files_total`, `commands_addressable`,
   `commands_(fully|partially|non)functional`,
   `requires_js_generators_(total|supported|unsupported)`,
+  `requires_js_generators_token_only`,
+  `requires_js_generators_lowered_to_transforms`, and
   `command_alias_conflicts`. See `docs/COMPLETION_SPEC.md` for the
   classification rules. `requires_js_generators_supported` is broken down
   per `js_runtime.kind` (`post_process`, `script_function`, `custom`,
-  `token_only`) in `status --json`.
+  `token_only`) in `status --json`, while the `counters` block carries the
+  migration counters used by the native-completion roadmap.
 
 `ghost-complete status --json` emits a `spec_counts` object whose keys
 mirror the new baseline fields one-to-one. The legacy keys

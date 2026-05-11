@@ -5980,6 +5980,7 @@ mod tests {
             transforms: Vec::new(),
             cache: None,
             requires_js: kind.is_some(),
+            lowered_from_requires_js: false,
             js_source: None,
             js_runtime: kind.map(|kind| {
                 std::sync::Arc::new(gc_suggest::specs::JsRuntimeSpec {
@@ -6035,6 +6036,7 @@ mod tests {
             transforms: Vec::new(),
             cache: None,
             requires_js: false,
+            lowered_from_requires_js: false,
             js_source: None,
             js_runtime: None,
             corrected_in: None,
@@ -6058,6 +6060,7 @@ mod tests {
             transforms: Vec::new(),
             cache: None,
             requires_js: false,
+            lowered_from_requires_js: false,
             js_source: None,
             js_runtime: None,
             corrected_in: None,

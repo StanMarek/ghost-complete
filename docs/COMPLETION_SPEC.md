@@ -178,6 +178,7 @@ Execute an external command and turn its stdout into suggestions. The command is
 | `script` | string[] | Yes | Command and arguments, executed without shell expansion |
 | `transforms` | string[] | No | Transform pipeline applied to stdout (see [Transforms](#transforms)) |
 | `cache` | CacheConfig | No | TTL caching configuration (see [Cache](#cache)) |
+| `_lowered_from_requires_js` | boolean | No | Internal converter marker for generators lowered from JS to native `script` + `transforms`; counted by `status --json` as `requires_js_generators_lowered_to_transforms` |
 
 #### Script template generators
 
@@ -195,6 +196,7 @@ Like script generators, but with token interpolation. `{current_token}` is repla
 | `script_template` | string[] | Yes | Command with `{current_token}` placeholders |
 | `transforms` | string[] | No | Transform pipeline applied to stdout |
 | `cache` | CacheConfig | No | TTL caching configuration |
+| `_lowered_from_requires_js` | boolean | No | Internal converter marker for generators lowered from JS to native `script_template` + `transforms`; counted by `status --json` as `requires_js_generators_lowered_to_transforms` |
 
 #### JS-backed generators (`requires_js`)
 
@@ -241,6 +243,8 @@ Example `token_only` generator:
 
 The converter populates `js_runtime` for `post_process` bodies the matcher cannot lower to declarative transforms. For Fig `script: (...) => [...]` and `custom: async () => [...]` sources, it emits `script_function` / `custom` only when static analysis proves the function is self-contained; closure-dependent bodies that are host-API-free are promoted to `token_only`, and the rest remain `requires_js` without runtime metadata and are skipped. The runtime can be disabled wholesale via `[suggest.providers] js_runtime = false` in `config.toml`; in that mode static portions (subcommands, options) of `requires_js` specs continue to work and the JS-backed generators silently no-op.
 
+When a Fig JS post-processor is lowered all the way to native transforms, the resulting generator must not keep `requires_js`. The converter may retain `_lowered_from_requires_js: true` as private metadata so `ghost-complete status --json` can report migration progress through the top-level `requires_js_generators_lowered_to_transforms` field and `counters.lowered_to_transforms`.
+
 #### Available Templates
 
 | Template | Behavior |
@@ -272,11 +276,40 @@ Transforms process the raw stdout of a script generator into individual suggesti
 | `regex_extract(pattern, name_group, desc_group?)` | Extract suggestion name (and optional description) via regex capture groups |
 | `json_extract(name_field, desc_field?)` | Parse each line as JSON and extract fields |
 | `json_extract_array(path, item_name?, item_description?, split_on?, split_index?)` | Terminal transform: parse the entire output as JSON and emit one suggestion per element of the array at `path`. Cannot follow a split transform; only `suffix` may follow it. |
+| `json_path_extract(array, name_field?, description_field?, priority_field?)` | Terminal transform: parse the entire output as one JSON document, resolve `array`, and project optional fields from each element. `array` supports one `[*]` wildcard segment. Cannot follow a split transform; only `suffix` may follow it. |
 | `column_extract(column, desc_column?)` | Extract whitespace-separated columns by position (0-indexed) |
 | `error_guard(starts_with?, contains?)` | Return empty results if stdout matches an error pattern. Both fields are optional and may be supplied together — a match against either fires the guard. |
 | `suffix(value)` | Append a fixed literal to each suggestion's text |
 
-**Ordering rules:** Transforms are validated at spec load time. A splitting transform (`split_lines` or `split_on`) must appear before any per-line transforms like `trim`, `filter_empty`, or `dedup`. Placing a per-line transform before a splitter is a validation error. `json_extract_array` is terminal — it must not appear after a splitter, and only `suffix` may appear after it.
+`json_path_extract` accepts the same internally tagged object style as the other parameterized transforms:
+
+```json
+{
+  "script": ["aws", "iam", "list-roles"],
+  "transforms": [
+    {
+      "type": "json_path_extract",
+      "array": "Roles",
+      "name_field": "RoleName",
+      "description_field": "Arn"
+    }
+  ],
+  "_lowered_from_requires_js": true
+}
+```
+
+The deserializer also accepts the external tag spelling documented by the ux-10b plan:
+
+```json
+{
+  "json_path_extract": {
+    "array": "Roles[*]",
+    "name_field": "RoleName"
+  }
+}
+```
+
+**Ordering rules:** Transforms are validated at spec load time. A splitting transform (`split_lines` or `split_on`) must appear before any per-line transforms like `trim`, `filter_empty`, or `dedup`. Placing a per-line transform before a splitter is a validation error. `json_extract_array` and `json_path_extract` are terminal — they must not appear after a splitter, and only `suffix` may follow them.
 
 ### Cache
 

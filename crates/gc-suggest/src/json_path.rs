@@ -8,6 +8,7 @@
 //! - `foo.0.bar`        — numeric array index segment
 //! - `foo['bar'].baz`   — bracket-quoted key (single or double quotes)
 //! - `foo["bar baz"]`   — quoted keys may contain spaces
+//! - `foo[*].bar`       — one array wildcard, projected by `lookup_each`
 //! - `$.foo.bar`        — leading `$.` JSONPath prefix is stripped
 //!
 //! Parsing is strict: malformed paths return `Err(message)` so a broken
@@ -27,6 +28,7 @@ pub struct JsonPath {
 pub enum JsonPathSegment {
     Key(String),
     Index(usize),
+    Wildcard,
 }
 
 impl JsonPath {
@@ -44,6 +46,7 @@ impl JsonPath {
         let mut segments = Vec::new();
         let bytes = s.as_bytes();
         let mut i = 0;
+        let mut seen_wildcard = false;
 
         while i < bytes.len() {
             if bytes[i] == b'[' {
@@ -80,7 +83,9 @@ impl JsonPath {
                     return Err(format!("empty bracket segment at offset {i} in {s:?}"));
                 }
                 let (first, last) = (inner.as_bytes()[0], inner.as_bytes()[inner.len() - 1]);
-                let seg = if (first == b'\'' && last == b'\'') || (first == b'"' && last == b'"') {
+                let seg = if inner == "*" {
+                    JsonPathSegment::Wildcard
+                } else if (first == b'\'' && last == b'\'') || (first == b'"' && last == b'"') {
                     if inner.len() < 2 {
                         return Err(format!("malformed quoted key at offset {i} in {s:?}"));
                     }
@@ -92,6 +97,12 @@ impl JsonPath {
                         "bracket segment must be a quoted key or number, got {inner:?}"
                     ));
                 };
+                if matches!(seg, JsonPathSegment::Wildcard) {
+                    if seen_wildcard {
+                        return Err("json path supports at most one wildcard ([*])".to_string());
+                    }
+                    seen_wildcard = true;
+                }
                 segments.push(seg);
                 i = end + 1;
                 // Optional trailing dot before the next dotted segment.
@@ -135,14 +146,63 @@ impl JsonPath {
 
     /// Walk the path against a JSON value, returning `None` if any segment fails.
     pub fn lookup<'a>(&self, root: &'a serde_json::Value) -> Option<&'a serde_json::Value> {
+        Self::lookup_segments(&self.segments, root)
+    }
+
+    fn lookup_segments<'a>(
+        segments: &[JsonPathSegment],
+        root: &'a serde_json::Value,
+    ) -> Option<&'a serde_json::Value> {
         let mut cur = root;
-        for seg in &self.segments {
+        for seg in segments {
             cur = match seg {
                 JsonPathSegment::Key(k) => cur.get(k)?,
                 JsonPathSegment::Index(i) => cur.get(*i)?,
+                JsonPathSegment::Wildcard => return None,
             };
         }
         Some(cur)
+    }
+
+    pub fn has_wildcard(&self) -> bool {
+        self.segments
+            .iter()
+            .any(|seg| matches!(seg, JsonPathSegment::Wildcard))
+    }
+
+    /// Return the array selected by the prefix before a single `[*]`.
+    /// Paths with no wildcard return `None`.
+    pub fn lookup_array<'a>(
+        &self,
+        root: &'a serde_json::Value,
+    ) -> Option<&'a Vec<serde_json::Value>> {
+        let wildcard_idx = self
+            .segments
+            .iter()
+            .position(|seg| matches!(seg, JsonPathSegment::Wildcard))?;
+        Self::lookup_segments(&self.segments[..wildcard_idx], root)?.as_array()
+    }
+
+    /// Project a single `[*]` segment over an array and resolve the suffix
+    /// path against each element. If the path has no wildcard, this returns
+    /// the same single value as `lookup` when present.
+    pub fn lookup_each<'a>(&self, root: &'a serde_json::Value) -> Vec<&'a serde_json::Value> {
+        let Some(wildcard_idx) = self
+            .segments
+            .iter()
+            .position(|seg| matches!(seg, JsonPathSegment::Wildcard))
+        else {
+            return self.lookup(root).into_iter().collect();
+        };
+
+        let Some(array) = self.lookup_array(root) else {
+            return Vec::new();
+        };
+        let suffix = &self.segments[wildcard_idx + 1..];
+        array
+            .iter()
+            .filter_map(|value| Self::lookup_segments(suffix, value))
+            .collect()
     }
 
     /// True when this path is a single flat key (equivalent to `obj.get(key)`).
@@ -310,6 +370,64 @@ mod tests {
                 JsonPathSegment::Index(3),
             ]
         );
+    }
+
+    #[test]
+    fn parses_wildcard_segment() {
+        let p = JsonPath::parse("Foo[*]").unwrap();
+        assert_eq!(
+            p.segments(),
+            &[
+                JsonPathSegment::Key("Foo".into()),
+                JsonPathSegment::Wildcard,
+            ]
+        );
+        assert!(p.has_wildcard());
+    }
+
+    #[test]
+    fn wildcard_projects_suffix_for_each_array_element() {
+        let obj = json!({
+            "Foo": [
+                {"Bar": "first"},
+                {"Bar": "second"},
+                {"Other": "ignored"}
+            ]
+        });
+        let p = JsonPath::parse("Foo[*].Bar").unwrap();
+
+        let values: Vec<&str> = p
+            .lookup_each(&obj)
+            .into_iter()
+            .filter_map(|value| value.as_str())
+            .collect();
+
+        assert_eq!(values, vec!["first", "second"]);
+    }
+
+    #[test]
+    fn lookup_array_returns_array_before_wildcard() {
+        let obj = json!({"Foo": [{"Bar": "first"}, {"Bar": "second"}]});
+        let p = JsonPath::parse("Foo[*].Bar").unwrap();
+
+        assert_eq!(p.lookup_array(&obj).map(Vec::len), Some(2));
+        assert_eq!(JsonPath::parse("Foo").unwrap().lookup_array(&obj), None);
+    }
+
+    #[test]
+    fn rejects_second_wildcard() {
+        let err = JsonPath::parse("Foo[*].Bar[*].Baz").unwrap_err();
+        assert!(
+            err.contains("at most one wildcard"),
+            "error should explain wildcard limit: {err}"
+        );
+    }
+
+    #[test]
+    fn quoted_keys_with_dots_still_parse_and_lookup() {
+        let obj = json!({"Foo": {"X.Y": {"Bar": 42}}});
+        let p = JsonPath::parse(r#"Foo["X.Y"].Bar"#).unwrap();
+        assert_eq!(p.lookup(&obj).and_then(|v| v.as_i64()), Some(42));
     }
 
     #[test]

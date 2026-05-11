@@ -3,13 +3,11 @@
 //!
 //! These pin the per-shape contributions to the [`SpecResolutionCounters`]
 //! fields so future converter work can extend the remaining
-//! migration-future fields (`lowered_to_transforms`,
-//! `static_extracted_subprocess`, `aws_sdk_dispatched`,
-//! `native_provider_dispatched`) without re-deriving the requires_js
-//! totals. `token_only_promoted` is already populated today and is
-//! exercised by [`token_only_without_self_contained_is_supported_and_counted`]
-//! and [`token_only_with_empty_source_does_not_increment_promoted_counter`]
-//! in this file.
+//! migration-future fields (`static_extracted_subprocess`,
+//! `aws_sdk_dispatched`, `native_provider_dispatched`) without
+//! re-deriving the requires_js totals. `lowered_to_transforms` and
+//! `token_only_promoted` are already populated today and are exercised in
+//! this file.
 //!
 //! The "supported" classification mirrors the engine's runtime dispatch
 //! gate (see [`gc_suggest::specs::is_requires_js_supported`]):
@@ -186,6 +184,42 @@ fn empty_corpus_has_zero_counters() {
     assert_eq!(counters.token_only_promoted, 0);
     assert_eq!(counters.aws_sdk_dispatched, 0);
     assert_eq!(counters.native_provider_dispatched, 0);
+}
+
+#[test]
+fn lowered_transform_generator_increments_lowered_counter_without_requires_js() {
+    let dir = TempDir::new().unwrap();
+    write_spec(
+        dir.path(),
+        "lowered-transform.json",
+        r#"{
+            "name": "lowered-transform",
+            "args": [{
+                "name": "target",
+                "generators": [{
+                    "_lowered_from_requires_js": true,
+                    "script": ["printf", "alpha\\nbeta\\n"],
+                    "transforms": ["split_lines", "filter_empty"]
+                }]
+            }]
+        }"#,
+    );
+
+    let counters = SpecStore::load_from_dir(dir.path())
+        .unwrap()
+        .store
+        .counters();
+
+    assert_eq!(
+        counters.lowered_to_transforms, 1,
+        "lowered native transform generators should report ux-10b progress"
+    );
+    assert_eq!(
+        counters.requires_js_total, 0,
+        "lowered generators no longer carry requires_js and must not re-enter requires_js totals"
+    );
+    assert_eq!(counters.requires_js_supported, 0);
+    assert_eq!(counters.requires_js_unsupported, 0);
 }
 
 /// `script_function` + `js_runtime` populated + non-empty source +
