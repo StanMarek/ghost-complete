@@ -166,6 +166,27 @@ fn transform_benchmarks(c: &mut Criterion) {
         b.iter(|| transform::execute_pipeline(&json_input, &json_transforms).unwrap());
     });
 
+    // Helper-lowered JSON path: representative AWS list response lowered
+    // from Fig's single-letter postProcess helper to native transforms.
+    let roles = (0..200)
+        .map(|i| {
+            format!(r#"{{"RoleName":"role_{i}","Arn":"arn:aws:iam::123456789012:role/role_{i}"}}"#)
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    let helper_input = format!(r#"{{"Roles":[{roles}]}}"#);
+    let helper_transforms = vec![Transform::Parameterized(
+        ParameterizedTransform::JsonPathExtract {
+            array: gc_suggest::JsonPath::parse("Roles").unwrap(),
+            name_field: Some(gc_suggest::JsonPath::parse("RoleName").unwrap()),
+            description_field: Some(gc_suggest::JsonPath::parse("Arn").unwrap()),
+            priority_field: None,
+        },
+    )];
+    group.bench_function("helper_lowered_json_path", |b| {
+        b.iter(|| transform::execute_pipeline(&helper_input, &helper_transforms).unwrap());
+    });
+
     group.finish();
 }
 

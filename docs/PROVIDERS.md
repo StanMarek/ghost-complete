@@ -29,6 +29,8 @@ Reference implementation: [`crates/gc-suggest/src/providers/arduino_cli.rs`](../
 
 6. **Regenerate specs.** `cd tools/fig-converter && npm run convert`. Spot-check that the affected generators now read `{"type": "<name>"}` with no `script`, `requires_js`, or `js_source` fields.
 
+Script + transform lowering is tracked separately from native providers. A generator that stays as `script` / `script_template` plus `transforms` after a JS post-processor was lowered may carry `_lowered_from_requires_js: true`, but it must not keep `requires_js`. `ghost-complete status --json` reports those cases as `requires_js_generators_lowered_to_transforms` and `counters.lowered_to_transforms`; provider rewrites should not use that marker.
+
 ## Generator-spec `params`
 
 Generators may carry a flat string-to-string `params` map that the engine threads into the dispatched provider via `ProviderCtx::params`. This is the channel ux-13/14 spec-driven providers (e.g. the planned `AwsSdk` provider) will use to route on structured selection (service, region, profile) without inventing a new generator schema per command. As of the ux-9b precursor no in-tree provider reads the field — the plumbing is purely additive.

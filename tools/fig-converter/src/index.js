@@ -39,7 +39,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { spawn } from 'node:child_process';
 import { convertSpec } from './static-converter.js';
-import { matchPostProcess } from './post-process-matcher.js';
+import { matchPostProcess, unrecognizedSingleLetterHelper } from './post-process-matcher.js';
 import { matchNativeFromJsSource, matchNativeGenerator } from './native-map.js';
 import { analyzeGenerator } from './ast-analyzer.js';
 import { analyzeTokenOnly } from './token-only-analyzer.js';
@@ -391,6 +391,12 @@ export function processGenerator(gen, specName) {
     // Case: script + postProcess → pattern match
     if (gen._postProcessSource) {
       const match = matchPostProcess(gen._postProcessSource);
+      const unknownHelper = unrecognizedSingleLetterHelper(gen._postProcessSource);
+      if (unknownHelper) {
+        console.error(
+          `[helper-recovery] ${specName}: unrecognized single-letter postProcess helper ${unknownHelper} in ${gen._postProcessSource}`,
+        );
+      }
       const result = { script: gen.script };
 
       if (match.requires_js) {
@@ -410,6 +416,7 @@ export function processGenerator(gen, specName) {
         if (match._corrected_in) result._corrected_in = match._corrected_in;
       } else {
         result.transforms = match.transforms;
+        result._lowered_from_requires_js = true;
       }
 
       if (gen.cache) result.cache = gen.cache;
@@ -452,7 +459,10 @@ export function processGenerator(gen, specName) {
  * matching allowlist to `cleanSpec`, which must keep stripping underscore
  * keys on spec roots to prevent accidental leakage of future internal markers.
  */
-const GENERATOR_FIELD_ALLOWLIST = new Set(['_corrected_in']);
+const GENERATOR_FIELD_ALLOWLIST = new Set([
+  '_corrected_in',
+  '_lowered_from_requires_js',
+]);
 
 /**
  * Remove internal markers (prefixed with _) from a generator, except those
@@ -543,6 +553,7 @@ function collectStats(spec) {
     generators: 0,
     nativeGenerators: 0,
     transformGenerators: 0,
+    loweredTransformGenerators: 0,
     requiresJsGenerators: 0,
     tokenOnlyGenerators: 0,
   };
@@ -577,8 +588,10 @@ function collectStats(spec) {
       for (const gen of obj.generators) {
         stats.generators++;
         if (gen.type) stats.nativeGenerators++;
-        else if (gen.transforms) stats.transformGenerators++;
-        else if (gen.requires_js) {
+        else if (gen.transforms) {
+          stats.transformGenerators++;
+          if (gen._lowered_from_requires_js) stats.loweredTransformGenerators++;
+        } else if (gen.requires_js) {
           stats.requiresJsGenerators++;
           if (gen.js_runtime?.kind === 'token_only') stats.tokenOnlyGenerators++;
         }
@@ -624,6 +637,7 @@ function makeEmptyTotals() {
     generators: 0,
     nativeGenerators: 0,
     transformGenerators: 0,
+    loweredTransformGenerators: 0,
     requiresJsGenerators: 0,
     tokenOnlyGenerators: 0,
   };
@@ -709,6 +723,7 @@ export async function runConversionBatch({
       totals.generators += stats.generators;
       totals.nativeGenerators += stats.nativeGenerators;
       totals.transformGenerators += stats.transformGenerators;
+      totals.loweredTransformGenerators += stats.loweredTransformGenerators;
       totals.requiresJsGenerators += stats.requiresJsGenerators;
       totals.tokenOnlyGenerators += stats.tokenOnlyGenerators;
     } catch (err) {
@@ -743,6 +758,9 @@ function printSummary(totals, errors) {
   console.log(`Generators total:   ${totals.generators}`);
   console.log(`  Native (Rust):    ${totals.nativeGenerators}`);
   console.log(`  Transform:        ${totals.transformGenerators}`);
+  if (totals.loweredTransformGenerators > 0) {
+    console.log(`    Lowered JS:     ${totals.loweredTransformGenerators}`);
+  }
   console.log(`  Requires JS:      ${totals.requiresJsGenerators}`);
   if (totals.tokenOnlyGenerators > 0) {
     console.log(`  TokenOnly:        ${totals.tokenOnlyGenerators}`);

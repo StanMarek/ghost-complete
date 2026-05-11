@@ -187,6 +187,22 @@ describe('matchPostProcess', () => {
       assert.equal(guard.starts_with, 'ERR');
       assert.equal(guard.error_guard, undefined);
     });
+
+    it('lowers comma split + punctuation cleanup list shapes', () => {
+      const fn = 'n=>n.startsWith("fatal:")?[]:n.split(",").map(i=>({name:i.replace(/[\\[\\]\'"]+/g,"").trim(),icon:"fig://icon?type=aws",description:"Instance"}))';
+      const result = matchPostProcess(fn);
+      assert.equal(result.requires_js, false);
+      assert.deepStrictEqual(result.transforms, [
+        { type: 'error_guard', starts_with: 'fatal:' },
+        { type: 'split_on', delimiter: ',' },
+        'trim',
+        {
+          type: 'regex_extract',
+          pattern: String.raw`^[\[\]'"]*([^\[\]'"]+)[\[\]'"]*$`,
+          name: 1,
+        },
+      ]);
+    });
   });
 
   describe('unrecognized patterns', () => {

@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { matchHelperLookup, topLevelHelperCallName } from './helper-matcher.js';
+
 /**
  * post-process-matcher.js
  *
@@ -22,6 +25,16 @@
  */
 export const CORRECTED_IN_VERSION = 'v0.10.0';
 
+const HELPER_REGISTRY = JSON.parse(
+  readFileSync(new URL('./helper-registry.json', import.meta.url), 'utf8'),
+);
+
+export function unrecognizedSingleLetterHelper(fnSource) {
+  const helperName = topLevelHelperCallName(fnSource);
+  if (!helperName || !/^[a-z]$/.test(helperName)) return null;
+  return HELPER_REGISTRY.helpers?.[helperName] ? null : helperName;
+}
+
 /**
  * Analyze a postProcess function body and return a match result.
  *
@@ -33,6 +46,11 @@ export function matchPostProcess(fnSource) {
     return { transforms: null, requires_js: true, js_source: fnSource || '' };
   }
 
+  const helperLookup = matchHelperLookup(fnSource, HELPER_REGISTRY);
+  if (helperLookup) {
+    return helperLookup;
+  }
+
   // Extract the function body (strip the outer function(...) { ... } wrapper)
   const body = extractFunctionBody(fnSource);
 
@@ -42,6 +60,14 @@ export function matchPostProcess(fnSource) {
   const errorGuard = matchErrorGuard(body);
   if (errorGuard) {
     transforms.push(errorGuard);
+  }
+
+  // Phase 1a: Detect AWS CLI shorthand list output where the body splits a
+  // comma-delimited bracketed list and strips punctuation with
+  // `.replace(/[\[\]'"]+/g, "").trim()`.
+  const commaCleanedList = matchCommaCleanedList(body);
+  if (commaCleanedList) {
+    return { transforms: [...transforms, ...commaCleanedList], requires_js: false };
   }
 
   // Phase 1b: Detect `JSON.parse(x).<dotted.path>.map(...)` which consumes
@@ -195,6 +221,26 @@ function matchErrorGuard(body) {
   }
 
   return null;
+}
+
+function matchCommaCleanedList(body) {
+  if (!/\.split\s*\(\s*["'`],["'`]\s*\)/.test(body)) return null;
+  if (!body.includes('/[\\[\\]\'"]+/g')) {
+    return null;
+  }
+  if (!/\.replace\s*\(/.test(body)) return null;
+  if (!/\.trim\s*\(\s*\)/.test(body)) return null;
+  if (!/name\s*:/.test(body)) return null;
+
+  return [
+    { type: 'split_on', delimiter: ',' },
+    'trim',
+    {
+      type: 'regex_extract',
+      pattern: String.raw`^[\[\]'"]*([^\[\]'"]+)[\[\]'"]*$`,
+      name: 1,
+    },
+  ];
 }
 
 /**

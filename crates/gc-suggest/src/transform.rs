@@ -5,6 +5,7 @@ use serde::de::{self, MapAccess, Visitor};
 use serde::Deserialize;
 
 use crate::json_path::JsonPath;
+use crate::priority::Priority;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
 /// A single transform step in a pipeline that processes raw generator output
@@ -74,6 +75,15 @@ pub enum ParameterizedTransform {
         split_on: Option<String>,
         split_index: Option<usize>,
     },
+    /// Terminal transform: parse the ENTIRE raw output as JSON, resolve
+    /// `array` to suggestion elements, then project optional fields from
+    /// each element.
+    JsonPathExtract {
+        array: JsonPath,
+        name_field: Option<JsonPath>,
+        description_field: Option<JsonPath>,
+        priority_field: Option<JsonPath>,
+    },
     ColumnExtract {
         column: usize,
         description_column: Option<usize>,
@@ -102,6 +112,7 @@ pub fn transform_name(t: &Transform) -> &'static str {
             ParameterizedTransform::RegexExtract { .. } => "regex_extract",
             ParameterizedTransform::JsonExtract { .. } => "json_extract",
             ParameterizedTransform::JsonExtractArray { .. } => "json_extract_array",
+            ParameterizedTransform::JsonPathExtract { .. } => "json_path_extract",
             ParameterizedTransform::ColumnExtract { .. } => "column_extract",
             ParameterizedTransform::Suffix { .. } => "suffix",
         },
@@ -156,6 +167,13 @@ enum ParameterizedHelper {
         split_on: Option<String>,
         split_index: Option<usize>,
     },
+    #[serde(rename = "json_path_extract")]
+    JsonPathExtract {
+        array: JsonPath,
+        name_field: Option<JsonPath>,
+        description_field: Option<JsonPath>,
+        priority_field: Option<JsonPath>,
+    },
     #[serde(rename = "column_extract")]
     ColumnExtract {
         column: usize,
@@ -163,6 +181,15 @@ enum ParameterizedHelper {
     },
     #[serde(rename = "suffix")]
     Suffix { value: String },
+}
+
+fn reject_wildcard_path(field: &str, path: &JsonPath) -> Result<(), String> {
+    if path.has_wildcard() {
+        return Err(format!(
+            "{field}: wildcard ([*]) is only supported by json_path_extract.array"
+        ));
+    }
+    Ok(())
 }
 
 impl TryFrom<ParameterizedHelper> for ParameterizedTransform {
@@ -207,6 +234,10 @@ impl TryFrom<ParameterizedHelper> for ParameterizedTransform {
                 }
             }
             ParameterizedHelper::JsonExtract { name, description } => {
+                reject_wildcard_path("json_extract.name", &name)?;
+                if let Some(path) = &description {
+                    reject_wildcard_path("json_extract.description", path)?;
+                }
                 ParameterizedTransform::JsonExtract { name, description }
             }
             ParameterizedHelper::JsonExtractArray {
@@ -216,6 +247,13 @@ impl TryFrom<ParameterizedHelper> for ParameterizedTransform {
                 split_on,
                 split_index,
             } => {
+                reject_wildcard_path("json_extract_array.path", &path)?;
+                if let Some(path) = &item_name {
+                    reject_wildcard_path("json_extract_array.item_name", path)?;
+                }
+                if let Some(path) = &item_description {
+                    reject_wildcard_path("json_extract_array.item_description", path)?;
+                }
                 if split_index.is_some() && split_on.is_none() {
                     return Err(
                         "json_extract_array: split_index requires split_on to be set".to_string(),
@@ -233,6 +271,28 @@ impl TryFrom<ParameterizedHelper> for ParameterizedTransform {
                     item_description,
                     split_on,
                     split_index,
+                }
+            }
+            ParameterizedHelper::JsonPathExtract {
+                array,
+                name_field,
+                description_field,
+                priority_field,
+            } => {
+                if let Some(path) = &name_field {
+                    reject_wildcard_path("json_path_extract.name_field", path)?;
+                }
+                if let Some(path) = &description_field {
+                    reject_wildcard_path("json_path_extract.description_field", path)?;
+                }
+                if let Some(path) = &priority_field {
+                    reject_wildcard_path("json_path_extract.priority_field", path)?;
+                }
+                ParameterizedTransform::JsonPathExtract {
+                    array,
+                    name_field,
+                    description_field,
+                    priority_field,
                 }
             }
             ParameterizedHelper::ColumnExtract {
@@ -257,6 +317,54 @@ impl<'de> Deserialize<'de> for Transform {
 }
 
 struct TransformVisitor;
+
+const PARAMETERIZED_TRANSFORM_NAMES: &[&str] = &[
+    "split_on",
+    "skip",
+    "take",
+    "error_guard",
+    "regex_extract",
+    "json_extract",
+    "json_extract_array",
+    "json_path_extract",
+    "column_extract",
+    "suffix",
+];
+
+fn normalize_parameterized_transform_value(
+    value: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let Some(obj) = value.as_object() else {
+        return Ok(value);
+    };
+    if obj.contains_key("type") {
+        return Ok(value);
+    }
+    if obj.len() != 1 {
+        return Ok(value);
+    }
+
+    let (name, params) = obj.iter().next().expect("object length checked above");
+    if !PARAMETERIZED_TRANSFORM_NAMES.contains(&name.as_str()) {
+        return Ok(value);
+    }
+
+    let serde_json::Value::Object(fields) = params else {
+        return Err(format!(
+            "{name}: externally tagged parameterized transform value must be an object"
+        ));
+    };
+
+    let mut normalized = serde_json::Map::with_capacity(fields.len() + 1);
+    normalized.insert(
+        "type".to_string(),
+        serde_json::Value::String(name.to_string()),
+    );
+    for (field, value) in fields {
+        normalized.insert(field.clone(), value.clone());
+    }
+    Ok(serde_json::Value::Object(normalized))
+}
 
 impl<'de> Visitor<'de> for TransformVisitor {
     type Value = Transform;
@@ -286,8 +394,11 @@ impl<'de> Visitor<'de> for TransformVisitor {
     where
         A: MapAccess<'de>,
     {
-        let helper: ParameterizedHelper =
+        let value: serde_json::Value =
             Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))?;
+        let value = normalize_parameterized_transform_value(value).map_err(de::Error::custom)?;
+        let helper: ParameterizedHelper =
+            serde_json::from_value(value).map_err(de::Error::custom)?;
         let parameterized = ParameterizedTransform::try_from(helper).map_err(de::Error::custom)?;
         Ok(Transform::Parameterized(parameterized))
     }
@@ -301,6 +412,9 @@ impl<'de> Visitor<'de> for TransformVisitor {
 /// - Post-split transforms (`filter_empty`, `trim`, `skip_first`, `dedup`,
 ///   `regex_extract`, `json_extract`, `column_extract`, `skip`, `take`)
 ///   must not appear before the split
+/// - Terminal JSON extract transforms (`json_extract_array`,
+///   `json_path_extract`) consume the raw output, must not follow a split,
+///   and only `suffix` may follow them
 /// - Empty pipeline is valid
 pub fn validate_pipeline(transforms: &[Transform]) -> Result<(), String> {
     if transforms.is_empty() {
@@ -308,64 +422,56 @@ pub fn validate_pipeline(transforms: &[Transform]) -> Result<(), String> {
     }
 
     let mut seen_split = false;
-    let mut seen_json_array = false;
+    let mut seen_terminal_json_extract: Option<&'static str> = None;
     let mut split_count = 0;
-    let mut json_array_count = 0;
+    let mut terminal_json_extract_count = 0;
 
     for (i, t) in transforms.iter().enumerate() {
         let name = transform_name(t);
 
-        // Once json_extract_array has fired it has set `suggestions = Some(_)`
-        // and any subsequent line-mutating transform is silently discarded
-        // (or, in the case of a second json_extract, silently overwrites the
-        // first's results). The only legitimately valid post-extract
+        // Once a terminal JSON extract has fired it has set
+        // `suggestions = Some(_)` and any subsequent line-mutating transform
+        // is silently discarded. The only legitimately valid post-extract
         // transform is `suffix`, whose executor arm operates on the
         // `suggestions` slot. Reject everything else at load time.
-        //
-        // A second `json_extract_array` is left to fall through to the
-        // dedicated duplicate check below (which produces a more specific
-        // error message and is already covered by
-        // `test_multiple_json_extract_array_invalid`).
         let is_suffix = matches!(
             t,
             Transform::Parameterized(ParameterizedTransform::Suffix { .. })
         );
-        let is_json_array_candidate = matches!(
+        let is_terminal_json_extract_candidate = matches!(
             t,
             Transform::Parameterized(ParameterizedTransform::JsonExtractArray { .. })
+                | Transform::Parameterized(ParameterizedTransform::JsonPathExtract { .. })
         );
-        if seen_json_array && !is_suffix && !is_json_array_candidate {
-            return Err(format!(
-                "transform \"{name}\" at position {i} appears after json_extract_array; \
-                 json_extract_array is terminal and only suffix is allowed after it"
-            ));
-        }
-
-        // json_extract_array is a standalone terminal transform that operates
-        // on the raw output — it must not be combined with split_lines/split_on
-        // (those would pre-split the JSON into unparseable fragments) and
-        // must appear at most once (a second entry would silently overwrite
-        // the first's suggestions at runtime).
-        let is_json_array = matches!(
-            t,
-            Transform::Parameterized(ParameterizedTransform::JsonExtractArray { .. })
-        );
-        if is_json_array {
-            if seen_split {
+        if let Some(terminal_name) = seen_terminal_json_extract {
+            if !is_suffix && !is_terminal_json_extract_candidate {
                 return Err(format!(
-                    "json_extract_array at position {i} appears after a split transform; \
-                     json_extract_array consumes the raw output directly and cannot follow split_lines/split_on"
+                    "transform \"{name}\" at position {i} appears after {terminal_name}; \
+                     {terminal_name} is terminal and only suffix is allowed after it"
                 ));
             }
-            json_array_count += 1;
-            if json_array_count > 1 {
+        }
+
+        // Terminal JSON extracts operate on the raw output — they must not be
+        // combined with split_lines/split_on (those would pre-split the JSON
+        // into unparseable fragments) and must appear at most once (a second
+        // entry would silently overwrite the first's suggestions at runtime).
+        if is_terminal_json_extract_candidate {
+            if seen_split {
+                return Err(format!(
+                    "{name} at position {i} appears after a split transform; \
+                     {name} consumes the raw output directly and cannot follow split_lines/split_on"
+                ));
+            }
+            terminal_json_extract_count += 1;
+            if terminal_json_extract_count > 1 {
                 return Err(
-                    "transform pipeline has multiple json_extract_array transforms; \
-                     only one is allowed"
+                    "transform pipeline has multiple json_extract_array/json_path_extract \
+                     transforms; only one terminal JSON extract is allowed"
                         .to_string(),
                 );
             }
-            seen_json_array = true;
+            seen_terminal_json_extract = Some(name);
             continue;
         }
 
@@ -417,7 +523,7 @@ pub fn validate_pipeline(transforms: &[Transform]) -> Result<(), String> {
                 | Transform::Parameterized(ParameterizedTransform::Suffix { .. })
         );
 
-        if is_post_split && !seen_split && !seen_json_array {
+        if is_post_split && !seen_split && seen_terminal_json_extract.is_none() {
             return Err(format!(
                 "transform \"{name}\" at position {i} appears before any split transform; \
                  post-split transforms must appear after split_lines/split_on"
@@ -626,6 +732,62 @@ pub fn apply_json_extract_array(
         .collect()
 }
 
+/// Parse the ENTIRE raw output as a single JSON document and emit one
+/// suggestion per element selected by `array`.
+///
+/// If `array` has no wildcard it must resolve to a JSON array. If it has one
+/// `[*]` segment, the path is projected over that array and each projected
+/// value is treated as the element.
+pub fn apply_json_path_extract(
+    raw_output: &str,
+    array: &JsonPath,
+    name_field: Option<&JsonPath>,
+    description_field: Option<&JsonPath>,
+    priority_field: Option<&JsonPath>,
+) -> Vec<Suggestion> {
+    let root: serde_json::Value = match serde_json::from_str(raw_output) {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::warn!("json_path_extract: failed to parse subprocess output as JSON: {e}");
+            return Vec::new();
+        }
+    };
+
+    let elements: Vec<&serde_json::Value> = if array.has_wildcard() {
+        array.lookup_each(&root)
+    } else {
+        let Some(arr) = array.lookup(&root).and_then(|v| v.as_array()) else {
+            tracing::debug!(
+                ?array,
+                "json_path_extract: path did not resolve to a JSON array in parsed output"
+            );
+            return Vec::new();
+        };
+        arr.iter().collect()
+    };
+
+    elements
+        .into_iter()
+        .filter_map(|el| {
+            let text = match name_field {
+                Some(p) => p.lookup(el).and_then(value_to_text)?,
+                None => value_to_text(el)?,
+            };
+            let description = description_field
+                .and_then(|p| p.lookup(el).and_then(|v| v.as_str()).map(String::from));
+            let priority = priority_field.and_then(|p| p.lookup(el).and_then(value_to_priority));
+            Some(Suggestion {
+                text,
+                description,
+                kind: SuggestionKind::Command,
+                source: SuggestionSource::Script,
+                priority,
+                ..Default::default()
+            })
+        })
+        .collect()
+}
+
 fn value_to_text(v: &serde_json::Value) -> Option<String> {
     match v {
         serde_json::Value::String(s) => Some(s.clone()),
@@ -633,6 +795,10 @@ fn value_to_text(v: &serde_json::Value) -> Option<String> {
         serde_json::Value::Bool(b) => Some(b.to_string()),
         _ => None,
     }
+}
+
+fn value_to_priority(v: &serde_json::Value) -> Option<Priority> {
+    serde_json::from_value(v.clone()).ok()
 }
 
 /// Append a fixed literal to each suggestion's text.
@@ -802,6 +968,23 @@ pub fn execute_pipeline(output: &str, transforms: &[Transform]) -> Result<Vec<Su
                     item_description.as_ref(),
                     split_on.as_deref(),
                     *split_index,
+                ));
+            }
+            Transform::Parameterized(ParameterizedTransform::JsonPathExtract {
+                array,
+                name_field,
+                description_field,
+                priority_field,
+            }) => {
+                // Terminal transform on the raw output. `validate_pipeline`
+                // rejects any prior split, so `current_output` still holds
+                // the full blob here.
+                suggestions = Some(apply_json_path_extract(
+                    &current_output,
+                    array,
+                    name_field.as_ref(),
+                    description_field.as_ref(),
+                    priority_field.as_ref(),
                 ));
             }
             Transform::Parameterized(ParameterizedTransform::ColumnExtract {
@@ -1031,6 +1214,18 @@ mod tests {
     }
 
     #[test]
+    fn test_deserialize_json_extract_rejects_wildcard_path() {
+        let err = serde_json::from_str::<Transform>(
+            r#"{"type": "json_extract", "name": "items[*].name"}"#,
+        )
+        .unwrap_err();
+        assert!(
+            err.to_string().contains("wildcard"),
+            "error should explain wildcard restriction: {err}"
+        );
+    }
+
+    #[test]
     fn test_deserialize_json_extract_array() {
         let t: Transform =
             serde_json::from_str(r#"{"type": "json_extract_array", "path": "project.schemes"}"#)
@@ -1074,6 +1269,73 @@ mod tests {
             }
             other => panic!("expected JsonExtractArray, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn test_deserialize_json_extract_array_rejects_wildcards() {
+        let err = serde_json::from_str::<Transform>(
+            r#"{"type": "json_extract_array", "path": "items[*]", "item_name": "name"}"#,
+        )
+        .unwrap_err();
+        assert!(
+            err.to_string().contains("json_extract_array.path")
+                && err.to_string().contains("wildcard"),
+            "error should name the restricted field: {err}"
+        );
+    }
+
+    #[test]
+    fn test_deserialize_json_path_extract_with_priority_field() {
+        let t: Transform = serde_json::from_str(
+            r#"{"type": "json_path_extract", "array": "Roles", "name_field": "RoleName", "description_field": "Arn", "priority_field": "Priority"}"#,
+        )
+        .unwrap();
+        match t {
+            Transform::Parameterized(ParameterizedTransform::JsonPathExtract {
+                array,
+                name_field,
+                description_field,
+                priority_field,
+            }) => {
+                assert!(array.is_flat());
+                assert!(name_field.is_some());
+                assert!(description_field.is_some());
+                assert!(priority_field.is_some());
+            }
+            other => panic!("expected JsonPathExtract, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_deserialize_json_path_extract_external_tag_shape() {
+        let t: Transform = serde_json::from_str(
+            r#"{"json_path_extract": {"array": "Roles", "name_field": "RoleName"}}"#,
+        )
+        .unwrap();
+        match t {
+            Transform::Parameterized(ParameterizedTransform::JsonPathExtract {
+                array,
+                name_field,
+                ..
+            }) => {
+                assert!(array.is_flat());
+                assert!(name_field.is_some());
+            }
+            other => panic!("expected JsonPathExtract, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_deserialize_json_path_extract_rejects_wildcard_field_paths() {
+        let err = serde_json::from_str::<Transform>(
+            r#"{"type": "json_path_extract", "array": "Roles", "name_field": "Names[*]"}"#,
+        )
+        .unwrap_err();
+        assert!(
+            err.to_string().contains("json_path_extract.name_field")
+                && err.to_string().contains("wildcard"),
+            "error should name the restricted field: {err}"
+        );
     }
 
     #[test]
@@ -1309,6 +1571,17 @@ mod tests {
                 }
             )),
             "error_guard"
+        );
+        assert_eq!(
+            transform_name(&Transform::Parameterized(
+                ParameterizedTransform::JsonPathExtract {
+                    array: JsonPath::parse("items").unwrap(),
+                    name_field: None,
+                    description_field: None,
+                    priority_field: None,
+                }
+            )),
+            "json_path_extract"
         );
     }
 
@@ -1596,6 +1869,64 @@ mod tests {
     }
 
     #[test]
+    fn test_json_path_extract_roles() {
+        let raw = r#"{"Roles":[{"RoleName":"admin","Arn":"arn:aws:iam::1:role/admin"},{"RoleName":"read-only","Arn":"arn:aws:iam::1:role/read-only"}]}"#;
+        let array = JsonPath::parse("Roles").unwrap();
+        let name = JsonPath::parse("RoleName").unwrap();
+        let description = JsonPath::parse("Arn").unwrap();
+        let priority = JsonPath::parse("Priority").unwrap();
+
+        let result = apply_json_path_extract(
+            raw,
+            &array,
+            Some(&name),
+            Some(&description),
+            Some(&priority),
+        );
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].text, "admin");
+        assert_eq!(
+            result[0].description.as_deref(),
+            Some("arn:aws:iam::1:role/admin")
+        );
+        assert_eq!(result[1].text, "read-only");
+        assert_eq!(result[0].kind, SuggestionKind::Command);
+        assert_eq!(result[0].source, SuggestionSource::Script);
+    }
+
+    #[test]
+    fn test_json_path_extract_wildcard_array() {
+        let raw = r#"{"Accounts":[{"Role":{"RoleName":"admin","Arn":"arn:admin"}},{"Role":{"RoleName":"dev","Arn":"arn:dev"}},{"Other":{}}]}"#;
+        let array = JsonPath::parse("Accounts[*].Role").unwrap();
+        let name = JsonPath::parse("RoleName").unwrap();
+        let description = JsonPath::parse("Arn").unwrap();
+
+        let result = apply_json_path_extract(raw, &array, Some(&name), Some(&description), None);
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].text, "admin");
+        assert_eq!(result[0].description.as_deref(), Some("arn:admin"));
+        assert_eq!(result[1].text, "dev");
+        assert_eq!(result[1].description.as_deref(), Some("arn:dev"));
+    }
+
+    #[test]
+    fn test_execute_pipeline_json_path_extract_with_suffix() {
+        let transforms: Vec<Transform> = serde_json::from_str(
+            r#"[{"type": "json_path_extract", "array": "Aliases"}, {"type": "suffix", "value": "/"}]"#,
+        )
+        .unwrap();
+        let output = r#"{"Aliases":["prod","stage"]}"#;
+
+        let result = execute_pipeline(output, &transforms).unwrap();
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].text, "prod/");
+        assert_eq!(result[1].text, "stage/");
+    }
+
+    #[test]
     fn test_column_extract() {
         let lines = vec![
             "abc123  some description".into(),
@@ -1805,6 +2136,47 @@ mod tests {
         assert!(
             err.contains("multiple json_extract_array"),
             "error should mention multiple json_extract_array: {err}"
+        );
+    }
+
+    #[test]
+    fn test_validate_pipeline_rejects_json_path_extract_after_split() {
+        let pipeline: Vec<Transform> = serde_json::from_str(
+            r#"["split_lines", {"type": "json_path_extract", "array": "Roles", "name_field": "RoleName"}]"#,
+        )
+        .unwrap();
+        let err = validate_pipeline(&pipeline).unwrap_err();
+        assert!(
+            err.contains("json_path_extract") && err.contains("split"),
+            "error must mention json_path_extract and split ordering: {err}"
+        );
+    }
+
+    #[test]
+    fn test_validate_pipeline_rejects_transform_after_json_path_extract() {
+        let pipeline: Vec<Transform> = serde_json::from_str(
+            r#"[{"type": "json_path_extract", "array": "Roles", "name_field": "RoleName"}, "dedup"]"#,
+        )
+        .unwrap();
+        let err = validate_pipeline(&pipeline).unwrap_err();
+        assert!(
+            err.contains("dedup") && err.contains("json_path_extract"),
+            "error must name the offending transform and terminal transform: {err}"
+        );
+    }
+
+    #[test]
+    fn test_validate_pipeline_rejects_mixed_terminal_json_extracts() {
+        let pipeline: Vec<Transform> = serde_json::from_str(
+            r#"[{"type": "json_extract_array", "path": "Roles"}, {"type": "json_path_extract", "array": "Groups"}]"#,
+        )
+        .unwrap();
+        let err = validate_pipeline(&pipeline).unwrap_err();
+        assert!(
+            err.contains("multiple")
+                && err.contains("json_extract_array")
+                && err.contains("json_path_extract"),
+            "error should mention mixed terminal JSON extracts: {err}"
         );
     }
 

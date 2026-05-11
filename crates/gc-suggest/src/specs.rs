@@ -517,6 +517,8 @@ pub struct GeneratorSpec {
     #[serde(default)]
     pub transforms: Vec<Transform>,
     pub cache: Option<CacheConfig>,
+    #[serde(default, rename = "_lowered_from_requires_js")]
+    pub lowered_from_requires_js: bool,
     #[serde(default)]
     pub requires_js: bool,
     pub js_source: Option<String>,
@@ -1624,11 +1626,11 @@ impl SpecStore {
     /// embedded corpus (~1944 supported / ~1697 unsupported / ~3641 total
     /// at v0.13).
     ///
-    /// Four of the five migration-future fields stay at zero today
-    /// (`lowered_to_transforms`, `static_extracted_subprocess`,
-    /// `aws_sdk_dispatched`, `native_provider_dispatched`); the converter
-    /// populates them once the corresponding migration emits the
-    /// metadata. `token_only_promoted` is populated today.
+    /// `lowered_to_transforms` and `token_only_promoted` are populated
+    /// today. The remaining migration-future fields
+    /// (`static_extracted_subprocess`, `aws_sdk_dispatched`,
+    /// `native_provider_dispatched`) stay at zero until the converter
+    /// emits the corresponding metadata.
     ///
     /// This force-loads every entry through [`Self::resolved_entries`], so
     /// it is a diagnostic call (not a hot path). The trade-off is documented
@@ -1689,6 +1691,9 @@ fn accumulate_counters_from_generators(
     counters: &mut SpecResolutionCounters,
 ) {
     for gen in gens {
+        if gen.lowered_from_requires_js {
+            counters.lowered_to_transforms += 1;
+        }
         if !gen.requires_js {
             continue;
         }
@@ -2190,11 +2195,11 @@ pub fn parse_spec_checked_and_sanitized(contents: &str) -> Result<CompletionSpec
 /// single keystroke's dispatch outcome) with diagnostic totals over every
 /// generator reachable from every loaded spec. Surfaced through
 /// [`SpecStore::counters`] and the `counters` block of `ghost-complete
-/// status --json`. Four of the five migration-future fields stay at zero
-/// today (`lowered_to_transforms`, `static_extracted_subprocess`,
-/// `aws_sdk_dispatched`, `native_provider_dispatched`) and are populated
-/// once the converter starts emitting the corresponding metadata.
-/// `token_only_promoted` is populated today by the token-only sandbox.
+/// status --json`. `lowered_to_transforms` is populated for generators
+/// tagged with `_lowered_from_requires_js: true`, and
+/// `token_only_promoted` is populated today by the token-only sandbox. The
+/// remaining migration-future fields stay at zero until the converter
+/// starts emitting the corresponding metadata.
 #[derive(Debug, Default, Clone, serde::Serialize)]
 pub struct SpecResolutionCounters {
     /// Total `requires_js` generators in the corpus.
@@ -2204,8 +2209,8 @@ pub struct SpecResolutionCounters {
     /// Generators that load but skip at dispatch time.
     pub requires_js_unsupported: usize,
     /// Generators where the converter lowered a JS body to a native
-    /// transform pipeline (no QuickJS at runtime). Reserved for the
-    /// transform-lowering migration; stays at zero today.
+    /// transform pipeline (no QuickJS at runtime). Populated from
+    /// `_lowered_from_requires_js: true`.
     pub lowered_to_transforms: usize,
     /// Generators where the converter lifted a subprocess-driven JS
     /// body into native script + transforms. Reserved for the
@@ -2876,6 +2881,7 @@ pub fn estimated_heap_bytes(spec: &CompletionSpec) -> usize {
                 | ParameterizedTransform::Take { .. }
                 | ParameterizedTransform::RegexExtract { .. }
                 | ParameterizedTransform::JsonExtract { .. }
+                | ParameterizedTransform::JsonPathExtract { .. }
                 | ParameterizedTransform::ColumnExtract { .. } => 0,
             },
         }
@@ -3719,64 +3725,100 @@ mod tests {
     }
 
     #[test]
-    fn test_corpus_has_js_runtime_for_requires_js() {
+    fn test_corpus_js_runtime_and_lowered_transform_invariants() {
         // Corpus invariant: most requires_js generators in the embedded
         // corpus carry a populated `js_runtime` object. The converter
         // intentionally leaves subprocess/network/host-API shapes without
         // runtime metadata so they remain skipped instead of being
-        // mis-promoted to TokenOnly.
-        const MIN_REQUIRES_JS_WITH_RUNTIME: usize = 3_300;
+        // mis-promoted to TokenOnly. ux-10b lowers many previous
+        // postProcess generators to native transforms, so they are tracked
+        // separately from the remaining requires_js runtime population.
+        const MIN_REQUIRES_JS_WITH_RUNTIME: usize = 2_500;
+        const MIN_LOWERED_TO_TRANSFORMS: usize = 1_400;
         const EXPECTED_UNSUPPORTED_WITHOUT_RUNTIME: usize = 295;
 
-        fn count(v: &serde_json::Value) -> (usize, usize) {
-            // (requires_js_total, with_js_runtime)
+        fn count(v: &serde_json::Value) -> (usize, usize, usize, usize) {
+            // (requires_js_total, with_js_runtime, lowered, lowered_requires_js)
             match v {
                 serde_json::Value::Object(map) => {
                     let mut total = 0;
                     let mut with_rt = 0;
+                    let mut lowered = 0;
+                    let mut lowered_requires_js = 0;
                     let is_gen =
                         matches!(map.get("requires_js"), Some(serde_json::Value::Bool(true)));
+                    let is_lowered = matches!(
+                        map.get("_lowered_from_requires_js"),
+                        Some(serde_json::Value::Bool(true))
+                    );
                     if is_gen {
                         total += 1;
                         if matches!(map.get("js_runtime"), Some(serde_json::Value::Object(_))) {
                             with_rt += 1;
                         }
                     }
+                    if is_lowered {
+                        lowered += 1;
+                        if is_gen {
+                            lowered_requires_js += 1;
+                        }
+                    }
                     for child in map.values() {
-                        let (t, r) = count(child);
+                        let (t, r, l, lr) = count(child);
                         total += t;
                         with_rt += r;
+                        lowered += l;
+                        lowered_requires_js += lr;
                     }
-                    (total, with_rt)
+                    (total, with_rt, lowered, lowered_requires_js)
                 }
                 serde_json::Value::Array(arr) => {
                     let mut total = 0;
                     let mut with_rt = 0;
+                    let mut lowered = 0;
+                    let mut lowered_requires_js = 0;
                     for child in arr {
-                        let (t, r) = count(child);
+                        let (t, r, l, lr) = count(child);
                         total += t;
                         with_rt += r;
+                        lowered += l;
+                        lowered_requires_js += lr;
                     }
-                    (total, with_rt)
+                    (total, with_rt, lowered, lowered_requires_js)
                 }
-                _ => (0, 0),
+                _ => (0, 0, 0, 0),
             }
         }
 
         let mut total_requires_js = 0;
         let mut total_with_runtime = 0;
+        let mut total_lowered_to_transforms = 0;
+        let mut total_lowered_requires_js = 0;
         for (name, body) in crate::embedded::EMBEDDED_SPECS {
             let v: serde_json::Value = serde_json::from_str(body)
                 .unwrap_or_else(|e| panic!("embedded spec {name} is not valid JSON: {e}"));
-            let (t, r) = count(&v);
+            let (t, r, l, lr) = count(&v);
             total_requires_js += t;
             total_with_runtime += r;
+            total_lowered_to_transforms += l;
+            total_lowered_requires_js += lr;
         }
         assert!(
             total_with_runtime >= MIN_REQUIRES_JS_WITH_RUNTIME,
             "embedded corpus invariant violated: only {total_with_runtime} requires_js \
              generators have js_runtime populated (out of {total_requires_js} total). \
              Lower bound is {MIN_REQUIRES_JS_WITH_RUNTIME}."
+        );
+        assert!(
+            total_lowered_to_transforms >= MIN_LOWERED_TO_TRANSFORMS,
+            "embedded corpus invariant violated: only {total_lowered_to_transforms} generators \
+             were marked as lowered from requires_js to native transforms. Lower bound is \
+             {MIN_LOWERED_TO_TRANSFORMS}."
+        );
+        assert_eq!(
+            total_lowered_requires_js, 0,
+            "lowered transform generators must not retain requires_js; saw \
+             {total_lowered_requires_js} lowered generators still marked requires_js"
         );
         let without_runtime = total_requires_js - total_with_runtime;
         assert_eq!(
