@@ -42,9 +42,16 @@ use std::time::{Duration, Instant};
 
 use rquickjs::function::{Constructor, Rest};
 use rquickjs::prelude::Func;
-use rquickjs::{Ctx, Function, IntoJs, Object, Value};
+use rquickjs::{CatchResultExt, Ctx, Function, IntoJs, Object, Value};
 
 use crate::types::{JsRuntimeInput, ShellRunError, ShellRunner};
+
+/// Fig-compatible single-letter helper definitions (`l`, `p`, `c`, `d`,
+/// `h`, `f`) installed into every freshly-created context before user
+/// code runs. See `helpers.js` for provenance and semantics.
+///
+/// Embedded at compile time so the binary remains self-contained.
+const FIG_HELPERS_JS: &str = include_str!("helpers.js");
 
 /// Maximum number of `executeShellCommand` calls a single JS evaluation
 /// may make before further calls throw
@@ -104,6 +111,14 @@ pub(crate) fn install_host_api<'js>(
     state: Arc<HostState>,
     shell_deadline: Instant,
 ) -> rquickjs::Result<()> {
+    // ---- Fig helper preamble --------------------------------------------
+    // Bind the single-letter helpers (`l`, `p`, `c`, `d`, `h`, `f`) before
+    // exposing __ghost so user-supplied post_process bodies resolve them.
+    // The preamble is pure JSON-manipulation JS — it cannot escape the
+    // sandbox even if a future helper becomes buggy, because no host
+    // bindings have been installed yet.
+    install_fig_helpers(ctx)?;
+
     let globals: Object<'js> = ctx.globals();
 
     // ---- Static fields ---------------------------------------------------
@@ -175,6 +190,23 @@ pub(crate) fn install_host_api<'js>(
     globals.set("fig", fig)?;
 
     Ok(())
+}
+
+/// Evaluate the Fig helper preamble against `ctx`'s globals.
+///
+/// The preamble is embedded at compile time via `include_str!` so it
+/// rides with the binary. Each freshly-created [`rquickjs::Context`]
+/// re-evaluates it because the per-job context is otherwise empty;
+/// see `worker.rs::run_job` for the per-job lifecycle.
+///
+/// A failure here is propagated as `rquickjs::Result::Err` so the
+/// caller's `Ok(...)` envelope in `run_job` converts it into an
+/// `Exception` diagnostic; user code cannot observe a partial install.
+pub(crate) fn install_fig_helpers<'js>(ctx: &Ctx<'js>) -> rquickjs::Result<()> {
+    ctx.eval::<(), _>(FIG_HELPERS_JS).catch(ctx).map_err(|e| {
+        tracing::error!(error = ?e, "fig helper preamble failed to evaluate");
+        rquickjs::Error::Exception
+    })
 }
 
 /// Build the `executeShellCommand` closure.

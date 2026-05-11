@@ -593,3 +593,123 @@ async fn post_process_ttl_zero_means_no_caching() {
         "ttl_seconds=0 must skip caching; got {runs} script runs (contents: {counter_contents:?})"
     );
 }
+
+// ---------------------------------------------------------------------------
+// ux-10a — user-workflow goldens: helper-bearing post_process bodies
+//
+// These five tests exercise the AWS-style `function(t){return l(t,...)}`
+// shapes against canned `printf` stdout. Before ux-10a, every one of these
+// produced zero suggestions because the QuickJS sandbox had no `l`/`p`/`c`/
+// `d`/`h` defined and the body threw `ReferenceError`. After ux-10a, the
+// helper preamble installs pure-JS definitions and each body returns the
+// expected suggestions. The bodies are byte-for-byte copies of strings
+// observed in the on-disk `specs/aws.json` (sampled from the post_process
+// scan that motivated this phase) so a future converter change cannot
+// silently rename a helper without breaking these tests.
+// ---------------------------------------------------------------------------
+
+/// Build a printf shell command that reproduces a fixed JSON document on
+/// stdout. JSON is double-escaped (`"` → `\"`) and `%` is doubled because
+/// `sh -c "printf ..."` passes the format through printf's `%` interpolation.
+fn printf_json_argv(json: &str) -> Vec<String> {
+    let escaped: String = json
+        .chars()
+        .map(|c| match c {
+            '"' => "\\\"".to_string(),
+            '%' => "%%".to_string(),
+            other => other.to_string(),
+        })
+        .collect();
+    vec![
+        "sh".to_string(),
+        "-c".to_string(),
+        format!("printf '%s' \"{escaped}\""),
+    ]
+}
+
+async fn run_post_process_with_canned_stdout(
+    json: &str,
+    body: &str,
+) -> Vec<gc_suggest::types::Suggestion> {
+    let argv = printf_json_argv(json);
+    let script_strs: Vec<&str> = argv.iter().map(String::as_str).collect();
+    let gen = post_process_generator(&script_strs, body);
+    let engine = make_engine();
+    let ctx = make_ctx("aws-test", Vec::new(), "");
+    engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch")
+}
+
+#[tokio::test]
+async fn aws_iam_attach_role_policy_role_name_returns_role_suggestions() {
+    // Mirrors the post_process body for `--role-name` on `iam attach-role-policy`:
+    //   script: ["aws", "iam", "list-roles"]
+    //   body:   function(t){return l(t,"Roles","RoleName")}
+    let stdout = r#"{"Roles":[{"RoleName":"AdminRole","Arn":"arn:aws:iam::111:role/AdminRole"},{"RoleName":"ReadOnly","Arn":"arn:aws:iam::111:role/ReadOnly"}]}"#;
+    let body = r#"function(t){return l(t,"Roles","RoleName")}"#;
+    let results = run_post_process_with_canned_stdout(stdout, body).await;
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(
+        names,
+        ["AdminRole", "ReadOnly"],
+        "ux-10a regression: `aws iam attach-role-policy --role-name <Tab>` body \
+         no longer produces role suggestions. The helper `l` preamble in \
+         gc-jsrt/src/helpers.js is the source of truth."
+    );
+}
+
+#[tokio::test]
+async fn aws_lambda_invoke_function_name_returns_function_suggestions() {
+    // Mirrors body for `--function-name` on `lambda invoke`:
+    //   script: ["aws", "lambda", "list-functions"]
+    //   body:   function(t){return p(t,"Functions","FunctionName")}
+    let stdout = r#"{"Functions":[{"FunctionName":"alpha"},{"FunctionName":"beta"},{"FunctionName":"gamma"}]}"#;
+    let body = r#"function(t){return p(t,"Functions","FunctionName")}"#;
+    let results = run_post_process_with_canned_stdout(stdout, body).await;
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(names, ["alpha", "beta", "gamma"]);
+}
+
+#[tokio::test]
+async fn aws_cloudformation_create_stack_stack_name_returns_stack_suggestions() {
+    // Mirrors body for `--stack-name` on `cloudformation create-stack`:
+    //   script: ["aws", "cloudformation", "list-stacks"]
+    //   body:   t=>d(t,"StackSummaries","StackName")
+    let stdout = r#"{"StackSummaries":[{"StackName":"prod-vpc","StackStatus":"CREATE_COMPLETE"},{"StackName":"staging-vpc","StackStatus":"UPDATE_COMPLETE"}]}"#;
+    let body = r#"t=>d(t,"StackSummaries","StackName")"#;
+    let results = run_post_process_with_canned_stdout(stdout, body).await;
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(names, ["prod-vpc", "staging-vpc"]);
+}
+
+#[tokio::test]
+async fn aws_cloudwatch_delete_alarms_alarm_names_returns_alarm_suggestions() {
+    // Mirrors body for `--alarm-names` on `cloudwatch delete-alarms`:
+    //   script: ["aws", "cloudwatch", "describe-alarms"]
+    //   body:   t=>c(t,"MetricAlarms","AlarmName")
+    let stdout = r#"{"MetricAlarms":[{"AlarmName":"high-cpu","StateValue":"OK"},{"AlarmName":"low-memory","StateValue":"ALARM"}]}"#;
+    let body = r#"t=>c(t,"MetricAlarms","AlarmName")"#;
+    let results = run_post_process_with_canned_stdout(stdout, body).await;
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(names, ["high-cpu", "low-memory"]);
+}
+
+#[tokio::test]
+async fn aws_ecs_delete_service_cluster_returns_cluster_suggestions() {
+    // Mirrors body for `--cluster` on `ecs delete-service`:
+    //   script: ["aws", "ecs", "list-clusters"]
+    //   body:   t=>h(t,"clusterArns") — 2-arg variant (array of strings)
+    let stdout = r#"{"clusterArns":["arn:aws:ecs:us-east-1:111:cluster/web","arn:aws:ecs:us-east-1:111:cluster/workers"]}"#;
+    let body = r#"t=>h(t,"clusterArns")"#;
+    let results = run_post_process_with_canned_stdout(stdout, body).await;
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(
+        names,
+        [
+            "arn:aws:ecs:us-east-1:111:cluster/web",
+            "arn:aws:ecs:us-east-1:111:cluster/workers",
+        ],
+    );
+}

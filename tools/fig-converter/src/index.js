@@ -32,6 +32,7 @@
  */
 
 import { readdir, readFile, mkdir, rm, writeFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, basename, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -42,6 +43,18 @@ import { matchPostProcess } from './post-process-matcher.js';
 import { matchNativeFromJsSource, matchNativeGenerator } from './native-map.js';
 import { analyzeGenerator } from './ast-analyzer.js';
 import { stringifySorted } from './serialize.js';
+
+/**
+ * Names that gc-jsrt installs as global helpers in every job's sandbox
+ * (see crates/gc-jsrt/src/helpers.js). When the AST analyzer flags a
+ * body's free identifiers and ALL of them are in this set, we preserve
+ * the source — the runtime guarantees the names will resolve.
+ */
+const KNOWN_HELPERS = new Set(
+  JSON.parse(
+    readFileSync(new URL('./known-helpers.json', import.meta.url), 'utf8'),
+  ).helpers,
+);
 
 const BUILD_DIR = join(
   import.meta.dirname,
@@ -249,7 +262,12 @@ function buildSelfContainedJsRuntime(kind, source) {
   if (!source || typeof source !== 'string') return null;
   const analysis = analyzeGenerator(source);
   if (analysis.parse_error) return null;
-  if (analysis.fig_api_refs.some((ref) => ref.kind === 'free')) return null;
+  // Free identifiers normally disqualify a body — they would throw
+  // ReferenceError in the sandbox. ux-10a installs pure-JS definitions
+  // for Fig's minified helpers in every gc-jsrt job, so free refs whose
+  // names are entirely covered by that preamble are safe to preserve.
+  const freeRefs = analysis.fig_api_refs.filter((ref) => ref.kind === 'free');
+  if (freeRefs.some((ref) => !KNOWN_HELPERS.has(ref.name))) return null;
   return { kind, source, self_contained: true };
 }
 

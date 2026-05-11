@@ -1,0 +1,94 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+import { processGenerator } from './index.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Generators referencing Fig's minified single-letter helpers (`l`, `p`,
+// `c`, `d`, `h`, `f`) are flagged as having free identifiers by the AST
+// analyzer. Before ux-10a, `buildSelfContainedJsRuntime` returned null
+// for those bodies and `processGenerator` emitted `{ requires_js: true }`
+// with NO `js_runtime` attached — the runtime then had no source to
+// evaluate. The runtime now defines those helpers globally, so we lift
+// the converter's rejection and preserve the source.
+
+describe('processGenerator — helper-bearing _custom bodies', () => {
+  it('preserves the JS source when the only free identifiers are known helpers', () => {
+    const gen = {
+      _custom: true,
+      _customSource: 'function(t){return l(t,"Roles","RoleName")}',
+    };
+    const result = processGenerator(gen, 'aws');
+    assert.equal(result.requires_js, true);
+    assert.ok(
+      result.js_runtime,
+      'expected js_runtime to be attached when all free idents are known helpers',
+    );
+    assert.equal(result.js_runtime.kind, 'custom');
+    assert.equal(result.js_runtime.source, gen._customSource);
+    assert.equal(result.js_runtime.self_contained, true);
+  });
+
+  it('preserves bodies that reference multiple known helpers', () => {
+    const gen = {
+      _scriptFunction: true,
+      _scriptSource: 'e=>h(e,l)',
+    };
+    const result = processGenerator(gen, 'aws');
+    assert.ok(
+      result.js_runtime,
+      'expected js_runtime to be attached for helper-only references',
+    );
+    assert.equal(result.js_runtime.self_contained, true);
+  });
+
+  it('still rejects bodies with genuinely unknown free identifiers', () => {
+    const gen = {
+      _custom: true,
+      _customSource: 'function(t){return xyzUnknownHelper(t)}',
+    };
+    const result = processGenerator(gen, 'aws');
+    assert.equal(result.requires_js, true);
+    assert.equal(
+      result.js_runtime,
+      undefined,
+      'unknown identifier must still strip the runtime body',
+    );
+  });
+
+  it('still rejects bodies mixing known helpers with unknown identifiers', () => {
+    const gen = {
+      _custom: true,
+      _customSource: 'function(t){let x = unknownThing(); return l(t,x,"name")}',
+    };
+    const result = processGenerator(gen, 'aws');
+    assert.equal(result.requires_js, true);
+    assert.equal(
+      result.js_runtime,
+      undefined,
+      'mixed known+unknown identifiers must NOT preserve source',
+    );
+  });
+});
+
+describe('known-helpers.json', () => {
+  it('is a JSON file listing string identifier names', async () => {
+    const path = join(__dirname, 'known-helpers.json');
+    const raw = await readFile(path, 'utf8');
+    const data = JSON.parse(raw);
+    assert.ok(Array.isArray(data.helpers), 'expected { "helpers": [ ... ] }');
+    assert.ok(data.helpers.length >= 6, 'expected at least 6 helper names');
+    for (const name of data.helpers) {
+      assert.equal(typeof name, 'string');
+      assert.match(name, /^[a-z]$/, `helper "${name}" should be a single lower-case letter`);
+    }
+    // Plan-pinned helpers per docs/plans/ux-10-helper-recovery-and-transforms/SPEC.md § A
+    for (const required of ['l', 'p', 'c', 'd', 'h', 'f']) {
+      assert.ok(data.helpers.includes(required), `missing required helper "${required}"`);
+    }
+  });
+});
