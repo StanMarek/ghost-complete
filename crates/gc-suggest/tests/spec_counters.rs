@@ -1,21 +1,28 @@
 //! Integration tests for [`SpecStore::counters`] — corpus-wide
-//! diagnostics for the ux-9b precursor migration plan.
+//! diagnostics for the requires_js migration plan.
 //!
 //! These pin the per-shape contributions to the [`SpecResolutionCounters`]
-//! fields so future converter work can extend the migration-future fields
-//! (`lowered_to_transforms`, `static_extracted_subprocess`,
-//! `token_only_promoted`, `aws_sdk_dispatched`,
+//! fields so future converter work can extend the remaining
+//! migration-future fields (`lowered_to_transforms`,
+//! `static_extracted_subprocess`, `aws_sdk_dispatched`,
 //! `native_provider_dispatched`) without re-deriving the requires_js
-//! totals.
+//! totals. `token_only_promoted` is already populated today and is
+//! exercised by [`token_only_without_self_contained_is_supported_and_counted`]
+//! and [`token_only_with_empty_source_does_not_increment_promoted_counter`]
+//! in this file.
 //!
 //! The "supported" classification mirrors the engine's runtime dispatch
 //! gate (see [`gc_suggest::specs::is_requires_js_supported`]):
 //! `script_function` / `custom` generators must carry both a non-empty
 //! `source` AND `self_contained: true`; `post_process` generators must
 //! carry an accompanying `script` / `script_template` plus a non-empty
-//! `source`. Without this alignment, the counters block would over-report
-//! supported generators relative to the legacy raw-JSON walker that the
-//! `ghost-complete status --json spec_counts` block already publishes.
+//! `source`; `token_only` generators only require a non-empty `source`
+//! (no `self_contained` proof) because the runtime installs no host
+//! bindings, and they additionally bump `token_only_promoted` alongside
+//! `requires_js_supported`. Without this alignment, the counters block
+//! would over-report supported generators relative to the legacy
+//! raw-JSON walker that the `ghost-complete status --json spec_counts`
+//! block already publishes.
 
 use std::fs;
 
@@ -108,8 +115,13 @@ fn counters_classify_each_known_generator_shape() {
         "one requires_js generator omits js_runtime metadata"
     );
 
-    // Migration-future fields stay at 0 in this PR — populated by
-    // ux-10/11/12/13/14 respectively.
+    // Migration-future fields stay at 0 for THIS fixture: the corpus has
+    // no `token_only` generators (only `script_function` + an unsupported
+    // shape), and the four other counters (`lowered_to_transforms`,
+    // `static_extracted_subprocess`, `aws_sdk_dispatched`,
+    // `native_provider_dispatched`) are not yet populated by any
+    // migration. Token-only contributions are pinned separately by
+    // `token_only_without_self_contained_is_supported_and_counted`.
     assert_eq!(counters.lowered_to_transforms, 0);
     assert_eq!(counters.static_extracted_subprocess, 0);
     assert_eq!(counters.token_only_promoted, 0);

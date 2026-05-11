@@ -1610,8 +1610,11 @@ impl SpecStore {
     ///   - `requires_js_supported` increments when [`is_requires_js_supported`]
     ///     returns true (post_process+script with non-empty source, OR
     ///     script_function/custom with non-empty source AND
-    ///     `self_contained: true`);
+    ///     `self_contained: true`, OR `token_only` with non-empty source);
     ///   - `requires_js_unsupported` increments otherwise.
+    ///
+    /// Generators promoted into the token-only sandbox also bump
+    /// `token_only_promoted` alongside `requires_js_supported`.
     ///
     /// The supported predicate intentionally matches the runtime dispatch
     /// gate inside `collect_generators` and the raw-JSON walker in
@@ -1621,9 +1624,11 @@ impl SpecStore {
     /// embedded corpus (~1944 supported / ~1697 unsupported / ~3641 total
     /// at v0.13).
     ///
-    /// The five migration-future fields stay at zero in this PR — they are
-    /// populated by ux-10/11/12/13/14 once the converter starts emitting
-    /// the corresponding metadata.
+    /// Four of the five migration-future fields stay at zero today
+    /// (`lowered_to_transforms`, `static_extracted_subprocess`,
+    /// `aws_sdk_dispatched`, `native_provider_dispatched`); the converter
+    /// populates them once the corresponding migration emits the
+    /// metadata. `token_only_promoted` is populated today.
     ///
     /// This force-loads every entry through [`Self::resolved_entries`], so
     /// it is a diagnostic call (not a hot path). The trade-off is documented
@@ -2185,10 +2190,11 @@ pub fn parse_spec_checked_and_sanitized(contents: &str) -> Result<CompletionSpec
 /// single keystroke's dispatch outcome) with diagnostic totals over every
 /// generator reachable from every loaded spec. Surfaced through
 /// [`SpecStore::counters`] and the `counters` block of `ghost-complete
-/// status --json`. The five migration-future fields stay at zero today and
-/// are populated by ux-10 (lowering JS bodies to native transforms),
-/// ux-11 (subprocess-driven JS lifting), ux-12 (token-only sandbox),
-/// ux-13 (AWS SDK dispatch), and ux-14 (native tool providers).
+/// status --json`. Four of the five migration-future fields stay at zero
+/// today (`lowered_to_transforms`, `static_extracted_subprocess`,
+/// `aws_sdk_dispatched`, `native_provider_dispatched`) and are populated
+/// once the converter starts emitting the corresponding metadata.
+/// `token_only_promoted` is populated today by the token-only sandbox.
 #[derive(Debug, Default, Clone, serde::Serialize)]
 pub struct SpecResolutionCounters {
     /// Total `requires_js` generators in the corpus.
@@ -2198,16 +2204,22 @@ pub struct SpecResolutionCounters {
     /// Generators that load but skip at dispatch time.
     pub requires_js_unsupported: usize,
     /// Generators where the converter lowered a JS body to a native
-    /// transform pipeline (no QuickJS at runtime). Populated by ux-10.
+    /// transform pipeline (no QuickJS at runtime). Reserved for the
+    /// transform-lowering migration; stays at zero today.
     pub lowered_to_transforms: usize,
     /// Generators where the converter lifted a subprocess-driven JS
-    /// body into native script + transforms. Populated by ux-11.
+    /// body into native script + transforms. Reserved for the
+    /// subprocess-lifting migration; stays at zero today.
     pub static_extracted_subprocess: usize,
-    /// Generators promoted into the token-only sandbox. Populated by ux-12.
+    /// Generators promoted into the token-only sandbox. Populated today
+    /// by [`accumulate_counters_from_generators`] for every supported
+    /// `kind == token_only` generator.
     pub token_only_promoted: usize,
-    /// Generators dispatched through a typed AWS SDK call. Populated by ux-13.
+    /// Generators dispatched through a typed AWS SDK call. Reserved for
+    /// the AWS-SDK migration; stays at zero today.
     pub aws_sdk_dispatched: usize,
-    /// Generators dispatched through a native tool provider. Populated by ux-14.
+    /// Generators dispatched through a native tool provider. Reserved
+    /// for the native-tool-provider migration; stays at zero today.
     pub native_provider_dispatched: usize,
 }
 
@@ -2688,11 +2700,11 @@ fn collect_generators(
         } else {
             false
         };
-        // JS-only generators (script_function / custom) have neither `script`
-        // nor `script_template` populated, but the engine still needs a slot
-        // in the script-generator vec to dispatch them. Funnel anything with
-        // a populated `js_runtime` through the same queue and let
-        // `engine::run_generators` switch on `kind`.
+        // JS-only generators (script_function / custom / token_only) have
+        // neither `script` nor `script_template` populated, but the engine
+        // still needs a slot in the script-generator vec to dispatch them.
+        // Funnel anything with a populated `js_runtime` through the same
+        // queue and let `engine::run_generators` switch on `kind`.
         let is_js_dispatchable = gen.requires_js && gen.js_runtime.is_some();
         if !handled_by_type
             && (gen.script.is_some() || gen.script_template.is_some() || is_js_dispatchable)
@@ -3709,9 +3721,10 @@ mod tests {
     #[test]
     fn test_corpus_has_js_runtime_for_requires_js() {
         // Corpus invariant: most requires_js generators in the embedded
-        // corpus carry a populated `js_runtime` object. ux-12 intentionally
-        // leaves subprocess/network/host-API shapes without runtime metadata
-        // so they remain skipped instead of being mis-promoted to TokenOnly.
+        // corpus carry a populated `js_runtime` object. The converter
+        // intentionally leaves subprocess/network/host-API shapes without
+        // runtime metadata so they remain skipped instead of being
+        // mis-promoted to TokenOnly.
         const MIN_REQUIRES_JS_WITH_RUNTIME: usize = 3_300;
         const EXPECTED_UNSUPPORTED_WITHOUT_RUNTIME: usize = 295;
 

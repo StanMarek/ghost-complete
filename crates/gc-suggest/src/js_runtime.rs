@@ -526,6 +526,79 @@ mod tests {
         assert!(program.contains("return __src;"));
     }
 
+    /// `JsExecContext::into_runtime_input` MUST drop `cwd` and `env` for
+    /// `TokenOnly` dispatch — the worker installs no host bindings, so any
+    /// forwarded host state is dead weight at best and a leak vector at
+    /// worst (HOME / PATH / AWS_ACCESS_KEY_ID / GITHUB_TOKEN must never
+    /// reach a `token_only` sandbox). This pins the conditional at the
+    /// data boundary so a refactor that flips the `matches!` branch or
+    /// short-circuits the clearing trips the test, not production.
+    ///
+    /// `gc-jsrt`'s `install_token_only_globals` is the other half of
+    /// defense-in-depth (it refuses to install host bindings even if the
+    /// payload carries them). Both halves are tested independently.
+    #[test]
+    fn into_runtime_input_clears_cwd_and_env_for_token_only() {
+        let mut env = BTreeMap::new();
+        env.insert("AWS_ACCESS_KEY_ID".to_string(), "secret".to_string());
+        env.insert("HOME".to_string(), "/leaky/home".to_string());
+        let ctx = JsExecContext {
+            tokens: vec!["aws".to_string(), "s3".to_string()],
+            current_token: "s3".to_string(),
+            previous_token: "aws".to_string(),
+            cwd: PathBuf::from("/leaky/cwd"),
+            env,
+        };
+
+        let input = ctx.into_runtime_input("gen-1".to_string(), JsExecutionKind::TokenOnly);
+
+        assert_eq!(
+            input.cwd,
+            PathBuf::new(),
+            "TokenOnly dispatch must clear cwd at the data boundary"
+        );
+        assert!(
+            input.env.is_empty(),
+            "TokenOnly dispatch must clear env at the data boundary"
+        );
+        // Tokens are still forwarded — only host cwd/env are sensitive.
+        assert_eq!(input.tokens, vec!["aws".to_string(), "s3".to_string()]);
+        assert_eq!(input.current_token, "s3");
+        assert_eq!(input.previous_token, "aws");
+    }
+
+    /// Companion to `into_runtime_input_clears_cwd_and_env_for_token_only`:
+    /// the SAME context fed through a non-`TokenOnly` kind MUST retain
+    /// cwd + env. This pins the `if matches!(kind, TokenOnly)` branch from
+    /// the other side — a refactor that always clears cwd/env (e.g.
+    /// dropping the conditional) would silently strip host context from
+    /// `script_function` / `custom` / `post_process` and break those
+    /// dispatches.
+    #[test]
+    fn into_runtime_input_retains_cwd_and_env_for_non_token_only() {
+        let mut env = BTreeMap::new();
+        env.insert("PATH".to_string(), "/usr/bin".to_string());
+        let ctx = JsExecContext {
+            tokens: vec!["aws".to_string()],
+            current_token: String::new(),
+            previous_token: "aws".to_string(),
+            cwd: PathBuf::from("/work"),
+            env: env.clone(),
+        };
+
+        let input = ctx.into_runtime_input("gen-2".to_string(), JsExecutionKind::Custom);
+
+        assert_eq!(
+            input.cwd,
+            PathBuf::from("/work"),
+            "non-TokenOnly dispatch must retain cwd"
+        );
+        assert_eq!(
+            input.env, env,
+            "non-TokenOnly dispatch must retain env verbatim"
+        );
+    }
+
     /// Pins the perf contract for `worker()`: a burst of N concurrent
     /// callers must produce exactly one [`JsWorker::spawn`] invocation,
     /// even though every caller observes a `None` initial state. A

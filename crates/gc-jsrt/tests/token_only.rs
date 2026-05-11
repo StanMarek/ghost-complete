@@ -132,6 +132,17 @@ async fn token_only_capability_globals_are_undefined() {
         "exports",
         "fig",
         "__ghost",
+        // Fig backwards-compat globals that `install_host_api` mirrors
+        // onto the global scope (host.rs:170-172). `install_token_only_globals`
+        // must NOT install any of these — they are derived from cwd/env
+        // and would carry capability data even if the data-boundary
+        // clearing reduced them to empty strings/objects. Pin the
+        // negative so a refactor that wired host-API install into the
+        // TokenOnly arm trips this test rather than passing while the
+        // security invariant rotted.
+        "searchTerm",
+        "currentWorkingDirectory",
+        "environmentVariables",
     ];
     for name in dangerous {
         let out = run(&format!("typeof {name}"), FAST_TIMEOUT).await;

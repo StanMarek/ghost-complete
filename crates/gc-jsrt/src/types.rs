@@ -136,7 +136,8 @@ pub struct JsRuntimeInput {
     /// `post_process` flavour where stdout feeds the JS function.
     pub stdout: Option<String>,
     /// Tokens from the parsed command line. Populated for
-    /// `script_function` / `custom` flavours.
+    /// `script_function`, `custom`, and `token_only` flavours
+    /// (`install_token_only_globals` reads this vec directly).
     pub tokens: Vec<String>,
     /// The current word the user is typing.
     pub current_token: String,
@@ -153,7 +154,10 @@ pub struct JsRuntimeInput {
     /// `<spec-id>:<generator-index>`.
     pub generator_id: String,
     /// Shape selector. `PostProcess` is the historical default;
-    /// `ScriptFunction` / `Custom` require the optional fields above.
+    /// `ScriptFunction`, `Custom`, and `TokenOnly` require the optional
+    /// fields above. `TokenOnly` deliberately discards `cwd`/`env` even
+    /// when set in the input (the worker's data-boundary clearing in
+    /// `worker.rs::run_job` zeroes them before sandbox install).
     pub kind: JsExecutionKind,
     /// Whether a `Custom` generator may pass a shell-string to
     /// `executeShellCommand`. Mirrors the spec's

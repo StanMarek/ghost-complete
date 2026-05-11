@@ -329,9 +329,10 @@ pub struct SuggestionEngine {
     alias_map: AliasStore,
     generator_cache: Arc<GeneratorCache>,
     /// Lazily-spawned QuickJS worker. Only paid for when a `requires_js`
-    /// generator (`post_process`, `script_function`, or `custom`) actually
-    /// fires. Held in an `Arc` so per-generator tasks can share it without
-    /// taking `&self` references across `tokio::spawn`.
+    /// generator (`post_process`, `script_function`, `custom`, or
+    /// `token_only`) actually fires. Held in an `Arc` so per-generator
+    /// tasks can share it without taking `&self` references across
+    /// `tokio::spawn`.
     js_runtime: Arc<JsRuntimeAdapter>,
     token_only_demotion_state: Arc<TokenOnlyDemotionState>,
     frecency_db: FrecencyDb,

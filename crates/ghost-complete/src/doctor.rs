@@ -1847,6 +1847,53 @@ mod tests {
         );
     }
 
+    /// `token_only` is the sandboxed runtime — its source receives only the
+    /// captured user tokens and never the host's cwd/env, so the
+    /// `self_contained` gate that motivates the `script_function`/`custom`
+    /// classification does not apply. A future refactor that re-classifies
+    /// `TokenOnly` as `Issue::UnsupportedUnproven` (e.g. by collapsing the
+    /// match arm under `_` or moving the self_contained gate up) would flip
+    /// the doctor severity for every promoted spec and surface a spurious
+    /// "unsupported (unproven self_contained)" message. This test pins the
+    /// current `JsRuntimeKind::TokenOnly => None` arm so that regression is
+    /// caught loudly.
+    #[test]
+    fn doctor_is_ok_when_token_only_lacks_self_contained() {
+        let (store, _dir) = store_from_json_fixtures(&[(
+            "token-only.json",
+            r#"{
+                "name": "token-only",
+                "args": [{
+                    "name": "x",
+                    "generators": [{
+                        "requires_js": true,
+                        "js_runtime": {
+                            "kind": "token_only",
+                            "source": "tokens.map(name => ({name}))",
+                            "self_contained": false
+                        }
+                    }]
+                }]
+            }"#,
+        )]);
+        let result = check_embedded_runtime_metadata_for_store(&store);
+        assert!(
+            matches!(result.severity, Severity::Ok),
+            "token_only with self_contained:false must be OK, got: {}",
+            result.message
+        );
+        assert!(
+            !result.message.contains("self_contained"),
+            "token_only must not surface an unsupported-self_contained warning: {}",
+            result.message
+        );
+        assert!(
+            !result.message.contains("unsupported"),
+            "token_only must not surface an unsupported-class warning: {}",
+            result.message
+        );
+    }
+
     /// Companion positive control: a `script_function` proven
     /// `self_contained: true` with a non-empty source IS dispatchable
     /// and must not Fail. Without this we cannot triangulate a

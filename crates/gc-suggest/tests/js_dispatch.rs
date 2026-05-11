@@ -1,14 +1,18 @@
-//! End-to-end tests for the `script_function` and `custom` JS dispatch
-//! paths.
+//! End-to-end tests for the `script_function`, `custom`, and
+//! `token_only` JS dispatch paths.
 //!
-//! Two shapes route through dedicated dispatch helpers
-//! (`run_script_function_dispatch`, `run_custom_dispatch`):
+//! Three shapes route through dedicated dispatch helpers
+//! (`run_script_function_dispatch`, `run_custom_dispatch`,
+//! `run_token_only_dispatch`):
 //!
 //! - `script_function`: JS evaluates first to derive argv, the engine
 //!   then runs the argv as a script and applies the optional
 //!   transform pipeline.
 //! - `custom`: JS evaluates with a host shell-runner binding and
 //!   produces suggestions directly.
+//! - `token_only`: JS evaluates with only token globals installed —
+//!   no host APIs, cwd, env, or shell binding — and produces
+//!   suggestions directly.
 //!
 //! These tests synthesise a `Vec<Arc<GeneratorSpec>>` and pass it to
 //! `SuggestionEngine::run_generators` — the same hot path the proxy
