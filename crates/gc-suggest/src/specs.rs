@@ -1211,10 +1211,10 @@ impl SpecStore {
     /// [`SpecSource::Embedded`] so first-touch parsing reads the
     /// binary slice in-memory — no disk I/O.
     ///
-    /// Aliases for embedded specs come from the build-time
-    /// `EMBEDDED_SPEC_ALIASES` table at zero parse cost; aliases for
-    /// filesystem specs come from a shallow parse of the
-    /// `CompletionSpec.name` field per file.
+    /// Aliases for embedded specs come from
+    /// [`crate::embedded::embedded_filenames_with_aliases`] at zero
+    /// parse cost; aliases for filesystem specs come from a shallow
+    /// parse of the `CompletionSpec.name` field per file.
     pub fn load_with_embedded(filesystem_dirs: &[PathBuf]) -> Result<SpecLoadResult> {
         let mut entries: Vec<Arc<SpecEntry>> = Vec::new();
         let mut by_alias: AliasIndex = HashMap::new();
@@ -1873,9 +1873,10 @@ fn shallow_parse_name(path: &Path) -> Result<Option<String>> {
 /// 709-spec corpus including AWS.
 ///
 /// Embedded specs (loaded via [`SpecStore::load_with_embedded`] from
-/// `EMBEDDED_SPECS`) skip this path entirely: their alias is taken
-/// from the build-time `EMBEDDED_SPEC_ALIASES` table at zero parse
-/// cost.
+/// the in-memory archive walked by
+/// [`crate::embedded::embedded_filenames_with_aliases`]) skip this
+/// path entirely: their alias is taken from the build-time alias slot
+/// captured by the archive at zero parse cost.
 fn alias_for_filesystem_file(_filename: &str, path: &Path) -> Result<Option<String>> {
     shallow_parse_name(path)
 }
@@ -1887,10 +1888,11 @@ fn alias_for_filesystem_file(_filename: &str, path: &Path) -> Result<Option<Stri
 /// Holds metadata only — `serde_json::from_str` is deferred until the
 /// owning `SpecEntry::spec()` is called for the first time. The
 /// `name_alias` field is pre-resolved by the caller from a successful shallow
-/// filesystem header parse or the build-time `EMBEDDED_SPEC_ALIASES` table.
-/// `None` means no usable distinct name alias was found. Shallow filesystem
-/// parse failures are kept separately so they can surface as lazy load errors
-/// for the entry.
+/// filesystem header parse or the build-time alias slot captured by
+/// [`crate::embedded::embedded_filenames_with_aliases`]. `None` means
+/// no usable distinct name alias was found. Shallow filesystem parse
+/// failures are kept separately so they can surface as lazy load
+/// errors for the entry.
 struct PendingSpec {
     filename_stem: String,
     /// Pre-resolved `CompletionSpec.name` alias when it differs from
@@ -1905,9 +1907,9 @@ struct PendingSpec {
 /// Does NOT parse JSON contents into a `CompletionSpec`. Filesystem entries
 /// always shallow-parse only the top-level `name` field because users may edit
 /// installed specs and build-time aliases can be stale. Embedded entries loaded
-/// by [`SpecStore::load_with_embedded`] use the generated
-/// `EMBEDDED_SPEC_ALIASES` table instead and avoid JSON parsing at
-/// registration.
+/// by [`SpecStore::load_with_embedded`] use the alias slot captured by
+/// [`crate::embedded::embedded_filenames_with_aliases`] instead and
+/// avoid JSON parsing at registration.
 ///
 /// Filesystem errors at directory-read time are returned as a hard
 /// `Err`; per-file shallow header failures are recorded on the entry and

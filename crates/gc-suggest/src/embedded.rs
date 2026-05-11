@@ -22,9 +22,10 @@
 //!
 //! The embedded specs are now consumed in-memory by
 //! [`crate::specs::SpecStore::load_with_embedded`] via
-//! [`embedded_entries_with_aliases`]: the spec loader registers each
-//! `(filename, contents, name_alias)` tuple as a lazy
-//! [`crate::specs::SpecSource::Embedded`] entry whose JSON body is a
+//! [`embedded_filenames_with_aliases`]: the spec loader registers each
+//! `(filename, name_alias)` pair as a lazy
+//! [`crate::specs::SpecSource::Embedded`] entry, and the JSON body is
+//! pulled on first parse via [`embedded_spec_contents`] which returns a
 //! `&'static str` slice cached after first decompression. No disk
 //! materialisation, no `.cache` write on first run, no version sentinel.
 //!
@@ -111,10 +112,14 @@ fn parse_archive() -> EmbeddedIndex {
 
         filenames.push(filename);
         aliases.push(alias);
-        blobs.insert(filename, blob);
+        let prev = blobs.insert(filename, blob);
+        debug_assert!(
+            prev.is_none(),
+            "embedded_specs.bin: duplicate filename in archive: {filename} (build-script bug)"
+        );
     }
 
-    debug_assert_eq!(
+    assert_eq!(
         cursor,
         ARCHIVE.len(),
         "embedded_specs.bin: trailing bytes after parsing {entry_count} entries"
@@ -213,6 +218,11 @@ pub fn embedded_filenames() -> &'static [&'static str] {
 ///
 /// Returns `Some(contents)` when the binary ships with that spec.
 ///
+/// Lookup is O(1) on both cache hit and cache miss: the blob map keys
+/// are the archive-owned `&'static str` filenames, so a single
+/// [`HashMap::get_key_value`] yields both the cache key and the
+/// compressed blob without a linear scan.
+///
 /// The first call for a given filename zstd-decompresses the blob from
 /// the archive and `Box::leak`s the resulting `String` into a `&'static
 /// str` that is cached for the process lifetime. Subsequent lookups
@@ -222,18 +232,13 @@ pub fn embedded_filenames() -> &'static [&'static str] {
 /// never queried never pay the decompression cost.
 pub fn embedded_spec_contents(filename: &str) -> Option<&'static str> {
     let idx = index();
-    let blob = *idx.blobs.get(filename)?;
 
     // The cache is keyed by the `&'static str` filename in the archive,
-    // not the caller's `&str`, so we need the archive-owned key.
-    let archive_key: &'static str = idx
-        .filenames
-        .iter()
-        .copied()
-        .find(|n| *n == filename)
-        .expect("filename present in blobs map must also be in filenames vec");
+    // not the caller's `&str`. `get_key_value` hands us both in one
+    // O(1) hash lookup — no linear scan over `idx.filenames`.
+    let (archive_key, blob) = idx.blobs.get_key_value(filename).map(|(k, v)| (*k, *v))?;
 
-    // Fast path: cache hit. Most callers hit this branch.
+    // Fast path: cache hit.
     {
         let guard = idx.cache.lock().unwrap_or_else(|p| p.into_inner());
         if let Some(s) = guard.get(archive_key) {
@@ -271,19 +276,19 @@ pub fn embedded_spec_contents(filename: &str) -> Option<&'static str> {
     Some(leaked)
 }
 
-/// Iterate every embedded `(filename, contents, name_alias)` triple in
-/// emit order. The alias is the `CompletionSpec.name` field captured at
-/// build time when it differs from the filename stem; `None` otherwise.
+/// Eager iterator that yields `(filename, contents, name_alias)` for
+/// every embedded spec in emit order. The alias is the
+/// `CompletionSpec.name` field captured at build time when it differs
+/// from the filename stem; `None` otherwise.
 ///
-/// **Warning: this eagerly decompresses every spec body**, which costs
-/// the full corpus decompression time (~100 ms cold across 709 specs)
-/// and `Box::leak`s ~47 MB of JSON. The startup spec loader
-/// (`SpecStore::load_with_embedded`) uses
+/// **Warning: this decompresses every spec body it touches**, which
+/// `Box::leak`s ~47 MB of JSON across the full corpus. The startup spec
+/// loader (`SpecStore::load_with_embedded`) uses
 /// [`embedded_filenames_with_aliases`] instead, which carries just the
 /// filename + alias pair and lets the lazy parse path pull the body on
-/// first touch. The eager triple iterator remains in the public surface
-/// for test code that needs the full body (validate-specs, corpus
-/// smoke tests).
+/// first touch. Use this triple iterator sparingly — it exists for
+/// downstream test consumers that want a single iterator over the full
+/// corpus.
 pub fn embedded_entries_with_aliases(
 ) -> impl Iterator<Item = (&'static str, &'static str, Option<&'static str>)> {
     let idx = index();
