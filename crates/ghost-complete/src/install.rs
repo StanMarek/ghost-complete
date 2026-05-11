@@ -164,9 +164,8 @@ fn copy_specs(config_dir: &Path) -> Result<()> {
 
     let mut count = 0;
     for name in embedded_filenames() {
-        let contents = embedded_spec_contents(name).with_context(|| {
-            format!("embedded spec missing from archive: {name}")
-        })?;
+        let contents = embedded_spec_contents(name)
+            .with_context(|| format!("embedded spec missing from archive: {name}"))?;
         let dest_file = dest.join(name);
         fs::write(&dest_file, contents)
             .with_context(|| format!("failed to write spec: {}", dest_file.display()))?;

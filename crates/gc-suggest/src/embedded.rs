@@ -454,7 +454,10 @@ mod tests {
                 second.as_ptr(),
                 "embedded_spec_contents must be pointer-stable across calls for {filename}"
             );
-            assert!(!first.is_empty(), "embedded spec {filename} decoded to empty body");
+            assert!(
+                !first.is_empty(),
+                "embedded spec {filename} decoded to empty body"
+            );
         }
         assert!(embedded_spec_contents("does-not-exist.json").is_none());
     }

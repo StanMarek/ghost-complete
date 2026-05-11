@@ -858,9 +858,8 @@ fn parse_entry_source(source: &SpecSource) -> Result<Arc<CompletionSpec>, String
             // in the index that `embedded_spec_contents` cannot find.
             // Surface as a parse error rather than panicking so the
             // sticky-failure machinery records it once.
-            let body = crate::embedded::embedded_spec_contents(filename).ok_or_else(|| {
-                format!("embedded spec {filename} missing from archive")
-            })?;
+            let body = crate::embedded::embedded_spec_contents(filename)
+                .ok_or_else(|| format!("embedded spec {filename} missing from archive"))?;
             std::borrow::Cow::Borrowed(body)
         }
     };
