@@ -3,6 +3,7 @@ use std::path::Path;
 use anyhow::Result;
 use tokio::process::Command;
 
+use crate::priority::Priority;
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -22,11 +23,16 @@ pub fn generator_to_query_kind(type_str: &str) -> Option<GitQueryKind> {
 }
 
 pub async fn git_suggestions(cwd: &Path, kind: GitQueryKind) -> Result<Vec<Suggestion>> {
-    let lines = match kind {
+    let current_branch = match kind {
+        GitQueryKind::Branches => current_git_branch(cwd).await,
+        GitQueryKind::Tags | GitQueryKind::Remotes => None,
+    };
+    let mut lines = match kind {
         GitQueryKind::Branches => git_branches(cwd).await,
         GitQueryKind::Tags => git_tags(cwd).await,
         GitQueryKind::Remotes => git_remotes(cwd).await,
     };
+    move_current_branch_first(&mut lines, current_branch.as_deref());
 
     let (suggestion_kind, description) = match kind {
         GitQueryKind::Branches => (SuggestionKind::GitBranch, "branch"),
@@ -36,18 +42,49 @@ pub async fn git_suggestions(cwd: &Path, kind: GitQueryKind) -> Result<Vec<Sugge
 
     Ok(lines
         .into_iter()
-        .map(|name| Suggestion {
-            text: name,
-            description: Some(description.to_string()),
-            kind: suggestion_kind,
-            source: SuggestionSource::Git,
-            ..Default::default()
+        .map(|name| {
+            let is_current_branch = current_branch.as_deref() == Some(name.as_str());
+            Suggestion {
+                text: name,
+                description: Some(
+                    if is_current_branch {
+                        "current branch"
+                    } else {
+                        description
+                    }
+                    .to_string(),
+                ),
+                kind: suggestion_kind,
+                source: SuggestionSource::Git,
+                priority: is_current_branch.then(|| Priority::new(100)),
+                ..Default::default()
+            }
         })
         .collect())
 }
 
 async fn git_branches(cwd: &Path) -> Vec<String> {
     run_git(cwd, &["branch", "--format=%(refname:short)"]).await
+}
+
+async fn current_git_branch(cwd: &Path) -> Option<String> {
+    run_git(cwd, &["branch", "--show-current"])
+        .await
+        .into_iter()
+        .next()
+}
+
+fn move_current_branch_first(branches: &mut Vec<String>, current_branch: Option<&str>) {
+    let Some(current_branch) = current_branch else {
+        return;
+    };
+    let Some(index) = branches.iter().position(|branch| branch == current_branch) else {
+        return;
+    };
+    if index > 0 {
+        let branch = branches.remove(index);
+        branches.insert(0, branch);
+    }
 }
 
 async fn git_tags(cwd: &Path) -> Vec<String> {
@@ -117,6 +154,7 @@ async fn run_git(cwd: &Path, args: &[&str]) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::process::Command as StdCommand;
 
     #[test]
     fn test_generator_to_query_kind() {
@@ -180,5 +218,51 @@ mod tests {
                 "expected at least one branch in the workspace git repo"
             );
         }
+    }
+
+    #[tokio::test]
+    async fn test_git_branch_suggestions_prioritize_current_branch() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        git_fixture(tmp.path(), &["init"]);
+        git_fixture(tmp.path(), &["config", "user.email", "ghost@example.com"]);
+        git_fixture(tmp.path(), &["config", "user.name", "Ghost Complete"]);
+        git_fixture(tmp.path(), &["branch", "-M", "main"]);
+        std::fs::write(tmp.path().join("README.md"), "test\n").unwrap();
+        git_fixture(tmp.path(), &["add", "README.md"]);
+        git_fixture(tmp.path(), &["commit", "-m", "initial"]);
+        git_fixture(tmp.path(), &["branch", "z-current"]);
+        git_fixture(tmp.path(), &["checkout", "z-current"]);
+
+        let suggestions = git_suggestions(tmp.path(), GitQueryKind::Branches)
+            .await
+            .unwrap();
+
+        let texts: Vec<_> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(
+            texts.first(),
+            Some(&"z-current"),
+            "current branch must be first, got {texts:?}"
+        );
+        let current = suggestions
+            .iter()
+            .find(|s| s.text == "z-current")
+            .expect("current branch should be listed");
+        assert_eq!(current.description.as_deref(), Some("current branch"));
+        assert_eq!(current.priority.map(|p| p.get()), Some(100));
+    }
+
+    fn git_fixture(cwd: &Path, args: &[&str]) {
+        let output = StdCommand::new("git")
+            .args(args)
+            .current_dir(cwd)
+            .output()
+            .unwrap_or_else(|e| panic!("failed to run git {args:?}: {e}"));
+        assert!(
+            output.status.success(),
+            "git {args:?} failed with status {:?}\nstdout:\n{}\nstderr:\n{}",
+            output.status.code(),
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
 }

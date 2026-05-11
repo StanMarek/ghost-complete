@@ -7,7 +7,7 @@ use gc_terminal::TerminalProfile;
 use crate::ansi;
 use crate::layout;
 use crate::types::{OverlayState, PopupLayout};
-use crate::util::display_text;
+use crate::util::{display_text, truncate_with_ellipsis};
 
 /// Precomputed ANSI sequences for popup styling.
 /// Keeps gc-overlay independent of gc-config.
@@ -977,17 +977,10 @@ fn write_description(
         ansi::reset(buf);
         buf.extend_from_slice(&theme.description_on);
     }
-    // Truncate description by display columns, not char count
-    let mut desc_cols: usize = 0;
-    let mut truncated = String::new();
-    for ch in desc.chars() {
-        let w = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
-        if desc_cols + w > max_desc_cols {
-            break;
-        }
-        truncated.push(ch);
-        desc_cols += w;
-    }
+    // Truncate description by display columns, not char count. Appends a
+    // single-column ellipsis (`…`) when the description didn't fit so users
+    // can tell the text was cut.
+    let (truncated, desc_cols) = truncate_with_ellipsis(&desc, max_desc_cols);
     let _ = write!(buf, "{truncated}");
     if !is_selected {
         ansi::reset(buf);
@@ -1093,6 +1086,31 @@ mod tests {
             make("commit", Some("Record changes"), SuggestionKind::Subcommand),
             make("push", Some("Update remote"), SuggestionKind::Subcommand),
         ]
+    }
+
+    fn printable_output(output: &str) -> String {
+        let mut printable = String::new();
+        let mut chars = output.chars().peekable();
+
+        while let Some(ch) = chars.next() {
+            if ch == '\x1b' {
+                if chars.peek().copied() == Some('[') {
+                    chars.next();
+                    for c in chars.by_ref() {
+                        if ('\u{40}'..='\u{7e}').contains(&c) {
+                            break;
+                        }
+                    }
+                }
+                continue;
+            }
+
+            if !ch.is_control() || ch == ' ' {
+                printable.push(ch);
+            }
+        }
+
+        printable
     }
 
     #[test]
@@ -1346,13 +1364,63 @@ mod tests {
     }
 
     #[test]
+    fn test_format_item_short_description_no_ellipsis() {
+        // 30-col row: max_desc_cols = 30 - GUTTER(4) - "cmd"(3) - GAP(2) - PAD(1) = 20.
+        // 5-char description fits cleanly, must render verbatim with no ellipsis.
+        let mut buf = Vec::new();
+        let s = make("cmd", Some("short"), SuggestionKind::Command);
+        format_item(&mut buf, &s, 30, false, &bordered_theme());
+        let output = String::from_utf8_lossy(&buf);
+        let printable = printable_output(&output);
+        let ellipsis_count = printable.chars().filter(|ch| *ch == '\u{2026}').count();
+        assert_eq!(
+            ellipsis_count, 0,
+            "fitting description must not get an ellipsis: {printable}"
+        );
+    }
+
+    #[test]
+    fn test_format_item_exact_fit_description_no_ellipsis() {
+        // 30-col row with text "cmd": max_desc_cols = 20. A 20-char description
+        // fits exactly and must render without an ellipsis.
+        let mut buf = Vec::new();
+        let exact = "a".repeat(20);
+        let s = make("cmd", Some(&exact), SuggestionKind::Command);
+        format_item(&mut buf, &s, 30, false, &bordered_theme());
+        let output = String::from_utf8_lossy(&buf);
+        let printable = printable_output(&output);
+        let ellipsis_count = printable.chars().filter(|ch| *ch == '\u{2026}').count();
+        assert_eq!(
+            ellipsis_count, 0,
+            "exact-fit description must not get an ellipsis: {printable}"
+        );
+    }
+
+    #[test]
     fn test_format_item_truncates_description() {
         let mut buf = Vec::new();
         let long_desc = "a".repeat(200);
         let s = make("cmd", Some(&long_desc), SuggestionKind::Command);
-        format_item(&mut buf, &s, 30, false, &bordered_theme());
-        // Output should not exceed width
-        assert!(buf.len() < 200, "should truncate description");
+        let width: u16 = 30;
+        format_item(&mut buf, &s, width, false, &bordered_theme());
+
+        let output = String::from_utf8_lossy(&buf);
+        let printable = printable_output(&output);
+        let printable_width = unicode_width::UnicodeWidthStr::width(printable.as_str());
+        let ellipsis_count = printable.chars().filter(|ch| *ch == '\u{2026}').count();
+
+        assert_eq!(
+            ellipsis_count, 1,
+            "truncated description should contain one ellipsis: {printable}"
+        );
+        assert!(
+            printable.trim_end().ends_with('\u{2026}'),
+            "truncated description should end with ellipsis: {printable}"
+        );
+        assert!(
+            printable_width <= width as usize,
+            "printable width ({printable_width}) must not exceed row width ({width}): {printable}"
+        );
     }
 
     #[test]

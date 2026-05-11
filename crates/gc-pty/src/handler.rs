@@ -2,15 +2,18 @@ use std::collections::HashSet;
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 
 use gc_buffer::{byte_to_char_offset, char_to_byte_offset, parse_command_context};
+use gc_config::DescriptionBoxMode;
 use gc_overlay::types::{
     OverlayState, PopupLayout, DEFAULT_MAX_POPUP_WIDTH, DEFAULT_MAX_VISIBLE,
     DEFAULT_MIN_POPUP_WIDTH,
 };
 use gc_overlay::{
-    clear_popup, popup_additional_scroll_deficit, render_indicator_row, render_popup, FeedbackKind,
-    PopupTheme,
+    clear_detail_box, clear_popup, compute_detail_layout, description_overflows_main_popup,
+    popup_additional_scroll_deficit, render_detail_box, render_indicator_row, render_popup,
+    DetailLayout, FeedbackKind, PopupTheme,
 };
 use gc_parser::TerminalParser;
 use gc_suggest::{SpecCacheSweep, Suggestion, SuggestionEngine};
@@ -187,11 +190,163 @@ pub(crate) struct OverlayWriteTicket {
 struct PendingOverlayRender {
     token: OverlayRenderToken,
     layout: PopupLayout,
+    detail_layout: Option<DetailLayout>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CleanupScope {
+    /// Cleanup bytes clear both the main popup and the detail box.
+    MainAndDetail,
+    /// Cleanup bytes clear only the detail box; the main popup layout
+    /// remains committed (e.g. runtime description-box disable).
+    DetailOnly,
+}
+
+/// Runtime state for the detail-box debounce window, grouped so the
+/// invariants ("clearing one of these fields without the others can leave a
+/// stale displayed index resolving to a now-mismatched suggestion") are
+/// reset together via `DetailDebounceState::reset`.
+#[derive(Debug, Default)]
+struct DetailDebounceState {
+    /// Selected index whose description is currently displayed in the
+    /// detail box. Diverges from `overlay.selected` during the debounce
+    /// window; reconciled when the timer fires or on the next render past
+    /// `detail_box_debounce_ms`.
+    displayed_idx: Option<usize>,
+    /// Monotonic timestamp of the first selection change in the current
+    /// detail update window. Used together with `detail_box_debounce_ms` to
+    /// throttle rapid arrow navigation into at most one detail repaint per
+    /// window.
+    last_change_at: Option<Instant>,
+    /// Set to `true` while a debounce timer is in flight so we don't spawn
+    /// duplicates while the user is hammering arrow keys.
+    pending: bool,
+}
+
+impl DetailDebounceState {
+    fn reset(&mut self) {
+        self.displayed_idx = None;
+        self.last_change_at = None;
+        self.pending = false;
+    }
 }
 
 #[derive(Debug, Clone)]
 struct PendingOverlayCleanup {
     token: OverlayCleanupToken,
+    scope: CleanupScope,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct OverlayRect {
+    start_row: u16,
+    start_col: u16,
+    width: u16,
+    height: u16,
+}
+
+impl OverlayRect {
+    fn from_popup(layout: &PopupLayout) -> Self {
+        Self {
+            start_row: layout.start_row,
+            start_col: layout.start_col,
+            width: layout.width,
+            height: layout.height,
+        }
+    }
+
+    fn from_detail(layout: &DetailLayout) -> Self {
+        Self {
+            start_row: layout.start_row,
+            start_col: layout.start_col,
+            width: layout.width,
+            height: layout.height,
+        }
+    }
+}
+
+fn detail_layout_after_scroll(layout: &DetailLayout, scroll: u16) -> Option<DetailLayout> {
+    if layout.width == 0 || layout.height == 0 {
+        return None;
+    }
+    if scroll == 0 {
+        return Some(layout.clone());
+    }
+
+    let end_row = layout.start_row.saturating_add(layout.height);
+    if scroll >= end_row {
+        return None;
+    }
+
+    let clipped_rows = scroll.saturating_sub(layout.start_row);
+    let height = layout.height.saturating_sub(clipped_rows);
+    if height == 0 {
+        return None;
+    }
+
+    Some(DetailLayout {
+        start_row: layout.start_row.saturating_sub(scroll),
+        height,
+        ..layout.clone()
+    })
+}
+
+fn clear_detail_box_uncovered_by(buf: &mut Vec<u8>, layout: &DetailLayout, covers: &[OverlayRect]) {
+    if layout.width == 0 || layout.height == 0 {
+        return;
+    }
+
+    gc_overlay::ansi::save_cursor(buf);
+    let target_col_end = layout.start_col.saturating_add(layout.width);
+    for row_offset in 0..layout.height {
+        let row = layout.start_row.saturating_add(row_offset);
+        let mut spans = vec![(layout.start_col, target_col_end)];
+
+        for cover in covers {
+            if cover.width == 0 || cover.height == 0 {
+                continue;
+            }
+            let cover_row_end = cover.start_row.saturating_add(cover.height);
+            if row < cover.start_row || row >= cover_row_end {
+                continue;
+            }
+
+            let cover_col_start = cover.start_col;
+            let cover_col_end = cover.start_col.saturating_add(cover.width);
+            if cover_col_end <= cover_col_start {
+                continue;
+            }
+
+            let mut next_spans = Vec::with_capacity(spans.len() + 1);
+            for (span_start, span_end) in spans {
+                if cover_col_end <= span_start || cover_col_start >= span_end {
+                    next_spans.push((span_start, span_end));
+                    continue;
+                }
+                if cover_col_start > span_start {
+                    next_spans.push((span_start, cover_col_start.min(span_end)));
+                }
+                if cover_col_end < span_end {
+                    next_spans.push((cover_col_end.max(span_start), span_end));
+                }
+            }
+            spans = next_spans;
+            if spans.is_empty() {
+                break;
+            }
+        }
+
+        for (span_start, span_end) in spans {
+            if span_end <= span_start {
+                continue;
+            }
+            gc_overlay::ansi::move_to(buf, row, span_start);
+            for _ in span_start..span_end {
+                buf.push(b' ');
+            }
+        }
+    }
+    gc_overlay::ansi::restore_cursor(buf);
 }
 
 /// Result of `InputHandler::prepare_trigger_with_block`.
@@ -299,6 +454,34 @@ pub struct InputHandler {
     /// painting sync-only results. 0 disables bounded blocking (paint immediately).
     /// Set from `config.popup.render_block_ms` during the builder phase.
     render_block_ms: u64,
+    /// Lower bound for popup width (display columns). Set from
+    /// `config.popup.min_width`. Defaults to [`DEFAULT_MIN_POPUP_WIDTH`].
+    min_popup_width: u16,
+    /// Upper bound for popup width (display columns). Set from
+    /// `config.popup.max_width`. Defaults to [`DEFAULT_MAX_POPUP_WIDTH`].
+    max_popup_width: u16,
+    /// Adjacent description-box mode (off / side). When `Side` an extra
+    /// box is rendered next to the main popup with the selected suggestion's
+    /// full wrapped description.
+    detail_box_mode: DescriptionBoxMode,
+    /// Maximum width (display columns) reserved for the detail box.
+    detail_box_max_width: u16,
+    /// Maximum number of wrapped lines in the detail box.
+    detail_box_lines: u16,
+    /// Debounce window (ms) for detail-box updates on selection change.
+    detail_box_debounce_ms: u64,
+    /// Layout of the most recently rendered detail box. Cleared with popup
+    /// teardown or by detail-only cleanup when the description box is disabled;
+    /// write acknowledgement controls when the committed layout is released.
+    last_detail_layout: Option<DetailLayout>,
+    /// Notify fired by a spawned timer when the detail-box debounce window
+    /// has elapsed; the proxy listens to trigger a re-render.
+    detail_redraw_notify: Arc<Notify>,
+    /// Detail-box debounce runtime state. Grouped so the three correlated
+    /// fields reset together via `DetailDebounceState::reset` — clearing one
+    /// without the others can leave a stale `displayed_idx` pointing at a
+    /// reranked suggestion.
+    detail_debounce: DetailDebounceState,
     /// Wrapping epoch stamp for overlay-owned bytes. Proxy tasks stamp render
     /// buffers with this value and drop them if shell output advances it before
     /// the buffer reaches stdout.
@@ -310,7 +493,7 @@ pub struct InputHandler {
     pending_overlay_render: Option<PendingOverlayRender>,
     /// Monotonic token source for popup cleanup buffers staged by teardown.
     overlay_cleanup_generation: u64,
-    /// Pending acknowledgement for cleanup bytes that clear `last_layout`.
+    /// Pending acknowledgement for cleanup bytes that clear committed overlay layouts.
     pending_overlay_cleanup: Option<PendingOverlayCleanup>,
 }
 
@@ -356,6 +539,15 @@ impl InputHandler {
             buffer_generation: 0,
             spawned_generation: 0,
             render_block_ms: 80,
+            min_popup_width: DEFAULT_MIN_POPUP_WIDTH,
+            max_popup_width: DEFAULT_MAX_POPUP_WIDTH,
+            detail_box_mode: DescriptionBoxMode::Off,
+            detail_box_max_width: 60,
+            detail_box_lines: 5,
+            detail_box_debounce_ms: 80,
+            last_detail_layout: None,
+            detail_redraw_notify: Arc::new(Notify::new()),
+            detail_debounce: DetailDebounceState::default(),
             output_epoch: 0,
             overlay_render_generation: 0,
             pending_overlay_render: None,
@@ -399,6 +591,39 @@ impl InputHandler {
         self
     }
 
+    /// Set popup min/max width bounds (display columns). Stored on the
+    /// handler and read on every render; further clamping against the live
+    /// `screen_cols` happens inside `compute_layout`.
+    pub fn with_popup_widths(mut self, min_width: u16, max_width: u16) -> Self {
+        self.min_popup_width = min_width;
+        self.max_popup_width = max_width;
+        self
+    }
+
+    /// Configure the adjacent description box. `mode` toggles the feature;
+    /// `max_width`, `lines`, and `debounce_ms` are stored verbatim — callers
+    /// must pass values already clamped at config load time by
+    /// `gc_config::GhostConfig::normalize`.
+    pub fn with_description_box(
+        mut self,
+        mode: DescriptionBoxMode,
+        max_width: u16,
+        lines: u16,
+        debounce_ms: u16,
+    ) -> Self {
+        self.detail_box_mode = mode;
+        self.detail_box_max_width = max_width;
+        self.detail_box_lines = lines;
+        self.detail_box_debounce_ms = debounce_ms as u64;
+        self
+    }
+
+    /// Notify fired when the detail-box debounce window expires; the proxy
+    /// listens and triggers a re-render.
+    pub fn detail_redraw_notify(&self) -> Arc<Notify> {
+        Arc::clone(&self.detail_redraw_notify)
+    }
+
     pub fn with_trigger_chars(mut self, chars: &[char]) -> Self {
         self.trigger_chars = chars.to_vec();
         self
@@ -417,6 +642,25 @@ impl InputHandler {
     pub fn with_theme(mut self, theme: PopupTheme) -> Self {
         self.theme = theme;
         self
+    }
+
+    fn reset_detail_debounce_state(&mut self) {
+        self.detail_debounce.reset();
+    }
+
+    fn replace_suggestions_and_reset_overlay(&mut self, suggestions: Vec<Suggestion>) {
+        self.suggestions = suggestions;
+        self.overlay.reset();
+        self.reset_detail_debounce_state();
+    }
+
+    fn stage_overlay_cleanup(&mut self, scope: CleanupScope) {
+        self.overlay_cleanup_generation = self.overlay_cleanup_generation.wrapping_add(1);
+        self.pending_overlay_render = None;
+        self.pending_overlay_cleanup = Some(PendingOverlayCleanup {
+            token: OverlayCleanupToken(self.overlay_cleanup_generation),
+            scope,
+        });
     }
 
     /// Apply suggestion engine configuration during the builder phase.
@@ -481,7 +725,10 @@ impl InputHandler {
 
     /// Update runtime-configurable fields without restarting the proxy.
     /// Called by the config file watcher when config.toml changes on disk.
-    /// Returns cleanup bytes to write to stdout (e.g. popup clear on auto_trigger toggle).
+    /// Returns cleanup bytes to write to stdout (e.g. popup clear on
+    /// auto_trigger toggle, or detail-box clear when description_box is
+    /// disabled at runtime).
+    #[allow(clippy::too_many_arguments)]
     pub fn update_config(
         &mut self,
         theme: PopupTheme,
@@ -490,8 +737,16 @@ impl InputHandler {
         max_visible: usize,
         feedback_dismiss_ms: u16,
         auto_trigger: bool,
+        min_popup_width: u16,
+        max_popup_width: u16,
+        detail_box_mode: DescriptionBoxMode,
+        detail_box_max_width: u16,
+        detail_box_lines: u16,
+        detail_box_debounce_ms: u16,
     ) -> Vec<u8> {
         let mut cleanup = Vec::new();
+        let mut cleanup_scope: Option<CleanupScope> = None;
+        let mut detail_cleanup_staged = false;
 
         // If auto_trigger is being disabled, tear down all pending state —
         // not just the visible popup.  A pending trigger_requested or in-flight
@@ -502,12 +757,21 @@ impl InputHandler {
                 if let Some(layout) = self.last_layout.clone() {
                     self.bump_output_epoch();
                     clear_popup(&mut cleanup, &layout, &self.terminal_profile);
+                    if let Some(ref det) = self.last_detail_layout {
+                        clear_detail_box(&mut cleanup, det);
+                        detail_cleanup_staged = true;
+                    }
+                    cleanup_scope = Some(CleanupScope::MainAndDetail);
+                } else if let Some(det) = self.last_detail_layout.clone() {
+                    self.bump_output_epoch();
+                    clear_detail_box(&mut cleanup, &det);
+                    cleanup_scope = Some(CleanupScope::MainAndDetail);
+                    detail_cleanup_staged = true;
                 }
                 self.visible = false;
                 self.suggestions.clear();
                 self.overlay.reset();
-                self.last_layout = None;
-                self.pending_overlay_render = None;
+                self.reset_detail_debounce_state();
             }
             if let Some(handle) = self.dynamic_task.take() {
                 handle.abort();
@@ -526,6 +790,27 @@ impl InputHandler {
         self.max_visible = max_visible;
         self.feedback_dismiss_ms = feedback_dismiss_ms;
         self.auto_trigger = auto_trigger;
+        self.min_popup_width = min_popup_width;
+        self.max_popup_width = max_popup_width;
+        if self.detail_box_mode != DescriptionBoxMode::Off
+            && detail_box_mode == DescriptionBoxMode::Off
+        {
+            if !detail_cleanup_staged {
+                if let Some(det) = self.last_detail_layout.clone() {
+                    self.bump_output_epoch();
+                    clear_detail_box(&mut cleanup, &det);
+                    cleanup_scope.get_or_insert(CleanupScope::DetailOnly);
+                }
+            }
+            self.reset_detail_debounce_state();
+        }
+        if let Some(scope) = cleanup_scope {
+            self.stage_overlay_cleanup(scope);
+        }
+        self.detail_box_mode = detail_box_mode;
+        self.detail_box_max_width = detail_box_max_width;
+        self.detail_box_lines = detail_box_lines;
+        self.detail_box_debounce_ms = detail_box_debounce_ms as u64;
 
         cleanup
     }
@@ -609,16 +894,19 @@ impl InputHandler {
             {
                 self.overlay_scroll_deficit = pending.layout.scroll_deficit;
                 self.last_layout = Some(pending.layout);
+                self.last_detail_layout = pending.detail_layout;
             }
         }
 
         if let Some(token) = ticket.cleanup_token {
-            if self
+            if let Some(pending) = self
                 .pending_overlay_cleanup
                 .take_if(|pending| pending.token == token)
-                .is_some()
             {
-                self.last_layout = None;
+                if matches!(pending.scope, CleanupScope::MainAndDetail) {
+                    self.last_layout = None;
+                }
+                self.last_detail_layout = None;
             }
         }
     }
@@ -657,6 +945,8 @@ impl InputHandler {
         self.suggestions.clear();
         self.overlay.reset();
         self.last_layout = None;
+        self.last_detail_layout = None;
+        self.reset_detail_debounce_state();
         self.debounce_suppressed = false;
         if let Some(handle) = self.dynamic_task.take() {
             handle.abort();
@@ -691,6 +981,40 @@ impl InputHandler {
     #[doc(hidden)]
     pub fn set_visible(&mut self, visible: bool) {
         self.visible = visible;
+    }
+
+    #[cfg(test)]
+    pub(crate) fn test_with_visible_suggestions(
+        mut self,
+        suggestions: Vec<Suggestion>,
+        selected: usize,
+    ) -> Self {
+        self.suggestions = suggestions;
+        self.visible = true;
+        self.overlay.selected = Some(selected);
+        self.last_layout = Some(PopupLayout {
+            start_row: 5,
+            start_col: 0,
+            width: 20,
+            height: 1,
+            scroll_deficit: 0,
+        });
+        self
+    }
+
+    #[cfg(test)]
+    pub(crate) fn displayed_detail_idx_for_test(&self) -> Option<usize> {
+        self.detail_debounce.displayed_idx
+    }
+
+    #[cfg(test)]
+    pub(crate) fn detail_debounce_pending_for_test(&self) -> bool {
+        self.detail_debounce.pending
+    }
+
+    #[cfg(test)]
+    pub(crate) fn set_detail_debounce_pending_for_test(&mut self, pending: bool) {
+        self.detail_debounce.pending = pending;
     }
 
     /// Prime `dynamic_ctx` to the "no context" state that matches an empty
@@ -955,8 +1279,7 @@ impl InputHandler {
             .suggest_sync(&predicted_ctx, &cwd, &predicted_buffer)
         {
             Ok(result) if !result.suggestions.is_empty() => {
-                self.suggestions = result.suggestions;
-                self.overlay.reset();
+                self.replace_suggestions_and_reset_overlay(result.suggestions);
                 self.visible = true;
                 self.render_at(stdout, cr, cc, sr, sc);
             }
@@ -1082,8 +1405,7 @@ impl InputHandler {
 
         match sync_result {
             Ok(result) if !result.suggestions.is_empty() => {
-                self.suggestions = result.suggestions;
-                self.overlay.reset();
+                self.replace_suggestions_and_reset_overlay(result.suggestions);
                 self.visible = true;
                 self.spawn_generators(
                     result.script_generators,
@@ -1248,8 +1570,7 @@ impl InputHandler {
             if let Some(rx) = self.dynamic_rx.take() {
                 // Paint sync-only to give immediate feedback while waiting.
                 if !sync_suggestions.is_empty() {
-                    self.suggestions = sync_suggestions.clone();
-                    self.overlay.reset();
+                    self.replace_suggestions_and_reset_overlay(sync_suggestions.clone());
                     self.visible = true;
                     self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
                 }
@@ -1270,8 +1591,7 @@ impl InputHandler {
 
         // No block needed — paint sync-only and let dynamic_merge_loop handle async.
         if !sync_suggestions.is_empty() {
-            self.suggestions = sync_suggestions;
-            self.overlay.reset();
+            self.replace_suggestions_and_reset_overlay(sync_suggestions);
             self.visible = true;
             self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
             self.last_trigger_fingerprint = Some(fingerprint);
@@ -1429,8 +1749,7 @@ impl InputHandler {
             gc_suggest::fuzzy::rank(&live_word, all, self.max_visible * 5)
         };
 
-        self.suggestions = all;
-        self.overlay.reset();
+        self.replace_suggestions_and_reset_overlay(all);
         self.visible = true;
         if disconnected {
             self.dynamic_ctx = None;
@@ -1817,6 +2136,7 @@ impl InputHandler {
             if !self.visible {
                 self.visible = true;
                 self.overlay.reset();
+                self.reset_detail_debounce_state();
             }
 
             let extras = merge_dedup_against(&self.suggestions, dynamic_results);
@@ -1835,6 +2155,12 @@ impl InputHandler {
             } else {
                 gc_suggest::fuzzy::rank(&current_word, merged, self.max_visible * 5)
             };
+            // The rerank above reorders self.suggestions in place, so any
+            // displayed_detail_idx captured pre-rerank now points at a
+            // different suggestion. Clear the debounce state so a stale
+            // index can't paint a mismatched description while the window
+            // is still active.
+            self.reset_detail_debounce_state();
 
             if self.suggestions.is_empty() {
                 self.dismiss(stdout);
@@ -1892,7 +2218,7 @@ impl InputHandler {
             screen_rows,
             screen_cols,
             self.max_visible,
-            DEFAULT_MIN_POPUP_WIDTH,
+            self.min_popup_width,
             &self.theme,
             self.overlay_scroll_deficit,
             &feedback,
@@ -1902,11 +2228,24 @@ impl InputHandler {
             && !matches!(&feedback, FeedbackKind::None)
             && self.overlay_scroll_deficit > 0;
 
-        if additional_scroll == 0 && !feedback_only_repaint_after_scroll {
+        let can_clear_old = additional_scroll == 0 && !feedback_only_repaint_after_scroll;
+        if can_clear_old {
             if let Some(ref layout) = self.last_layout {
                 clear_popup(&mut buf, layout, &self.terminal_profile);
             }
+            // Clear the previous detail box in lockstep so it can't survive a
+            // popup repaint as a ghost rectangle.
+            if let Some(ref det) = self.last_detail_layout {
+                clear_detail_box(&mut buf, det);
+            }
         }
+        let scrolled_old_detail_layout = if additional_scroll > 0 {
+            self.last_detail_layout
+                .as_ref()
+                .and_then(|det| detail_layout_after_scroll(det, additional_scroll))
+        } else {
+            None
+        };
 
         let layout = render_popup(
             &mut buf,
@@ -1917,13 +2256,27 @@ impl InputHandler {
             screen_rows,
             screen_cols,
             self.max_visible,
-            DEFAULT_MIN_POPUP_WIDTH,
-            DEFAULT_MAX_POPUP_WIDTH,
+            self.min_popup_width,
+            self.max_popup_width,
             &self.theme,
             self.overlay_scroll_deficit,
             feedback,
             &self.terminal_profile,
         );
+
+        // Detail-box pass: only renders when the feature is on, the main
+        // popup is non-empty, and there's a selected suggestion with a
+        // description.
+        let new_detail_layout =
+            self.maybe_render_detail(&mut buf, &layout, screen_rows, screen_cols);
+        if let Some(ref old_detail) = scrolled_old_detail_layout {
+            let mut covers = vec![OverlayRect::from_popup(&layout)];
+            if let Some(ref new_detail) = new_detail_layout {
+                covers.push(OverlayRect::from_detail(new_detail));
+            }
+            clear_detail_box_uncovered_by(&mut buf, old_detail, &covers);
+        }
+
         let _ = stdout.write_all(&buf);
         let _ = stdout.flush();
         self.overlay_render_generation = self.overlay_render_generation.wrapping_add(1);
@@ -1931,7 +2284,207 @@ impl InputHandler {
         self.pending_overlay_render = Some(PendingOverlayRender {
             token: OverlayRenderToken(self.overlay_render_generation),
             layout,
+            detail_layout: new_detail_layout,
         });
+    }
+
+    /// Render the adjacent description box when enabled and layout-fitting.
+    /// While the debounce window is active, this may keep rendering the
+    /// previously displayed suggestion's detail instead of the current
+    /// selection. Returns the new `last_detail_layout` value.
+    ///
+    /// Within the throttle window, `displayed_detail_idx` is held fixed so
+    /// rapid arrow navigation doesn't visually thrash the box; a one-shot
+    /// timer is spawned to fire `detail_redraw_notify` after the window
+    /// elapses, prompting the proxy to re-render.
+    fn maybe_render_detail(
+        &mut self,
+        buf: &mut Vec<u8>,
+        main_layout: &PopupLayout,
+        screen_rows: u16,
+        screen_cols: u16,
+    ) -> Option<DetailLayout> {
+        if self.detail_box_mode == DescriptionBoxMode::Off {
+            self.detail_debounce.displayed_idx = None;
+            return None;
+        }
+        if main_layout.height == 0 || self.suggestions.is_empty() {
+            self.detail_debounce.displayed_idx = None;
+            return None;
+        }
+        let Some(selected) = self.overlay.selected else {
+            self.detail_debounce.displayed_idx = None;
+            return None;
+        };
+
+        // Track selection changes for the detail-update throttle window.
+        let selection_changed = self.detail_debounce.displayed_idx != Some(selected);
+        let now = Instant::now();
+        if selection_changed && self.detail_debounce.last_change_at.is_none() {
+            self.detail_debounce.last_change_at = Some(now);
+        }
+
+        // Resolve which suggestion's description the box should display.
+        let should_debounce = selection_changed
+            && self.detail_debounce.displayed_idx.is_some()
+            && self.detail_box_debounce_ms > 0;
+        let target_idx = if should_debounce {
+            let elapsed = self
+                .detail_debounce
+                .last_change_at
+                .map(|t| now.saturating_duration_since(t).as_millis() as u64)
+                .unwrap_or(u64::MAX);
+            if elapsed < self.detail_box_debounce_ms {
+                // Still within the debounce window — keep showing the prior
+                // detail (or skip rendering on the very first paint when no
+                // prior idx exists). Schedule a wake-up so the next render
+                // happens after the window expires.
+                self.schedule_detail_debounce_wakeup(self.detail_box_debounce_ms - elapsed);
+                self.detail_debounce.displayed_idx
+            } else {
+                self.detail_debounce.last_change_at = None;
+                Some(selected)
+            }
+        } else {
+            self.detail_debounce.last_change_at = None;
+            Some(selected)
+        };
+
+        let idx = target_idx?;
+        let target_is_current_selection = idx == selected;
+        let Some(suggestion) = self.suggestions.get(idx) else {
+            if target_is_current_selection {
+                self.detail_debounce.displayed_idx = Some(idx);
+            }
+            return None;
+        };
+        let Some(desc) = suggestion.description.as_deref() else {
+            if target_is_current_selection {
+                self.detail_debounce.displayed_idx = Some(idx);
+            }
+            return None;
+        };
+        if desc.is_empty() {
+            if target_is_current_selection {
+                self.detail_debounce.displayed_idx = Some(idx);
+            }
+            return None;
+        }
+
+        // Skip the detail box when the inline description already fits in
+        // the main popup row — no truncation, no information to add. Saves
+        // screen real estate for short descriptions like git's "branch" /
+        // "current branch" labels.
+        if !description_overflows_main_popup(
+            suggestion,
+            main_layout,
+            self.suggestions.len(),
+            self.max_visible,
+            self.theme.borders,
+            screen_rows,
+        ) {
+            self.detail_debounce.displayed_idx = Some(idx);
+            return None;
+        }
+
+        let Some(layout) = compute_detail_layout(
+            main_layout,
+            screen_rows,
+            screen_cols,
+            self.detail_box_max_width,
+            self.detail_box_lines,
+            self.theme.borders,
+        ) else {
+            if target_is_current_selection {
+                self.detail_debounce.displayed_idx = Some(idx);
+            }
+            return None;
+        };
+
+        render_detail_box(buf, &layout, desc, &self.theme);
+        self.detail_debounce.displayed_idx = Some(idx);
+        Some(layout)
+    }
+
+    /// Spawn a one-shot tokio task that fires `detail_redraw_notify` after
+    /// `delay_ms`. Idempotent — multiple in-flight timers are guarded by
+    /// `detail_debounce.pending`. Silently no-ops outside an async runtime
+    /// (used in unit tests).
+    fn schedule_detail_debounce_wakeup(&mut self, delay_ms: u64) {
+        if self.detail_debounce.pending {
+            return;
+        }
+        let Ok(handle) = tokio::runtime::Handle::try_current() else {
+            return;
+        };
+        self.detail_debounce.pending = true;
+        let notify = Arc::clone(&self.detail_redraw_notify);
+        handle.spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(delay_ms.max(1))).await;
+            notify.notify_one();
+        });
+    }
+
+    /// Called by the proxy from the detail-redraw loop. Resets the in-flight
+    /// debounce flag so a subsequent selection change will spawn a fresh
+    /// timer.
+    pub fn clear_detail_debounce_pending(&mut self) {
+        self.detail_debounce.pending = false;
+    }
+
+    /// Re-render into `buf` in response to a detail-debounce wake-up. No-op
+    /// when no popup is currently visible (the wake-up could correspond to a
+    /// since-dismissed popup).
+    pub fn render_for_detail_redraw(
+        &mut self,
+        parser: &Arc<Mutex<TerminalParser>>,
+        buf: &mut Vec<u8>,
+    ) {
+        if !self.visible || self.suggestions.is_empty() {
+            return;
+        }
+        if self.detail_box_mode == DescriptionBoxMode::Off {
+            return;
+        }
+        // Only re-render if the displayed detail idx actually trails the
+        // current selection — avoids needless repaints when the user
+        // navigated and stopped within the same item.
+        if self.detail_debounce.displayed_idx == self.overlay.selected {
+            return;
+        }
+        let (cursor_row, cursor_col, screen_rows, screen_cols) = match parser.lock() {
+            Ok(p) => {
+                let state = p.state();
+                let (cr, cc) = state.cursor_position();
+                let (sr, sc) = state.screen_dimensions();
+                (cr, cc, sr, sc)
+            }
+            Err(e) => {
+                tracing::warn!("parser mutex poisoned in detail redraw: {e}");
+                return;
+            }
+        };
+        // Collect render bytes via the standard pipeline. We intentionally
+        // route through the same render_at the main loop uses so the
+        // generation/cleanup token bookkeeping stays consistent.
+        struct BufWriter<'a>(&'a mut Vec<u8>);
+        impl<'a> Write for BufWriter<'a> {
+            fn write(&mut self, b: &[u8]) -> std::io::Result<usize> {
+                self.0.extend_from_slice(b);
+                Ok(b.len())
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        let mut writer = BufWriter(buf);
+        self.render_at(
+            &mut writer,
+            cursor_row,
+            cursor_col,
+            screen_rows,
+            screen_cols,
+        );
     }
 
     fn current_feedback_kind(&self) -> FeedbackKind {
@@ -2101,16 +2654,26 @@ impl InputHandler {
     }
 
     fn teardown_popup(&mut self, stdout: &mut dyn Write, preserve_trigger_request: bool) {
+        let detail_layout = self.last_detail_layout.clone();
         if let Some(layout) = self.last_layout.clone() {
             let mut buf = Vec::new();
             self.bump_output_epoch();
             clear_popup(&mut buf, &layout, &self.terminal_profile);
+            if let Some(ref det) = detail_layout {
+                clear_detail_box(&mut buf, det);
+            }
             let _ = stdout.write_all(&buf);
             let _ = stdout.flush();
-            self.overlay_cleanup_generation = self.overlay_cleanup_generation.wrapping_add(1);
-            self.pending_overlay_cleanup = Some(PendingOverlayCleanup {
-                token: OverlayCleanupToken(self.overlay_cleanup_generation),
-            });
+            self.stage_overlay_cleanup(CleanupScope::MainAndDetail);
+        } else if let Some(det) = detail_layout {
+            // Defensive: detail layout exists without a main popup layout
+            // (shouldn't happen, but clean it up if it does).
+            let mut buf = Vec::new();
+            self.bump_output_epoch();
+            clear_detail_box(&mut buf, &det);
+            let _ = stdout.write_all(&buf);
+            let _ = stdout.flush();
+            self.stage_overlay_cleanup(CleanupScope::MainAndDetail);
         } else {
             self.pending_overlay_cleanup = None;
         }
@@ -2118,6 +2681,7 @@ impl InputHandler {
         self.visible = false;
         self.suggestions.clear();
         self.overlay.reset();
+        self.reset_detail_debounce_state();
         if !preserve_trigger_request {
             self.trigger_requested = false;
         }
@@ -2906,6 +3470,42 @@ mod tests {
     }
 
     #[test]
+    fn test_dismiss_clears_committed_detail_layout() {
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "test".to_string(),
+            ..Default::default()
+        }]);
+        handler.last_detail_layout = Some(DetailLayout {
+            start_row: 5,
+            start_col: 24,
+            width: 30,
+            height: 3,
+            position: gc_overlay::DetailPosition::SideRight,
+        });
+
+        let mut stdout_buf = Vec::new();
+        handler.dismiss(&mut stdout_buf);
+
+        let output = String::from_utf8_lossy(&stdout_buf);
+        assert!(
+            output.contains("\x1b[6;25H"),
+            "dismiss must clear the committed detail rectangle: {output:?}"
+        );
+        let cleanup_ticket = handler.overlay_write_ticket();
+        assert!(
+            cleanup_ticket.cleanup_token.is_some(),
+            "dismiss cleanup must remain pending until stdout write ack"
+        );
+        assert!(handler.last_layout.is_some());
+        assert!(handler.last_detail_layout.is_some());
+
+        handler.commit_overlay_write(cleanup_ticket);
+
+        assert!(handler.last_layout.is_none());
+        assert!(handler.last_detail_layout.is_none());
+    }
+
+    #[test]
     fn test_trigger_idempotent_when_buffer_unchanged() {
         // Scenario:
         //   1. A prior `trigger()` populated the popup with static
@@ -3013,6 +3613,15 @@ mod tests {
             buffer_generation: 0,
             spawned_generation: 0,
             render_block_ms: 0,
+            min_popup_width: DEFAULT_MIN_POPUP_WIDTH,
+            max_popup_width: DEFAULT_MAX_POPUP_WIDTH,
+            detail_box_mode: DescriptionBoxMode::Off,
+            detail_box_max_width: 60,
+            detail_box_lines: 5,
+            detail_box_debounce_ms: 80,
+            last_detail_layout: None,
+            detail_redraw_notify: Arc::new(Notify::new()),
+            detail_debounce: DetailDebounceState::default(),
             output_epoch: 0,
             overlay_render_generation: 0,
             pending_overlay_render: None,
@@ -3045,6 +3654,16 @@ mod tests {
                 ..Default::default()
             })
             .collect()
+    }
+
+    fn command_suggestion(text: &str, description: Option<&str>) -> Suggestion {
+        Suggestion {
+            text: text.to_string(),
+            description: description.map(str::to_string),
+            kind: SuggestionKind::Command,
+            source: SuggestionSource::Spec,
+            ..Default::default()
+        }
     }
 
     /// Test builder: visible handler with a single selected suggestion.
@@ -3826,6 +4445,12 @@ mod tests {
             15,
             1200,
             true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
         );
 
         assert_eq!(handler.theme.selected_on, vec![0x1B, b'[', b'1', b'm']);
@@ -3852,6 +4477,12 @@ mod tests {
             10,
             1200,
             true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
         );
 
         assert_eq!(handler.keybindings, new_kb);
@@ -3868,6 +4499,12 @@ mod tests {
             20,
             1200,
             true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
         );
 
         assert_eq!(handler.max_visible, 20);
@@ -3884,9 +4521,217 @@ mod tests {
             10,
             1200,
             true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
         );
 
         assert_eq!(handler.trigger_chars, vec!['@', '#', '!']);
+    }
+
+    #[test]
+    fn test_update_config_changes_popup_and_detail_knobs() {
+        let mut handler = make_handler();
+
+        handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/'],
+            12,
+            1200,
+            true,
+            35,
+            120,
+            DescriptionBoxMode::Side,
+            90,
+            7,
+            0,
+        );
+
+        assert_eq!(handler.min_popup_width, 35);
+        assert_eq!(handler.max_popup_width, 120);
+        assert_eq!(handler.detail_box_mode, DescriptionBoxMode::Side);
+        assert_eq!(handler.detail_box_max_width, 90);
+        assert_eq!(handler.detail_box_lines, 7);
+        assert_eq!(handler.detail_box_debounce_ms, 0);
+    }
+
+    /// Side→Side reloads (e.g. shrinking `detail_box_max_width` or
+    /// `detail_box_lines`) must NOT stage a detail-box cleanup. Only the
+    /// Side→Off transition tears down the existing rectangle; otherwise the
+    /// next render naturally redraws the box at its new size and any old
+    /// stray cells get overwritten there. This test guards that the
+    /// non-cleanup branch in `update_config` stays put.
+    #[test]
+    fn test_update_config_side_to_side_with_new_size_does_not_stage_cleanup() {
+        let mut handler = make_selected_handler(command_suggestion(
+            "checkout",
+            Some("long description already visible in the detail box"),
+        ))
+        .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.last_detail_layout = Some(DetailLayout {
+            start_row: 5,
+            start_col: 24,
+            width: 30,
+            height: 3,
+            position: gc_overlay::DetailPosition::SideRight,
+        });
+
+        let cleanup = handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/'],
+            10,
+            1200,
+            true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Side,
+            30,
+            3,
+            0,
+        );
+
+        assert!(
+            cleanup.is_empty(),
+            "Side→Side reload must not emit any cleanup bytes: {:?}",
+            String::from_utf8_lossy(&cleanup)
+        );
+        assert!(
+            handler.last_detail_layout.is_some(),
+            "Side→Side must keep the committed detail layout — no clear is needed",
+        );
+        let ticket = handler.overlay_write_ticket();
+        assert!(
+            ticket.cleanup_token.is_none(),
+            "Side→Side must not stage an overlay cleanup token",
+        );
+
+        // Field updates still landed.
+        assert_eq!(handler.detail_box_mode, DescriptionBoxMode::Side);
+        assert_eq!(handler.detail_box_max_width, 30);
+        assert_eq!(handler.detail_box_lines, 3);
+        assert_eq!(handler.detail_box_debounce_ms, 0);
+    }
+
+    #[test]
+    fn test_update_config_clears_visible_detail_box_when_disabled() {
+        let mut handler = make_selected_handler(command_suggestion(
+            "checkout",
+            Some("long description already visible in the detail box"),
+        ))
+        .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.last_detail_layout = Some(DetailLayout {
+            start_row: 5,
+            start_col: 24,
+            width: 30,
+            height: 3,
+            position: gc_overlay::DetailPosition::SideRight,
+        });
+        handler.detail_debounce.displayed_idx = Some(0);
+        handler.detail_debounce.last_change_at = Some(Instant::now());
+        handler.detail_debounce.pending = true;
+        let before_epoch = handler.output_epoch();
+
+        let cleanup = handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/'],
+            10,
+            1200,
+            true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
+        );
+
+        let output = String::from_utf8_lossy(&cleanup);
+        assert!(
+            output.contains("\x1b[6;25H"),
+            "disabling the detail box must clear its old rectangle: {output:?}"
+        );
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+        assert!(handler.last_detail_layout.is_none());
+        assert_eq!(handler.detail_debounce.displayed_idx, None);
+        assert_eq!(handler.detail_debounce.last_change_at, None);
+        assert!(!handler.detail_debounce.pending);
+        assert!(handler.output_epoch() > before_epoch);
+    }
+
+    #[test]
+    fn test_update_config_stages_detail_cleanup_until_overlay_write_ack() {
+        let mut handler = make_selected_handler(command_suggestion(
+            "checkout",
+            Some("long description already visible in the detail box"),
+        ))
+        .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.last_detail_layout = Some(DetailLayout {
+            start_row: 5,
+            start_col: 24,
+            width: 30,
+            height: 3,
+            position: gc_overlay::DetailPosition::SideRight,
+        });
+        handler.detail_debounce.displayed_idx = Some(0);
+        handler.detail_debounce.last_change_at = Some(Instant::now());
+        handler.detail_debounce.pending = true;
+
+        let cleanup = handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/'],
+            10,
+            1200,
+            true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
+        );
+
+        let output = String::from_utf8_lossy(&cleanup);
+        assert!(
+            output.contains("\x1b[6;25H"),
+            "disabling the detail box must stage a clear for its old rectangle: {output:?}"
+        );
+        assert!(
+            handler.last_detail_layout.is_some(),
+            "detail layout ownership must remain committed until cleanup bytes are written"
+        );
+        assert_eq!(handler.detail_debounce.displayed_idx, None);
+        assert_eq!(handler.detail_debounce.last_change_at, None);
+        assert!(!handler.detail_debounce.pending);
+
+        let ticket = handler.overlay_write_ticket();
+        assert!(
+            ticket.cleanup_token.is_some(),
+            "config cleanup must be acknowledged through the overlay write token"
+        );
+        handler.commit_overlay_write(ticket);
+        assert!(
+            handler.last_detail_layout.is_none(),
+            "acknowledged cleanup should release the committed detail layout"
+        );
+        assert!(
+            handler.last_layout.is_some(),
+            "detail-only cleanup must not release the still-visible main popup layout"
+        );
+
+        let mut dismiss = Vec::new();
+        handler.dismiss(&mut dismiss);
+        let dismiss_output = String::from_utf8_lossy(&dismiss);
+        assert!(
+            dismiss_output.contains("\x1b[6;1H"),
+            "main popup must remain clearable after detail-only cleanup: {dismiss_output:?}"
+        );
     }
 
     // --- auto_trigger tests ---
@@ -3936,6 +4781,12 @@ mod tests {
             10,
             1200,
             false,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
         );
 
         assert!(!handler.auto_trigger_enabled());
@@ -3958,6 +4809,12 @@ mod tests {
             10,
             1200,
             false,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
         );
 
         assert!(!handler.visible);
@@ -3986,6 +4843,12 @@ mod tests {
             10,
             1200,
             false,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
         );
 
         assert!(
@@ -4015,6 +4878,12 @@ mod tests {
             10,
             1200,
             true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
         );
 
         assert!(handler.visible);
@@ -4191,6 +5060,605 @@ mod tests {
     }
 
     #[test]
+    fn test_render_at_skips_old_detail_clear_when_new_render_scrolls() {
+        let mut handler = make_visible_handler(numbered_suggestions(8));
+        handler.overlay_scroll_deficit = 4;
+        handler.last_layout = Some(PopupLayout {
+            start_row: 19,
+            start_col: 70,
+            width: 10,
+            height: 2,
+            scroll_deficit: 4,
+        });
+        handler.last_detail_layout = Some(DetailLayout {
+            start_row: 19,
+            start_col: 30,
+            width: 10,
+            height: 2,
+            position: gc_overlay::DetailPosition::SideLeft,
+        });
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 22, 0, 24, 80);
+
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            !output.contains("\x1b[20;31H"),
+            "stale clear at old detail coordinates must be skipped before viewport scroll: {output:?}"
+        );
+        assert!(
+            output.contains("\x1b[24;1H"),
+            "new render should still scroll from the bottom row: {output:?}"
+        );
+    }
+
+    #[test]
+    fn test_render_at_clears_scrolled_old_detail_when_new_selection_has_no_detail() {
+        let mut suggestions = numbered_suggestions(8);
+        suggestions[0] = command_suggestion("checkout", Some("short"));
+        let mut handler = make_visible_handler(suggestions)
+            .with_popup_widths(20, 80)
+            .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.overlay.selected = Some(0);
+        handler.overlay_scroll_deficit = 4;
+        handler.last_layout = Some(PopupLayout {
+            start_row: 19,
+            start_col: 70,
+            width: 10,
+            height: 2,
+            scroll_deficit: 4,
+        });
+        let old_detail = DetailLayout {
+            start_row: 19,
+            start_col: 30,
+            width: 10,
+            height: 2,
+            position: gc_overlay::DetailPosition::SideLeft,
+        };
+        handler.last_detail_layout = Some(old_detail.clone());
+        let additional_scroll = popup_additional_scroll_deficit(
+            &handler.suggestions,
+            22,
+            24,
+            80,
+            handler.max_visible,
+            handler.min_popup_width,
+            &handler.theme,
+            handler.overlay_scroll_deficit,
+            &handler.current_feedback_kind(),
+        );
+        assert!(
+            additional_scroll > 0,
+            "setup must force a scrolling repaint"
+        );
+        let shifted_row = old_detail.start_row - additional_scroll;
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 22, 0, 24, 80);
+
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            !output.contains("\x1b[20;31H"),
+            "stale clear at pre-scroll detail coordinates must still be skipped: {output:?}"
+        );
+        let shifted_clear = format!("\x1b[{};{}H", shifted_row + 1, old_detail.start_col + 1);
+        assert!(
+            output.contains(&shifted_clear),
+            "old detail rectangle must be cleared at its post-scroll coordinates: {output:?}"
+        );
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+        assert!(handler.last_detail_layout.is_none());
+    }
+
+    /// Cover guard: when `render_at` triggers a viewport scroll AND the
+    /// new selection produces a fresh detail layout, the
+    /// `clear_detail_box_uncovered_by` pass that erases the *scrolled* old
+    /// detail rectangle must spare the freshly-painted new detail. A
+    /// regression that drops the conditional `covers.push(new_detail)` would
+    /// emit space-fills inside the new detail's columns and visibly clobber
+    /// the just-painted box during the same render frame.
+    #[test]
+    fn test_render_at_scroll_clears_old_detail_but_preserves_new_detail() {
+        // Eight suggestions, the first two carrying long descriptions that
+        // both overflow the 40-col popup. Eight items beats the available
+        // 5 rows below the prior cursor, so the render forces a viewport
+        // scroll — the precondition for the cover branch under test.
+        let long_desc_a = "MARKER_ALPHA alpha beta gamma delta epsilon zeta eta theta iota kappa \
+                           lambda mu nu xi omicron pi rho sigma tau";
+        let long_desc_b = "MARKER_BRAVO alpha beta gamma delta epsilon zeta eta theta iota kappa \
+                           lambda mu nu xi omicron pi rho sigma tau";
+        let mut suggestions = numbered_suggestions(8);
+        suggestions[0] = command_suggestion("checkout", Some(long_desc_a));
+        suggestions[1] = command_suggestion("commit", Some(long_desc_b));
+        let mut handler = make_visible_handler(suggestions)
+            .with_popup_widths(20, 40)
+            .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.overlay.selected = Some(0);
+        handler.overlay_scroll_deficit = 4;
+        // Place the prior popup + detail near the bottom so the new render
+        // forces a scroll. The old detail spans a wide column range so the
+        // shifted clear will straddle the new detail's columns.
+        handler.last_layout = Some(PopupLayout {
+            start_row: 22,
+            start_col: 70,
+            width: 40,
+            height: 2,
+            scroll_deficit: 4,
+        });
+        let old_detail = DetailLayout {
+            start_row: 22,
+            start_col: 10,
+            width: 60,
+            height: 2,
+            position: gc_overlay::DetailPosition::SideLeft,
+        };
+        handler.last_detail_layout = Some(old_detail.clone());
+
+        let additional_scroll = popup_additional_scroll_deficit(
+            &handler.suggestions,
+            22,
+            24,
+            120,
+            handler.max_visible,
+            handler.min_popup_width,
+            &handler.theme,
+            handler.overlay_scroll_deficit,
+            &handler.current_feedback_kind(),
+        );
+        assert!(
+            additional_scroll > 0,
+            "setup must force a scrolling repaint so the cover branch runs"
+        );
+        let shifted_row = old_detail.start_row - additional_scroll;
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 22, 0, 24, 120);
+
+        let output = String::from_utf8_lossy(&buf);
+        // (1) Pre-scroll old detail coordinates must not be cleared.
+        assert!(
+            !output.contains("\x1b[23;11H"),
+            "pre-scroll detail coordinates must remain untouched: {output:?}"
+        );
+        // (2) The new detail content (marker word) must be emitted.
+        assert!(
+            output.contains("MARKER_ALPHA"),
+            "new selection's detail must render before the clear-pass spares it: {output:?}"
+        );
+
+        // Commit the staged write so `last_detail_layout` reflects the
+        // freshly-painted new detail rectangle.
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+        let new_detail = handler
+            .last_detail_layout
+            .as_ref()
+            .expect("new selection's detail layout must be retained")
+            .clone();
+
+        // The clear pass for the scrolled old detail is the LAST
+        // save/restore-cursor block in the buffer (DECSAVE `\x1b7` …
+        // DECRESTORE `\x1b8`). Slice it out so the assertions below see
+        // only the clear-pass cursor moves, not the new detail's PAINT
+        // moves which target the same row.
+        let clear_block_start = output
+            .rfind("\u{1b}7")
+            .expect("buffer must contain a save_cursor at the start of the clear pass");
+        let clear_block_end = output[clear_block_start..]
+            .find("\u{1b}8")
+            .map(|rel| clear_block_start + rel)
+            .expect("clear pass must end with a restore_cursor");
+        let clear_block = &output[clear_block_start..clear_block_end];
+
+        // (3) The shifted old-detail row IS cleared in at least one column
+        // outside both the new popup and the new detail. Locate cursor
+        // moves on the shifted row inside the clear block.
+        let new_detail_end_col = new_detail.start_col.saturating_add(new_detail.width);
+        let shifted_prefix = format!("\x1b[{};", shifted_row + 1);
+        let mut shifted_clears: Vec<u16> = Vec::new();
+        let mut search_from = 0usize;
+        while let Some(idx) = clear_block[search_from..].find(&shifted_prefix) {
+            let abs_idx = search_from + idx;
+            let col_start = abs_idx + shifted_prefix.len();
+            let col_end_off = clear_block[col_start..].find('H');
+            if let Some(rel_end) = col_end_off {
+                if let Ok(col_one_idx) = clear_block[col_start..col_start + rel_end].parse::<u16>()
+                {
+                    if col_one_idx > 0 {
+                        shifted_clears.push(col_one_idx - 1);
+                    }
+                }
+                search_from = col_start + rel_end + 1;
+            } else {
+                break;
+            }
+        }
+        assert!(
+            !shifted_clears.is_empty(),
+            "expected at least one cursor-move on shifted row {shifted_row} (1-indexed \
+             {}) inside the clear pass: {clear_block:?}",
+            shifted_row + 1
+        );
+        assert!(
+            shifted_clears
+                .iter()
+                .any(|&c| c < new_detail.start_col || c >= new_detail_end_col),
+            "shifted old-detail row must be cleared in at least one column outside \
+             the new detail's range [{}, {}); cursor moves seen at cols (0-indexed) \
+             {:?}: {clear_block:?}",
+            new_detail.start_col,
+            new_detail_end_col,
+            shifted_clears
+        );
+
+        // (4) The clear pass must not emit any cursor move INSIDE the new
+        // detail's column range on the shifted old-detail row — that is the
+        // exact regression the cover branch protects against.
+        for &col in &shifted_clears {
+            assert!(
+                col < new_detail.start_col || col >= new_detail_end_col,
+                "clear pass must not move cursor inside the new detail column range \
+                 [{}, {}); found cursor move at 0-indexed col {col} on shifted row \
+                 {shifted_row}: {clear_block:?}",
+                new_detail.start_col,
+                new_detail_end_col
+            );
+        }
+    }
+
+    #[test]
+    fn test_render_at_renders_side_description_box_for_long_description() {
+        let description = "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu";
+        let mut handler = make_selected_handler(command_suggestion("checkout", Some(description)))
+            .with_popup_widths(20, 40)
+            .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 5, 0, 24, 120);
+
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains("lambda mu"),
+            "long description should be emitted in the detail box: {output:?}"
+        );
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+        let layout = handler
+            .last_detail_layout
+            .as_ref()
+            .expect("detail layout should be retained");
+        assert_eq!(layout.position, gc_overlay::DetailPosition::SideRight);
+    }
+
+    #[test]
+    fn test_render_at_stages_detail_layout_until_overlay_write_ack() {
+        let description = "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu";
+        let mut handler = make_selected_handler(command_suggestion("checkout", Some(description)))
+            .with_popup_widths(20, 40)
+            .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 5, 0, 24, 120);
+
+        assert!(!buf.is_empty());
+        assert!(
+            handler.last_detail_layout.is_none(),
+            "staged render must not commit detail layout before stdout write succeeds"
+        );
+
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+
+        let layout = handler
+            .last_detail_layout
+            .as_ref()
+            .expect("acknowledged render should retain detail layout");
+        assert_eq!(layout.position, gc_overlay::DetailPosition::SideRight);
+    }
+
+    #[tokio::test]
+    async fn test_detail_box_selection_debounce_holds_then_catches_up() {
+        let desc0 =
+            "ALPHADETAIL alpha beta gamma delta epsilon zeta eta theta iota kappa ALPHATAIL";
+        let desc1 =
+            "BRAVODETAIL alpha beta gamma delta epsilon zeta eta theta iota kappa BRAVOTAIL";
+        let mut handler = make_visible_handler(vec![
+            command_suggestion("alpha", Some(desc0)),
+            command_suggestion("bravo", Some(desc1)),
+        ])
+        .with_popup_widths(20, 40)
+        .with_description_box(DescriptionBoxMode::Side, 60, 5, 200);
+        handler.overlay.selected = Some(0);
+
+        let mut first = Vec::new();
+        handler.render_at(&mut first, 5, 0, 24, 120);
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+        let first_output = String::from_utf8_lossy(&first);
+        assert!(
+            first_output.contains("ALPHADETAIL"),
+            "setup should render suggestion 0 detail: {first_output:?}"
+        );
+        assert_eq!(handler.detail_debounce.displayed_idx, Some(0));
+
+        handler.overlay.selected = Some(1);
+        let mut immediate = Vec::new();
+        handler.render_at(&mut immediate, 5, 0, 24, 120);
+        let immediate_output = String::from_utf8_lossy(&immediate);
+        assert!(
+            immediate_output.contains("ALPHADETAIL"),
+            "in-window render should keep the old detail: {immediate_output:?}"
+        );
+        assert!(
+            !immediate_output.contains("BRAVOTAIL"),
+            "in-window render must not emit the new detail yet: {immediate_output:?}"
+        );
+        assert!(
+            handler.detail_debounce.pending,
+            "in-window render should schedule a detail redraw wakeup"
+        );
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+
+        handler.detail_debounce.last_change_at =
+            Some(Instant::now() - std::time::Duration::from_millis(250));
+        handler.clear_detail_debounce_pending();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 120)));
+        {
+            let mut p = parser.lock().unwrap();
+            p.process_bytes(b"\x1b[6;1H");
+        }
+        let mut redraw = Vec::new();
+        handler.render_for_detail_redraw(&parser, &mut redraw);
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+
+        let redraw_output = String::from_utf8_lossy(&redraw);
+        assert!(
+            redraw_output.contains("BRAVOTAIL"),
+            "detail redraw should emit the settled selection detail: {redraw_output:?}"
+        );
+        assert_eq!(handler.detail_debounce.displayed_idx, Some(1));
+    }
+
+    #[tokio::test]
+    async fn test_detail_box_debounce_wakeup_notifies_and_redraws_selection() {
+        let desc0 = "ALPHAWAKE alpha beta gamma delta epsilon zeta eta theta iota kappa ALPHADONE";
+        let desc1 = "BRAVOWAKE alpha beta gamma delta epsilon zeta eta theta iota kappa BRAVODONE";
+        let mut handler = make_visible_handler(vec![
+            command_suggestion("alpha", Some(desc0)),
+            command_suggestion("bravo", Some(desc1)),
+        ])
+        .with_popup_widths(20, 40)
+        .with_description_box(DescriptionBoxMode::Side, 60, 5, 5);
+        handler.overlay.selected = Some(0);
+
+        let mut first = Vec::new();
+        handler.render_at(&mut first, 5, 0, 24, 120);
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+        assert_eq!(handler.detail_debounce.displayed_idx, Some(0));
+
+        let notify = handler.detail_redraw_notify();
+        let notified = notify.notified();
+        handler.overlay.selected = Some(1);
+        let mut immediate = Vec::new();
+        handler.render_at(&mut immediate, 5, 0, 24, 120);
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+        assert!(
+            handler.detail_debounce.pending,
+            "selection-change render should arm the debounce wakeup"
+        );
+
+        tokio::time::timeout(std::time::Duration::from_millis(200), notified)
+            .await
+            .expect("debounce wakeup should notify without a manual state age");
+
+        handler.clear_detail_debounce_pending();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 120)));
+        {
+            let mut p = parser.lock().unwrap();
+            p.process_bytes(b"\x1b[6;1H");
+        }
+        let mut redraw = Vec::new();
+        handler.render_for_detail_redraw(&parser, &mut redraw);
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+
+        let redraw_output = String::from_utf8_lossy(&redraw);
+        assert!(
+            redraw_output.contains("BRAVODONE"),
+            "debounce wakeup redraw should emit the settled selection detail: {redraw_output:?}"
+        );
+        assert_eq!(handler.detail_debounce.displayed_idx, Some(1));
+    }
+
+    #[test]
+    fn test_detail_box_debounce_zero_repaints_selection_immediately() {
+        let desc0 = "ALPHAZERO alpha beta gamma delta epsilon zeta eta theta iota kappa ALPHADONE";
+        let desc1 = "BRAVOZERO alpha beta gamma delta epsilon zeta eta theta iota kappa BRAVODONE";
+        let mut handler = make_visible_handler(vec![
+            command_suggestion("alpha", Some(desc0)),
+            command_suggestion("bravo", Some(desc1)),
+        ])
+        .with_popup_widths(20, 40)
+        .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.overlay.selected = Some(0);
+
+        let mut first = Vec::new();
+        handler.render_at(&mut first, 5, 0, 24, 120);
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+        let first_output = String::from_utf8_lossy(&first);
+        assert!(
+            first_output.contains("ALPHAZERO"),
+            "setup should render item 0 detail: {first_output:?}"
+        );
+
+        handler.overlay.selected = Some(1);
+        let mut second = Vec::new();
+        handler.render_at(&mut second, 5, 0, 24, 120);
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+
+        let second_output = String::from_utf8_lossy(&second);
+        assert!(
+            second_output.contains("BRAVOZERO"),
+            "debounce disabled should render item 1 detail immediately: {second_output:?}"
+        );
+        assert!(
+            !second_output.contains("ALPHADONE"),
+            "debounce disabled must not keep rendering item 0 detail: {second_output:?}"
+        );
+        assert!(
+            !handler.detail_debounce.pending,
+            "debounce disabled must not arm a debounce wakeup"
+        );
+    }
+
+    #[test]
+    fn test_render_at_description_box_off_skips_detail_box() {
+        let description = "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu";
+        let mut handler = make_selected_handler(command_suggestion("checkout", Some(description)))
+            .with_popup_widths(20, 40)
+            .with_description_box(DescriptionBoxMode::Off, 60, 5, 0);
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 5, 0, 24, 120);
+
+        assert!(handler.last_detail_layout.is_none());
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            !output.contains("lambda mu"),
+            "off mode must not emit detail-only wrapped text: {output:?}"
+        );
+    }
+
+    #[test]
+    fn test_render_at_skips_detail_box_when_inline_description_fits() {
+        let mut handler = make_selected_handler(command_suggestion("checkout", Some("short")))
+            .with_popup_widths(20, 80)
+            .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 5, 0, 24, 120);
+
+        assert!(handler.last_detail_layout.is_none());
+        assert_eq!(handler.detail_debounce.displayed_idx, Some(0));
+    }
+
+    #[test]
+    fn test_render_at_clears_previous_detail_when_selection_no_longer_needs_box() {
+        let mut handler = make_selected_handler(command_suggestion("checkout", Some("short")))
+            .with_popup_widths(20, 80)
+            .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.last_detail_layout = Some(DetailLayout {
+            start_row: 5,
+            start_col: 50,
+            width: 20,
+            height: 2,
+            position: gc_overlay::DetailPosition::SideRight,
+        });
+        let mut buf = Vec::new();
+
+        handler.render_at(&mut buf, 5, 0, 24, 120);
+
+        let output = String::from_utf8_lossy(&buf);
+        assert!(
+            output.contains("\x1b[6;51H"),
+            "old detail layout should be cleared when no new detail is needed: {output:?}"
+        );
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+        assert!(handler.last_detail_layout.is_none());
+    }
+
+    #[test]
+    fn test_settled_selection_without_description_does_not_repaint_old_detail() {
+        let old_desc = format!("{}UNIQUEDETAILMARKER", "alpha ".repeat(20));
+        let mut handler = make_visible_handler(vec![
+            command_suggestion("old", Some(&old_desc)),
+            command_suggestion("new", None),
+        ])
+        .with_popup_widths(20, 40)
+        .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.overlay.selected = Some(0);
+
+        let mut first = Vec::new();
+        handler.render_at(&mut first, 5, 0, 24, 120);
+        assert!(
+            String::from_utf8_lossy(&first).contains("UNIQUEDETAILMARKER"),
+            "setup must render the first item's detail text"
+        );
+        assert_eq!(handler.detail_debounce.displayed_idx, Some(0));
+
+        handler.detail_box_debounce_ms = 80;
+        handler.overlay.selected = Some(1);
+        handler.detail_debounce.last_change_at =
+            Some(Instant::now() - std::time::Duration::from_millis(100));
+        let mut settled = Vec::new();
+        handler.render_at(&mut settled, 5, 0, 24, 120);
+        assert!(
+            !String::from_utf8_lossy(&settled).contains("UNIQUEDETAILMARKER"),
+            "settled no-description selection must not render old detail text"
+        );
+
+        let mut repaint = Vec::new();
+        handler.render_at(&mut repaint, 5, 0, 24, 120);
+
+        let output = String::from_utf8_lossy(&repaint);
+        assert!(
+            !output.contains("UNIQUEDETAILMARKER"),
+            "later repaint must not debounce back to the previous detail text: {output:?}"
+        );
+        assert_eq!(handler.detail_debounce.displayed_idx, Some(1));
+    }
+
+    #[test]
+    fn test_render_at_uses_runtime_popup_and_detail_size_knobs() {
+        let mut min_width_handler =
+            make_visible_handler(vec![command_suggestion("sh", None)]).with_popup_widths(35, 120);
+        let mut min_buf = Vec::new();
+
+        min_width_handler.render_at(&mut min_buf, 5, 0, 24, 120);
+        min_width_handler.commit_overlay_write(min_width_handler.overlay_write_ticket());
+
+        assert_eq!(
+            min_width_handler
+                .last_layout
+                .as_ref()
+                .expect("min-width render should commit a layout")
+                .width,
+            35
+        );
+
+        let long_text = "x".repeat(200);
+        let mut max_width_handler =
+            make_visible_handler(vec![command_suggestion(&long_text, None)])
+                .with_popup_widths(10, 30);
+        let mut max_buf = Vec::new();
+
+        max_width_handler.render_at(&mut max_buf, 5, 0, 24, 120);
+        max_width_handler.commit_overlay_write(max_width_handler.overlay_write_ticket());
+
+        assert_eq!(
+            max_width_handler
+                .last_layout
+                .as_ref()
+                .expect("max-width render should commit a layout")
+                .width,
+            30
+        );
+
+        let detail_desc =
+            "DETAILSIZING alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu";
+        let mut detail_handler =
+            make_selected_handler(command_suggestion("checkout", Some(detail_desc)))
+                .with_popup_widths(20, 40)
+                .with_description_box(DescriptionBoxMode::Side, 30, 2, 0);
+        let mut detail_buf = Vec::new();
+
+        detail_handler.render_at(&mut detail_buf, 5, 0, 24, 120);
+        detail_handler.commit_overlay_write(detail_handler.overlay_write_ticket());
+
+        let detail_layout = detail_handler
+            .last_detail_layout
+            .as_ref()
+            .expect("detail sizing render should commit a detail layout");
+        assert_eq!(detail_layout.width, 30);
+        assert_eq!(detail_layout.height, 2);
+    }
+
+    #[test]
     fn test_render_at_skips_old_clear_when_feedback_only_render_scrolls() {
         let mut handler = make_handler();
         handler.overlay_scroll_deficit = 4;
@@ -4311,6 +5779,52 @@ mod tests {
         assert!(
             output.contains("\x1b[12;1H"),
             "async block merge must render at live cursor row, not spawn-time row: {output:?}"
+        );
+    }
+
+    #[test]
+    fn test_apply_block_result_replacement_resets_detail_debounce_state() {
+        let mut handler = make_handler().with_description_box(DescriptionBoxMode::Side, 60, 5, 200);
+        handler.visible = true;
+        handler.detail_debounce.displayed_idx = Some(1);
+        handler.detail_debounce.last_change_at = Some(Instant::now());
+        handler.detail_debounce.pending = true;
+        handler.prime_dynamic_ctx_for_buffer("git checkout main", 17);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 120)));
+        {
+            let mut p = parser.lock().unwrap();
+            p.process_bytes(b"\x1b[6;1H");
+            p.state_mut()
+                .predict_command_buffer("git checkout main".to_string(), 17);
+        }
+        let mut buf = Vec::new();
+
+        handler.apply_block_result(
+            &parser,
+            &mut buf,
+            Some(DynamicResult::Loaded {
+                provider: ProviderTag::Git(gc_suggest::git::GitQueryKind::Branches),
+                suggestions: vec![command_suggestion(
+                    "main",
+                    Some("MAINDETAIL alpha beta gamma delta epsilon zeta eta theta"),
+                )],
+            }),
+            None,
+            None,
+            Vec::new(),
+            0,
+            0,
+            24,
+            120,
+            (0, 0),
+            "main",
+        );
+
+        assert_eq!(handler.detail_debounce.displayed_idx, None);
+        assert_eq!(handler.detail_debounce.last_change_at, None);
+        assert!(
+            !handler.detail_debounce.pending,
+            "replacing the result set must not keep an old detail redraw timer armed"
         );
     }
 
@@ -5168,5 +6682,325 @@ mod tests {
             }
             other => panic!("expected PartialError, got {other:?}"),
         }
+    }
+
+    fn detail_layout_at(start_row: u16, start_col: u16, width: u16, height: u16) -> DetailLayout {
+        DetailLayout {
+            start_row,
+            start_col,
+            width,
+            height,
+            position: gc_overlay::DetailPosition::SideRight,
+        }
+    }
+
+    fn count_cursor_moves(buf: &[u8]) -> usize {
+        let mut count = 0;
+        let mut i = 0;
+        while i + 1 < buf.len() {
+            if buf[i] == 0x1b && buf[i + 1] == b'[' {
+                let mut j = i + 2;
+                while j < buf.len() && buf[j] != b'H' && buf[j] != b'l' && buf[j] != b'h' {
+                    j += 1;
+                }
+                if j < buf.len() && buf[j] == b'H' {
+                    count += 1;
+                }
+                i = j + 1;
+            } else {
+                i += 1;
+            }
+        }
+        count
+    }
+
+    #[test]
+    fn test_clear_detail_box_uncovered_by_no_covers_clears_full_rect() {
+        let layout = detail_layout_at(5, 10, 4, 3);
+        let mut buf = Vec::new();
+        clear_detail_box_uncovered_by(&mut buf, &layout, &[]);
+
+        assert!(buf.starts_with(b"\x1b7"), "must save cursor at start");
+        assert!(buf.ends_with(b"\x1b8"), "must restore cursor at end");
+
+        let space_count = buf.iter().filter(|&&b| b == b' ').count();
+        assert_eq!(
+            space_count,
+            (layout.width as usize) * (layout.height as usize),
+            "no covers should fully wipe the rect with width*height spaces",
+        );
+    }
+
+    #[test]
+    fn test_clear_detail_box_uncovered_by_full_cover_emits_no_spaces() {
+        let layout = detail_layout_at(5, 10, 4, 3);
+        let cover = OverlayRect {
+            start_row: 4,
+            start_col: 8,
+            width: 12,
+            height: 5,
+        };
+        let mut buf = Vec::new();
+        clear_detail_box_uncovered_by(&mut buf, &layout, &[cover]);
+
+        assert!(buf.starts_with(b"\x1b7"));
+        assert!(buf.ends_with(b"\x1b8"));
+        let space_count = buf.iter().filter(|&&b| b == b' ').count();
+        assert_eq!(
+            space_count, 0,
+            "cover that fully contains the layout should leave no spans to clear",
+        );
+    }
+
+    #[test]
+    fn test_clear_detail_box_uncovered_by_split_into_left_right_slivers() {
+        let layout = detail_layout_at(5, 10, 10, 2);
+        let cover = OverlayRect {
+            start_row: 5,
+            start_col: 13,
+            width: 4,
+            height: 2,
+        };
+        let mut buf = Vec::new();
+        clear_detail_box_uncovered_by(&mut buf, &layout, &[cover]);
+
+        assert!(buf.starts_with(b"\x1b7"));
+        assert!(buf.ends_with(b"\x1b8"));
+        let cursor_moves = count_cursor_moves(&buf);
+        assert_eq!(
+            cursor_moves, 4,
+            "splitting each row into two slivers should emit 2 moves * 2 rows = 4 moves",
+        );
+        let space_count = buf.iter().filter(|&&b| b == b' ').count();
+        let expected_per_row = (layout.width - cover.width) as usize;
+        assert_eq!(
+            space_count,
+            expected_per_row * layout.height as usize,
+            "surviving widths per row must sum to (layout.width - cover.width)",
+        );
+    }
+
+    #[test]
+    fn test_clear_detail_box_uncovered_by_multiple_covers_disjoint() {
+        let layout = detail_layout_at(5, 10, 14, 1);
+        let cover_a = OverlayRect {
+            start_row: 5,
+            start_col: 13,
+            width: 3,
+            height: 1,
+        };
+        let cover_b = OverlayRect {
+            start_row: 5,
+            start_col: 19,
+            width: 2,
+            height: 1,
+        };
+        let mut buf = Vec::new();
+        clear_detail_box_uncovered_by(&mut buf, &layout, &[cover_a, cover_b]);
+
+        assert!(buf.starts_with(b"\x1b7"));
+        assert!(buf.ends_with(b"\x1b8"));
+        let cursor_moves = count_cursor_moves(&buf);
+        assert_eq!(
+            cursor_moves, 3,
+            "two disjoint covers on one row should leave three slivers (3 moves)",
+        );
+    }
+
+    /// Guards the zero-size early-return at the top of
+    /// `clear_detail_box_uncovered_by`. A regression that flips the `||` to
+    /// `&&` would let a zero-width layout slip through to the row loop and
+    /// emit a save/restore-cursor pair (\x1b7\x1b8) for nothing — a low-grade
+    /// scrollback corruption risk.
+    #[test]
+    fn test_clear_detail_box_uncovered_by_zero_width_layout_emits_nothing() {
+        let layout = DetailLayout {
+            start_row: 5,
+            start_col: 10,
+            width: 0,
+            height: 3,
+            position: gc_overlay::DetailPosition::SideRight,
+        };
+        let mut buf = Vec::new();
+        clear_detail_box_uncovered_by(&mut buf, &layout, &[]);
+        assert!(
+            buf.is_empty(),
+            "zero-width layout must short-circuit before emitting save/restore cursor: {buf:?}"
+        );
+    }
+
+    /// Sibling guard for the zero-height arm of the same early-return.
+    #[test]
+    fn test_clear_detail_box_uncovered_by_zero_height_layout_emits_nothing() {
+        let layout = DetailLayout {
+            start_row: 5,
+            start_col: 10,
+            width: 4,
+            height: 0,
+            position: gc_overlay::DetailPosition::SideRight,
+        };
+        let mut buf = Vec::new();
+        clear_detail_box_uncovered_by(&mut buf, &layout, &[]);
+        assert!(
+            buf.is_empty(),
+            "zero-height layout must short-circuit before emitting save/restore cursor: {buf:?}"
+        );
+    }
+
+    #[test]
+    fn test_detail_layout_after_scroll_zero_size_returns_none() {
+        let layout = DetailLayout {
+            start_row: 5,
+            start_col: 10,
+            width: 0,
+            height: 0,
+            position: gc_overlay::DetailPosition::SideRight,
+        };
+        assert!(detail_layout_after_scroll(&layout, 1).is_none());
+    }
+
+    #[test]
+    fn test_detail_layout_after_scroll_zero_scroll_clones() {
+        let layout = detail_layout_at(5, 10, 12, 4);
+        let result = detail_layout_after_scroll(&layout, 0).expect("zero scroll must clone");
+        assert_eq!(result.start_row, layout.start_row);
+        assert_eq!(result.start_col, layout.start_col);
+        assert_eq!(result.width, layout.width);
+        assert_eq!(result.height, layout.height);
+    }
+
+    #[test]
+    fn test_detail_layout_after_scroll_fully_consumed_returns_none() {
+        let layout = detail_layout_at(5, 10, 12, 3);
+        assert!(
+            detail_layout_after_scroll(&layout, 10).is_none(),
+            "scroll that meets or exceeds end_row must drop the layout",
+        );
+    }
+
+    #[test]
+    fn test_detail_layout_after_scroll_partial_clip_adjusts_height() {
+        let layout = detail_layout_at(2, 10, 12, 5);
+        let result = detail_layout_after_scroll(&layout, 4).expect("partial clip must keep layout");
+        assert_eq!(result.start_row, 0);
+        assert_eq!(result.height, 3);
+    }
+
+    /// Boundary: layout starts at row 0, so `clipped_rows = scroll - 0 = scroll`
+    /// directly, with no `saturating_sub` underflow involved. Guards the
+    /// branch where the layout is anchored at the top of the screen and a
+    /// partial scroll trims it from above.
+    #[test]
+    fn test_detail_layout_after_scroll_layout_at_origin_clips_full_scroll() {
+        let layout = detail_layout_at(0, 0, 10, 5);
+        let result = detail_layout_after_scroll(&layout, 2)
+            .expect("partial clip at origin must keep layout");
+        assert_eq!(result.start_row, 0);
+        assert_eq!(result.height, 3);
+    }
+
+    #[test]
+    fn test_detail_layout_after_scroll_scroll_below_start_row_no_clip() {
+        let layout = detail_layout_at(5, 10, 12, 3);
+        let result =
+            detail_layout_after_scroll(&layout, 2).expect("scroll above start must keep layout");
+        assert_eq!(result.start_row, 3);
+        assert_eq!(result.height, 3);
+    }
+
+    #[test]
+    fn test_render_for_detail_redraw_noop_when_invisible() {
+        let mut handler = make_handler().with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.render_for_detail_redraw(&parser, &mut buf);
+        assert!(buf.is_empty(), "no-op when handler is not visible");
+    }
+
+    #[test]
+    fn test_render_for_detail_redraw_noop_when_mode_off() {
+        let mut handler = make_visible_handler(vec![command_suggestion(
+            "alpha",
+            Some("ALPHADESC alpha beta gamma delta epsilon"),
+        )]);
+        handler.overlay.selected = Some(0);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.render_for_detail_redraw(&parser, &mut buf);
+        assert!(buf.is_empty(), "no-op when description_box mode is Off");
+    }
+
+    #[test]
+    fn test_render_for_detail_redraw_noop_when_selection_unchanged() {
+        let mut handler = make_visible_handler(vec![command_suggestion(
+            "alpha",
+            Some("ALPHADESC alpha beta gamma delta epsilon"),
+        )])
+        .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.overlay.selected = Some(0);
+        handler.detail_debounce.displayed_idx = Some(0);
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        handler.render_for_detail_redraw(&parser, &mut buf);
+        assert!(
+            buf.is_empty(),
+            "no-op when displayed idx already matches selected"
+        );
+    }
+
+    #[test]
+    fn test_update_config_disable_auto_trigger_clears_orphaned_detail_layout() {
+        let mut handler = make_visible_handler(vec![command_suggestion(
+            "alpha",
+            Some("ALPHADESC alpha beta gamma delta epsilon zeta eta"),
+        )])
+        .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        handler.overlay.selected = Some(0);
+        handler.last_detail_layout = Some(DetailLayout {
+            start_row: 7,
+            start_col: 30,
+            width: 25,
+            height: 4,
+            position: gc_overlay::DetailPosition::SideRight,
+        });
+        handler.last_layout = None;
+
+        let cleanup = handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/', '-', '.'],
+            10,
+            1200,
+            false,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Side,
+            60,
+            5,
+            80,
+        );
+
+        let output = String::from_utf8_lossy(&cleanup);
+        assert!(
+            output.contains("\x1b[8;31H"),
+            "cleanup must move to detail layout's start_row+1, start_col+1: {output:?}",
+        );
+        let space_count = cleanup.iter().filter(|&&b| b == b' ').count();
+        assert!(
+            space_count >= 25,
+            "cleanup must include at least width spaces per detail row: got {space_count}",
+        );
+
+        let ticket = handler.overlay_write_ticket();
+        assert!(
+            ticket.cleanup_token.is_some(),
+            "orphaned detail cleanup must be staged through the overlay write token",
+        );
+        handler.commit_overlay_write(ticket);
+        assert!(
+            handler.last_detail_layout.is_none(),
+            "detail layout must be released after the cleanup write is acknowledged",
+        );
     }
 }

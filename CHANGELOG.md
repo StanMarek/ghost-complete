@@ -5,7 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.15.0] - 2026-05-08
+
+### Added
+
+- Configurable popup width via new `[popup] min_width` and `[popup] max_width`
+  config keys. Previously the popup was hard-clamped to 20–60 columns. The new
+  defaults match the legacy bounds, but users on wide terminals can now bump
+  `max_width` to give descriptions more room before truncation. Both keys are
+  hot-reloadable.
+- Description text now ends with a single-column ellipsis (`…`) when truncated,
+  so users can tell the description was cut off rather than guessing.
+- New adjacent description box (#116). Set `[popup] description_box = "side"`
+  to render a wrapped description for the selected suggestion next to the
+  main popup. The box appears when the inline description would be hidden or
+  truncated — short descriptions that already fit in the popup row don't
+  trigger an empty side box. The wrapped description is capped by
+  `description_box_lines` and available rows. Falls back to a stacked-below
+  box when there's no horizontal room, and to inline truncation when neither
+  fits. Width (`description_box_max_width`), line cap
+  (`description_box_lines`), and selection-change debounce
+  (`description_box_debounce_ms`) are all configurable. Default mode is `off`
+  for opt-in v1 rollout.
+
+## [0.14.0] - 2026-05-08
+
+### Added
+
+- Prioritize current git branch (#117).
 
 ### Added
 
@@ -873,6 +900,8 @@ silently changed behaviour.
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.15.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.15.0
+[0.14.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.14.0
 [0.13.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.13.0
 [0.12.3]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.12.3
 [0.12.2]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.12.2
