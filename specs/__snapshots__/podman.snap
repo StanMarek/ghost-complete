@@ -299,21 +299,10 @@
         {
           "generators": [
             {
-              "_lowered_from_requires_js": true,
-              "script": [
-                "podman",
-                "ps",
-                "--format",
-                "{{ json . }}"
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty",
-                {
-                  "name": "Names",
-                  "type": "json_extract"
-                }
-              ]
+              "params": {
+                "binary": "podman"
+              },
+              "type": "docker_containers"
             }
           ],
           "name": "container"
@@ -392,19 +381,10 @@
         {
           "generators": [
             {
-              "_corrected_in": "v0.10.0",
-              "js_runtime": {
-                "kind": "post_process",
-                "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+              "params": {
+                "binary": "podman"
               },
-              "requires_js": true,
-              "script": [
-                "podman",
-                "image",
-                "ls",
-                "--format",
-                "{{ json . }}"
-              ]
+              "type": "docker_images"
             }
           ],
           "name": "container"
@@ -1239,21 +1219,10 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "podman",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "params": {
+              "binary": "podman"
+            },
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -1309,21 +1278,10 @@
         {
           "generators": [
             {
-              "_lowered_from_requires_js": true,
-              "script": [
-                "podman",
-                "ps",
-                "--format",
-                "{{ json . }}"
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty",
-                {
-                  "name": "Names",
-                  "type": "json_extract"
-                }
-              ]
+              "params": {
+                "binary": "podman"
+              },
+              "type": "docker_containers"
             }
           ],
           "name": "container"
@@ -1422,21 +1380,10 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "podman",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "params": {
+              "binary": "podman"
+            },
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -1460,19 +1407,10 @@
       "args": {
         "generators": [
           {
-            "_corrected_in": "v0.10.0",
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+            "params": {
+              "binary": "podman"
             },
-            "requires_js": true,
-            "script": [
-              "podman",
-              "image",
-              "ls",
-              "--format",
-              "{{ json . }}"
-            ]
+            "type": "docker_images"
           }
         ],
         "name": "image"
@@ -1623,49 +1561,19 @@
       "args": {
         "generators": [
           {
-            "_corrected_in": "v0.10.0",
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "function(t){return t.split(`\n`).map(i=>JSON.parse(i)).map(i=>({name:i.Id,displayName:`[con] ${i.Id} (${i.Image})`}))}"
+            "params": {
+              "binary": "podman"
             },
-            "requires_js": true,
-            "script": [
-              "podman",
-              "ps",
-              "-a",
-              "--format",
-              "{{ json . }}"
-            ]
+            "type": "docker_containers"
           },
           {
-            "_corrected_in": "v0.10.0",
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "function(t){return t.split(`\n`).map(i=>JSON.parse(i)).map(i=>{let r;return i.repository===\"<none>\"?r=i.Id:(r=i.repository,i.Tag!==\"<none>\"&&(r+=`:${i.tag}`)),{name:i.ID,displayName:`[img] ${r}`}})}"
+            "params": {
+              "binary": "podman"
             },
-            "requires_js": true,
-            "script": [
-              "podman",
-              "images",
-              "-a",
-              "--format",
-              "{{ json . }}"
-            ]
+            "type": "docker_images"
           },
           {
-            "_corrected_in": "v0.10.0",
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "function(t){return t.split(`\n`).map(i=>JSON.parse(i)).map(i=>({name:i.Name,displayName:`[vol] ${i.Name}`}))}"
-            },
-            "requires_js": true,
-            "script": [
-              "docker",
-              "volume",
-              "ls",
-              "--format",
-              "{{ json . }}"
-            ]
+            "type": "docker_volumes"
           }
         ],
         "name": "Name or ID"
@@ -1705,21 +1613,10 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "podman",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "params": {
+              "binary": "podman"
+            },
+            "type": "docker_containers"
           }
         ],
         "isVariadic": true,
@@ -1808,21 +1705,10 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "podman",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "params": {
+              "binary": "podman"
+            },
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -1884,21 +1770,10 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "podman",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "params": {
+              "binary": "podman"
+            },
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -1911,21 +1786,10 @@
         {
           "generators": [
             {
-              "_lowered_from_requires_js": true,
-              "script": [
-                "podman",
-                "ps",
-                "--format",
-                "{{ json . }}"
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty",
-                {
-                  "name": "Names",
-                  "type": "json_extract"
-                }
-              ]
+              "params": {
+                "binary": "podman"
+              },
+              "type": "docker_containers"
             }
           ],
           "name": "container"
@@ -2088,21 +1952,10 @@
         {
           "generators": [
             {
-              "_lowered_from_requires_js": true,
-              "script": [
-                "podman",
-                "ps",
-                "--format",
-                "{{ json . }}"
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty",
-                {
-                  "name": "Names",
-                  "type": "json_extract"
-                }
-              ]
+              "params": {
+                "binary": "podman"
+              },
+              "type": "docker_containers"
             }
           ],
           "name": "container"
@@ -2118,21 +1971,10 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "podman",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "params": {
+              "binary": "podman"
+            },
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -2156,22 +1998,10 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "podman",
-              "ps",
-              "-a",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "params": {
+              "binary": "podman"
+            },
+            "type": "docker_containers"
           }
         ],
         "isVariadic": true,
@@ -2207,19 +2037,10 @@
       "args": {
         "generators": [
           {
-            "_corrected_in": "v0.10.0",
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+            "params": {
+              "binary": "podman"
             },
-            "requires_js": true,
-            "script": [
-              "podman",
-              "image",
-              "ls",
-              "--format",
-              "{{ json . }}"
-            ]
+            "type": "docker_images"
           }
         ],
         "isVariadic": true,
@@ -2249,17 +2070,10 @@
           "description": "The Podman image to use",
           "generators": [
             {
-              "_lowered_from_requires_js": true,
-              "script": [
-                "podman",
-                "images",
-                "--format",
-                "{{.Repository}} {{.Size}} {{.Tag}} {{.ID}}"
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty"
-              ]
+              "params": {
+                "binary": "podman"
+              },
+              "type": "docker_images"
             }
           ],
           "name": "image"
@@ -3154,19 +2968,10 @@
       "args": {
         "generators": [
           {
-            "_corrected_in": "v0.10.0",
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+            "params": {
+              "binary": "podman"
             },
-            "requires_js": true,
-            "script": [
-              "podman",
-              "image",
-              "ls",
-              "--format",
-              "{{ json . }}"
-            ]
+            "type": "docker_images"
           }
         ],
         "name": "image"
@@ -3234,22 +3039,10 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "podman",
-              "ps",
-              "-a",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "params": {
+              "binary": "podman"
+            },
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -3286,21 +3079,10 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "podman",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "params": {
+              "binary": "podman"
+            },
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -3342,21 +3124,10 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "podman",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "params": {
+              "binary": "podman"
+            },
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -3387,21 +3158,10 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "podman",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "params": {
+              "binary": "podman"
+            },
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -3413,23 +3173,10 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "podman",
-              "ps",
-              "--filter",
-              "status=paused",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "params": {
+              "binary": "podman"
+            },
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -3441,21 +3188,10 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "podman",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "params": {
+              "binary": "podman"
+            },
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -3639,21 +3375,10 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "podman",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "params": {
+              "binary": "podman"
+            },
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -3720,19 +3445,10 @@
             {
               "generators": [
                 {
-                  "_corrected_in": "v0.10.0",
-                  "js_runtime": {
-                    "kind": "post_process",
-                    "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+                  "params": {
+                    "binary": "podman"
                   },
-                  "requires_js": true,
-                  "script": [
-                    "podman",
-                    "image",
-                    "ls",
-                    "--format",
-                    "{{ json . }}"
-                  ]
+                  "type": "docker_images"
                 }
               ],
               "name": "container"
@@ -4567,21 +4283,10 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "podman",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "params": {
+                  "binary": "podman"
+                },
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -4594,21 +4299,10 @@
             {
               "generators": [
                 {
-                  "_lowered_from_requires_js": true,
-                  "script": [
-                    "podman",
-                    "ps",
-                    "--format",
-                    "{{ json . }}"
-                  ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "name": "Names",
-                      "type": "json_extract"
-                    }
-                  ]
+                  "params": {
+                    "binary": "podman"
+                  },
+                  "type": "docker_containers"
                 }
               ],
               "name": "container"
@@ -4707,21 +4401,10 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "podman",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "params": {
+                  "binary": "podman"
+                },
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -4745,21 +4428,10 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "podman",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "params": {
+                  "binary": "podman"
+                },
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -4790,21 +4462,10 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "podman",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "params": {
+                  "binary": "podman"
+                },
+                "type": "docker_containers"
               }
             ],
             "isVariadic": true,
@@ -4829,21 +4490,10 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "podman",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "params": {
+                  "binary": "podman"
+                },
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -4974,21 +4624,10 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "podman",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "params": {
+                  "binary": "podman"
+                },
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -5001,21 +4640,10 @@
             {
               "generators": [
                 {
-                  "_lowered_from_requires_js": true,
-                  "script": [
-                    "podman",
-                    "ps",
-                    "--format",
-                    "{{ json . }}"
-                  ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "name": "Names",
-                      "type": "json_extract"
-                    }
-                  ]
+                  "params": {
+                    "binary": "podman"
+                  },
+                  "type": "docker_containers"
                 }
               ],
               "name": "container"
@@ -5054,21 +4682,10 @@
             {
               "generators": [
                 {
-                  "_lowered_from_requires_js": true,
-                  "script": [
-                    "podman",
-                    "ps",
-                    "--format",
-                    "{{ json . }}"
-                  ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "name": "Names",
-                      "type": "json_extract"
-                    }
-                  ]
+                  "params": {
+                    "binary": "podman"
+                  },
+                  "type": "docker_containers"
                 }
               ],
               "name": "container"
@@ -5084,21 +4701,10 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "podman",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "params": {
+                  "binary": "podman"
+                },
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -5122,22 +4728,10 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "podman",
-                  "ps",
-                  "-a",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "params": {
+                  "binary": "podman"
+                },
+                "type": "docker_containers"
               }
             ],
             "isVariadic": true,
@@ -5175,17 +4769,10 @@
               "description": "The Podman image to use",
               "generators": [
                 {
-                  "_lowered_from_requires_js": true,
-                  "script": [
-                    "podman",
-                    "images",
-                    "--format",
-                    "{{.Repository}} {{.Size}} {{.Tag}} {{.ID}}"
-                  ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty"
-                  ]
+                  "params": {
+                    "binary": "podman"
+                  },
+                  "type": "docker_images"
                 }
               ],
               "name": "image"
@@ -6080,22 +5667,10 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "podman",
-                  "ps",
-                  "-a",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "params": {
+                  "binary": "podman"
+                },
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -6132,21 +5707,10 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "podman",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "params": {
+                  "binary": "podman"
+                },
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -6188,21 +5752,10 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "podman",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "params": {
+                  "binary": "podman"
+                },
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -6226,21 +5779,10 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "podman",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "params": {
+                  "binary": "podman"
+                },
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -6252,23 +5794,10 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "podman",
-                  "ps",
-                  "--filter",
-                  "status=paused",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "params": {
+                  "binary": "podman"
+                },
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -6280,21 +5809,10 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "podman",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "params": {
+                  "binary": "podman"
+                },
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -6445,21 +5963,10 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "podman",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "params": {
+                  "binary": "podman"
+                },
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -6683,19 +6190,10 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+                "params": {
+                  "binary": "podman"
                 },
-                "requires_js": true,
-                "script": [
-                  "podman",
-                  "image",
-                  "ls",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_images"
               }
             ],
             "name": "image"
@@ -6776,19 +6274,10 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+                "params": {
+                  "binary": "podman"
                 },
-                "requires_js": true,
-                "script": [
-                  "podman",
-                  "image",
-                  "ls",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_images"
               }
             ],
             "isVariadic": true,
@@ -6994,19 +6483,10 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+                "params": {
+                  "binary": "podman"
                 },
-                "requires_js": true,
-                "script": [
-                  "podman",
-                  "image",
-                  "ls",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_images"
               }
             ],
             "isVariadic": true,
@@ -7034,19 +6514,10 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.Id}`,displayName:`${n.repository} - ${n.Id}`,icon:\"fig://icon?type=docker\"}))}"
+                "params": {
+                  "binary": "podman"
                 },
-                "requires_js": true,
-                "script": [
-                  "podman",
-                  "image",
-                  "ls",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_images"
               }
             ],
             "name": "image"
@@ -7084,19 +6555,10 @@
             {
               "generators": [
                 {
-                  "_corrected_in": "v0.10.0",
-                  "js_runtime": {
-                    "kind": "post_process",
-                    "source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.name||n.Name,description:n.id||n.ID,icon:\"fig://icon?type=docker\"}))"
+                  "params": {
+                    "binary": "podman"
                   },
-                  "requires_js": true,
-                  "script": [
-                    "podman",
-                    "network",
-                    "list",
-                    "--format",
-                    "{{ json . }}"
-                  ]
+                  "type": "docker_networks"
                 }
               ],
               "name": "NETWORK"
@@ -7104,21 +6566,10 @@
             {
               "generators": [
                 {
-                  "_lowered_from_requires_js": true,
-                  "script": [
-                    "podman",
-                    "ps",
-                    "--format",
-                    "{{ json . }}"
-                  ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "name": "Names",
-                      "type": "json_extract"
-                    }
-                  ]
+                  "params": {
+                    "binary": "podman"
+                  },
+                  "type": "docker_containers"
                 }
               ],
               "name": "container"
@@ -7328,19 +6779,10 @@
             {
               "generators": [
                 {
-                  "_corrected_in": "v0.10.0",
-                  "js_runtime": {
-                    "kind": "post_process",
-                    "source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.name||n.Name,description:n.id||n.ID,icon:\"fig://icon?type=docker\"}))"
+                  "params": {
+                    "binary": "podman"
                   },
-                  "requires_js": true,
-                  "script": [
-                    "podman",
-                    "network",
-                    "list",
-                    "--format",
-                    "{{ json . }}"
-                  ]
+                  "type": "docker_networks"
                 }
               ],
               "name": "NETWORK"
@@ -7348,21 +6790,10 @@
             {
               "generators": [
                 {
-                  "_lowered_from_requires_js": true,
-                  "script": [
-                    "podman",
-                    "ps",
-                    "--format",
-                    "{{ json . }}"
-                  ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "name": "Names",
-                      "type": "json_extract"
-                    }
-                  ]
+                  "params": {
+                    "binary": "podman"
+                  },
+                  "type": "docker_containers"
                 }
               ],
               "name": "container"
@@ -7384,19 +6815,10 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.name||n.Name,description:n.id||n.ID,icon:\"fig://icon?type=docker\"}))"
+                "params": {
+                  "binary": "podman"
                 },
-                "requires_js": true,
-                "script": [
-                  "podman",
-                  "network",
-                  "list",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_networks"
               }
             ],
             "isVariadic": true,
@@ -7488,19 +6910,10 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.name||n.Name,description:n.id||n.ID,icon:\"fig://icon?type=docker\"}))"
+                "params": {
+                  "binary": "podman"
                 },
-                "requires_js": true,
-                "script": [
-                  "podman",
-                  "network",
-                  "list",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_networks"
               }
             ],
             "isVariadic": true,
@@ -7829,19 +7242,10 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,icon:\"fig://icon?type=docker\"}))}"
+                "params": {
+                  "binary": "podman"
                 },
-                "requires_js": true,
-                "script": [
-                  "podman",
-                  "volume",
-                  "list",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_volumes"
               }
             ],
             "isVariadic": true,
@@ -7920,19 +7324,10 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,icon:\"fig://icon?type=docker\"}))}"
+                "params": {
+                  "binary": "podman"
                 },
-                "requires_js": true,
-                "script": [
-                  "podman",
-                  "volume",
-                  "list",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_volumes"
               }
             ],
             "isVariadic": true,
