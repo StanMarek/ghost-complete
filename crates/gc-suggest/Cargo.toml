@@ -23,6 +23,7 @@ regex = "1"
 shlex = "1"
 tempfile = "3"
 unicode-ident = "1"
+zstd = { version = "0.13", default-features = false }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
@@ -38,6 +39,7 @@ tracing-subscriber = { workspace = true }
 
 [build-dependencies]
 serde_json = "1"
+zstd = { version = "0.13", default-features = false }
 
 [[bench]]
 name = "suggest_bench"
