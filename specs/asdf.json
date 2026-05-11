@@ -42,8 +42,7 @@
             }
           ],
           "description": "Add a plugin from the plugin repo OR, add a Git repo as a plugin by specifying the name and repo url",
-          "name": "add",
-          "priority": 90
+          "name": "add"
         },
         {
           "description": "List installed plugins. Optionally show git urls and git-ref",
@@ -67,13 +66,13 @@
               "description": "List plugins registered on asdf-plugins repository with URLs",
               "name": "all"
             }
-          ],
-          "priority": 72
+          ]
         },
         {
           "args": {
             "generators": [
               {
+                "_lowered_from_requires_js": true,
                 "script": [
                   "asdf",
                   "plugin-list"
@@ -81,15 +80,13 @@
                 "transforms": [
                   "split_lines",
                   "filter_empty"
-                ],
-                "_lowered_from_requires_js": true
+                ]
               }
             ],
             "name": "name"
           },
           "description": "Remove plugin and package versions",
-          "name": "remove",
-          "priority": 80
+          "name": "remove"
         },
         {
           "args": [
@@ -111,8 +108,7 @@
                 "--all"
               ]
             }
-          ],
-          "priority": 78
+          ]
         }
       ]
     },
@@ -171,6 +167,7 @@
       "args": {
         "generators": [
           {
+            "_lowered_from_requires_js": true,
             "script": [
               "asdf",
               "plugin-list"
@@ -178,8 +175,7 @@
             "transforms": [
               "split_lines",
               "filter_empty"
-            ],
-            "_lowered_from_requires_js": true
+            ]
           }
         ],
         "name": "name"
@@ -214,6 +210,7 @@
         {
           "generators": [
             {
+              "_lowered_from_requires_js": true,
               "script": [
                 "asdf",
                 "plugin-list"
@@ -221,8 +218,7 @@
               "transforms": [
                 "split_lines",
                 "filter_empty"
-              ],
-              "_lowered_from_requires_js": true
+              ]
             }
           ],
           "isOptional": true,
@@ -249,14 +245,14 @@
         }
       ],
       "description": "Install plugin at stated version, or all from .tools-versions",
-      "name": "install",
-      "priority": 92
+      "name": "install"
     },
     {
       "args": [
         {
           "generators": [
             {
+              "_lowered_from_requires_js": true,
               "script": [
                 "asdf",
                 "plugin-list"
@@ -264,8 +260,7 @@
               "transforms": [
                 "split_lines",
                 "filter_empty"
-              ],
-              "_lowered_from_requires_js": true
+              ]
             }
           ],
           "name": "name"
@@ -286,13 +281,13 @@
         }
       ],
       "description": "Remove a specific version of a package",
-      "name": "uninstall",
-      "priority": 78
+      "name": "uninstall"
     },
     {
       "args": {
         "generators": [
           {
+            "_lowered_from_requires_js": true,
             "script": [
               "asdf",
               "plugin-list"
@@ -300,8 +295,7 @@
             "transforms": [
               "split_lines",
               "filter_empty"
-            ],
-            "_lowered_from_requires_js": true
+            ]
           }
         ],
         "isOptional": true,
@@ -315,6 +309,7 @@
         {
           "generators": [
             {
+              "_lowered_from_requires_js": true,
               "script": [
                 "asdf",
                 "plugin-list"
@@ -322,8 +317,7 @@
               "transforms": [
                 "split_lines",
                 "filter_empty"
-              ],
-              "_lowered_from_requires_js": true
+              ]
             }
           ],
           "name": "name"
@@ -368,6 +362,7 @@
         {
           "generators": [
             {
+              "_lowered_from_requires_js": true,
               "script": [
                 "asdf",
                 "plugin-list"
@@ -375,8 +370,7 @@
               "transforms": [
                 "split_lines",
                 "filter_empty"
-              ],
-              "_lowered_from_requires_js": true
+              ]
             }
           ],
           "name": "name"
@@ -403,6 +397,7 @@
         {
           "generators": [
             {
+              "_lowered_from_requires_js": true,
               "script": [
                 "asdf",
                 "plugin-list"
@@ -410,8 +405,7 @@
               "transforms": [
                 "split_lines",
                 "filter_empty"
-              ],
-              "_lowered_from_requires_js": true
+              ]
             }
           ],
           "name": "name"
@@ -438,6 +432,7 @@
         {
           "generators": [
             {
+              "_lowered_from_requires_js": true,
               "script": [
                 "asdf",
                 "plugin-list"
@@ -445,8 +440,7 @@
               "transforms": [
                 "split_lines",
                 "filter_empty"
-              ],
-              "_lowered_from_requires_js": true
+              ]
             }
           ],
           "name": "name"
@@ -473,6 +467,7 @@
         {
           "generators": [
             {
+              "_lowered_from_requires_js": true,
               "script": [
                 "asdf",
                 "plugin-list"
@@ -480,8 +475,7 @@
               "transforms": [
                 "split_lines",
                 "filter_empty"
-              ],
-              "_lowered_from_requires_js": true
+              ]
             }
           ],
           "name": "name"
@@ -508,6 +502,7 @@
       "args": {
         "generators": [
           {
+            "_lowered_from_requires_js": true,
             "script": [
               "asdf",
               "plugin-list"
@@ -515,8 +510,7 @@
             "transforms": [
               "split_lines",
               "filter_empty"
-            ],
-            "_lowered_from_requires_js": true
+            ]
           }
         ],
         "name": "name"
@@ -529,6 +523,7 @@
             {
               "generators": [
                 {
+                  "_lowered_from_requires_js": true,
                   "script": [
                     "asdf",
                     "plugin-list"
@@ -536,8 +531,7 @@
                   "transforms": [
                     "split_lines",
                     "filter_empty"
-                  ],
-                  "_lowered_from_requires_js": true
+                  ]
                 }
               ],
               "name": "name"
@@ -561,14 +555,14 @@
           "name": "all",
           "priority": 77
         }
-      ],
-      "priority": 72
+      ]
     },
     {
       "args": [
         {
           "generators": [
             {
+              "_lowered_from_requires_js": true,
               "script": [
                 "asdf",
                 "plugin-list"
@@ -576,8 +570,7 @@
               "transforms": [
                 "split_lines",
                 "filter_empty"
-              ],
-              "_lowered_from_requires_js": true
+              ]
             }
           ],
           "name": "name"
@@ -605,6 +598,7 @@
         {
           "generators": [
             {
+              "_lowered_from_requires_js": true,
               "script": [
                 "asdf",
                 "plugin-list"
@@ -612,8 +606,7 @@
               "transforms": [
                 "split_lines",
                 "filter_empty"
-              ],
-              "_lowered_from_requires_js": true
+              ]
             }
           ],
           "name": "name"
@@ -651,8 +644,7 @@
         "name": "command"
       },
       "description": "Executes the command shim for the current version",
-      "name": "exec",
-      "priority": 75
+      "name": "exec"
     },
     {
       "args": {
@@ -673,14 +665,14 @@
     },
     {
       "description": "Print os, shell and asdf debug information",
-      "name": "info",
-      "priority": 65
+      "name": "info"
     },
     {
       "args": [
         {
           "generators": [
             {
+              "_lowered_from_requires_js": true,
               "script": [
                 "asdf",
                 "plugin-list"
@@ -688,8 +680,7 @@
               "transforms": [
                 "split_lines",
                 "filter_empty"
-              ],
-              "_lowered_from_requires_js": true
+              ]
             }
           ],
           "isOptional": true,
@@ -763,8 +754,7 @@
             "--head"
           ]
         }
-      ],
-      "priority": 78
+      ]
     },
     {
       "description": "Version for asdf",

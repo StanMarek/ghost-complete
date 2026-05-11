@@ -247,7 +247,7 @@ mod tests {
         // release-time snapshot that lags the live spec set. If you add or
         // remove `_corrected_in` markers in `specs/`, update this constant
         // and the baseline together in the same PR.
-        const EXPECTED_CORRECTED_IN: usize = 171;
+        const EXPECTED_CORRECTED_IN: usize = 254;
 
         fn count(v: &serde_json::Value) -> usize {
             match v {

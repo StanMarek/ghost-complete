@@ -43,6 +43,7 @@ import { matchPostProcess, unrecognizedSingleLetterHelper } from './post-process
 import { matchNativeFromJsSource, matchNativeGenerator } from './native-map.js';
 import { analyzeGenerator } from './ast-analyzer.js';
 import { analyzeTokenOnly } from './token-only-analyzer.js';
+import { extractSubprocessGenerator } from './subprocess-extractor.js';
 import { stringifySorted } from './serialize.js';
 
 /**
@@ -89,6 +90,28 @@ const BUILD_DIR = join(
   'autocomplete',
   'build'
 );
+const UX11_DECLINE_REPORT = join(
+  import.meta.dirname,
+  '..',
+  'reports',
+  'ux-11-decline-reasons.json',
+);
+
+const REPORTABLE_SUBPROCESS_DECLINES = new Set([
+  'tokens-derived-command',
+  'tokens-derived-args',
+  'tokens-derived-postprocess',
+  'multiple-awaits',
+  'filesystem-read',
+  'fetch-reference',
+  'network-bound-command',
+  'git-subprocess-not-native',
+  'transforms-unsupported',
+  'nonliteral-command',
+  'nonliteral-args',
+]);
+
+let activeDeclineCollector = null;
 
 /**
  * Load a Fig spec by name, returning both the spec and any load error.
@@ -245,6 +268,88 @@ function processGenerators(spec, specName) {
   });
 }
 
+function applySpecFixups(spec, specName) {
+  if (!spec || typeof spec !== 'object') return spec;
+
+  if (specName === 'cd' && spec.name === 'cd') {
+    spec.args = {
+      name: 'directory',
+      template: 'folders',
+    };
+  }
+
+  if (specName === 'cargo' && spec.name === 'cargo') {
+    applyCargoPriorityFixups(spec);
+  }
+
+  if (specName === 'aws' && spec.name === 'aws') {
+    applyAwsProfileCacheFixup(spec);
+  }
+
+  return spec;
+}
+
+function applyCargoPriorityFixups(spec) {
+  const subcommandPriorities = new Map([
+    ['bench', 65],
+    ['build', 92],
+    ['clean', 55],
+    ['doc', 55],
+    ['init', 55],
+    ['install', 75],
+    ['publish', 75],
+    ['run', 92],
+    ['test', 90],
+    ['uninstall', 78],
+    ['update', 78],
+    ['add', 90],
+    ['remove', 80],
+  ]);
+  for (const sub of spec.subcommands ?? []) {
+    if (typeof sub?.name === 'string' && subcommandPriorities.has(sub.name)) {
+      sub.priority = subcommandPriorities.get(sub.name);
+    }
+  }
+
+  const optionPriority = (name) => {
+    const names = Array.isArray(name) ? name : [name];
+    if (names.includes('-q') || names.includes('--quiet')) return 25;
+    if (names.includes('-v') || names.includes('--verbose')) return 25;
+    if (names.includes('--dry-run')) return 50;
+    if (names.includes('-f') && names.includes('--force')) return 20;
+    if (names.includes('-f') && names.includes('--format')) return 20;
+    return null;
+  };
+
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return;
+    for (const opt of node.options ?? []) {
+      const priority = optionPriority(opt.name);
+      if (priority !== null) opt.priority = priority;
+      walk(opt);
+    }
+    for (const sub of node.subcommands ?? []) walk(sub);
+    if (Array.isArray(node.args)) {
+      for (const arg of node.args) walk(arg);
+    } else {
+      walk(node.args);
+    }
+  };
+  walk(spec);
+}
+
+function applyAwsProfileCacheFixup(spec) {
+  const profile = (spec.options ?? []).find((opt) => {
+    const names = Array.isArray(opt?.name) ? opt.name : [opt?.name];
+    return names.includes('--profile');
+  });
+  const gen = profile?.args?.generators?.[0];
+  if (!gen?.cache?.cache_by_directory) return;
+  if (!Number.isFinite(gen.cache.ttl_seconds) || gen.cache.ttl_seconds <= 0) {
+    gen.cache.ttl_seconds = 300;
+  }
+}
+
 /**
  * Walk a spec tree and call the callback for each generators array found.
  */
@@ -303,6 +408,40 @@ function buildTokenOnlyJsRuntime(source) {
   return { kind: 'token_only', source, self_contained: false };
 }
 
+function subprocessExtractionResult(source, gen, specName) {
+  const extracted = extractSubprocessGenerator(source);
+  if (extracted.kind === 'native') {
+    const result = {
+      script: extracted.script,
+      transforms: extracted.transforms,
+      _static_extracted_subprocess: true,
+    };
+    if (gen.cache) result.cache = gen.cache;
+    return result;
+  }
+  if (extracted.kind === 'fallback_post_process') {
+    const result = {
+      script: extracted.script,
+      requires_js: true,
+      js_runtime: {
+        kind: 'post_process',
+        source: extracted.fallbackJsSource,
+        self_contained: true,
+      },
+    };
+    if (gen.cache) result.cache = gen.cache;
+    return result;
+  }
+  if (
+    activeDeclineCollector &&
+    extracted.kind === 'declined' &&
+    REPORTABLE_SUBPROCESS_DECLINES.has(extracted.reason)
+  ) {
+    activeDeclineCollector.push({ spec: specName, reason: extracted.reason });
+  }
+  return null;
+}
+
 /**
  * Process a single generator through the conversion pipeline.
  *
@@ -341,6 +480,8 @@ export function processGenerator(gen, specName) {
       if (gen.cache) result.cache = gen.cache;
       return result;
     }
+    const extracted = subprocessExtractionResult(gen._customSource, gen, specName);
+    if (extracted) return extracted;
     // Preserve the older self-contained path first so proven Custom
     // generators keep their host API and helper preamble semantics. TokenOnly
     // is the fallback for bodies that failed that proof but do not reference
@@ -366,6 +507,8 @@ export function processGenerator(gen, specName) {
       if (gen.cache) result.cache = gen.cache;
       return result;
     }
+    const extracted = subprocessExtractionResult(gen._scriptSource, gen, specName);
+    if (extracted) return extracted;
     // Preserve proven ScriptFunction behaviour first. TokenOnly is only the
     // host-API-free fallback for bodies that would otherwise be stripped.
     const result = { requires_js: true };
@@ -462,6 +605,7 @@ export function processGenerator(gen, specName) {
 const GENERATOR_FIELD_ALLOWLIST = new Set([
   '_corrected_in',
   '_lowered_from_requires_js',
+  '_static_extracted_subprocess',
 ]);
 
 /**
@@ -534,7 +678,11 @@ export async function convertSingleSpec(specName) {
   // Step 3: Process generators
   processGenerators(spec, specName);
 
-  // Step 4: Clean internal markers
+  // Step 4: Apply command-specific static recoveries that are safer than
+  // preserving helper-backed Fig custom generators.
+  spec = applySpecFixups(spec, specName);
+
+  // Step 5: Clean internal markers
   spec = cleanSpec(spec);
 
   // Collect stats
@@ -554,6 +702,7 @@ function collectStats(spec) {
     nativeGenerators: 0,
     transformGenerators: 0,
     loweredTransformGenerators: 0,
+    staticExtractedSubprocessGenerators: 0,
     requiresJsGenerators: 0,
     tokenOnlyGenerators: 0,
   };
@@ -591,6 +740,7 @@ function collectStats(spec) {
         else if (gen.transforms) {
           stats.transformGenerators++;
           if (gen._lowered_from_requires_js) stats.loweredTransformGenerators++;
+          if (gen._static_extracted_subprocess) stats.staticExtractedSubprocessGenerators++;
         } else if (gen.requires_js) {
           stats.requiresJsGenerators++;
           if (gen.js_runtime?.kind === 'token_only') stats.tokenOnlyGenerators++;
@@ -638,6 +788,7 @@ function makeEmptyTotals() {
     nativeGenerators: 0,
     transformGenerators: 0,
     loweredTransformGenerators: 0,
+    staticExtractedSubprocessGenerators: 0,
     requiresJsGenerators: 0,
     tokenOnlyGenerators: 0,
   };
@@ -658,19 +809,26 @@ function makeEmptyTotals() {
  *   `stringifySorted` (sorted object keys) so two runs over the same input
  *   produce byte-identical files. Pass `false` only for back-compat /
  *   debugging; CI's corpus-hash gate assumes deterministic mode.
- * @returns {Promise<{totals: object, errors: Array<{spec: string, error: string}>}>}
+ * @param {boolean} [opts.reportDeclines=false] - Collect ux-11 subprocess
+ *   extraction decline diagnostics.
+ * @returns {Promise<{totals: object, errors: Array<{spec: string, error: string}>, declines: Array<{spec: string, reason: string}>}>}
  */
 export async function runConversionBatch({
   specNames,
   outputDir,
   dryRun = false,
   deterministic = true,
+  reportDeclines = false,
 }) {
   const totals = makeEmptyTotals();
   const errors = [];
+  const declines = [];
+  const previousDeclineCollector = activeDeclineCollector;
+  activeDeclineCollector = reportDeclines ? declines : null;
 
-  for (const specName of specNames) {
-    try {
+  try {
+    for (const specName of specNames) {
+      try {
       // Probe the load path first so we can surface the underlying import
       // error to the caller. `convertSingleSpec` itself still returns null
       // on a missing default export (legacy contract the test suite relies
@@ -724,15 +882,19 @@ export async function runConversionBatch({
       totals.nativeGenerators += stats.nativeGenerators;
       totals.transformGenerators += stats.transformGenerators;
       totals.loweredTransformGenerators += stats.loweredTransformGenerators;
+      totals.staticExtractedSubprocessGenerators += stats.staticExtractedSubprocessGenerators;
       totals.requiresJsGenerators += stats.requiresJsGenerators;
       totals.tokenOnlyGenerators += stats.tokenOnlyGenerators;
-    } catch (err) {
-      errors.push({ spec: specName, error: err.message });
-      totals.failed++;
+      } catch (err) {
+        errors.push({ spec: specName, error: err.message });
+        totals.failed++;
+      }
     }
+  } finally {
+    activeDeclineCollector = previousDeclineCollector;
   }
 
-  return { totals, errors };
+  return { totals, errors, declines };
 }
 
 /**
@@ -761,6 +923,9 @@ function printSummary(totals, errors) {
   if (totals.loweredTransformGenerators > 0) {
     console.log(`    Lowered JS:     ${totals.loweredTransformGenerators}`);
   }
+  if (totals.staticExtractedSubprocessGenerators > 0) {
+    console.log(`    Static extract: ${totals.staticExtractedSubprocessGenerators}`);
+  }
   console.log(`  Requires JS:      ${totals.requiresJsGenerators}`);
   if (totals.tokenOnlyGenerators > 0) {
     console.log(`  TokenOnly:        ${totals.tokenOnlyGenerators}`);
@@ -779,6 +944,21 @@ function printSummary(totals, errors) {
 
 function printTokenOnlyReport(totals) {
   console.log(`TokenOnly promoted: ${totals.tokenOnlyGenerators}`);
+}
+
+async function writeDeclineReport(declines) {
+  const byReason = {};
+  for (const entry of declines) {
+    byReason[entry.reason] = (byReason[entry.reason] || 0) + 1;
+  }
+  const report = {
+    total: declines.length,
+    by_reason: Object.fromEntries(Object.entries(byReason).sort(([a], [b]) => a.localeCompare(b))),
+    declines,
+  };
+  await mkdir(join(import.meta.dirname, '..', 'reports'), { recursive: true });
+  await writeFile(UX11_DECLINE_REPORT, stringifySorted(report, 2) + '\n');
+  console.log(`Decline report:     ${UX11_DECLINE_REPORT}`);
 }
 
 async function removeCorpusHash(outputDir) {
@@ -829,7 +1009,7 @@ function chunk(arr, size) {
  * reported as failed, and up to 500 chars of stderr tail are forwarded to
  * this process's stderr for operator context.
  */
-function runWorkerBatch({ batch, outputDir, dryRun, heapMb, deterministic }) {
+function runWorkerBatch({ batch, outputDir, dryRun, heapMb, deterministic, reportDeclines }) {
   return new Promise((resolvePromise) => {
     // Use `--flag=value` form for string args so values that happen to start
     // with `-` (e.g. the `-` spec from @withfig/autocomplete) or paths with
@@ -851,6 +1031,9 @@ function runWorkerBatch({ batch, outputDir, dryRun, heapMb, deterministic }) {
     // default-on, so we only need to emit `--no-deterministic` when off.
     if (!deterministic) {
       args.push('--no-deterministic');
+    }
+    if (reportDeclines) {
+      args.push('--report-declines');
     }
 
     const child = spawn(process.execPath, args, {
@@ -894,6 +1077,7 @@ function runWorkerBatch({ batch, outputDir, dryRun, heapMb, deterministic }) {
           spec,
           error: `worker spawn failed: ${err.message}`,
         })),
+        declines: [],
       });
     });
 
@@ -910,6 +1094,7 @@ function runWorkerBatch({ batch, outputDir, dryRun, heapMb, deterministic }) {
             spec,
             error: `worker exited ${code}`,
           })),
+          declines: [],
         });
         return;
       }
@@ -927,6 +1112,7 @@ function runWorkerBatch({ batch, outputDir, dryRun, heapMb, deterministic }) {
         resolvePromise({
           totals,
           errors: batch.map((spec) => ({ spec, error: 'worker stdout empty' })),
+          declines: [],
         });
         return;
       }
@@ -936,6 +1122,7 @@ function runWorkerBatch({ batch, outputDir, dryRun, heapMb, deterministic }) {
         resolvePromise({
           totals: { ...makeEmptyTotals(), ...(parsed.totals || {}) },
           errors: Array.isArray(parsed.errors) ? parsed.errors : [],
+          declines: Array.isArray(parsed.declines) ? parsed.declines : [],
         });
       } catch (err) {
         process.stderr.write(
@@ -949,6 +1136,7 @@ function runWorkerBatch({ batch, outputDir, dryRun, heapMb, deterministic }) {
             spec,
             error: `worker stdout not JSON: ${err.message}`,
           })),
+          declines: [],
         });
       }
     });
@@ -1033,6 +1221,7 @@ async function main() {
       deterministic: { type: 'boolean', default: true },
       'no-deterministic': { type: 'boolean' },
       'report-token-only': { type: 'boolean' },
+      'report-declines': { type: 'boolean' },
     },
   });
 
@@ -1042,11 +1231,12 @@ async function main() {
   // `--no-deterministic` overrides the default-on `--deterministic`.
   const deterministic = !values['no-deterministic'] && values.deterministic !== false;
   const reportTokenOnly = values['report-token-only'] || false;
+  const reportDeclines = values['report-declines'] || false;
 
   if (!outputDir && !isDryRun) {
     console.error(
       'Usage: node src/index.js --output <dir> [--specs name1,name2] [--dry-run]\n' +
-      '                          [--batch-size N] [--report-token-only]\n' +
+      '                          [--batch-size N] [--report-token-only] [--report-declines]\n' +
       '                          [--deterministic|--no-deterministic]\n' +
       '                          (default: --deterministic)',
     );
@@ -1073,14 +1263,15 @@ async function main() {
   // --- Worker mode: do one batch in-process and emit JSON on stdout ---
   if (isWorker) {
     console.error(`[worker] converting ${specNames.length} specs`);
-    const { totals, errors } = await runConversionBatch({
+    const { totals, errors, declines } = await runConversionBatch({
       specNames,
       outputDir,
       dryRun: isDryRun,
       deterministic,
+      reportDeclines,
     });
     // EXACTLY one line of JSON on stdout; nothing else.
-    process.stdout.write(JSON.stringify({ totals, errors }) + '\n');
+    process.stdout.write(JSON.stringify({ totals, errors, declines }) + '\n');
     return;
   }
 
@@ -1104,14 +1295,16 @@ async function main() {
   // iteration snappy and avoids subprocess startup tax when the user is
   // actively debugging a handful of specs.
   if (specNames.length <= batchSize) {
-    const { totals, errors } = await runConversionBatch({
+    const { totals, errors, declines } = await runConversionBatch({
       specNames,
       outputDir,
       dryRun: isDryRun,
       deterministic,
+      reportDeclines,
     });
     printSummary(totals, errors);
     if (reportTokenOnly) printTokenOnlyReport(totals);
+    if (reportDeclines) await writeDeclineReport(declines);
     if (await exitOnConversionFailure(totals, errors, outputDir, isDryRun)) {
       return;
     }
@@ -1128,6 +1321,7 @@ async function main() {
   const batches = chunk(specNames, batchSize);
   const aggregateTotals = makeEmptyTotals();
   const aggregateErrors = [];
+  const aggregateDeclines = [];
 
   for (let i = 0; i < batches.length; i++) {
     const batch = batches[i];
@@ -1136,19 +1330,22 @@ async function main() {
     process.stderr.write(
       `[batch-${i + 1}/${batches.length}] converting ${batch.length} specs: ${first}..${last}\n`
     );
-    const { totals, errors } = await runWorkerBatch({
+    const { totals, errors, declines } = await runWorkerBatch({
       batch,
       outputDir,
       dryRun: isDryRun,
       heapMb,
       deterministic,
+      reportDeclines,
     });
     mergeTotals(aggregateTotals, totals);
     for (const e of errors) aggregateErrors.push(e);
+    for (const d of declines) aggregateDeclines.push(d);
   }
 
   printSummary(aggregateTotals, aggregateErrors);
   if (reportTokenOnly) printTokenOnlyReport(aggregateTotals);
+  if (reportDeclines) await writeDeclineReport(aggregateDeclines);
   if (await exitOnConversionFailure(aggregateTotals, aggregateErrors, outputDir, isDryRun)) {
     return;
   }

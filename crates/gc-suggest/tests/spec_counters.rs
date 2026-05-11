@@ -222,6 +222,43 @@ fn lowered_transform_generator_increments_lowered_counter_without_requires_js() 
     assert_eq!(counters.requires_js_unsupported, 0);
 }
 
+#[test]
+fn static_extracted_subprocess_generator_increments_static_counter_without_requires_js() {
+    let dir = TempDir::new().unwrap();
+    write_spec(
+        dir.path(),
+        "static-extracted.json",
+        r#"{
+            "name": "static-extracted",
+            "args": [{
+                "name": "target",
+                "generators": [{
+                    "_static_extracted_subprocess": true,
+                    "script": ["printf", "alpha\\nbeta\\n"],
+                    "transforms": ["split_lines", "filter_empty"]
+                }]
+            }]
+        }"#,
+    );
+
+    let counters = SpecStore::load_from_dir(dir.path())
+        .unwrap()
+        .store
+        .counters();
+
+    assert_eq!(
+        counters.static_extracted_subprocess, 1,
+        "ux-11 static subprocess extractions should report migration progress"
+    );
+    assert_eq!(
+        counters.requires_js_total, 0,
+        "static-extracted generators are native script+transform generators"
+    );
+    assert_eq!(counters.requires_js_supported, 0);
+    assert_eq!(counters.requires_js_unsupported, 0);
+    assert_eq!(counters.lowered_to_transforms, 0);
+}
+
 /// `script_function` + `js_runtime` populated + non-empty source +
 /// `self_contained: false` (the converter could not prove the JS body
 /// closes over no bundler helpers) MUST land in `requires_js_unsupported`,

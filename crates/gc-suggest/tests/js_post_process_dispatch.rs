@@ -138,6 +138,7 @@ fn post_process_generator(script: &[&str], source: &str) -> Arc<GeneratorSpec> {
             cache_by_directory: false,
         }),
         lowered_from_requires_js: false,
+        static_extracted_subprocess: false,
         requires_js: true,
         js_source: None,
         js_runtime: Some(Arc::new(JsRuntimeSpec {
@@ -259,6 +260,7 @@ async fn unsupported_kind_skipped_when_source_empty() {
         transforms: Vec::new(),
         cache: None,
         lowered_from_requires_js: false,
+        static_extracted_subprocess: false,
         requires_js: true,
         js_source: None,
         js_runtime: Some(Arc::new(JsRuntimeSpec {
@@ -306,6 +308,7 @@ async fn js_timeout_diagnostic_logged() {
         transforms: Vec::new(),
         cache: None,
         lowered_from_requires_js: false,
+        static_extracted_subprocess: false,
         requires_js: true,
         js_source: None,
         js_runtime: Some(Arc::new(JsRuntimeSpec {
@@ -366,6 +369,7 @@ async fn js_exception_diagnostic_logged() {
         transforms: Vec::new(),
         cache: None,
         lowered_from_requires_js: false,
+        static_extracted_subprocess: false,
         requires_js: true,
         js_source: None,
         js_runtime: Some(Arc::new(JsRuntimeSpec {
@@ -509,6 +513,7 @@ async fn custom_zero_ttl_skips_cache_insert() {
             cache_by_directory: false,
         }),
         lowered_from_requires_js: false,
+        static_extracted_subprocess: false,
         requires_js: true,
         js_source: None,
         js_runtime: Some(Arc::new(JsRuntimeSpec {
@@ -567,6 +572,7 @@ async fn post_process_ttl_zero_means_no_caching() {
             cache_by_directory: false,
         }),
         lowered_from_requires_js: false,
+        static_extracted_subprocess: false,
         requires_js: true,
         js_source: None,
         js_runtime: Some(Arc::new(JsRuntimeSpec {

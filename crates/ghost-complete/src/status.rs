@@ -1074,7 +1074,10 @@ fn run_status_inner_with_trend(
 /// 1.8 — adds top-level
 ///       `requires_js_generators_lowered_to_transforms`, mirroring
 ///       `counters.lowered_to_transforms` for ux-10b.
-const STATUS_SCHEMA_VERSION: &str = "1.8";
+/// 1.9 — adds top-level
+///       `requires_js_generators_static_extracted`, mirroring
+///       `counters.static_extracted_subprocess` for ux-11.
+const STATUS_SCHEMA_VERSION: &str = "1.9";
 
 /// The shape emitted by `ghost-complete status --json`. Defining this as a
 /// `#[derive(Serialize)]` struct rather than inline `json!` macros fails
@@ -1114,6 +1117,10 @@ struct StatusReport {
     /// lowered to native script + transform pipelines. Duplicates
     /// `counters.lowered_to_transforms` under the ux-10b field name.
     requires_js_generators_lowered_to_transforms: usize,
+    /// Schema 1.9 addition: user-facing count of skipped subprocess
+    /// generators lifted to native script + transform pipelines. Duplicates
+    /// `counters.static_extracted_subprocess` under the ux-11 field name.
+    requires_js_generators_static_extracted: usize,
     coverage_trend: Option<CoverageTrend>,
 }
 
@@ -1372,6 +1379,7 @@ fn run_status_json(
         counters: outcome.counters.clone(),
         requires_js_generators_token_only: outcome.counters.token_only_promoted,
         requires_js_generators_lowered_to_transforms: outcome.counters.lowered_to_transforms,
+        requires_js_generators_static_extracted: outcome.counters.static_extracted_subprocess,
         coverage_trend,
     };
 
@@ -2351,7 +2359,7 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.8");
+        assert_eq!(parsed["schema_version"], "1.9");
         assert!(
             parsed["spec_counts"].is_object(),
             "spec_counts must be an object"
@@ -2437,6 +2445,7 @@ mod tests {
         assert!(parsed["spec_counts"]["requires_js_generators_token_only"].is_number());
         assert!(parsed["requires_js_generators_token_only"].is_number());
         assert!(parsed["requires_js_generators_lowered_to_transforms"].is_number());
+        assert!(parsed["requires_js_generators_static_extracted"].is_number());
         assert!(
             parsed["js_runtime"].is_object(),
             "js_runtime top-level block must be present"
@@ -2545,7 +2554,7 @@ mod tests {
 
         // Current schema surfaces every command and generator counter as
         // a numeric value.
-        assert_eq!(parsed["schema_version"], "1.8");
+        assert_eq!(parsed["schema_version"], "1.9");
         let counts = &parsed["spec_counts"];
         assert_eq!(
             counts["commands_addressable"].as_u64().unwrap(),
@@ -2659,7 +2668,7 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.8");
+        assert_eq!(parsed["schema_version"], "1.9");
         let counters = &parsed["counters"];
         assert!(counters.is_object(), "counters must be a top-level object");
 
@@ -2746,7 +2755,7 @@ mod tests {
         let parsed: serde_json::Value =
             serde_json::from_str(&String::from_utf8_lossy(&out)).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.8");
+        assert_eq!(parsed["schema_version"], "1.9");
         assert!(parsed["requires_js_generators_lowered_to_transforms"].is_number());
         assert_eq!(
             parsed["requires_js_generators_lowered_to_transforms"]
@@ -2756,6 +2765,55 @@ mod tests {
         );
         assert_eq!(
             parsed["counters"]["lowered_to_transforms"]
+                .as_u64()
+                .unwrap(),
+            1
+        );
+        assert_eq!(parsed["counters"]["requires_js_total"].as_u64().unwrap(), 0);
+        assert_eq!(
+            parsed["spec_counts"]["requires_js_generators_total"]
+                .as_u64()
+                .unwrap(),
+            0
+        );
+    }
+
+    #[test]
+    fn status_json_exposes_static_extracted_subprocess_counter() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        std::fs::write(
+            spec_dir.join("static-extracted.json"),
+            r#"{
+                "name": "static-extracted",
+                "args": [{
+                    "name": "target",
+                    "generators": [{
+                        "_static_extracted_subprocess": true,
+                        "script": ["printf", "alpha\\nbeta\\n"],
+                        "transforms": ["split_lines", "filter_empty"]
+                    }]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut out = Vec::new();
+        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        let parsed: serde_json::Value =
+            serde_json::from_str(&String::from_utf8_lossy(&out)).unwrap();
+
+        assert_eq!(parsed["schema_version"], "1.9");
+        assert_eq!(
+            parsed["requires_js_generators_static_extracted"]
+                .as_u64()
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            parsed["counters"]["static_extracted_subprocess"]
                 .as_u64()
                 .unwrap(),
             1
@@ -3329,7 +3387,7 @@ mod tests {
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
-        assert_eq!(parsed["schema_version"], "1.8");
+        assert_eq!(parsed["schema_version"], "1.9");
         let details = parsed["spec_counts"]["command_alias_conflict_details"]
             .as_array()
             .expect("command_alias_conflict_details must be an array");

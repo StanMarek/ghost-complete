@@ -519,6 +519,8 @@ pub struct GeneratorSpec {
     pub cache: Option<CacheConfig>,
     #[serde(default, rename = "_lowered_from_requires_js")]
     pub lowered_from_requires_js: bool,
+    #[serde(default, rename = "_static_extracted_subprocess")]
+    pub static_extracted_subprocess: bool,
     #[serde(default)]
     pub requires_js: bool,
     pub js_source: Option<String>,
@@ -1693,6 +1695,9 @@ fn accumulate_counters_from_generators(
     for gen in gens {
         if gen.lowered_from_requires_js {
             counters.lowered_to_transforms += 1;
+        }
+        if gen.static_extracted_subprocess {
+            counters.static_extracted_subprocess += 1;
         }
         if !gen.requires_js {
             continue;
@@ -3735,7 +3740,7 @@ mod tests {
         // separately from the remaining requires_js runtime population.
         const MIN_REQUIRES_JS_WITH_RUNTIME: usize = 2_500;
         const MIN_LOWERED_TO_TRANSFORMS: usize = 1_400;
-        const EXPECTED_UNSUPPORTED_WITHOUT_RUNTIME: usize = 295;
+        const EXPECTED_UNSUPPORTED_WITHOUT_RUNTIME: usize = 296;
 
         fn count(v: &serde_json::Value) -> (usize, usize, usize, usize) {
             // (requires_js_total, with_js_runtime, lowered, lowered_requires_js)
@@ -5199,15 +5204,19 @@ mod tests {
 
     #[test]
     fn embedded_specs_under_memory_budget() {
-        // Measured baseline: ~104 MiB (109,006,902 bytes), measured 2026-05-03
+        // Measured baseline: ~169 MiB (173,047,504 bytes), measured 2026-05-11
+        // after the ux-11 corpus refresh restored 10 upstream specs (including
+        // gcloud, mongocli, sfdx, and twilio).
+        //
+        // Earlier baseline: ~104 MiB (109,006,902 bytes), measured 2026-05-03
         // after restoring the AWS spec (ux-8). The `estimated_heap_bytes` walk
         // covers the whole `CompletionSpec` tree (js_source, transforms,
         // descriptions, etc.). The AWS spec alone contributes ~67 MiB of
         // mostly description text across 17K subcommands; that bloat is the
-        // motivation for the zstd-compression follow-up plan. 128 MiB
-        // (134,217,728 bytes) gives ~23% headroom for the gcloud/doppler/
-        // mongocli/twilio/sfdx restore PRs queued behind this one.
-        const BUDGET_BYTES: usize = 128 * 1024 * 1024;
+        // motivation for the zstd-compression follow-up plan. 192 MiB
+        // (201,326,592 bytes) gives ~16% headroom while still catching
+        // accidental large-spec blowups before ux-12b compression lands.
+        const BUDGET_BYTES: usize = 192 * 1024 * 1024;
         let spec_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
         let store = SpecStore::load_from_dir(&spec_dir).unwrap().store;
         let total: usize = store
@@ -6231,16 +6240,40 @@ mod tests {
 
         // The committed corpus currently has a small set of intentional
         // wrapper-command collisions. Each lower-precedence spec remains
-        // addressable by filename stem as a fallback candidate; duplicate-name
-        // and directory-precedence collisions remain covered elsewhere.
+        // addressable by filename stem as a fallback candidate.
         let conflicts = store.conflicts();
         assert_eq!(
             conflicts.len(),
-            6,
+            8,
             "embedded corpus alias conflicts changed: {conflicts:?}"
         );
+        let seen: std::collections::BTreeSet<_> = conflicts
+            .iter()
+            .map(|conflict| {
+                let kind = match conflict.kind {
+                    AliasConflictKind::DuplicateName => "duplicate_name",
+                    AliasConflictKind::NameMatchesOtherStem => "name_matches_other_stem",
+                    AliasConflictKind::DirectoryPrecedence => "directory_precedence",
+                };
+                (
+                    conflict.alias.as_str(),
+                    conflict.loser.filename_stem.as_str(),
+                    kind,
+                )
+            })
+            .collect();
+        let expected = std::collections::BTreeSet::from([
+            ("@commercelayer/cli", "commercelayer", "duplicate_name"),
+            ("autojump", "j", "name_matches_other_stem"),
+            ("broot", "br", "name_matches_other_stem"),
+            ("git", "hub", "name_matches_other_stem"),
+            ("kubectl", "kubecolor", "name_matches_other_stem"),
+            ("ns", "nativescript", "name_matches_other_stem"),
+            ("ns", "tns", "name_matches_other_stem"),
+            ("swagger-typescript-api", "sta", "name_matches_other_stem"),
+        ]);
+        assert_eq!(seen, expected, "embedded corpus alias conflicts changed");
         for conflict in conflicts {
-            assert_eq!(conflict.kind, AliasConflictKind::NameMatchesOtherStem);
             assert_eq!(
                 conflict.disposition,
                 AliasConflictDisposition::FallbackCandidate
