@@ -1242,8 +1242,10 @@ mod tests {
     /// Regression guard for sf-iter4-1: a `post_process` generator
     /// without a non-empty `script` / `script_template` cannot be
     /// dispatched (the engine has no shell stdout to feed into the
-    /// post-processor). `--strict` must surface it — symmetric to the
-    /// doctor's `doctor_fails_when_post_process_lacks_script` test.
+    /// post-processor). `--strict` must surface it as a hard failure,
+    /// stricter than the doctor's `doctor_warns_when_post_process_lacks_script`
+    /// counterpart (doctor warns so a clean install isn't noisy; `validate
+    /// --strict` is opt-in CI tooling and should still fail loud).
     #[test]
     fn validate_strict_fails_when_post_process_lacks_script() {
         let tmp = tempfile::TempDir::new().unwrap();
