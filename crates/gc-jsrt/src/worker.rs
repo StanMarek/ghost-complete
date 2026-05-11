@@ -281,7 +281,16 @@ fn run_job(
         // Host bindings install unconditionally because the per-job
         // context is fresh — even PostProcess jobs that never touch them
         // pay only a few property sets.
-        if let Err(e) = install_host_api(&ctx, &job.input, host_state.clone(), job.deadline) {
+        //
+        // `.catch(&ctx)` consumes the pending JS exception left on the
+        // ctx by inner re-throws (e.g. `install_fig_helpers` re-throws so
+        // the preamble's message/stack survive); the resulting
+        // `CaughtError`'s Display impl embeds that detail into the
+        // user-facing diagnostic instead of the opaque
+        // `rquickjs::Error::Exception` placeholder.
+        if let Err(e) =
+            install_host_api(&ctx, &job.input, host_state.clone(), job.deadline).catch(&ctx)
+        {
             return JsRuntimeOutput::empty_with(JsDiagnostic {
                 code: JsDiagnosticCode::Exception,
                 message: format!("could not install host API: {e}"),

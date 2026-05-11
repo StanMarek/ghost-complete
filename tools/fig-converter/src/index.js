@@ -63,6 +63,20 @@ const KNOWN_HELPERS = (() => {
       'known-helpers.json missing or empty `helpers` array (expected a non-empty string list)',
     );
   }
+  // Per-element validation: a partially corrupted list (e.g.
+  // `["l", 42, "f"]`) must NOT silently land non-strings in the Set —
+  // `KNOWN_HELPERS.has('l')` would still work but `.has(42)` would
+  // miss any minified body that references that helper, degrading only
+  // some bodies. The regex is the schema the helper-preservation test
+  // pins in helper-preservation.test.js (`/^[a-z]$/`).
+  for (const name of parsed.helpers) {
+    if (typeof name !== 'string' || !/^[a-z]$/.test(name)) {
+      throw new Error(
+        `known-helpers.json: invalid helper name ${JSON.stringify(name)} ` +
+          `— expected single-lowercase-letter string`,
+      );
+    }
+  }
   return new Set(parsed.helpers);
 })();
 
