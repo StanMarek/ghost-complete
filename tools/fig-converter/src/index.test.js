@@ -391,9 +391,11 @@ describe('cleanGenerator', () => {
 
 describe('processGenerator js_runtime emission', () => {
   // These tests pin the contract that the converter emits structured
-  // `js_runtime: { kind, source }` metadata for the three Fig generator shapes
+  // `js_runtime: { kind, source }` metadata for the supported js_runtime kinds
   // that survive into runtime JS. Native maps and transform lowering still win
-  // in the priority order; js_runtime is only the fallback.
+  // in the priority order; js_runtime is only the fallback. `token_only` is
+  // the further fallback the converter promotes to when self-contained proof
+  // fails but the body has no host-capability references.
   //
   // Using a spec name that the native map definitely does NOT recognize so
   // the runtime fallback paths get exercised. The native-map lookup keys on

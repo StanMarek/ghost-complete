@@ -458,8 +458,10 @@ pub struct CacheConfig {
 }
 
 /// Categorises a [`JsRuntimeSpec`] so the runtime dispatch path can pick the
-/// correct evaluator. Mirrors the three Fig generator shapes that survive into
-/// runtime JS:
+/// correct evaluator. `PostProcess`, `ScriptFunction`, and `Custom` mirror the
+/// corresponding Fig generator shapes that survive into runtime JS;
+/// `TokenOnly` is a Ghost-Complete-internal sandbox for closure bodies that do
+/// not reach host capabilities:
 ///
 /// - `PostProcess` — the converter saw a `script` + `postProcess` pair whose
 ///   post-process body could not be lowered to a declarative transform. The
@@ -1710,7 +1712,7 @@ fn accumulate_counters_from_generators(
 /// byte-for-byte with the legacy `spec_counts` block in
 /// `ghost-complete status --json`.
 ///
-/// The three supported shapes are:
+/// The supported shapes are:
 ///
 /// - `kind == post_process` with `(script || script_template)` AND a
 ///   non-empty `source`. `self_contained` is intentionally NOT required:
@@ -1729,7 +1731,7 @@ fn accumulate_counters_from_generators(
 ///   host bindings; free identifiers can only throw inside the sandbox.
 ///
 /// A `requires_js: true` generator that does NOT match one of these
-/// three shapes (missing `js_runtime`, empty `source`, missing script,
+/// four shapes (missing `js_runtime`, empty `source`, missing script,
 /// or `self_contained: false` on a `script_function`/`custom`) is
 /// classified as unsupported.
 ///

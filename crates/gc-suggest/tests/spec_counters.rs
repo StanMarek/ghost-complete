@@ -390,3 +390,60 @@ fn empty_source_is_unsupported() {
     );
     assert_eq!(counters.requires_js_unsupported, 1);
 }
+
+/// A whitespace-only `token_only` source is ineligible — `token_only_promoted`
+/// must only count generators that actually pass `is_requires_js_supported`.
+/// Pairing it with a supported `script_function` spec exercises the path
+/// where the supported counter ticks but the promoted counter does NOT.
+#[test]
+fn token_only_with_empty_source_does_not_increment_promoted_counter() {
+    let dir = TempDir::new().unwrap();
+    write_spec(
+        dir.path(),
+        "token-only-empty.json",
+        r#"{
+            "name": "token-only-empty",
+            "args": [{
+                "name": "x",
+                "generators": [{
+                    "requires_js": true,
+                    "js_runtime": {
+                        "kind": "token_only",
+                        "source": "   ",
+                        "self_contained": false
+                    }
+                }]
+            }]
+        }"#,
+    );
+    write_spec(
+        dir.path(),
+        "supported-script-function.json",
+        r#"{
+            "name": "supported-script-function",
+            "args": [{
+                "name": "x",
+                "generators": [{
+                    "requires_js": true,
+                    "js_runtime": {
+                        "kind": "script_function",
+                        "source": "ctx => ['a','b']",
+                        "self_contained": true
+                    }
+                }]
+            }]
+        }"#,
+    );
+    let counters = SpecStore::load_from_dir(dir.path())
+        .unwrap()
+        .store
+        .counters();
+
+    assert_eq!(counters.requires_js_total, 2);
+    assert_eq!(counters.requires_js_supported, 1);
+    assert_eq!(counters.requires_js_unsupported, 1);
+    assert_eq!(
+        counters.token_only_promoted, 0,
+        "whitespace-only token_only source must not count as promoted"
+    );
+}

@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 use gc_buffer::CommandContext;
-use gc_jsrt::JsDiagnosticCode;
+use gc_jsrt::{JsDiagnosticCode, JsRuntimeOutputPayload};
 use tokio::sync::Semaphore;
 
 use crate::alias::AliasStore;
@@ -65,8 +65,9 @@ const MAX_CONCURRENT_GENERATORS: usize = 3;
 ///   under the keystroke-latency budget.
 const MAX_DYNAMIC_CANDIDATES: usize = 1000;
 
-/// Consecutive token-only timeouts allowed before a generator is skipped
-/// for the rest of the engine process lifetime.
+/// Consecutive token-only failures (timeouts or other hard runtime errors)
+/// allowed before a generator is skipped for the rest of the engine
+/// process lifetime.
 const TOKEN_ONLY_TIMEOUT_DEMOTE_AFTER: u8 = 2;
 
 #[derive(Debug, Default)]
@@ -95,6 +96,19 @@ impl TokenOnlyTimeoutState {
         *count
     }
 
+    /// Bumps the consecutive-failure counter for a non-timeout hard error
+    /// (exception, memory exhaustion, oversized output, etc.). Returned
+    /// count uses the same threshold as [`Self::record_timeout`] for
+    /// demotion logging.
+    fn record_failure(&self, generator_id: &str) -> u8 {
+        self.record_timeout(generator_id)
+    }
+
+    /// Clear the consecutive-failure counter after a real success — JS
+    /// evaluated to a non-empty Suggestions payload. Outcomes that
+    /// neither succeeded nor hard-failed (e.g. EmptyOutput, InvalidShape)
+    /// leave the counter untouched so a recovery still requires real
+    /// output.
     fn record_success(&self, generator_id: &str) {
         self.consecutive_timeouts
             .lock()
@@ -1955,22 +1969,46 @@ async fn run_token_only_dispatch(
             return Ok(Vec::new());
         }
     };
-    if js_output
+    let had_timeout = js_output
         .diagnostics
         .iter()
-        .any(|diag| diag.code == JsDiagnosticCode::Timeout)
-    {
+        .any(|diag| diag.code == JsDiagnosticCode::Timeout);
+    let had_hard_failure = js_output.diagnostics.iter().any(|diag| {
+        matches!(
+            diag.code,
+            JsDiagnosticCode::Exception
+                | JsDiagnosticCode::MemoryExceeded
+                | JsDiagnosticCode::OversizedOutput
+        )
+    });
+    let has_real_success = matches!(
+        &js_output.payload,
+        JsRuntimeOutputPayload::Suggestions(v) if !v.is_empty()
+    );
+
+    if had_timeout {
         let consecutive = timeout_state.record_timeout(&generator_id);
         if consecutive >= TOKEN_ONLY_TIMEOUT_DEMOTE_AFTER {
             tracing::warn!(
                 spec = %cmd_name,
                 generator_index,
                 generator_id = %generator_id,
-                consecutive_timeouts = consecutive,
+                consecutive_failures = consecutive,
                 "token_only generator demoted after repeated timeouts"
             );
         }
-    } else {
+    } else if had_hard_failure {
+        let consecutive = timeout_state.record_failure(&generator_id);
+        if consecutive >= TOKEN_ONLY_TIMEOUT_DEMOTE_AFTER {
+            tracing::warn!(
+                spec = %cmd_name,
+                generator_index,
+                generator_id = %generator_id,
+                consecutive_failures = consecutive,
+                "token_only generator demoted after repeated runtime failures"
+            );
+        }
+    } else if has_real_success {
         timeout_state.record_success(&generator_id);
     }
     let suggestions: Vec<Suggestion> = match js_output.into_suggestions() {

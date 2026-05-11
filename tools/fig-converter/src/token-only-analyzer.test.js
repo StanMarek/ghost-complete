@@ -96,6 +96,55 @@ describe('analyzeTokenOnly', () => {
       'executeShellCommand',
     );
   });
+
+  it('rejects require', () => {
+    assertRejected(
+      `(t) => require('fs').readFileSync(t[0])`,
+      'capability_identifier',
+      'require',
+    );
+  });
+
+  it('rejects XMLHttpRequest', () => {
+    assertRejected(
+      `() => new XMLHttpRequest()`,
+      'capability_identifier',
+      'XMLHttpRequest',
+    );
+  });
+
+  for (const ns of ['path', 'keychain', 'ipc', 'ui']) {
+    it(`rejects fig.${ns}.* capability namespace`, () => {
+      const callsByNs = {
+        path: `async () => fig.path.join("/tmp", "x")`,
+        keychain: `async () => fig.keychain.get("token")`,
+        ipc: `async () => fig.ipc.send("hello")`,
+        ui: `async () => fig.ui.notify("done")`,
+      };
+      assertRejected(callsByNs[ns], 'capability_namespace', `fig.${ns}`);
+    });
+  }
+
+  it('accepts fig.helpers and other non-capability fig.* members', () => {
+    assertAccepted(`(tokens) => fig.helpers.suggest(tokens)`);
+  });
+
+  it('rejects sources with syntax errors', () => {
+    const result = analyzeTokenOnly('(tokens => {');
+    assert.equal(result.token_only, false, `expected reject, got: ${JSON.stringify(result)}`);
+    assert.equal(result.rejection?.code, 'parse_error');
+    assert.ok(result.parse_error, 'expected parse_error message to be populated');
+  });
+
+  it('rejects empty source', () => {
+    assertRejected('', 'invalid_source');
+  });
+
+  it('rejects non-string source', () => {
+    const result = analyzeTokenOnly(null);
+    assert.equal(result.token_only, false, `expected reject, got: ${JSON.stringify(result)}`);
+    assert.equal(result.rejection?.code, 'invalid_source');
+  });
 });
 
 describe('processGenerator token_only wiring', () => {

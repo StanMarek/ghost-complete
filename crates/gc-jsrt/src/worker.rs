@@ -287,8 +287,15 @@ fn run_job(
                     });
                 }
             }
-            _ => {
-                // Host bindings install unconditionally for the existing
+            // Explicit variant list (no wildcard) so a future
+            // `JsExecutionKind` variant is a compile-time forcing
+            // function for the sandbox-install decision — least
+            // privilege is the default at the sandbox boundary, not
+            // an accidental inheritance.
+            JsExecutionKind::PostProcess
+            | JsExecutionKind::ScriptFunction
+            | JsExecutionKind::Custom => {
+                // Host bindings install unconditionally for these
                 // variants because the per-job context is fresh — even
                 // PostProcess jobs that never touch them pay only a few
                 // property sets.

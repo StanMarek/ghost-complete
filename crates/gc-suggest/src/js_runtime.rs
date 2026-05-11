@@ -13,8 +13,8 @@
 //!    runtime evaluates a top-level expression, so we synthesise a
 //!    self-invoking call wrapping the body. The shape of the synthesised
 //!    program differs by [`gc_jsrt::JsExecutionKind`] — see
-//!    `build_post_process_program`, `build_script_function_program`, and
-//!    `build_custom_program`.
+//!    `build_post_process_program`, `build_script_function_program`,
+//!    `build_custom_program`, and `build_token_only_program`.
 //! 3. **Diagnostic logging.** Every [`gc_jsrt::JsDiagnostic`] is mapped to a
 //!    structured `tracing` event so the doctor / status surfaces can render
 //!    them without re-implementing the rendering.
@@ -22,13 +22,13 @@
 //! The adapter is intentionally narrow — no caching, no transform pipeline,
 //! no source-hashing. Those live in the engine; we only run JS.
 //!
-//! Three public methods route on [`gc_jsrt::JsExecutionKind`]:
+//! Four public methods route on [`gc_jsrt::JsExecutionKind`]:
 //! [`JsRuntimeAdapter::post_process`] (script stdout in, suggestions out),
 //! [`JsRuntimeAdapter::script_function`] (returns argv for an engine-side
-//! script invocation), and [`JsRuntimeAdapter::custom`] (returns
-//! suggestions directly via host-API calls). `token_only` uses the same
-//! suggestion output shape as `custom`, but asks gc-jsrt to install only
-//! token globals.
+//! script invocation), [`JsRuntimeAdapter::custom`] (returns suggestions
+//! directly via host-API calls), and [`JsRuntimeAdapter::token_only`]
+//! (same suggestion output shape as `custom`, but asks gc-jsrt to install
+//! only token globals — no host APIs).
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;

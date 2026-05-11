@@ -445,7 +445,7 @@ pub struct FileScan {
     /// custom, token_only). Sourced from the same raw-JSON walk so this
     /// number stays consistent with `requires_js_generators_total`.
     pub requires_js_generators_supported: usize,
-    /// Class breakdown of `requires_js_generators_supported`. The three
+    /// Class breakdown of `requires_js_generators_supported`. The four
     /// per-kind fields sum to `requires_js_generators_supported` and are
     /// surfaced in JSON as `requires_js_generators_supported_by_kind`.
     pub requires_js_generators_supported_post_process: usize,
@@ -779,7 +779,7 @@ enum SupportedKind {
 ///
 /// Mirrors `collect_generators` in `gc-suggest::specs` and the dispatch
 /// gate in `gc-suggest::engine::is_supported_script_generator`. The
-/// engine handles all three `js_runtime.kind` variants, but with subtly
+/// engine handles all four `js_runtime.kind` variants, but with subtly
 /// different gates:
 ///   * `post_process` requires an accompanying `script` / `script_template`
 ///     plus a non-empty `js_runtime.source`. `self_contained` is irrelevant
@@ -796,6 +796,9 @@ enum SupportedKind {
 ///     the converter has been able to prove self-contained for and
 ///     fluctuates between releases; see CHANGELOG.md for the snapshot
 ///     count at any given version.)
+///   * `token_only` requires only a non-empty `source` — `self_contained`
+///     is irrelevant because no host bindings are installed; free
+///     identifiers can only throw inside the sandbox.
 fn supported_kind(map: &serde_json::Map<String, serde_json::Value>) -> Option<SupportedKind> {
     let runtime = map.get("js_runtime").and_then(|v| v.as_object())?;
     let kind = runtime

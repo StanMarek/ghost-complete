@@ -242,6 +242,31 @@ fn cached_custom_generator(source: &str) -> Arc<GeneratorSpec> {
     })
 }
 
+fn cached_token_only_generator(source: &str) -> Arc<GeneratorSpec> {
+    Arc::new(GeneratorSpec {
+        generator_type: None,
+        script: None,
+        script_template: None,
+        transforms: Vec::new(),
+        cache: Some(gc_suggest::specs::CacheConfig {
+            ttl_seconds: 3600,
+            cache_by_directory: false,
+        }),
+        requires_js: true,
+        js_source: None,
+        js_runtime: Some(Arc::new(JsRuntimeSpec {
+            kind: JsRuntimeKind::TokenOnly,
+            source: source.to_string(),
+            self_contained: false,
+            timeout_ms: None,
+            allow_shell_command: false,
+        })),
+        corrected_in: None,
+        template: None,
+        params: std::collections::BTreeMap::new(),
+    })
+}
+
 #[tokio::test]
 async fn script_function_returns_dynamic_suggestions() {
     // JS produces argv `["sh", "-c", "printf alpha\nbeta\n"]`.
@@ -488,6 +513,85 @@ async fn token_only_repeated_timeouts_are_demoted() {
     );
 }
 
+/// A real success between two timeout windows resets the consecutive-failure
+/// counter — three timeouts split by a working dispatch must NOT demote the
+/// generator because only the post-success run-of-two should count.
+#[tokio::test]
+async fn token_only_success_resets_consecutive_timeout_count() {
+    let (captured, _guard) = install_log_capture();
+    let slow = token_only_generator_with_timeout("() => { while (true) {} }", 5);
+    let fast = token_only_generator("tokens.map(name => ({ name }))", false);
+    let engine = make_engine();
+    let ctx = make_ctx("kubectl", vec!["get"], "");
+
+    // 1st: timeout — counter at 1.
+    let r1 = engine
+        .run_generators(&[Arc::clone(&slow)], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("first dispatch tolerates timeout");
+    assert!(r1.is_empty());
+
+    // 2nd: real Suggestions payload — counter resets to 0.
+    let r2 = engine
+        .run_generators(&[Arc::clone(&fast)], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("recovery dispatch produces suggestions");
+    assert!(!r2.is_empty(), "fast generator must produce suggestions");
+
+    // 3rd and 4th: two more timeouts. Counter should run from 0 → 1 → 2,
+    // hitting the demote-after threshold ONLY on the fourth dispatch.
+    for _ in 0..2 {
+        let r = engine
+            .run_generators(&[Arc::clone(&slow)], &ctx, Path::new("/tmp"), 5_000)
+            .await
+            .expect("dispatch tolerates timeouts");
+        assert!(r.is_empty());
+    }
+
+    let logs =
+        String::from_utf8_lossy(&captured.lock().expect("capture buffer poisoned")).into_owned();
+    assert_eq!(
+        logs.matches("js_runtime: evaluation timed out").count(),
+        3,
+        "all three timeout dispatches should evaluate JS — the success must \
+         have reset the consecutive-failure counter:\n{logs}"
+    );
+    assert!(
+        !logs.contains("token_only generator is demoted after repeated timeouts"),
+        "demotion warning must NOT fire when a success interleaves the timeouts:\n{logs}"
+    );
+}
+
+/// Exception-only failures must also count toward demotion — `record_success`
+/// only resets on a real Suggestions payload, not on every non-timeout
+/// outcome. Three back-to-back exceptions should demote the generator.
+#[tokio::test]
+async fn token_only_repeated_exceptions_are_demoted() {
+    let (captured, _guard) = install_log_capture();
+    let gen = token_only_generator("(() => { throw new Error('boom'); })()", false);
+    let engine = make_engine();
+    let ctx = make_ctx("kubectl", vec!["get"], "");
+
+    for _ in 0..3 {
+        let results = engine
+            .run_generators(&[Arc::clone(&gen)], &ctx, Path::new("/tmp"), 5_000)
+            .await
+            .expect("dispatch tolerates repeated exceptions");
+        assert!(results.is_empty());
+    }
+
+    let logs =
+        String::from_utf8_lossy(&captured.lock().expect("capture buffer poisoned")).into_owned();
+    assert!(
+        logs.contains("token_only generator demoted after repeated runtime failures"),
+        "exception-only loop must demote the generator:\n{logs}"
+    );
+    assert!(
+        logs.contains("token_only generator is demoted after repeated timeouts"),
+        "demoted generator must subsequently be skipped:\n{logs}"
+    );
+}
+
 #[tokio::test]
 async fn token_only_with_self_contained_false_is_scheduled_from_spec() {
     let (engine, _spec_dir) = engine_from_spec_json(
@@ -573,6 +677,37 @@ async fn custom_cache_key_includes_current_and_previous_token() {
     assert_eq!(
         second[0].text, "current:pre,previous:install",
         "custom cache must not reuse results from a different live prefix"
+    );
+}
+
+#[tokio::test]
+async fn token_only_cache_key_includes_current_and_previous_token() {
+    let source = "(tokens, ctx) => [{ \
+        name: 'current:' + ctx.currentToken + ',previous:' + ctx.previousToken, \
+    }]";
+    let gen = cached_token_only_generator(source);
+    let engine = make_engine();
+
+    let ctx_rea = make_ctx("npm", vec!["install"], "rea");
+    let first = engine
+        .run_generators(
+            std::slice::from_ref(&gen),
+            &ctx_rea,
+            Path::new("/tmp"),
+            5_000,
+        )
+        .await
+        .expect("first dispatch");
+    assert_eq!(first[0].text, "current:rea,previous:install");
+
+    let ctx_pre = make_ctx("npm", vec!["install"], "pre");
+    let second = engine
+        .run_generators(&[gen], &ctx_pre, Path::new("/tmp"), 5_000)
+        .await
+        .expect("second dispatch");
+    assert_eq!(
+        second[0].text, "current:pre,previous:install",
+        "token_only cache must not reuse results from a different live prefix"
     );
 }
 
