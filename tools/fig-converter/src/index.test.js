@@ -8,6 +8,52 @@ import { fileURLToPath } from 'node:url';
 import { convertSingleSpec, listSpecNames, cleanGenerator, processGenerator, runConversionBatch } from './index.js';
 import { stringifySorted } from './serialize.js';
 
+function walkSpec(obj, callback) {
+  if (!obj || typeof obj !== 'object') return;
+  callback(obj);
+  if (obj.subcommands) for (const s of obj.subcommands) walkSpec(s, callback);
+  if (obj.options) for (const o of obj.options) {
+    callback(o);
+    if (o.args) {
+      const args = Array.isArray(o.args) ? o.args : [o.args];
+      for (const a of args) walkSpec(a, callback);
+    }
+  }
+  if (obj.args) {
+    const args = Array.isArray(obj.args) ? obj.args : [obj.args];
+    for (const a of args) walkSpec(a, callback);
+  }
+}
+
+function findGenerator(spec, predicate) {
+  let found = null;
+  walkSpec(spec, (obj) => {
+    if (found || !Array.isArray(obj.generators)) return;
+    found = obj.generators.find(predicate) ?? null;
+  });
+  return found;
+}
+
+function subcommand(spec, name) {
+  const sub = spec.subcommands?.find((s) => s.name === name);
+  assert.ok(sub, `expected ${spec.name} ${name} subcommand`);
+  return sub;
+}
+
+function option(command, name) {
+  const opt = command.options?.find((o) => (
+    Array.isArray(o.name) ? o.name.includes(name) : o.name === name
+  ));
+  assert.ok(opt, `expected ${command.name} ${name} option`);
+  return opt;
+}
+
+function firstGenerator(argOwner, label) {
+  const gens = argOwner.args?.generators ?? argOwner.generators;
+  assert.ok(Array.isArray(gens) && gens.length > 0, `expected generator for ${label}`);
+  return gens[0];
+}
+
 describe('listSpecNames', () => {
   it('returns an array of spec names', async () => {
     const names = await listSpecNames();
@@ -121,37 +167,18 @@ describe('convertSingleSpec', () => {
       assert.ok(spec.subcommands.length > 10, 'git should have many subcommands');
     });
 
-    it('does not emit native type for non-git generators', async () => {
-      const result = await convertSingleSpec('brew');
+    it('does not emit native type for specs without native generator matches', async () => {
+      const result = await convertSingleSpec('cat');
       assert.ok(result);
       const { stats } = result;
-      // brew has no git-like generators, so nativeGenerators should be 0
-      assert.equal(stats.nativeGenerators, 0, 'brew should have 0 native generators');
+      assert.equal(stats.nativeGenerators, 0, 'cat should have 0 native generators');
     });
 
     it('rewrites only workspace-member cargo metadata generators to cargo_workspace_members', async () => {
       const result = await convertSingleSpec('cargo');
       assert.ok(result);
 
-      function subcommand(name) {
-        const sub = result.spec.subcommands.find((s) => s.name === name);
-        assert.ok(sub, `expected cargo ${name} subcommand`);
-        return sub;
-      }
-      function option(command, name) {
-        const opt = command.options.find((o) => (
-          Array.isArray(o.name) ? o.name.includes(name) : o.name === name
-        ));
-        assert.ok(opt, `expected ${command.name} ${name} option`);
-        return opt;
-      }
-      function firstGenerator(argOwner, label) {
-        const gens = argOwner.args?.generators ?? argOwner.generators;
-        assert.ok(Array.isArray(gens) && gens.length > 0, `expected generator for ${label}`);
-        return gens[0];
-      }
-
-      const tree = subcommand('tree');
+      const tree = subcommand(result.spec, 'tree');
       assert.deepStrictEqual(
         firstGenerator(option(tree, '--package'), 'tree --package'),
         { type: 'cargo_workspace_members' },
@@ -180,7 +207,7 @@ describe('convertSingleSpec', () => {
       assert.equal(prune.js_runtime?.kind, 'post_process');
       assert.match(prune.js_runtime.source, /JSON\.parse\(e\)\.packages\.map/);
 
-      const updatePackage = firstGenerator(option(subcommand('update'), '--package'), 'update --package');
+      const updatePackage = firstGenerator(option(subcommand(result.spec, 'update'), '--package'), 'update --package');
       assert.equal(updatePackage.type, undefined, 'update --package must not use workspace members');
       assert.equal(updatePackage.requires_js, true);
       assert.deepStrictEqual(updatePackage.script, ['cargo', 'metadata', '--format-version', '1']);
@@ -188,7 +215,7 @@ describe('convertSingleSpec', () => {
       assert.equal(updatePackage.js_runtime?.kind, 'post_process');
       assert.match(updatePackage.js_runtime.source, /JSON\.parse\(e\)\.packages\.map/);
 
-      const remove = subcommand('remove');
+      const remove = subcommand(result.spec, 'remove');
       assert.deepStrictEqual(
         firstGenerator(option(remove, '--package'), 'remove --package'),
         { type: 'cargo_workspace_members' },
@@ -274,6 +301,56 @@ describe('convertSingleSpec', () => {
       }
       walk(result.spec);
       assert.ok(nativeCount > 0, `expected ≥1 npm_scripts generator, got ${nativeCount}`);
+    });
+
+    it('rewrites ux-14 tool-family generators to native providers', async () => {
+      const cargo = await convertSingleSpec('cargo');
+      assert.ok(cargo);
+      const run = subcommand(cargo.spec, 'run');
+      assert.deepStrictEqual(
+        firstGenerator(option(run, '--bin'), 'cargo run --bin'),
+        { type: 'cargo_targets', params: { kind: 'bin' } },
+      );
+      assert.deepStrictEqual(
+        firstGenerator(option(run, '--features'), 'cargo run --features'),
+        { type: 'cargo_features' },
+      );
+
+      const npm = await convertSingleSpec('npm');
+      assert.ok(npm);
+      assert.deepStrictEqual(
+        firstGenerator(subcommand(npm.spec, 'uninstall'), 'npm uninstall package'),
+        { type: 'npm_all_dependencies' },
+      );
+
+      const tmux = await convertSingleSpec('tmux');
+      assert.ok(tmux);
+      assert.ok(findGenerator(tmux.spec, (gen) => gen.type === 'tmux_sessions'));
+      assert.ok(findGenerator(tmux.spec, (gen) => gen.type === 'tmux_panes'));
+
+      const brew = await convertSingleSpec('brew');
+      assert.ok(brew);
+      assert.ok(findGenerator(brew.spec, (gen) => gen.type === 'brew_formulae_searchable'));
+
+      const kubectl = await convertSingleSpec('kubectl');
+      assert.ok(kubectl);
+      assert.ok(findGenerator(kubectl.spec, (gen) => gen.type === 'k8s_contexts'));
+
+      const systemctl = await convertSingleSpec('systemctl');
+      assert.ok(systemctl);
+      assert.deepStrictEqual(
+        firstGenerator(subcommand(systemctl.spec, 'start'), 'systemctl start'),
+        { type: 'systemd_units' },
+      );
+      assert.deepStrictEqual(
+        firstGenerator(subcommand(systemctl.spec, 'stop'), 'systemctl stop'),
+        { type: 'systemd_active_units' },
+      );
+
+      const chown = await convertSingleSpec('chown');
+      assert.ok(chown);
+      assert.deepStrictEqual(firstGenerator(chown.spec.args[0], 'chown owner'), { type: 'dscl_users' });
+      assert.ok(findGenerator(chown.spec, (gen) => gen.type === 'dscl_groups'));
     });
   });
 

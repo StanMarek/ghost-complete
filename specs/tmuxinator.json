@@ -182,19 +182,7 @@
           "description": "The tmux session name",
           "generators": [
             {
-              "_lowered_from_requires_js": true,
-              "script": [
-                "tmux",
-                "ls"
-              ],
-              "transforms": [
-                {
-                  "starts_with": "fatal:",
-                  "type": "error_guard"
-                },
-                "split_lines",
-                "filter_empty"
-              ]
+              "type": "tmux_sessions"
             }
           ],
           "isOptional": true,

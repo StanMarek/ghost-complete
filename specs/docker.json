@@ -240,21 +240,7 @@
         {
           "generators": [
             {
-              "_lowered_from_requires_js": true,
-              "script": [
-                "docker",
-                "ps",
-                "--format",
-                "{{ json . }}"
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty",
-                {
-                  "name": "Names",
-                  "type": "json_extract"
-                }
-              ]
+              "type": "docker_containers"
             }
           ],
           "name": "container"
@@ -333,19 +319,7 @@
         {
           "generators": [
             {
-              "_corrected_in": "v0.10.0",
-              "js_runtime": {
-                "kind": "post_process",
-                "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}"
-              },
-              "requires_js": true,
-              "script": [
-                "docker",
-                "image",
-                "ls",
-                "--format",
-                "{{ json . }}"
-              ]
+              "type": "docker_images"
             }
           ],
           "name": "container"
@@ -1180,21 +1154,7 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "docker",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -1250,21 +1210,7 @@
         {
           "generators": [
             {
-              "_lowered_from_requires_js": true,
-              "script": [
-                "docker",
-                "ps",
-                "--format",
-                "{{ json . }}"
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty",
-                {
-                  "name": "Names",
-                  "type": "json_extract"
-                }
-              ]
+              "type": "docker_containers"
             }
           ],
           "name": "container"
@@ -1363,21 +1309,7 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "docker",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -1401,19 +1333,7 @@
       "args": {
         "generators": [
           {
-            "_corrected_in": "v0.10.0",
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}"
-            },
-            "requires_js": true,
-            "script": [
-              "docker",
-              "image",
-              "ls",
-              "--format",
-              "{{ json . }}"
-            ]
+            "type": "docker_images"
           }
         ],
         "name": "image"
@@ -1564,49 +1484,13 @@
       "args": {
         "generators": [
           {
-            "_corrected_in": "v0.10.0",
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "function(t){return t.split(`\n`).map(i=>JSON.parse(i)).map(i=>({name:i.ID,displayName:`[con] ${i.ID} (${i.Image})`}))}"
-            },
-            "requires_js": true,
-            "script": [
-              "docker",
-              "ps",
-              "-a",
-              "--format",
-              "{{ json . }}"
-            ]
+            "type": "docker_containers"
           },
           {
-            "_corrected_in": "v0.10.0",
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "function(t){return t.split(`\n`).map(i=>JSON.parse(i)).map(i=>{let s;return i.Repository===\"<none>\"?s=i.ID:(s=i.Repository,i.Tag!==\"<none>\"&&(s+=`:${i.Tag}`)),{name:i.ID,displayName:`[img] ${s}`}})}"
-            },
-            "requires_js": true,
-            "script": [
-              "docker",
-              "images",
-              "-a",
-              "--format",
-              "{{ json . }}"
-            ]
+            "type": "docker_images"
           },
           {
-            "_corrected_in": "v0.10.0",
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "function(t){return t.split(`\n`).map(i=>JSON.parse(i)).map(i=>({name:i.Name,displayName:`[vol] ${i.Name}`}))}"
-            },
-            "requires_js": true,
-            "script": [
-              "docker",
-              "volume",
-              "ls",
-              "--format",
-              "{{ json . }}"
-            ]
+            "type": "docker_volumes"
           }
         ],
         "name": "Name or ID"
@@ -1646,21 +1530,7 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "docker",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "type": "docker_containers"
           }
         ],
         "isVariadic": true,
@@ -1749,21 +1619,7 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "docker",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -1825,21 +1681,7 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "docker",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -1852,21 +1694,7 @@
         {
           "generators": [
             {
-              "_lowered_from_requires_js": true,
-              "script": [
-                "docker",
-                "ps",
-                "--format",
-                "{{ json . }}"
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty",
-                {
-                  "name": "Names",
-                  "type": "json_extract"
-                }
-              ]
+              "type": "docker_containers"
             }
           ],
           "name": "container"
@@ -2029,21 +1857,7 @@
         {
           "generators": [
             {
-              "_lowered_from_requires_js": true,
-              "script": [
-                "docker",
-                "ps",
-                "--format",
-                "{{ json . }}"
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty",
-                {
-                  "name": "Names",
-                  "type": "json_extract"
-                }
-              ]
+              "type": "docker_containers"
             }
           ],
           "name": "container"
@@ -2059,21 +1873,7 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "docker",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -2097,22 +1897,7 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "docker",
-              "ps",
-              "-a",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "type": "docker_containers"
           }
         ],
         "isVariadic": true,
@@ -2148,19 +1933,7 @@
       "args": {
         "generators": [
           {
-            "_corrected_in": "v0.10.0",
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}"
-            },
-            "requires_js": true,
-            "script": [
-              "docker",
-              "image",
-              "ls",
-              "--format",
-              "{{ json . }}"
-            ]
+            "type": "docker_images"
           }
         ],
         "isVariadic": true,
@@ -2190,17 +1963,7 @@
           "description": "The Docker image to use",
           "generators": [
             {
-              "_lowered_from_requires_js": true,
-              "script": [
-                "docker",
-                "images",
-                "--format",
-                "{{.Repository}} {{.Size}} {{.Tag}} {{.ID}}"
-              ],
-              "transforms": [
-                "split_lines",
-                "filter_empty"
-              ]
+              "type": "docker_images"
             }
           ],
           "name": "image"
@@ -3095,19 +2858,7 @@
       "args": {
         "generators": [
           {
-            "_corrected_in": "v0.10.0",
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}"
-            },
-            "requires_js": true,
-            "script": [
-              "docker",
-              "image",
-              "ls",
-              "--format",
-              "{{ json . }}"
-            ]
+            "type": "docker_images"
           }
         ],
         "name": "image"
@@ -3175,19 +2926,7 @@
       "args": {
         "generators": [
           {
-            "_corrected_in": "v0.10.0",
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Repository,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}"
-            },
-            "requires_js": true,
-            "script": [
-              "docker",
-              "image",
-              "ls",
-              "--format",
-              "{{ json . }}"
-            ]
+            "type": "docker_images"
           }
         ],
         "name": "image"
@@ -3304,22 +3043,7 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "docker",
-              "ps",
-              "-a",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -3356,21 +3080,7 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "docker",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -3412,21 +3122,7 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "docker",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -3457,21 +3153,7 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "docker",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -3483,23 +3165,7 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "docker",
-              "ps",
-              "--filter",
-              "status=paused",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -3511,21 +3177,7 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "docker",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -3709,21 +3361,7 @@
       "args": {
         "generators": [
           {
-            "_lowered_from_requires_js": true,
-            "script": [
-              "docker",
-              "ps",
-              "--format",
-              "{{ json . }}"
-            ],
-            "transforms": [
-              "split_lines",
-              "filter_empty",
-              {
-                "name": "Names",
-                "type": "json_extract"
-              }
-            ]
+            "type": "docker_containers"
           }
         ],
         "name": "container"
@@ -4138,19 +3776,7 @@
             {
               "generators": [
                 {
-                  "_corrected_in": "v0.10.0",
-                  "js_runtime": {
-                    "kind": "post_process",
-                    "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}"
-                  },
-                  "requires_js": true,
-                  "script": [
-                    "docker",
-                    "image",
-                    "ls",
-                    "--format",
-                    "{{ json . }}"
-                  ]
+                  "type": "docker_images"
                 }
               ],
               "name": "container"
@@ -4985,21 +4611,7 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "docker",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -5012,21 +4624,7 @@
             {
               "generators": [
                 {
-                  "_lowered_from_requires_js": true,
-                  "script": [
-                    "docker",
-                    "ps",
-                    "--format",
-                    "{{ json . }}"
-                  ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "name": "Names",
-                      "type": "json_extract"
-                    }
-                  ]
+                  "type": "docker_containers"
                 }
               ],
               "name": "container"
@@ -5125,21 +4723,7 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "docker",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -5163,21 +4747,7 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "docker",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -5208,21 +4778,7 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "docker",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "type": "docker_containers"
               }
             ],
             "isVariadic": true,
@@ -5247,21 +4803,7 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "docker",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -5392,21 +4934,7 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "docker",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -5419,21 +4947,7 @@
             {
               "generators": [
                 {
-                  "_lowered_from_requires_js": true,
-                  "script": [
-                    "docker",
-                    "ps",
-                    "--format",
-                    "{{ json . }}"
-                  ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "name": "Names",
-                      "type": "json_extract"
-                    }
-                  ]
+                  "type": "docker_containers"
                 }
               ],
               "name": "container"
@@ -5472,21 +4986,7 @@
             {
               "generators": [
                 {
-                  "_lowered_from_requires_js": true,
-                  "script": [
-                    "docker",
-                    "ps",
-                    "--format",
-                    "{{ json . }}"
-                  ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "name": "Names",
-                      "type": "json_extract"
-                    }
-                  ]
+                  "type": "docker_containers"
                 }
               ],
               "name": "container"
@@ -5502,21 +5002,7 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "docker",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -5540,22 +5026,7 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "docker",
-                  "ps",
-                  "-a",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "type": "docker_containers"
               }
             ],
             "isVariadic": true,
@@ -5593,17 +5064,7 @@
               "description": "The Docker image to use",
               "generators": [
                 {
-                  "_lowered_from_requires_js": true,
-                  "script": [
-                    "docker",
-                    "images",
-                    "--format",
-                    "{{.Repository}} {{.Size}} {{.Tag}} {{.ID}}"
-                  ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty"
-                  ]
+                  "type": "docker_images"
                 }
               ],
               "name": "image"
@@ -6498,22 +5959,7 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "docker",
-                  "ps",
-                  "-a",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -6550,21 +5996,7 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "docker",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -6606,21 +6038,7 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "docker",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -6644,21 +6062,7 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "docker",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -6670,23 +6074,7 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "docker",
-                  "ps",
-                  "--filter",
-                  "status=paused",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -6698,21 +6086,7 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "docker",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -6863,21 +6237,7 @@
           "args": {
             "generators": [
               {
-                "_lowered_from_requires_js": true,
-                "script": [
-                  "docker",
-                  "ps",
-                  "--format",
-                  "{{ json . }}"
-                ],
-                "transforms": [
-                  "split_lines",
-                  "filter_empty",
-                  {
-                    "name": "Names",
-                    "type": "json_extract"
-                  }
-                ]
+                "type": "docker_containers"
               }
             ],
             "name": "container"
@@ -7608,19 +6968,7 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "docker",
-                  "image",
-                  "ls",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_images"
               }
             ],
             "name": "image"
@@ -7701,19 +7049,7 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "docker",
-                  "image",
-                  "ls",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_images"
               }
             ],
             "isVariadic": true,
@@ -7919,19 +7255,7 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "docker",
-                  "image",
-                  "ls",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_images"
               }
             ],
             "isVariadic": true,
@@ -7959,19 +7283,7 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "docker",
-                  "image",
-                  "ls",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_images"
               }
             ],
             "name": "image"
@@ -8009,19 +7321,7 @@
             {
               "generators": [
                 {
-                  "_corrected_in": "v0.10.0",
-                  "js_runtime": {
-                    "kind": "post_process",
-                    "source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.ID,icon:\"fig://icon?type=docker\"}))"
-                  },
-                  "requires_js": true,
-                  "script": [
-                    "docker",
-                    "network",
-                    "list",
-                    "--format",
-                    "{{ json . }}"
-                  ]
+                  "type": "docker_networks"
                 }
               ],
               "name": "NETWORK"
@@ -8029,21 +7329,7 @@
             {
               "generators": [
                 {
-                  "_lowered_from_requires_js": true,
-                  "script": [
-                    "docker",
-                    "ps",
-                    "--format",
-                    "{{ json . }}"
-                  ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "name": "Names",
-                      "type": "json_extract"
-                    }
-                  ]
+                  "type": "docker_containers"
                 }
               ],
               "name": "container"
@@ -8253,19 +7539,7 @@
             {
               "generators": [
                 {
-                  "_corrected_in": "v0.10.0",
-                  "js_runtime": {
-                    "kind": "post_process",
-                    "source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.ID,icon:\"fig://icon?type=docker\"}))"
-                  },
-                  "requires_js": true,
-                  "script": [
-                    "docker",
-                    "network",
-                    "list",
-                    "--format",
-                    "{{ json . }}"
-                  ]
+                  "type": "docker_networks"
                 }
               ],
               "name": "NETWORK"
@@ -8273,21 +7547,7 @@
             {
               "generators": [
                 {
-                  "_lowered_from_requires_js": true,
-                  "script": [
-                    "docker",
-                    "ps",
-                    "--format",
-                    "{{ json . }}"
-                  ],
-                  "transforms": [
-                    "split_lines",
-                    "filter_empty",
-                    {
-                      "name": "Names",
-                      "type": "json_extract"
-                    }
-                  ]
+                  "type": "docker_containers"
                 }
               ],
               "name": "container"
@@ -8309,19 +7569,7 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.ID,icon:\"fig://icon?type=docker\"}))"
-                },
-                "requires_js": true,
-                "script": [
-                  "docker",
-                  "network",
-                  "list",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_networks"
               }
             ],
             "isVariadic": true,
@@ -8413,19 +7661,7 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "t=>t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,description:n.ID,icon:\"fig://icon?type=docker\"}))"
-                },
-                "requires_js": true,
-                "script": [
-                  "docker",
-                  "network",
-                  "list",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_networks"
               }
             ],
             "isVariadic": true,
@@ -10151,19 +9387,7 @@
             {
               "generators": [
                 {
-                  "_corrected_in": "v0.10.0",
-                  "js_runtime": {
-                    "kind": "post_process",
-                    "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}"
-                  },
-                  "requires_js": true,
-                  "script": [
-                    "docker",
-                    "image",
-                    "ls",
-                    "--format",
-                    "{{ json . }}"
-                  ]
+                  "type": "docker_images"
                 }
               ],
               "name": "image"
@@ -12753,19 +11977,7 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "docker",
-                  "image",
-                  "ls",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_images"
               }
             ],
             "name": "image"
@@ -12786,19 +11998,7 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:`${n.ID}`,displayName:`${n.Repository} - ${n.ID}`,icon:\"fig://icon?type=docker\"}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "docker",
-                  "image",
-                  "ls",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_images"
               }
             ],
             "name": "image"
@@ -12862,19 +12062,7 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,icon:\"fig://icon?type=docker\"}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "docker",
-                  "volume",
-                  "list",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_volumes"
               }
             ],
             "isVariadic": true,
@@ -12953,19 +12141,7 @@
           "args": {
             "generators": [
               {
-                "_corrected_in": "v0.10.0",
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(t){return t.split(`\n`).map(n=>JSON.parse(n)).map(n=>({name:n.Name,icon:\"fig://icon?type=docker\"}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "docker",
-                  "volume",
-                  "list",
-                  "--format",
-                  "{{ json . }}"
-                ]
+                "type": "docker_volumes"
               }
             ],
             "isVariadic": true,

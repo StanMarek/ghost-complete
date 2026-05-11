@@ -441,12 +441,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_units"
           }
         ],
         "isOptional": true,
@@ -478,12 +473,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_units"
           }
         ],
         "isVariadic": true,
@@ -496,12 +486,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_units"
           }
         ],
         "isVariadic": true,
@@ -514,12 +499,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_units"
           }
         ],
         "isOptional": true,
@@ -533,12 +513,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_units"
           }
         ],
         "isOptional": true,
@@ -552,12 +527,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_units"
           }
         ],
         "isVariadic": true,
@@ -570,12 +540,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_units"
           }
         ],
         "isVariadic": true,
@@ -588,12 +553,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_units"
           }
         ],
         "isOptional": true,
@@ -607,12 +567,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_units"
           }
         ],
         "isVariadic": true,
@@ -625,12 +580,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_active_units"
           }
         ],
         "isVariadic": true,
@@ -643,12 +593,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_active_units"
           }
         ],
         "isVariadic": true,
@@ -661,12 +606,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_active_units"
           }
         ],
         "isVariadic": true,
@@ -679,12 +619,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_active_units"
           }
         ],
         "isVariadic": true,
@@ -705,12 +640,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_active_units"
           }
         ],
         "isVariadic": true,
@@ -723,12 +653,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_units"
           }
         ],
         "name": "UNIT"
@@ -740,12 +665,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_active_units"
           }
         ],
         "isVariadic": true,
@@ -758,12 +678,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_active_units"
           }
         ],
         "isVariadic": true,
@@ -950,15 +865,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
-          },
-          {
-            "requires_js": true
+            "type": "systemd_units"
           }
         ],
         "isVariadic": true,
@@ -1114,12 +1021,7 @@
       "args": {
         "generators": [
           {
-            "js_runtime": {
-              "kind": "custom",
-              "self_contained": true,
-              "source": "async(e,t)=>{let n=e.includes(\"--user\"),{stdout:i}=await t({command:\"systemctl\",args:[\"list-units\",\"-o\",\"json\",\"--all\",\"--full\",...n?[\"--user\"]:[]]}),s=JSON.parse(i).map(a=>{let o;a.active===\"active\"?o=\"\\u2705\":a.active===\"reloading\"?o=\"\\u{1F504}\":a.active===\"inactive\"?o=\"\\u{1F6D1}\":a.active===\"failed\"?o=\"\\u274C\":a.active===\"activating\"||a.active===\"deactivating\"?o=\"\\u23F3\":o=\"\\u2753\";let u=a.active.charAt(0).toUpperCase()+a.active.slice(1);return{name:a.unit,description:`${u} - ${a.description}`,icon:o}});return s.sort((a,o)=>a.name.localeCompare(o.name,void 0,{usage:\"sort\"})),s}"
-            },
-            "requires_js": true
+            "type": "systemd_units"
           }
         ],
         "isVariadic": true,

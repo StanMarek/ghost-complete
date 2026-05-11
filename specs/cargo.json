@@ -132,12 +132,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bin"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -152,12 +150,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "example"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -172,12 +168,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "test"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -192,12 +186,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bench"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -261,15 +253,7 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "e=>{let t=JSON.parse(e);return Object.keys(t.features||{}).map(a=>({icon:\"\\u{1F39A}\",name:a,description:`Features: [${t.features[a].join(\", \")}]`}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "cargo",
-                  "read-manifest"
-                ]
+                "type": "cargo_features"
               }
             ],
             "isVariadic": true,
@@ -566,12 +550,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bin"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -586,12 +568,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "example"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -606,12 +586,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "test"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -626,12 +604,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bench"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -655,15 +631,7 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "e=>{let t=JSON.parse(e);return Object.keys(t.features||{}).map(a=>({icon:\"\\u{1F39A}\",name:a,description:`Features: [${t.features[a].join(\", \")}]`}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "cargo",
-                  "read-manifest"
-                ]
+                "type": "cargo_features"
               }
             ],
             "isVariadic": true,
@@ -976,12 +944,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bin"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -996,12 +962,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "example"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -1016,12 +980,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "test"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -1036,12 +998,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bench"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -1065,15 +1025,7 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "e=>{let t=JSON.parse(e);return Object.keys(t.features||{}).map(a=>({icon:\"\\u{1F39A}\",name:a,description:`Features: [${t.features[a].join(\", \")}]`}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "cargo",
-                  "read-manifest"
-                ]
+                "type": "cargo_features"
               }
             ],
             "isVariadic": true,
@@ -1871,12 +1823,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bin"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -1891,12 +1841,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "example"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -1920,15 +1868,7 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "e=>{let t=JSON.parse(e);return Object.keys(t.features||{}).map(a=>({icon:\"\\u{1F39A}\",name:a,description:`Features: [${t.features[a].join(\", \")}]`}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "cargo",
-                  "read-manifest"
-                ]
+                "type": "cargo_features"
               }
             ],
             "isVariadic": true,
@@ -2342,12 +2282,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bin"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -2362,12 +2300,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "example"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -2382,12 +2318,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "test"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -2402,12 +2336,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bench"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -2431,15 +2363,7 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "e=>{let t=JSON.parse(e);return Object.keys(t.features||{}).map(a=>({icon:\"\\u{1F39A}\",name:a,description:`Features: [${t.features[a].join(\", \")}]`}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "cargo",
-                  "read-manifest"
-                ]
+                "type": "cargo_features"
               }
             ],
             "isVariadic": true,
@@ -3178,15 +3102,7 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "e=>{let t=JSON.parse(e);return Object.keys(t.features||{}).map(a=>({icon:\"\\u{1F39A}\",name:a,description:`Features: [${t.features[a].join(\", \")}]`}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "cargo",
-                  "read-manifest"
-                ]
+                "type": "cargo_features"
               }
             ],
             "isVariadic": true,
@@ -3210,12 +3126,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bin"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -3230,12 +3144,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "example"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -3806,15 +3718,7 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "e=>{let t=JSON.parse(e);return Object.keys(t.features||{}).map(a=>({icon:\"\\u{1F39A}\",name:a,description:`Features: [${t.features[a].join(\", \")}]`}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "cargo",
-                  "read-manifest"
-                ]
+                "type": "cargo_features"
               }
             ],
             "isVariadic": true,
@@ -4347,15 +4251,7 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "e=>{let t=JSON.parse(e);return Object.keys(t.features||{}).map(a=>({icon:\"\\u{1F39A}\",name:a,description:`Features: [${t.features[a].join(\", \")}]`}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "cargo",
-                  "read-manifest"
-                ]
+                "type": "cargo_features"
               }
             ],
             "isVariadic": true,
@@ -4776,15 +4672,7 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "e=>{let t=JSON.parse(e);return Object.keys(t.features||{}).map(a=>({icon:\"\\u{1F39A}\",name:a,description:`Features: [${t.features[a].join(\", \")}]`}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "cargo",
-                  "read-manifest"
-                ]
+                "type": "cargo_features"
               }
             ],
             "isVariadic": true,
@@ -5362,12 +5250,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bin"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -5382,12 +5268,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "example"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -5437,15 +5321,7 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "e=>{let t=JSON.parse(e);return Object.keys(t.features||{}).map(a=>({icon:\"\\u{1F39A}\",name:a,description:`Features: [${t.features[a].join(\", \")}]`}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "cargo",
-                  "read-manifest"
-                ]
+                "type": "cargo_features"
               }
             ],
             "isVariadic": true,
@@ -5679,12 +5555,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bin"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -5699,12 +5573,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "example"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -5719,12 +5591,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "test"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -5739,12 +5609,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bench"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -5768,15 +5636,7 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "e=>{let t=JSON.parse(e);return Object.keys(t.features||{}).map(a=>({icon:\"\\u{1F39A}\",name:a,description:`Features: [${t.features[a].join(\", \")}]`}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "cargo",
-                  "read-manifest"
-                ]
+                "type": "cargo_features"
               }
             ],
             "isVariadic": true,
@@ -6069,12 +5929,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bin"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -6089,12 +5947,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "example"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -6109,12 +5965,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "test"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -6129,12 +5983,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bench"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -6158,15 +6010,7 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "e=>{let t=JSON.parse(e);return Object.keys(t.features||{}).map(a=>({icon:\"\\u{1F39A}\",name:a,description:`Features: [${t.features[a].join(\", \")}]`}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "cargo",
-                  "read-manifest"
-                ]
+                "type": "cargo_features"
               }
             ],
             "isVariadic": true,
@@ -6547,12 +6391,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bin"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -6567,12 +6409,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "example"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -6587,12 +6427,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "test"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -6607,12 +6445,10 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "token_only",
-                  "self_contained": false,
-                  "source": "async(t,a,i)=>{let{stdout:n}=await a({command:\"cargo\",args:[\"metadata\",\"--format-version\",\"1\",\"--no-deps\"]}),o=JSON.parse(n),l=le(o).flatMap(r=>r.targets);return e&&(l=l.filter(r=>r.kind.includes(e))),l.map(r=>{let p=r.src_path.replace(i.currentWorkingDirectory,\"\");return{icon:\"\\u{1F3AF}\",name:r.name,description:p}})}"
+                "params": {
+                  "kind": "bench"
                 },
-                "requires_js": true
+                "type": "cargo_targets"
               }
             ],
             "isVariadic": true,
@@ -6676,15 +6512,7 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "e=>{let t=JSON.parse(e);return Object.keys(t.features||{}).map(a=>({icon:\"\\u{1F39A}\",name:a,description:`Features: [${t.features[a].join(\", \")}]`}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "cargo",
-                  "read-manifest"
-                ]
+                "type": "cargo_features"
               }
             ],
             "isVariadic": true,
@@ -7004,15 +6832,7 @@
           "args": {
             "generators": [
               {
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "e=>{let t=JSON.parse(e);return Object.keys(t.features||{}).map(a=>({icon:\"\\u{1F39A}\",name:a,description:`Features: [${t.features[a].join(\", \")}]`}))}"
-                },
-                "requires_js": true,
-                "script": [
-                  "cargo",
-                  "read-manifest"
-                ]
+                "type": "cargo_features"
               }
             ],
             "isVariadic": true,

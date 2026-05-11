@@ -280,13 +280,203 @@ function applySpecFixups(spec, specName) {
 
   if (specName === 'cargo' && spec.name === 'cargo') {
     applyCargoPriorityFixups(spec);
+    applyCargoNativeProviderFixups(spec);
   }
 
   if (specName === 'aws' && spec.name === 'aws') {
     applyAwsProfileCacheFixup(spec);
   }
 
+  if (specName === 'brew' && spec.name === 'brew') {
+    applyBrewNativeProviderFixups(spec);
+  }
+
+  if (specName === 'npm' && spec.name === 'npm') {
+    applyNpmNativeProviderFixups(spec);
+  }
+
+  if (specName === 'nrm' && spec.name === 'nrm') {
+    applyNpmNativeProviderFixups(spec);
+  }
+
+  if (specName === 'tmux' && spec.name === 'tmux') {
+    applyTmuxNativeProviderFixups(spec);
+  }
+
+  if (specName === 'systemctl' && spec.name === 'systemctl') {
+    applySystemdNativeProviderFixups(spec);
+  }
+
+  if (specName === 'chown' && spec.name === 'chown') {
+    applyChownNativeProviderFixup(spec);
+  }
+
   return spec;
+}
+
+function namesInclude(name, needle) {
+  const names = Array.isArray(name) ? name : [name];
+  return names.includes(needle);
+}
+
+function argList(value) {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+function walkSpecNodes(node, callback) {
+  if (!node || typeof node !== 'object') return;
+  callback(node);
+
+  for (const arg of argList(node.args)) walkSpecNodes(arg, callback);
+
+  for (const opt of node.options ?? []) {
+    callback(opt);
+    for (const arg of argList(opt.args)) walkSpecNodes(arg, callback);
+  }
+
+  for (const sub of node.subcommands ?? []) walkSpecNodes(sub, callback);
+}
+
+function firstGenerator(owner) {
+  return owner?.generators?.[0] ?? null;
+}
+
+function firstArgGenerator(owner) {
+  const arg = owner?.args;
+  if (Array.isArray(arg)) return null;
+  return firstGenerator(arg);
+}
+
+function generatorSource(gen) {
+  if (!gen || typeof gen !== 'object') return '';
+  return gen.js_runtime?.source ?? gen.js_source ?? '';
+}
+
+function setArgProvider(owner, provider) {
+  const arg = owner?.args;
+  if (!arg || Array.isArray(arg) || typeof arg !== 'object') return false;
+  arg.generators = [provider];
+  return true;
+}
+
+function setNodeProvider(owner, provider) {
+  if (!owner || typeof owner !== 'object') return false;
+  owner.generators = [provider];
+  return true;
+}
+
+function provider(type, params = null) {
+  return params ? { type, params } : { type };
+}
+
+function applyCargoNativeProviderFixups(spec) {
+  const targetKinds = new Map([
+    ['--bin', 'bin'],
+    ['--example', 'example'],
+    ['--test', 'test'],
+    ['--bench', 'bench'],
+  ]);
+
+  walkSpecNodes(spec, (node) => {
+    if (!node.options) return;
+    for (const opt of node.options) {
+      for (const [flag, kind] of targetKinds) {
+        if (!namesInclude(opt.name, flag)) continue;
+        const gen = firstArgGenerator(opt);
+        if (!/cargo[\s\S]*metadata[\s\S]*targets/.test(generatorSource(gen))) continue;
+        setArgProvider(opt, provider('cargo_targets', { kind }));
+      }
+
+      if (!namesInclude(opt.name, '--features')) continue;
+      const gen = firstArgGenerator(opt);
+      if (!gen?.script || gen.script[0] !== 'cargo' || gen.script[1] !== 'read-manifest') {
+        continue;
+      }
+      setArgProvider(opt, provider('cargo_features'));
+    }
+  });
+}
+
+function npmDependencyProviderFromSource(source) {
+  if (typeof source !== 'string' || !source.includes('package.json')) return null;
+  if (!source.includes('dependencies') && !source.includes('devDependencies')) return null;
+  if (source.includes('Object.assign') || source.includes('optionalDependencies')) {
+    return provider('npm_all_dependencies');
+  }
+  if (source.includes('devDependencies')) return provider('npm_dev_dependencies');
+  if (source.includes('dependencies')) return provider('npm_dependencies');
+  return null;
+}
+
+function applyNpmNativeProviderFixups(spec) {
+  walkSpecNodes(spec, (node) => {
+    const gen = firstGenerator(node);
+    const native = npmDependencyProviderFromSource(generatorSource(gen));
+    if (native) setNodeProvider(node, native);
+  });
+}
+
+function applyBrewNativeProviderFixups(spec) {
+  walkSpecNodes(spec, (node) => {
+    const gen = firstGenerator(node);
+    if (!gen?.script || gen.script[0] !== 'brew' || gen.script[1] !== 'formulae') {
+      return;
+    }
+    setNodeProvider(node, provider('brew_formulae_searchable'));
+  });
+}
+
+function applyTmuxNativeProviderFixups(spec) {
+  const map = new Map([
+    ['ls', 'tmux_sessions'],
+    ['list-sessions', 'tmux_sessions'],
+    ['lsw', 'tmux_windows'],
+    ['list-windows', 'tmux_windows'],
+    ['lsp', 'tmux_panes'],
+    ['list-panes', 'tmux_panes'],
+    ['lsc', 'tmux_clients'],
+    ['list-clients', 'tmux_clients'],
+  ]);
+
+  walkSpecNodes(spec, (node) => {
+    const gen = firstGenerator(node);
+    if (!gen?.script || gen.script[0] !== 'tmux') return;
+    const type = map.get(gen.script[1]);
+    if (type) setNodeProvider(node, provider(type));
+  });
+}
+
+function applySystemdNativeProviderFixups(spec) {
+  const activeUnitCommands = new Set([
+    'stop',
+    'reload',
+    'restart',
+    'try-restart',
+    'reload-or-restart',
+    'try-reload-or-restart',
+    'kill',
+    'clean',
+    'freeze',
+    'thaw',
+  ]);
+
+  for (const sub of spec.subcommands ?? []) {
+    const gen = firstArgGenerator(sub);
+    const source = generatorSource(gen);
+    if (!source.includes('systemctl') || !source.includes('list-units')) continue;
+    if (source.includes('list-unit-files')) continue;
+    const type = activeUnitCommands.has(sub.name) ? 'systemd_active_units' : 'systemd_units';
+    setArgProvider(sub, provider(type));
+  }
+}
+
+function applyChownNativeProviderFixup(spec) {
+  const ownerArg = argList(spec.args)[0];
+  const gen = firstGenerator(ownerArg);
+  const source = generatorSource(gen);
+  if (!source.includes('dscl') || !source.includes('/Users')) return;
+  ownerArg.generators = [provider('dscl_users'), provider('dscl_groups')];
 }
 
 function applyCargoPriorityFixups(spec) {

@@ -95,7 +95,109 @@ function isCargoWorkspaceMembersGenerator(scriptArgv, postProcessSource) {
   if (!scriptArgv.includes('--no-deps')) return false;
   if (typeof postProcessSource !== 'string') return false;
   if (/\.dependencies\b/.test(postProcessSource)) return false;
-  return /JSON\.parse[\s\S]*\.packages[\s\S]*\.map\s*\(/.test(postProcessSource);
+  return /JSON\.parse[\s\S]*\.packages\.map\s*\(/.test(postProcessSource);
+}
+
+function cargoTargetKind(postProcessSource) {
+  if (typeof postProcessSource !== 'string') return null;
+  if (!/JSON\.parse[\s\S]*\.packages[\s\S]*\.targets/.test(postProcessSource)) return null;
+  for (const kind of ['bin', 'example', 'test', 'bench', 'lib']) {
+    if (new RegExp(`kind\\s*\\.\\s*includes\\s*\\(\\s*["'\`]${kind}["'\`]\\s*\\)`).test(postProcessSource)) {
+      return kind;
+    }
+    if (new RegExp(`kind\\s*===\\s*["'\`]${kind}["'\`]`).test(postProcessSource)) {
+      return kind;
+    }
+  }
+  return null;
+}
+
+function npmLocalProvider(postProcessSource) {
+  if (typeof postProcessSource !== 'string') return null;
+  if (!/JSON\.parse/.test(postProcessSource) || !/package\.json/.test(postProcessSource)) {
+    return null;
+  }
+  const readsDeps = /\.dependencies\b/.test(postProcessSource);
+  const readsDevDeps = /\.devDependencies\b/.test(postProcessSource);
+  const readsOptionalDeps = /\.optionalDependencies\b/.test(postProcessSource);
+  if (readsDeps && (readsDevDeps || readsOptionalDeps || /Object\.assign/.test(postProcessSource))) {
+    return { type: 'npm_all_dependencies' };
+  }
+  if (readsDevDeps) return { type: 'npm_dev_dependencies' };
+  if (readsDeps) return { type: 'npm_dependencies' };
+  return null;
+}
+
+function dockerProvider(scriptArgv) {
+  if (!Array.isArray(scriptArgv) || scriptArgv.length < 2) return null;
+  const binary = scriptArgv[0];
+  if (!['docker', 'podman'].includes(binary)) return null;
+  const params = binary === 'docker' ? undefined : { binary };
+  const withParams = (type) => (params ? { type, params } : { type });
+  const sub = scriptArgv[1];
+  const third = scriptArgv[2];
+  if (sub === 'images' || (sub === 'image' && third === 'ls')) return withParams('docker_images');
+  if (sub === 'ps' || (sub === 'container' && third === 'ls')) {
+    const joined = scriptArgv.join(' ');
+    if (/status=running/.test(joined)) return withParams('docker_running_containers');
+    return withParams('docker_containers');
+  }
+  if (sub === 'network' && (third === 'ls' || third === 'list')) return withParams('docker_networks');
+  if (sub === 'volume' && (third === 'ls' || third === 'list')) return withParams('docker_volumes');
+  return null;
+}
+
+function kubectlProvider(scriptArgv) {
+  if (!Array.isArray(scriptArgv) || scriptArgv.length < 2 || scriptArgv[0] !== 'kubectl') {
+    return null;
+  }
+  if (scriptArgv[1] === 'api-resources') return { type: 'k8s_resources' };
+  if (scriptArgv[1] === 'config' && scriptArgv[2] === 'get-contexts') {
+    return { type: 'k8s_contexts' };
+  }
+  if (scriptArgv[1] !== 'get') return null;
+  const resource = scriptArgv[2];
+  const map = {
+    pod: 'k8s_pods',
+    pods: 'k8s_pods',
+    namespace: 'k8s_namespaces',
+    namespaces: 'k8s_namespaces',
+    ns: 'k8s_namespaces',
+    node: 'k8s_nodes',
+    nodes: 'k8s_nodes',
+    service: 'k8s_services',
+    services: 'k8s_services',
+    svc: 'k8s_services',
+  };
+  return map[resource] ? { type: map[resource] } : null;
+}
+
+function smallToolProvider(scriptArgv) {
+  if (!Array.isArray(scriptArgv) || scriptArgv.length < 2) return null;
+  const [binary, sub] = scriptArgv;
+  if (binary === 'tmux') {
+    if (sub === 'list-sessions' || sub === 'ls') return { type: 'tmux_sessions' };
+    if (sub === 'list-windows' || sub === 'lsw') return { type: 'tmux_windows' };
+    if (sub === 'list-panes' || sub === 'lsp') return { type: 'tmux_panes' };
+    if (sub === 'list-clients' || sub === 'lsc') return { type: 'tmux_clients' };
+  }
+  if (binary === 'systemctl' && sub === 'list-units') {
+    if (scriptArgv.includes('--user')) return { type: 'systemd_user_units' };
+    if (scriptArgv.includes('--state=active') || scriptArgv.includes('--state') && scriptArgv.includes('active')) {
+      return { type: 'systemd_active_units' };
+    }
+    return { type: 'systemd_units' };
+  }
+  if (binary === 'brew') {
+    if (sub === 'list' && scriptArgv.includes('--cask')) return { type: 'brew_casks_installed' };
+    if (sub === 'list') return { type: 'brew_formulae_installed' };
+    if (sub === 'search') return { type: 'brew_formulae_searchable' };
+  }
+  if (binary === 'dscl' && scriptArgv[1] === '.' && scriptArgv[2] === 'list') {
+    if (scriptArgv[3] === '/Users') return { type: 'dscl_users' };
+    if (scriptArgv[3] === '/Groups') return { type: 'dscl_groups' };
+  }
+  return null;
 }
 
 /**
@@ -113,6 +215,10 @@ export function matchNativeGenerator(specName, scriptArgv, postProcessSource) {
   if (key === null) return null;
 
   if (key === 'cargo metadata') {
+    const kind = cargoTargetKind(postProcessSource);
+    if (kind) {
+      return { type: 'cargo_targets', params: { kind } };
+    }
     if (
       specName === 'cargo'
       && isCargoWorkspaceMembersGenerator(scriptArgv, postProcessSource)
@@ -121,6 +227,20 @@ export function matchNativeGenerator(specName, scriptArgv, postProcessSource) {
     }
     return null;
   }
+
+  if (key === 'npm prefix') {
+    const provider = npmLocalProvider(postProcessSource);
+    if (provider) return provider;
+  }
+
+  const docker = dockerProvider(scriptArgv);
+  if (docker) return docker;
+
+  const kubectl = kubectlProvider(scriptArgv);
+  if (kubectl) return kubectl;
+
+  const smallTool = smallToolProvider(scriptArgv);
+  if (smallTool) return smallTool;
 
   // arduino-cli: boards vs ports share the same key, disambiguated by postProcess.
   if (key === 'arduino-cli board' && typeof postProcessSource === 'string') {
@@ -185,6 +305,12 @@ export function matchNativeFromJsSource(specName, jsSource) {
   if (typeof jsSource !== 'string' || jsSource.length === 0) return null;
   if (specName === 'make' && /make\s+-qp/.test(jsSource)) {
     return { type: 'makefile_targets' };
+  }
+  if (
+    (specName === 'kubectl' || specName === 'kubecolor')
+    && /kubectl[\s\S]*config[\s\S]*get-contexts/.test(jsSource)
+  ) {
+    return { type: 'k8s_contexts' };
   }
   return null;
 }

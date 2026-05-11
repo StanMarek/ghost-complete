@@ -278,6 +278,56 @@ fn engine_benchmarks(c: &mut Criterion) {
         });
     });
 
+    // ux-14 native-provider routes. These benchmarks measure the sync
+    // resolution/scheduling path; provider subprocess dispatch is covered by
+    // the async runtime path and provider-specific tests.
+    for (name, ctx, buffer) in [
+        (
+            "provider_route_cargo_targets",
+            make_ctx(Some("cargo"), vec!["run", "--bin"], "", 3),
+            "cargo run --bin ",
+        ),
+        (
+            "provider_route_npm_dependencies",
+            make_ctx(Some("npm"), vec!["uninstall"], "", 2),
+            "npm uninstall ",
+        ),
+        (
+            "provider_route_docker_containers",
+            make_ctx(Some("docker"), vec!["stop"], "", 2),
+            "docker stop ",
+        ),
+        (
+            "provider_route_k8s_resources",
+            make_ctx(Some("kubectl"), vec!["get"], "", 2),
+            "kubectl get ",
+        ),
+        (
+            "provider_route_tmux_sessions",
+            make_ctx(Some("tmux"), vec!["switch-client", "-t"], "", 3),
+            "tmux switch-client -t ",
+        ),
+        (
+            "provider_route_systemd_units",
+            make_ctx(Some("systemctl"), vec!["start"], "", 2),
+            "systemctl start ",
+        ),
+        (
+            "provider_route_brew_formulae",
+            make_ctx(Some("brew"), vec!["install"], "", 2),
+            "brew install ",
+        ),
+        (
+            "provider_route_dscl_users",
+            make_ctx(Some("chown"), vec![], "", 1),
+            "chown ",
+        ),
+    ] {
+        group.bench_function(name, |b| {
+            b.iter(|| std::hint::black_box(engine.suggest_sync(&ctx, tmp.path(), buffer).unwrap()));
+        });
+    }
+
     group.finish();
 }
 
