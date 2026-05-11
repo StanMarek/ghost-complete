@@ -36,6 +36,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Embedded completion specs are now zstd-compressed at build time
+  (level 19) into a single archive emitted by `gc-suggest/build.rs`.
+  Stripped release binary drops by ~91.6 MB on macOS arm64
+  (108.4 MB → 11.8 MB). Decompression is lazy at first spec lookup —
+  bodies leak into a `&'static str` cache so the warm path stays at
+  tens of nanoseconds. First-touch latency for the largest embedded
+  spec (`aws`, ~36 MB) is ~167 ms; every other spec decompresses in
+  under 2 ms. Full-corpus cold decompress + parse (711 specs) completes
+  in 183 ms. See `docs/plans/ux-12b-zstd-spec-compression/SPEC.md` and
+  `benchmarks/v0.16.0-ux12b.md`.
 - Release profile sets `strip = "symbols"`. The release binary measures
   ~103.5 MB stripped (was ~104.8 MB unstripped); `benchmarks/binary-size-baseline.txt`
   refreshed to match. The 110 MB absolute ceiling is unchanged, leaving

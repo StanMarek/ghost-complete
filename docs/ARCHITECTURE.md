@@ -150,7 +150,7 @@ Task B notifies Task C via `tokio::sync::Notify` when the buffer is dirty but no
 
 ## Completion Spec Architecture
 
-Ghost Complete ships 709 Fig-compatible JSON specs embedded in the binary via `include_str!`. At startup, specs are **registered but not parsed** — see "Lazy Spec Loading" below for the rationale and contract. Command aliases are indexed at registration time so lookup can find a lazy candidate chain without parsing the full spec body.
+Ghost Complete ships 711 Fig-compatible JSON specs embedded in the binary as a single zstd-19 archive emitted at build time by `gc-suggest/build.rs`. Each spec body decompresses lazily on first lookup via `zstd::decode_all` and is cached as `&'static str` through `Box::leak` for the process lifetime, keeping the public `embedded_spec_contents(name)` API a zero-copy `&'static str` accessor. The cache is guarded by a `Mutex<HashMap<&'static str, &'static str>>`, so the second lookup of any spec is a hash hit with no decompression. This compresses the 47 MB JSON corpus into a ~3.7 MB archive and drops the macOS arm64 release binary from ~103 MB to ~12 MB; see `docs/plans/ux-12b-zstd-spec-compression/SPEC.md` for the archive layout. At startup, specs are **registered but not parsed** — see "Lazy Spec Loading" below for the rationale and contract. Command aliases are indexed at registration time so lookup can find a lazy candidate chain without parsing the full spec body.
 
 Specs support multiple generator types:
 
