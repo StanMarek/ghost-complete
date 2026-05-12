@@ -723,6 +723,18 @@ impl InputHandler {
         }
     }
 
+    pub fn with_aws_sdk_config(self, enabled: bool, fallback_to_cli: bool) -> Self {
+        let engine = Arc::try_unwrap(self.engine)
+            .unwrap_or_else(|_| {
+                panic!("internal invariant: engine Arc was captured by shared reference")
+            })
+            .with_aws_sdk_config(enabled, fallback_to_cli);
+        Self {
+            engine: Arc::new(engine),
+            ..self
+        }
+    }
+
     /// Update runtime-configurable fields without restarting the proxy.
     /// Called by the config file watcher when config.toml changes on disk.
     /// Returns cleanup bytes to write to stdout (e.g. popup clear on
@@ -1782,6 +1794,19 @@ impl InputHandler {
         {
             return;
         }
+        let has_aws_sdk_provider = provider_generators
+            .iter()
+            .any(|resolution| resolution.kind == gc_suggest::providers::ProviderKind::AwsSdk);
+        let (script_generators, aws_sdk_fallback_generators): (
+            Vec<std::sync::Arc<gc_suggest::specs::GeneratorSpec>>,
+            Vec<std::sync::Arc<gc_suggest::specs::GeneratorSpec>>,
+        ) = if has_aws_sdk_provider {
+            script_generators
+                .into_iter()
+                .partition(|gen| !is_aws_sdk_fallback_generator(gen))
+        } else {
+            (script_generators, Vec::new())
+        };
         // Snapshot the command context so try_merge_dynamic can drop results
         // if the user typed a different command/subcommand/flag while
         // generators were running. Pin current_word only for generators that
@@ -1789,6 +1814,7 @@ impl InputHandler {
         // merge-time fuzzy prefix instead.
         let uses_current_word = script_generators
             .iter()
+            .chain(aws_sdk_fallback_generators.iter())
             .any(|gen| generator_depends_on_current_word(gen));
         self.dynamic_ctx = Some(DynamicCtxSnapshot::capture(ctx, uses_current_word));
         self.spawned_generation = self.buffer_generation;
@@ -1856,6 +1882,17 @@ impl InputHandler {
                 git_fut,
                 provider_fut,
             );
+            let should_run_aws_sdk_fallback = !aws_sdk_fallback_generators.is_empty()
+                && provider_results
+                    .iter()
+                    .any(|(kind, _)| *kind == gc_suggest::providers::ProviderKind::AwsSdk)
+                && provider_results
+                    .iter()
+                    .filter(|(kind, _)| *kind == gc_suggest::providers::ProviderKind::AwsSdk)
+                    .all(|(_, result)| match result {
+                        Ok(results) => results.is_empty(),
+                        Err(_) => true,
+                    });
 
             if !script_generators.is_empty() {
                 let provider = ProviderTag::Script(ctx.command.clone().unwrap_or_default());
@@ -1909,6 +1946,30 @@ impl InputHandler {
                     },
                     Err(e) => {
                         tracing::warn!("provider suggestions failed ({kind:?}): {e}");
+                        DynamicResult::Error {
+                            provider,
+                            message: e.to_string(),
+                        }
+                    }
+                };
+                if tx.send(message).await.is_err() {
+                    return;
+                }
+            }
+
+            if should_run_aws_sdk_fallback {
+                let provider = ProviderTag::Script(ctx.command.clone().unwrap_or_default());
+                let message = match engine
+                    .run_generators(&aws_sdk_fallback_generators, &ctx, &cwd, timeout)
+                    .await
+                {
+                    Ok(results) if results.is_empty() => DynamicResult::Empty { provider },
+                    Ok(results) => DynamicResult::Loaded {
+                        provider,
+                        suggestions: results,
+                    },
+                    Err(e) => {
+                        tracing::warn!("aws sdk fallback suggestions failed: {e}");
                         DynamicResult::Error {
                             provider,
                             message: e.to_string(),
@@ -2899,6 +2960,15 @@ fn generator_depends_on_current_word(gen: &gc_suggest::specs::GeneratorSpec) -> 
             gen.js_runtime.as_ref().map(|rt| rt.kind.clone()),
             Some(JsRuntimeKind::Custom) | Some(JsRuntimeKind::ScriptFunction)
         )
+}
+
+fn is_aws_sdk_fallback_generator(gen: &gc_suggest::specs::GeneratorSpec) -> bool {
+    gen.generator_type.as_deref() == Some(gc_suggest::providers::ProviderKind::AwsSdk.type_str())
+        && (gen.script.as_ref().is_some_and(|script| !script.is_empty())
+            || gen
+                .script_template
+                .as_ref()
+                .is_some_and(|template| !template.is_empty()))
 }
 
 /// Two borrowed `HashSet<&str>`s (existing + per-batch) — keeping references
@@ -6074,6 +6144,41 @@ mod tests {
             !generator_depends_on_current_word(&gen),
             "templates without {{current_token}} have no live current-word dependency"
         );
+    }
+
+    #[test]
+    fn aws_sdk_fallback_generator_detection_requires_type_and_script() {
+        let mut gen = gc_suggest::specs::GeneratorSpec {
+            generator_type: Some(
+                gc_suggest::providers::ProviderKind::AwsSdk
+                    .type_str()
+                    .to_string(),
+            ),
+            script: Some(vec![
+                "aws".to_string(),
+                "iam".to_string(),
+                "list-roles".to_string(),
+            ]),
+            script_template: None,
+            transforms: Vec::new(),
+            cache: None,
+            requires_js: false,
+            lowered_from_requires_js: false,
+            static_extracted_subprocess: false,
+            js_source: None,
+            js_runtime: None,
+            corrected_in: None,
+            template: None,
+            params: std::collections::BTreeMap::new(),
+        };
+
+        assert!(is_aws_sdk_fallback_generator(&gen));
+        gen.script = None;
+        assert!(!is_aws_sdk_fallback_generator(&gen));
+        gen.script_template = Some(vec!["aws".to_string(), "iam".to_string()]);
+        assert!(is_aws_sdk_fallback_generator(&gen));
+        gen.generator_type = Some("git_branches".to_string());
+        assert!(!is_aws_sdk_fallback_generator(&gen));
     }
 
     // --- dismiss/trigger dynamic_task abort verification ---

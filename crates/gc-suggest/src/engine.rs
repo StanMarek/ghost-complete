@@ -344,6 +344,8 @@ pub struct SuggestionEngine {
     providers_filesystem: bool,
     providers_specs: bool,
     providers_git: bool,
+    providers_aws_sdk: bool,
+    aws_sdk_fallback_to_cli: bool,
     /// Kill switch for the JS evaluator. When `false`, every JS dispatch
     /// path is bypassed and `requires_js` generators behave as if their
     /// `js_runtime` were missing — they're dropped from the generator
@@ -391,6 +393,8 @@ impl SuggestionEngine {
             providers_filesystem: true,
             providers_specs: true,
             providers_git: true,
+            providers_aws_sdk: false,
+            aws_sdk_fallback_to_cli: true,
             providers_js_runtime: true,
         })
     }
@@ -422,6 +426,12 @@ impl SuggestionEngine {
         self
     }
 
+    pub fn with_aws_sdk_config(mut self, enabled: bool, fallback_to_cli: bool) -> Self {
+        self.providers_aws_sdk = enabled;
+        self.aws_sdk_fallback_to_cli = fallback_to_cli;
+        self
+    }
+
     /// Test/bench constructor — inject providers directly for deterministic setup.
     pub fn with_providers(
         spec_store: SpecStore,
@@ -446,6 +456,8 @@ impl SuggestionEngine {
             providers_filesystem: true,
             providers_specs: true,
             providers_git: true,
+            providers_aws_sdk: false,
+            aws_sdk_fallback_to_cli: true,
             providers_js_runtime: true,
         }
     }
@@ -1117,8 +1129,9 @@ impl SuggestionEngine {
         let resolve_ctx = self.resolve_ctx_for_spec_walk(ctx);
         let resolution = specs::resolve_spec(spec.as_ref(), resolve_ctx.as_ref());
         let spec_name = ctx.command.as_deref().unwrap_or("<unknown>");
-        let generators =
-            filter_supported_script_generators(spec_name, resolution.script_generators);
+        let generators = self.filter_script_generators_for_config(
+            filter_supported_script_generators(spec_name, resolution.script_generators),
+        );
         self.run_generators(&generators, ctx, cwd, timeout_ms).await
     }
 
@@ -1388,7 +1401,10 @@ impl SuggestionEngine {
 
         // Script generators are dispatched asynchronously by the caller.
         let spec_name = ctx.command.as_deref().unwrap_or("<unknown>");
-        let script_generators = filter_supported_script_generators(spec_name, script_generators);
+        let script_generators = self.filter_script_generators_for_config(
+            filter_supported_script_generators(spec_name, script_generators),
+        );
+        let provider_generators = self.filter_provider_generators_for_config(provider_generators);
 
         let suggestions = self.rank_with_history(ctx, cwd, buffer, candidates, true);
 
@@ -1398,6 +1414,31 @@ impl SuggestionEngine {
             git_generators,
             provider_generators,
         })
+    }
+
+    fn filter_provider_generators_for_config(
+        &self,
+        generators: Vec<ProviderResolution>,
+    ) -> Vec<ProviderResolution> {
+        generators
+            .into_iter()
+            .filter(|resolution| resolution.kind != ProviderKind::AwsSdk || self.providers_aws_sdk)
+            .collect()
+    }
+
+    fn filter_script_generators_for_config(
+        &self,
+        generators: Vec<Arc<GeneratorSpec>>,
+    ) -> Vec<Arc<GeneratorSpec>> {
+        generators
+            .into_iter()
+            .filter(|gen| {
+                if !is_aws_sdk_fallback_generator(gen) {
+                    return true;
+                }
+                self.aws_sdk_fallback_to_cli
+            })
+            .collect()
     }
 
     /// Collect native git generators for async resolution by the caller.
@@ -1636,6 +1677,11 @@ fn has_non_empty_script_or_template(gen: &GeneratorSpec) -> bool {
             .script_template
             .as_ref()
             .is_some_and(|template| !template.is_empty())
+}
+
+fn is_aws_sdk_fallback_generator(gen: &GeneratorSpec) -> bool {
+    gen.generator_type.as_deref() == Some(ProviderKind::AwsSdk.type_str())
+        && has_non_empty_script_or_template(gen)
 }
 
 /// Filter a generator slice through [`is_supported_script_generator`]
@@ -3008,6 +3054,90 @@ mod tests {
             results.git_generators[0],
             crate::git::GitQueryKind::Branches,
         );
+    }
+
+    fn aws_sdk_routing_engine() -> (tempfile::TempDir, SuggestionEngine) {
+        let spec_dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(
+            spec_dir.path().join("awsx.json"),
+            r#"{
+                "name": "awsx",
+                "args": [{
+                    "generators": [{
+                        "type": "aws_sdk",
+                        "params": {
+                            "service": "iam",
+                            "operation": "ListRoles",
+                            "field": "Roles[*].RoleName",
+                            "description_field": "Roles[*].Arn"
+                        },
+                        "script": ["printf", "{\"Roles\":[{\"RoleName\":\"fallback\"}]}"],
+                        "transforms": [{
+                            "type": "json_path_extract",
+                            "array": "Roles",
+                            "name_field": "RoleName"
+                        }]
+                    }]
+                }]
+            }"#,
+        )
+        .unwrap();
+        let spec_store = SpecStore::load_from_dir(spec_dir.path()).unwrap().store;
+        let history = HistoryProvider::from_entries(vec![]);
+        let commands = CommandsProvider::from_list(vec![]);
+        (
+            spec_dir,
+            SuggestionEngine::with_providers(spec_store, history, commands),
+        )
+    }
+
+    #[test]
+    fn aws_sdk_provider_is_default_off_with_cli_fallback_kept() {
+        let (_spec_dir, engine) = aws_sdk_routing_engine();
+        let ctx = make_ctx(Some("awsx"), vec![], "", 1);
+
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "awsx ")
+            .unwrap();
+
+        assert!(results.provider_generators.is_empty());
+        assert_eq!(results.script_generators.len(), 1);
+    }
+
+    #[test]
+    fn aws_sdk_provider_enabled_routes_provider_and_respects_fallback_flag() {
+        let ctx = make_ctx(Some("awsx"), vec![], "", 1);
+
+        let (_spec_dir_a, with_fallback) = aws_sdk_routing_engine();
+        let with_fallback = with_fallback.with_aws_sdk_config(true, true);
+        let results = with_fallback
+            .suggest_sync(&ctx, Path::new("/tmp"), "awsx ")
+            .unwrap();
+        assert_eq!(results.provider_generators.len(), 1);
+        assert_eq!(results.provider_generators[0].kind, ProviderKind::AwsSdk);
+        assert_eq!(results.script_generators.len(), 1);
+
+        let (_spec_dir_b, without_fallback) = aws_sdk_routing_engine();
+        let without_fallback = without_fallback.with_aws_sdk_config(true, false);
+        let results = without_fallback
+            .suggest_sync(&ctx, Path::new("/tmp"), "awsx ")
+            .unwrap();
+        assert_eq!(results.provider_generators.len(), 1);
+        assert!(results.script_generators.is_empty());
+    }
+
+    #[test]
+    fn aws_sdk_provider_disabled_can_disable_cli_fallback_too() {
+        let (_spec_dir, engine) = aws_sdk_routing_engine();
+        let engine = engine.with_aws_sdk_config(false, false);
+        let ctx = make_ctx(Some("awsx"), vec![], "", 1);
+
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), "awsx ")
+            .unwrap();
+
+        assert!(results.provider_generators.is_empty());
+        assert!(results.script_generators.is_empty());
     }
 
     #[tokio::test]

@@ -128,6 +128,19 @@ function npmLocalProvider(postProcessSource) {
   return null;
 }
 
+function awsProfileProvider(scriptArgv) {
+  if (!Array.isArray(scriptArgv)) return null;
+  if (
+    scriptArgv.length === 3
+    && scriptArgv[0] === 'aws'
+    && scriptArgv[1] === 'configure'
+    && scriptArgv[2] === 'list-profiles'
+  ) {
+    return { type: 'aws_profile_names' };
+  }
+  return null;
+}
+
 function dockerProvider(scriptArgv) {
   if (!Array.isArray(scriptArgv) || scriptArgv.length < 2) return null;
   const binary = scriptArgv[0];
@@ -232,6 +245,9 @@ export function matchNativeGenerator(specName, scriptArgv, postProcessSource) {
     const provider = npmLocalProvider(postProcessSource);
     if (provider) return provider;
   }
+
+  const awsProfile = awsProfileProvider(scriptArgv);
+  if (awsProfile) return awsProfile;
 
   const docker = dockerProvider(scriptArgv);
   if (docker) return docker;

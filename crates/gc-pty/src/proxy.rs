@@ -224,6 +224,10 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 config.suggest.providers.git,
                 config.suggest.providers.js_runtime,
                 config.suggest.generator_timeout_ms,
+            )
+            .with_aws_sdk_config(
+                config.experimental.aws_sdk_provider,
+                config.experimental.aws_sdk_fallback_to_cli,
             ),
     ));
 

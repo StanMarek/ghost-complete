@@ -41,6 +41,7 @@ import { spawn } from 'node:child_process';
 import { convertSpec } from './static-converter.js';
 import { matchPostProcess, unrecognizedSingleLetterHelper } from './post-process-matcher.js';
 import { matchNativeFromJsSource, matchNativeGenerator } from './native-map.js';
+import { mapAwsSdkGenerator } from './aws-mapper.js';
 import { analyzeGenerator } from './ast-analyzer.js';
 import { analyzeTokenOnly } from './token-only-analyzer.js';
 import { extractSubprocessGenerator } from './subprocess-extractor.js';
@@ -263,7 +264,22 @@ export async function resolveLoadSpecs(spec, specName, visited = new Set([specNa
 function processGenerators(spec, specName) {
   walkGenerators(spec, (generators) => {
     for (let i = 0; i < generators.length; i++) {
-      generators[i] = processGenerator(generators[i], specName);
+      const processed = processGenerator(generators[i], specName);
+      const awsSdkGen = processed?.type === 'aws_sdk'
+        ? null
+        : mapAwsSdkGenerator(specName, processed?.script);
+      if (awsSdkGen) {
+        const result = { ...awsSdkGen };
+        if (processed.script) result.script = processed.script;
+        if (processed.transforms) result.transforms = processed.transforms;
+        if (processed._lowered_from_requires_js) {
+          result._lowered_from_requires_js = processed._lowered_from_requires_js;
+        }
+        if (processed.cache) result.cache = processed.cache;
+        generators[i] = result;
+      } else {
+        generators[i] = processed;
+      }
     }
   });
 }
@@ -730,6 +746,18 @@ export function processGenerator(gen, specName) {
           `[helper-recovery] ${specName}: unrecognized single-letter postProcess helper ${unknownHelper} in ${gen._postProcessSource}`,
         );
       }
+      const awsSdkGen = mapAwsSdkGenerator(specName, gen.script);
+      if (awsSdkGen && !match.requires_js) {
+        const result = {
+          ...awsSdkGen,
+          script: gen.script,
+          transforms: match.transforms,
+          _lowered_from_requires_js: true,
+        };
+        if (gen.cache) result.cache = gen.cache;
+        return result;
+      }
+
       const result = { script: gen.script };
 
       if (match.requires_js) {

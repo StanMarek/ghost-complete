@@ -5,6 +5,7 @@
 
 pub mod alias;
 pub(crate) mod alias_expand;
+pub(crate) mod aws;
 pub mod cache;
 pub mod commands;
 pub mod context;

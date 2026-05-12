@@ -1,6 +1,6 @@
 use anyhow::Result;
-use std::collections::HashSet;
-use std::path::PathBuf;
+use std::collections::{BTreeSet, HashSet};
+use std::path::{Path, PathBuf};
 
 use gc_suggest::specs::{
     AliasConflict, AliasConflictDisposition, AliasConflictKind, ArgSpec, CompletionSpec,
@@ -538,6 +538,224 @@ fn check_js_runtime(config: &gc_config::GhostConfig) -> CheckResult {
     }
 }
 
+#[derive(Debug, Default)]
+struct AwsCredentialSnapshot {
+    selected_profile: Option<String>,
+    has_env_access_key: bool,
+    has_env_secret_key: bool,
+    has_env_session_token: bool,
+    env_region: Option<String>,
+    file_region_present: bool,
+    config_file_exists: bool,
+    credentials_file_exists: bool,
+    profiles: Vec<String>,
+}
+
+fn parse_aws_profile_names(
+    config_contents: Option<&str>,
+    credentials_contents: Option<&str>,
+) -> BTreeSet<String> {
+    fn parse_sections(contents: &str, is_config: bool, out: &mut BTreeSet<String>) {
+        for line in contents.lines().map(str::trim) {
+            if line.is_empty() || line.starts_with('#') || line.starts_with(';') {
+                continue;
+            }
+            let Some(section) = line.strip_prefix('[').and_then(|s| s.strip_suffix(']')) else {
+                continue;
+            };
+            let section = section.trim();
+            if section == "default" {
+                out.insert("default".to_string());
+            } else if is_config {
+                if let Some(name) = section.strip_prefix("profile ") {
+                    let name = name.trim();
+                    if !name.is_empty() {
+                        out.insert(name.to_string());
+                    }
+                }
+            } else if !section.contains(' ') {
+                out.insert(section.to_string());
+            }
+        }
+    }
+
+    let mut profiles = BTreeSet::new();
+    if let Some(contents) = config_contents {
+        parse_sections(contents, true, &mut profiles);
+    }
+    if let Some(contents) = credentials_contents {
+        parse_sections(contents, false, &mut profiles);
+    }
+    profiles
+}
+
+fn aws_file_contains_region(contents: Option<&str>) -> bool {
+    contents.is_some_and(|contents| {
+        contents.lines().any(|line| {
+            let line = line.trim();
+            !line.starts_with('#')
+                && !line.starts_with(';')
+                && line
+                    .split_once('=')
+                    .is_some_and(|(key, value)| key.trim() == "region" && !value.trim().is_empty())
+        })
+    })
+}
+
+fn aws_path_from_env_or_home(env_name: &str, home_suffix: &[&str]) -> Option<PathBuf> {
+    match std::env::var_os(env_name) {
+        Some(path) if !path.is_empty() => Some(PathBuf::from(path)),
+        _ => {
+            dirs::home_dir().map(|home| home_suffix.iter().fold(home, |path, part| path.join(part)))
+        }
+    }
+}
+
+fn read_optional_file(path: Option<&Path>) -> Option<String> {
+    path.filter(|p| p.exists())
+        .and_then(|p| std::fs::read_to_string(p).ok())
+}
+
+fn aws_env_nonempty(name: &str) -> bool {
+    std::env::var_os(name).is_some_and(|value| !value.is_empty())
+}
+
+fn aws_env_value(primary: &str, fallback: &str) -> Option<String> {
+    std::env::var(primary)
+        .ok()
+        .filter(|value| !value.is_empty())
+        .or_else(|| {
+            std::env::var(fallback)
+                .ok()
+                .filter(|value| !value.is_empty())
+        })
+}
+
+fn aws_snapshot_from_environment() -> AwsCredentialSnapshot {
+    let config_path = aws_path_from_env_or_home("AWS_CONFIG_FILE", &[".aws", "config"]);
+    let credentials_path =
+        aws_path_from_env_or_home("AWS_SHARED_CREDENTIALS_FILE", &[".aws", "credentials"]);
+    let config_file_exists = config_path.as_deref().is_some_and(Path::exists);
+    let credentials_file_exists = credentials_path.as_deref().is_some_and(Path::exists);
+    let config_contents = read_optional_file(config_path.as_deref());
+    let credentials_contents = read_optional_file(credentials_path.as_deref());
+    let profiles =
+        parse_aws_profile_names(config_contents.as_deref(), credentials_contents.as_deref())
+            .into_iter()
+            .collect();
+
+    AwsCredentialSnapshot {
+        selected_profile: aws_env_value("AWS_PROFILE", "AWS_DEFAULT_PROFILE"),
+        has_env_access_key: aws_env_nonempty("AWS_ACCESS_KEY_ID"),
+        has_env_secret_key: aws_env_nonempty("AWS_SECRET_ACCESS_KEY"),
+        has_env_session_token: aws_env_nonempty("AWS_SESSION_TOKEN"),
+        env_region: aws_env_value("AWS_REGION", "AWS_DEFAULT_REGION"),
+        file_region_present: aws_file_contains_region(config_contents.as_deref())
+            || aws_file_contains_region(credentials_contents.as_deref()),
+        config_file_exists,
+        credentials_file_exists,
+        profiles,
+    }
+}
+
+fn profile_summary(profiles: &[String]) -> String {
+    const LIMIT: usize = 8;
+    if profiles.is_empty() {
+        return "profiles: none".to_string();
+    }
+    let mut listed = profiles.iter().take(LIMIT).cloned().collect::<Vec<_>>();
+    if profiles.len() > LIMIT {
+        listed.push(format!("...and {} more", profiles.len() - LIMIT));
+    }
+    format!("profiles: {}", listed.join(", "))
+}
+
+fn check_aws_credentials_from_snapshot(
+    config: &gc_config::GhostConfig,
+    snapshot: AwsCredentialSnapshot,
+) -> CheckResult {
+    let provider = if config.experimental.aws_sdk_provider {
+        "enabled"
+    } else {
+        "disabled"
+    };
+    let fallback = if config.experimental.aws_sdk_fallback_to_cli {
+        "CLI fallback enabled"
+    } else {
+        "CLI fallback disabled"
+    };
+    let env_creds_complete = snapshot.has_env_access_key && snapshot.has_env_secret_key;
+    let env_creds = if env_creds_complete {
+        if snapshot.has_env_session_token {
+            "env credentials detected with session token"
+        } else {
+            "env credentials detected"
+        }
+    } else if snapshot.has_env_access_key || snapshot.has_env_secret_key {
+        "partial env credentials"
+    } else {
+        "no env credentials"
+    };
+    let files = match (
+        snapshot.config_file_exists,
+        snapshot.credentials_file_exists,
+    ) {
+        (true, true) => "AWS config and credentials files present",
+        (true, false) => "AWS config file present, credentials file missing",
+        (false, true) => "AWS credentials file present, config file missing",
+        (false, false) => "no AWS profile files",
+    };
+    let region = snapshot
+        .env_region
+        .as_deref()
+        .map(|region| format!("region from env: {region}"))
+        .unwrap_or_else(|| {
+            if snapshot.file_region_present {
+                "region found in AWS files".to_string()
+            } else {
+                "region not visible in env/files".to_string()
+            }
+        });
+    let selected_profile_missing = snapshot
+        .selected_profile
+        .as_ref()
+        .is_some_and(|selected| !snapshot.profiles.iter().any(|profile| profile == selected));
+
+    let mut message = format!(
+        "AWS credentials: AWS SDK provider: {provider}; {fallback}; {env_creds}; {files}; {}; {region}",
+        profile_summary(&snapshot.profiles),
+    );
+
+    if let Some(profile) = snapshot.selected_profile.as_deref() {
+        message.push_str(&format!("; selected profile: '{profile}'"));
+    }
+
+    if selected_profile_missing {
+        let profile = snapshot.selected_profile.as_deref().unwrap_or_default();
+        message.push_str(&format!("; selected profile '{profile}' not found"));
+    }
+
+    if !config.experimental.aws_sdk_provider {
+        message.push_str("; no outbound AWS SDK calls unless aws_sdk_provider is enabled");
+        return CheckResult::ok(message);
+    }
+
+    if selected_profile_missing {
+        return CheckResult::warn(message);
+    }
+    if !env_creds_complete && snapshot.profiles.is_empty() {
+        return CheckResult::warn(message);
+    }
+    if snapshot.env_region.is_none() && !snapshot.file_region_present {
+        return CheckResult::warn(message);
+    }
+    CheckResult::ok(message)
+}
+
+fn check_aws_credentials(config: &gc_config::GhostConfig) -> CheckResult {
+    check_aws_credentials_from_snapshot(config, aws_snapshot_from_environment())
+}
+
 /// Warn when any `keep_warm` entry does not match a registered spec alias.
 /// Returns OK with an explanatory message when eviction is disabled.
 fn check_keep_warm_unmatched(
@@ -986,6 +1204,7 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
         Some(cfg) => {
             results.push(check_alias_conflicts(cfg));
             results.push(check_js_runtime(cfg));
+            results.push(check_aws_credentials(cfg));
             results.push(check_embedded_runtime_metadata(cfg));
             results.extend(check_spec_cache(cfg));
         }
@@ -994,6 +1213,7 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
                 "Spec addressability — config invalid, cannot resolve spec dirs",
             ));
             results.push(CheckResult::skip("JS runtime — config invalid"));
+            results.push(CheckResult::skip("AWS credentials — config invalid"));
             results.push(CheckResult::skip(
                 "Embedded specs — config invalid, cannot resolve spec dirs",
             ));
@@ -1080,6 +1300,89 @@ mod tests {
         let result = check_terminal_profile(&profile, true);
         assert!(matches!(result.severity, Severity::Ok));
         assert!(result.message.contains("multi_terminal"));
+    }
+
+    #[test]
+    fn aws_profile_parser_reads_config_and_credentials_profiles() {
+        let profiles = parse_aws_profile_names(
+            Some(
+                r#"
+[default]
+region = us-east-1
+[profile dev]
+region = eu-west-1
+[sso-session corp]
+sso_start_url = https://example.awsapps.com/start
+"#,
+            ),
+            Some(
+                r#"
+[prod]
+aws_access_key_id = AKIA...
+[default]
+aws_access_key_id = AKIA...
+"#,
+            ),
+        );
+
+        assert_eq!(
+            profiles.into_iter().collect::<Vec<_>>(),
+            vec!["default", "dev", "prod"]
+        );
+    }
+
+    #[test]
+    fn aws_credentials_check_reports_disabled_provider_without_warning() {
+        let mut config = gc_config::GhostConfig::default();
+        config.experimental.aws_sdk_provider = false;
+        config.experimental.aws_sdk_fallback_to_cli = true;
+        let snapshot = AwsCredentialSnapshot {
+            profiles: vec!["default".to_string()],
+            config_file_exists: true,
+            credentials_file_exists: true,
+            ..Default::default()
+        };
+
+        let result = check_aws_credentials_from_snapshot(&config, snapshot);
+
+        assert!(matches!(result.severity, Severity::Ok));
+        assert!(result.message.contains("AWS SDK provider: disabled"));
+        assert!(result.message.contains("CLI fallback enabled"));
+        assert!(result.message.contains("profiles: default"));
+    }
+
+    #[test]
+    fn aws_credentials_check_warns_when_enabled_without_credential_signal() {
+        let mut config = gc_config::GhostConfig::default();
+        config.experimental.aws_sdk_provider = true;
+        let snapshot = AwsCredentialSnapshot::default();
+
+        let result = check_aws_credentials_from_snapshot(&config, snapshot);
+
+        assert!(matches!(result.severity, Severity::Warn));
+        assert!(result.message.contains("AWS credentials"));
+        assert!(result.message.contains("no env credentials"));
+        assert!(result.message.contains("no AWS profile files"));
+    }
+
+    #[test]
+    fn aws_credentials_check_warns_when_selected_profile_is_missing() {
+        let mut config = gc_config::GhostConfig::default();
+        config.experimental.aws_sdk_provider = true;
+        let snapshot = AwsCredentialSnapshot {
+            selected_profile: Some("staging".to_string()),
+            profiles: vec!["default".to_string(), "dev".to_string()],
+            config_file_exists: true,
+            credentials_file_exists: true,
+            ..Default::default()
+        };
+
+        let result = check_aws_credentials_from_snapshot(&config, snapshot);
+
+        assert!(matches!(result.severity, Severity::Warn));
+        assert!(result
+            .message
+            .contains("selected profile 'staging' not found"));
     }
 
     #[test]

@@ -111,13 +111,30 @@ describe('convertSingleSpec', () => {
     assert.equal(add?.priority, 90);
   });
 
-  it('preserves aws profile directory cache ttl', async () => {
+  it('emits native aws profile provider with cache ttl', async () => {
     const result = await convertSingleSpec('aws');
     assert.ok(result);
     const profile = result.spec.options.find((opt) => opt.name.includes('--profile'));
-    const cache = profile?.args?.generators?.[0]?.cache;
+    const gen = profile?.args?.generators?.[0];
+    assert.equal(gen?.type, 'aws_profile_names');
+    assert.equal(gen?.script, undefined);
+    const cache = gen?.cache;
     assert.equal(cache?.cache_by_directory, true);
     assert.equal(cache?.ttl_seconds, 300);
+
+    const sdk = findGenerator(
+      result.spec,
+      (candidate) => (
+        candidate.type === 'aws_sdk'
+        && Array.isArray(candidate.script)
+        && Array.isArray(candidate.transforms)
+      ),
+    );
+    assert.ok(sdk, 'expected at least one AWS SDK provider generator');
+    assert.ok(Array.isArray(sdk.script), 'aws_sdk generator should keep CLI fallback script');
+    assert.ok(Array.isArray(sdk.transforms), 'aws_sdk generator should keep fallback transforms');
+    assert.equal(sdk.params?.service, 'iam');
+    assert.ok(sdk.params?.operation, 'aws_sdk generator should carry operation params');
   });
 
   it('returns null for nonexistent spec', async () => {

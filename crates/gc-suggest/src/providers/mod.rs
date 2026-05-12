@@ -44,6 +44,8 @@ use crate::types::Suggestion;
 
 pub mod ansible_doc;
 pub mod arduino_cli;
+pub mod aws_profile_names;
+pub mod aws_sdk;
 pub mod brew;
 pub mod cargo_metadata;
 pub mod docker;
@@ -233,6 +235,10 @@ pub trait Provider: Send + Sync {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ProviderKind {
+    /// AWS SDK-backed provider for IAM list operations.
+    AwsSdk,
+    /// AWS profile names from shared AWS config and credentials files.
+    AwsProfileNames,
     /// `ansible-doc --list --json`, projecting each key (fully
     /// qualified module name) of the top-level JSON object with its
     /// short description as the suggestion description.
@@ -361,6 +367,8 @@ impl ProviderKind {
     /// the test `test_kind_from_type_str_known_providers` pins the
     /// string contract for each entry.
     pub const ALL: &'static [ProviderKind] = &[
+        ProviderKind::AwsSdk,
+        ProviderKind::AwsProfileNames,
         ProviderKind::AnsibleDocModules,
         ProviderKind::ArduinoCliBoards,
         ProviderKind::ArduinoCliPorts,
@@ -414,6 +422,8 @@ impl ProviderKind {
     /// rename has one place to change.
     pub const fn type_str(self) -> &'static str {
         match self {
+            Self::AwsSdk => "aws_sdk",
+            Self::AwsProfileNames => "aws_profile_names",
             Self::AnsibleDocModules => "ansible_doc_modules",
             Self::ArduinoCliBoards => "arduino_cli_boards",
             Self::ArduinoCliPorts => "arduino_cli_ports",
@@ -533,6 +543,8 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
     }
 
     match kind {
+        ProviderKind::AwsSdk => aws_sdk::AwsSdk.generate(ctx).await,
+        ProviderKind::AwsProfileNames => aws_profile_names::AwsProfileNames.generate(ctx).await,
         ProviderKind::AnsibleDocModules => ansible_doc::AnsibleDocModules.generate(ctx).await,
         ProviderKind::ArduinoCliBoards => arduino_cli::ArduinoCliBoards.generate(ctx).await,
         ProviderKind::ArduinoCliPorts => arduino_cli::ArduinoCliPorts.generate(ctx).await,
@@ -634,6 +646,11 @@ mod tests {
         // Locks in the string contract for each registered provider —
         // converter output and runtime dispatch must agree on the exact
         // spelling.
+        assert_eq!(kind_from_type_str("aws_sdk"), Some(ProviderKind::AwsSdk));
+        assert_eq!(
+            kind_from_type_str("aws_profile_names"),
+            Some(ProviderKind::AwsProfileNames)
+        );
         assert_eq!(
             kind_from_type_str("ansible_doc_modules"),
             Some(ProviderKind::AnsibleDocModules)

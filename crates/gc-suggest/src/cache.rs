@@ -1,9 +1,11 @@
 use std::collections::HashMap;
+use std::future::Future;
 use std::path::Path;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use crate::types::Suggestion;
+use tokio::sync::broadcast;
 
 /// Cache key for generator results.
 ///
@@ -40,6 +42,16 @@ pub enum CacheKey {
         resolved_argv: Vec<String>,
         cwd: Option<String>,
         source_hash: u64,
+    },
+    /// Typed AWS SDK provider result. `params_hash` is produced from a stable
+    /// ordered representation of the provider params; profile and region are
+    /// included so account/region-scoped resources cannot cross-contaminate.
+    AwsSdk {
+        service: String,
+        operation: String,
+        params_hash: u64,
+        profile: Option<String>,
+        region: Option<String>,
     },
 }
 
@@ -128,12 +140,14 @@ const CACHE_SWEEP_THRESHOLD: usize = 500;
 /// `Hash` and `PartialEq`.
 pub struct GeneratorCache {
     entries: Mutex<HashMap<CacheKey, CacheEntry>>,
+    pending: Mutex<HashMap<CacheKey, broadcast::Sender<()>>>,
 }
 
 impl GeneratorCache {
     pub fn new() -> Self {
         Self {
             entries: Mutex::new(HashMap::new()),
+            pending: Mutex::new(HashMap::new()),
         }
     }
 
@@ -175,6 +189,64 @@ impl GeneratorCache {
             },
         );
         Self::sweep_if_oversized(&mut entries, now);
+    }
+
+    /// Return a cached suggestion vector or run one async producer for this
+    /// key while concurrent callers wait for the result to be inserted.
+    ///
+    /// The entries lock is only held for synchronous cache probes/inserts; the
+    /// producer future is awaited without holding any cache mutex.
+    pub async fn get_or_try_insert_with<E, F, Fut>(
+        &self,
+        key: CacheKey,
+        ttl: Duration,
+        producer: F,
+    ) -> Result<Vec<Suggestion>, E>
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<Vec<Suggestion>, E>>,
+    {
+        loop {
+            if let Some(suggestions) = self.get(&key) {
+                return Ok(suggestions);
+            }
+
+            enum PendingProbe {
+                Wait(broadcast::Receiver<()>),
+                Lead(broadcast::Sender<()>),
+            }
+
+            let probe = {
+                let mut pending = self.pending.lock().unwrap_or_else(|e| e.into_inner());
+                if let Some(sender) = pending.get(&key) {
+                    PendingProbe::Wait(sender.subscribe())
+                } else {
+                    let (sender, _) = broadcast::channel(1);
+                    pending.insert(key.clone(), sender.clone());
+                    PendingProbe::Lead(sender)
+                }
+            };
+
+            let sender = match probe {
+                PendingProbe::Wait(mut receiver) => {
+                    let _ = receiver.recv().await;
+                    continue;
+                }
+                PendingProbe::Lead(sender) => sender,
+            };
+
+            let result = producer().await;
+            if let Ok(suggestions) = &result {
+                self.insert(key.clone(), suggestions.clone(), ttl);
+            }
+
+            {
+                let mut pending = self.pending.lock().unwrap_or_else(|e| e.into_inner());
+                pending.remove(&key);
+            }
+            let _ = sender.send(());
+            return result;
+        }
     }
 
     /// Look up a cached raw-stdout entry. Returns `None` if absent, expired,
