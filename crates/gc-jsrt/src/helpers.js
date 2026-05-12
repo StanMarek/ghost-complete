@@ -1,5 +1,10 @@
 // Fig-compatible single-letter helpers vendored from @withfig/autocomplete.
 //
+// Pinned upstream: @withfig/autocomplete 2.692.3, npm gitHead
+// aef52acff84c45edde61ae610cc2c964802b9a38 — keep in sync with
+// `tools/fig-converter/src/helper-registry.json`'s `_pinned_to`.
+// Refresh both files together when bumping the upstream bundle.
+//
 // Source reference: @withfig/autocomplete generators in
 //   build/aws/*.js
 // The upstream repository bundles each sub-spec independently, so the
