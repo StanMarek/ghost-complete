@@ -251,9 +251,11 @@ mod tests {
     }
 
     /// `load_with_embedded` with no filesystem dirs registers the
-    /// binary's embedded corpus directly. If `EMBEDDED_SPECS` is ever
-    /// moved out of `gc-suggest`, or if the in-memory wiring breaks,
-    /// this test fails rather than silently regress autocomplete.
+    /// binary's embedded corpus directly. If the embedded archive
+    /// (driven by `embedded_filenames_with_aliases` /
+    /// `embedded_spec_contents`) is ever moved out of `gc-suggest`, or
+    /// if the in-memory wiring breaks, this test fails rather than
+    /// silently regress autocomplete.
     #[test]
     fn embedded_corpus_yields_non_empty_spec_store() {
         let result = crate::specs::SpecStore::load_with_embedded(&[]).unwrap();

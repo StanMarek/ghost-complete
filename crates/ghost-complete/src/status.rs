@@ -480,7 +480,7 @@ fn scan_resolved_specs(
     dirs: &[PathBuf],
     include_embedded: bool,
 ) -> Result<StatusOutcome> {
-    let embedded_count = crate::install::EMBEDDED_SPECS.len();
+    let embedded_count = crate::install::embedded_spec_count();
 
     let mut fs_specs = 0usize;
     let mut fully_functional = 0usize;
@@ -667,10 +667,21 @@ fn scan_spec_files(store: &SpecStore) -> Result<FileScan> {
                     path.display().to_string(),
                 )
             }
-            SpecSource::Embedded(contents) => (
-                std::borrow::Cow::Borrowed(*contents),
-                format!("<embedded>/{}.json", entry.filename_stem),
-            ),
+            SpecSource::Embedded(filename) => {
+                let label = format!("<embedded>/{}.json", entry.filename_stem);
+                let contents = match gc_suggest::embedded_spec_contents(filename) {
+                    Some(c) => c,
+                    None => {
+                        tracing::warn!(
+                            file = %label,
+                            "status file scan: skipping embedded spec (missing from archive); \
+                             requires_js totals undercount"
+                        );
+                        continue;
+                    }
+                };
+                (std::borrow::Cow::Borrowed(contents), label)
+            }
         };
         let value: serde_json::Value = match serde_json::from_str(&contents) {
             Ok(v) => v,

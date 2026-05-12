@@ -6,12 +6,13 @@ use std::path::{Path, PathBuf};
 
 use crate::sanitize::{sanitize_for_terminal, sanitize_path};
 
-// `EMBEDDED_SPECS` lives in `gc-suggest` because the spec loader consumes
-// the corpus in-memory (v0.12.4+). Install still writes the same set to
-// `~/.config/ghost-complete/specs`, so we re-export from the canonical
-// home; `status.rs` and the install tests reach it through
-// `crate::install::EMBEDDED_SPECS` exactly as before.
-pub(crate) use gc_suggest::EMBEDDED_SPECS;
+// The embedded spec archive lives in `gc-suggest` because the spec loader
+// consumes the corpus in-memory (v0.12.4+, lazily zstd-decompressed
+// since v0.15). Install still writes the same set to
+// `~/.config/ghost-complete/specs`, so we re-export the accessor
+// functions from the canonical home; `status.rs` and the install tests
+// reach them through `crate::install::*` exactly as before.
+pub(crate) use gc_suggest::{embedded_filenames, embedded_spec_contents, embedded_spec_count};
 
 // Pre-v0.12.4 the runtime materialised the embedded corpus to
 // `~/.cache/ghost-complete/embedded-specs/` on first start. v0.12.4+ no
@@ -162,7 +163,9 @@ fn copy_specs(config_dir: &Path) -> Result<()> {
     fs::create_dir_all(&dest).with_context(|| format!("failed to create {}", dest.display()))?;
 
     let mut count = 0;
-    for (name, contents) in EMBEDDED_SPECS {
+    for name in embedded_filenames() {
+        let contents = embedded_spec_contents(name)
+            .with_context(|| format!("embedded spec missing from archive: {name}"))?;
         let dest_file = dest.join(name);
         fs::write(&dest_file, contents)
             .with_context(|| format!("failed to write spec: {}", dest_file.display()))?;
@@ -257,7 +260,7 @@ fn post_install_summary(config_dir: &Path, wrote_zshrc: bool) -> String {
         out,
         "  Specs:   {}/  ({} completion specs)",
         sanitize_path(&config_dir.join("specs")),
-        EMBEDDED_SPECS.len()
+        embedded_spec_count()
     )
     .unwrap();
     writeln!(out).unwrap();
@@ -359,7 +362,7 @@ fn install_to_with_cache_hooks(
         );
         println!(
             "  Would install {} completion specs to {}",
-            EMBEDDED_SPECS.len(),
+            embedded_spec_count(),
             sanitize_path(&config_dir.join("specs"))
         );
         let config_path = config_dir.join("config.toml");
@@ -1193,7 +1196,7 @@ mod tests {
         assert!(dest.exists());
 
         // All embedded specs should be written
-        for (name, _) in EMBEDDED_SPECS {
+        for name in embedded_filenames() {
             assert!(
                 dest.join(name).exists(),
                 "expected spec {name} to be installed"
@@ -1201,7 +1204,7 @@ mod tests {
         }
         assert_eq!(
             fs::read_dir(&dest).unwrap().count(),
-            EMBEDDED_SPECS.len(),
+            embedded_spec_count(),
             "spec count mismatch"
         );
     }
@@ -1414,7 +1417,7 @@ mod tests {
                 "missing token: {token}\n--- summary ---\n{summary}"
             );
         }
-        let count_token = format!("({} completion specs)", EMBEDDED_SPECS.len());
+        let count_token = format!("({} completion specs)", embedded_spec_count());
         assert!(
             summary.contains(&count_token),
             "missing spec count `{count_token}`\n--- summary ---\n{summary}"

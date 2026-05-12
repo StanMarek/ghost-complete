@@ -564,14 +564,19 @@ pub const EMBEDDED_VIRTUAL_DIR: &str = "<embedded>";
 /// How a [`SpecEntry`] sources its JSON contents on first parse.
 ///
 /// Filesystem entries hold a `PathBuf` and read the file lazily.
-/// Embedded entries hold a `&'static str` slice into the binary's
-/// `EMBEDDED_SPECS` table — no disk I/O ever.
+/// Embedded entries hold a `&'static str` filename (e.g. `"git.json"`)
+/// and pull the JSON body lazily via
+/// [`crate::embedded::embedded_spec_contents`], which zstd-decompresses
+/// on first lookup and caches the resulting `&'static str` pointer.
+/// No disk I/O ever.
 #[derive(Debug, Clone)]
 pub enum SpecSource {
     /// Owned filesystem path. Read on first access via `std::fs::read_to_string`.
     Filesystem(PathBuf),
-    /// `&'static str` slice into the binary's embedded payload. Never
-    /// freed; the runtime fallback path uses this to avoid the
+    /// `&'static str` filename (e.g. `"git.json"`) into the binary's
+    /// embedded archive. Resolved to the JSON body lazily by
+    /// [`crate::embedded::embedded_spec_contents`] on first parse. The
+    /// runtime fallback path uses this to avoid the
     /// `~/.cache/ghost-complete/embedded-specs/` materialisation step.
     Embedded(&'static str),
 }
@@ -847,7 +852,16 @@ fn parse_entry_source(source: &SpecSource) -> Result<Arc<CompletionSpec>, String
         SpecSource::Filesystem(path) => std::borrow::Cow::Owned(
             std::fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?,
         ),
-        SpecSource::Embedded(contents) => std::borrow::Cow::Borrowed(*contents),
+        SpecSource::Embedded(filename) => {
+            // Resolve the lazy zstd archive entry. A missing filename
+            // indicates a registration bug — the loader put a filename
+            // in the index that `embedded_spec_contents` cannot find.
+            // Surface as a parse error rather than panicking so the
+            // sticky-failure machinery records it once.
+            let body = crate::embedded::embedded_spec_contents(filename)
+                .ok_or_else(|| format!("embedded spec {filename} missing from archive"))?;
+            std::borrow::Cow::Borrowed(body)
+        }
     };
     let mut spec =
         parse_spec_checked_and_sanitized(&contents).map_err(|e| format!("parse: {e}"))?;
@@ -1197,10 +1211,10 @@ impl SpecStore {
     /// [`SpecSource::Embedded`] so first-touch parsing reads the
     /// binary slice in-memory — no disk I/O.
     ///
-    /// Aliases for embedded specs come from the build-time
-    /// `EMBEDDED_SPEC_ALIASES` table at zero parse cost; aliases for
-    /// filesystem specs come from a shallow parse of the
-    /// `CompletionSpec.name` field per file.
+    /// Aliases for embedded specs come from
+    /// [`crate::embedded::embedded_filenames_with_aliases`] at zero
+    /// parse cost; aliases for filesystem specs come from a shallow
+    /// parse of the `CompletionSpec.name` field per file.
     pub fn load_with_embedded(filesystem_dirs: &[PathBuf]) -> Result<SpecLoadResult> {
         let mut entries: Vec<Arc<SpecEntry>> = Vec::new();
         let mut by_alias: AliasIndex = HashMap::new();
@@ -1219,15 +1233,20 @@ impl SpecStore {
         }
 
         let embedded_dir = PathBuf::from(EMBEDDED_VIRTUAL_DIR);
-        let embedded_pending: Vec<PendingSpec> = crate::embedded::embedded_entries_with_aliases()
-            .filter_map(|(filename, contents, name_alias)| {
+        // `embedded_filenames_with_aliases` is the body-free variant: it
+        // walks the parsed-once index header without ever decompressing
+        // a spec. Bodies are pulled lazily by `parse_entry_source` via
+        // `embedded_spec_contents(filename)` on first touch, so startup
+        // registration costs zero decompressions and zero JSON parses.
+        let embedded_pending: Vec<PendingSpec> = crate::embedded::embedded_filenames_with_aliases()
+            .filter_map(|(filename, name_alias)| {
                 let stem = filename.strip_suffix(".json")?.to_owned();
                 Some(PendingSpec {
                     filename_stem: stem,
                     name_alias: name_alias.map(str::to_owned),
                     shallow_parse_error: None,
                     source_dir: embedded_dir.clone(),
-                    source: SpecSource::Embedded(contents),
+                    source: SpecSource::Embedded(filename),
                 })
             })
             .collect();
@@ -1854,9 +1873,10 @@ fn shallow_parse_name(path: &Path) -> Result<Option<String>> {
 /// 709-spec corpus including AWS.
 ///
 /// Embedded specs (loaded via [`SpecStore::load_with_embedded`] from
-/// `EMBEDDED_SPECS`) skip this path entirely: their alias is taken
-/// from the build-time `EMBEDDED_SPEC_ALIASES` table at zero parse
-/// cost.
+/// the in-memory archive walked by
+/// [`crate::embedded::embedded_filenames_with_aliases`]) skip this
+/// path entirely: their alias is taken from the build-time alias slot
+/// captured by the archive at zero parse cost.
 fn alias_for_filesystem_file(_filename: &str, path: &Path) -> Result<Option<String>> {
     shallow_parse_name(path)
 }
@@ -1868,10 +1888,11 @@ fn alias_for_filesystem_file(_filename: &str, path: &Path) -> Result<Option<Stri
 /// Holds metadata only — `serde_json::from_str` is deferred until the
 /// owning `SpecEntry::spec()` is called for the first time. The
 /// `name_alias` field is pre-resolved by the caller from a successful shallow
-/// filesystem header parse or the build-time `EMBEDDED_SPEC_ALIASES` table.
-/// `None` means no usable distinct name alias was found. Shallow filesystem
-/// parse failures are kept separately so they can surface as lazy load errors
-/// for the entry.
+/// filesystem header parse or the build-time alias slot captured by
+/// [`crate::embedded::embedded_filenames_with_aliases`]. `None` means
+/// no usable distinct name alias was found. Shallow filesystem parse
+/// failures are kept separately so they can surface as lazy load
+/// errors for the entry.
 struct PendingSpec {
     filename_stem: String,
     /// Pre-resolved `CompletionSpec.name` alias when it differs from
@@ -1886,9 +1907,9 @@ struct PendingSpec {
 /// Does NOT parse JSON contents into a `CompletionSpec`. Filesystem entries
 /// always shallow-parse only the top-level `name` field because users may edit
 /// installed specs and build-time aliases can be stale. Embedded entries loaded
-/// by [`SpecStore::load_with_embedded`] use the generated
-/// `EMBEDDED_SPEC_ALIASES` table instead and avoid JSON parsing at
-/// registration.
+/// by [`SpecStore::load_with_embedded`] use the alias slot captured by
+/// [`crate::embedded::embedded_filenames_with_aliases`] instead and
+/// avoid JSON parsing at registration.
 ///
 /// Filesystem errors at directory-read time are returned as a hard
 /// `Err`; per-file shallow header failures are recorded on the entry and
@@ -3811,7 +3832,9 @@ mod tests {
         let mut total_with_runtime = 0;
         let mut total_lowered_to_transforms = 0;
         let mut total_lowered_requires_js = 0;
-        for (name, body) in crate::embedded::EMBEDDED_SPECS {
+        for name in crate::embedded::embedded_filenames() {
+            let body = crate::embedded::embedded_spec_contents(name)
+                .expect("filename listed in index must resolve to a body");
             let v: serde_json::Value = serde_json::from_str(body)
                 .unwrap_or_else(|e| panic!("embedded spec {name} is not valid JSON: {e}"));
             let (t, r, l, lr) = count(&v);

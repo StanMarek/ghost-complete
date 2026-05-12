@@ -3,31 +3,50 @@
 //! Reads every `../../specs/*.json`, defensively drops any straggler
 //! `js_source` field from generators (no-op for freshly-converted specs;
 //! catches stale user-installed specs from older converter versions),
-//! serialises the result compactly (no pretty-print whitespace) into
-//! `$OUT_DIR/specs-min/`, and writes an `embedded_specs.rs` include that
-//! the `embedded` module `include!`s.
+//! serialises the result compactly (no pretty-print whitespace), zstd-
+//! compresses each spec at level 19, and packs every entry into a single
+//! binary archive `$OUT_DIR/embedded_specs.bin` that the runtime parses
+//! lazily on first lookup.
 //!
 //! The on-disk `specs/` directory stays unchanged — tests, fixtures,
 //! and the converter keep reading the human-readable pretty-printed
-//! copies. Only the binary-embedded copies are shrunk.
+//! copies. Only the binary-embedded archive is compressed.
 //!
 //! ## Why this exists
 //!
 //! Binary-size intervention. The original embedded pattern baked 21 MB
 //! of pretty-printed JSON directly via `include_str!`, which landed as
 //! ~42 MB of `__const` data in the release binary (each whitespace byte
-//! round-trips verbatim through rustc). Minifying drops that to ~11 MB
-//! of source bytes. Stripping the legacy `js_source` field shaved
-//! another ~435 KB; that data is now carried on `js_runtime.source` so
-//! the runtime can evaluate it — `js_source` itself stays stripped for
-//! compatibility with stale user-installed specs.
+//! round-trips verbatim through rustc). Minifying dropped that to ~47 MB
+//! of source bytes after the AWS restoration (ux-8). Layering zstd-19
+//! compression on top reclaims ~30 MB of stripped binary size, unblocking
+//! ux-13 which needs the headroom for typed AWS SDK crates.
+//!
+//! ## Archive format (`embedded_specs.bin`)
+//!
+//! Little-endian throughout. Entries appear in sorted-filename order.
+//!
+//! ```text
+//! [u32 entry_count]
+//! per entry:
+//!   [u16 filename_len][filename UTF-8 bytes]
+//!   [u8  has_alias]                              ; 0 or 1
+//!   if has_alias == 1:
+//!     [u16 alias_len][alias UTF-8 bytes]
+//!   [u32 blob_len][zstd-compressed JSON bytes]
+//! ```
+//!
+//! The runtime memory-maps the archive as a `&'static [u8]` slice via
+//! `include_bytes!`, parses the header once into an in-memory index, and
+//! lazily zstd-decompresses each spec body on first lookup. Filenames and
+//! aliases are tiny (~7 KB total) and live in the index uncompressed; only
+//! JSON bodies are compressed.
 //!
 //! ## Invariants
 //!
-//! - The emitted `EMBEDDED_SPECS` list preserves the exact filename keys
-//!   from `specs/` so the runtime can register filename-stem aliases,
-//!   keep `EMBEDDED_SPEC_ALIASES` aligned with `EMBEDDED_SPECS`, and let
-//!   install copy the same embedded corpus to `~/.config/ghost-complete/specs`.
+//! - Entries are emitted in **sorted filename order** so the runtime can
+//!   binary-search or expose `embedded_filenames()` as a stable iteration
+//!   target.
 //! - `_corrected_in` is intentionally NOT stripped — it is consumed at
 //!   runtime by `ghost-complete doctor` to surface generators that
 //!   previously mis-converted.
@@ -43,8 +62,12 @@
 
 use std::env;
 use std::fs;
-use std::io::Write;
 use std::path::PathBuf;
+
+/// zstd compression level. Level 19 is the highest level that still uses
+/// the regular compressor; levels 20-22 require explicit `--long` window
+/// settings and are not a net win on small JSON specs.
+const ZSTD_LEVEL: i32 = 19;
 
 fn main() {
     let manifest_dir = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap());
@@ -53,8 +76,6 @@ fn main() {
          (check the workspace layout)",
     );
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
-    let out_specs = out_dir.join("specs-min");
-    fs::create_dir_all(&out_specs).expect("create OUT_DIR/specs-min");
 
     // Tell cargo to rerun whenever the source specs change. Watching
     // the directory alone would miss modifications to individual files
@@ -88,12 +109,11 @@ fn main() {
     specs.sort_by(|a, b| a.0.cmp(&b.0));
 
     // Process each spec: parse, strip any legacy js_source straggler,
-    // assert js_runtime.source survives the strip, re-serialise compactly.
-    // Also captures `(filename, name_alias)` per spec into `alias_table`
-    // so the runtime alias index can register `CompletionSpec.name`
-    // aliases without parsing JSON at startup.
-    let mut entries: Vec<(String, PathBuf)> = Vec::with_capacity(specs.len());
-    let mut alias_table: Vec<(String, Option<String>)> = Vec::with_capacity(specs.len());
+    // assert js_runtime.source survives the strip, re-serialise compactly,
+    // zstd-compress. `entries` accumulates `(filename, name_alias, blob)`
+    // tuples that the archive writer emits in order.
+    type Entry = (String, Option<String>, Vec<u8>);
+    let mut entries: Vec<Entry> = Vec::with_capacity(specs.len());
     for (name, src_path) in &specs {
         let src = fs::read_to_string(src_path)
             .unwrap_or_else(|e| panic!("read {}: {e}", src_path.display()));
@@ -106,7 +126,9 @@ fn main() {
         assert_js_runtime_source_preserved(&value, src_path);
 
         // Capture the spec's declared `name` if it differs from the
-        // filename stem. Used by EMBEDDED_SPEC_ALIASES below.
+        // filename stem. Stored alongside the filename in the archive so
+        // the runtime alias index can register `CompletionSpec.name`
+        // aliases without parsing JSON at startup.
         let declared_name = value
             .get("name")
             .and_then(|v| v.as_str())
@@ -119,75 +141,56 @@ fn main() {
             Some(n) if n != stem => Some(n),
             _ => None,
         };
-        alias_table.push((name.clone(), name_alias));
 
         let minified = serde_json::to_string(&value)
             .unwrap_or_else(|e| panic!("serialize {}: {e}", src_path.display()));
 
-        let dest = out_specs.join(name);
-        fs::write(&dest, minified.as_bytes())
-            .unwrap_or_else(|e| panic!("write {}: {e}", dest.display()));
-        entries.push((name.clone(), dest));
+        let blob = zstd::encode_all(minified.as_bytes(), ZSTD_LEVEL)
+            .unwrap_or_else(|e| panic!("zstd encode {}: {e}", src_path.display()));
+
+        entries.push((name.clone(), name_alias, blob));
     }
 
-    // Emit the generated `embedded_specs.rs` with the EMBEDDED_SPECS
-    // const. The `embedded` module picks this file up via
-    // `include!(concat!(env!("OUT_DIR"), "/embedded_specs.rs"))`.
-    let embed_rs = out_dir.join("embedded_specs.rs");
-    let mut f = fs::File::create(&embed_rs).expect("create embedded_specs.rs");
-    writeln!(f, "// @generated by build.rs — do not edit").unwrap();
-    writeln!(f, "pub const EMBEDDED_SPECS: &[(&str, &str)] = &[").unwrap();
-    for (name, path) in &entries {
-        // Escape both the name and the path as Rust string literals.
-        // `name` comes from filesystem filenames we already validated
-        // as UTF-8; paths come from OUT_DIR which the Rust toolchain
-        // produces. Using debug formatting for the path guarantees
-        // correct escaping on platforms with unusual characters (though
-        // we only target macOS, this keeps the output robust).
-        writeln!(
-            f,
-            "    ({:?}, include_str!({:?})),",
-            name,
-            path.display().to_string()
-        )
-        .unwrap();
-    }
-    writeln!(f, "];").unwrap();
-
-    // Emit EMBEDDED_SPEC_ALIASES: index-aligned with EMBEDDED_SPECS.
-    // Each entry is (filename, Option<name_alias>) where the alias is
-    // populated only when the spec's `CompletionSpec.name` differs from
-    // its filename stem. The runtime spec loader uses this table to
-    // register name aliases without parsing JSON contents at startup,
-    // which is the prerequisite for lazy spec loading.
-    writeln!(f).unwrap();
-    writeln!(
-        f,
-        "/// Pre-resolved name aliases for embedded specs. `Some(name)` when"
-    )
-    .unwrap();
-    writeln!(
-        f,
-        "/// the spec's `CompletionSpec.name` field differs from its filename"
-    )
-    .unwrap();
-    writeln!(
-        f,
-        "/// stem; `None` when they match. Index-aligned with `EMBEDDED_SPECS`."
-    )
-    .unwrap();
-    writeln!(
-        f,
-        "pub const EMBEDDED_SPEC_ALIASES: &[(&str, Option<&str>)] = &["
-    )
-    .unwrap();
-    for (filename, name_alias) in &alias_table {
+    // Write the binary archive. The format is intentionally simple — no
+    // CRC, no version byte — because the producer and consumer ship as a
+    // single artifact: a corrupt archive can only arise from a build-script
+    // bug, in which case loud panics in the parser are the right answer.
+    let archive_path = out_dir.join("embedded_specs.bin");
+    let mut bytes: Vec<u8> = Vec::with_capacity(1024 * 1024);
+    let entry_count: u32 = entries
+        .len()
+        .try_into()
+        .expect("entry count exceeds u32 — refusing to silently truncate");
+    bytes.extend_from_slice(&entry_count.to_le_bytes());
+    for (filename, name_alias, blob) in &entries {
+        write_short_string(&mut bytes, filename);
         match name_alias {
-            Some(n) => writeln!(f, "    ({:?}, Some({:?})),", filename, n).unwrap(),
-            None => writeln!(f, "    ({:?}, None),", filename).unwrap(),
+            Some(alias) => {
+                bytes.push(1);
+                write_short_string(&mut bytes, alias);
+            }
+            None => bytes.push(0),
         }
+        let blob_len: u32 = blob
+            .len()
+            .try_into()
+            .expect("compressed blob exceeds u32 — refusing to silently truncate");
+        bytes.extend_from_slice(&blob_len.to_le_bytes());
+        bytes.extend_from_slice(blob);
     }
-    writeln!(f, "];").unwrap();
+    fs::write(&archive_path, &bytes)
+        .unwrap_or_else(|e| panic!("write {}: {e}", archive_path.display()));
+}
+
+/// Append `[u16 len][bytes]` to `out`. Panics if `s` exceeds `u16::MAX`
+/// bytes (no realistic filename or alias comes anywhere close).
+fn write_short_string(out: &mut Vec<u8>, s: &str) {
+    let len: u16 = s
+        .len()
+        .try_into()
+        .expect("filename or alias exceeds u16::MAX bytes");
+    out.extend_from_slice(&len.to_le_bytes());
+    out.extend_from_slice(s.as_bytes());
 }
 
 /// Strip the legacy `js_source` field from generators in-place.
