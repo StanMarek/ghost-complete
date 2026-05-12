@@ -2,11 +2,12 @@
 // and searchable formulae.
 
 use std::path::Path;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 use anyhow::Result;
 
-use super::util::spawn_with_timeout;
+use super::util::{is_binary_missing, spawn_with_timeout};
 use super::version_probe;
 use super::{Provider, ProviderCtx};
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
@@ -14,6 +15,20 @@ use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 const BREW_TIMEOUT_MS: u64 = 2_000;
 
 pub(crate) const DEFAULT_BREW_SEARCH_CAP: usize = 1_000;
+
+/// Process-global cap on `brew search` output. Set once at engine startup
+/// from `[experimental] brew_search_cap` (see [`set_brew_search_cap`]); the
+/// `AtomicUsize` avoids threading a fresh `ProviderCtx` field through every
+/// provider call site for what is effectively a static knob.
+static BREW_SEARCH_CAP: AtomicUsize = AtomicUsize::new(DEFAULT_BREW_SEARCH_CAP);
+
+pub fn set_brew_search_cap(cap: usize) {
+    BREW_SEARCH_CAP.store(cap.max(1), Ordering::Relaxed);
+}
+
+fn brew_search_cap() -> usize {
+    BREW_SEARCH_CAP.load(Ordering::Relaxed)
+}
 
 pub(crate) async fn run_brew_with_binary(
     cwd: &Path,
@@ -30,6 +45,10 @@ pub(crate) async fn run_brew_with_binary(
     .await
     {
         Ok(stdout) => Some(stdout),
+        Err(error) if is_binary_missing(&error) => {
+            tracing::trace!(binary, "brew binary not installed");
+            None
+        }
         Err(error) => {
             tracing::warn!(binary, error = %error, "brew command failed");
             None
@@ -183,9 +202,6 @@ impl BrewFormulaeSearchable {
         let Some(output) = run_brew_with_binary(&ctx.cwd, binary, &["search", ""]).await else {
             return Ok(Vec::new());
         };
-        Ok(parse_formulae_searchable_output(
-            &output,
-            DEFAULT_BREW_SEARCH_CAP,
-        ))
+        Ok(parse_formulae_searchable_output(&output, brew_search_cap()))
     }
 }

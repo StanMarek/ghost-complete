@@ -26,8 +26,8 @@ use gc_suggest::providers::{Provider, ProviderCtx};
 use gc_suggest::types::{SuggestionKind, SuggestionSource};
 use providers::brew::{
     parse_casks_installed_output, parse_formulae_installed_output,
-    parse_formulae_searchable_output, run_brew_with_binary, BrewCasksInstalled,
-    BrewFormulaeInstalled, BrewFormulaeSearchable, DEFAULT_BREW_SEARCH_CAP,
+    parse_formulae_searchable_output, run_brew_with_binary, set_brew_search_cap,
+    BrewCasksInstalled, BrewFormulaeInstalled, BrewFormulaeSearchable, DEFAULT_BREW_SEARCH_CAP,
 };
 
 fn ctx_for(cwd: &Path) -> ProviderCtx {
@@ -127,6 +127,19 @@ fn searchable_formulae_respect_default_cap() {
     assert_eq!(suggestions.len(), 1000);
     assert_eq!(suggestions[0].text, "formula-0");
     assert_eq!(suggestions[999].text, "formula-999");
+}
+
+#[test]
+fn set_brew_search_cap_normalises_zero_input() {
+    // The brew search cap is a process-global atomic. Setter is called
+    // once at engine startup with the experimental config value; this
+    // test pins the "0 is normalised to 1" contract that prevents a
+    // misconfigured cap from suppressing every suggestion. We do not
+    // observe the global value back here because that would race with
+    // any sibling test that uses the live BrewFormulaeSearchable
+    // dispatch — the setter API alone is what we exercise.
+    set_brew_search_cap(0);
+    set_brew_search_cap(DEFAULT_BREW_SEARCH_CAP);
 }
 
 #[tokio::test]

@@ -56,6 +56,12 @@ pub struct ExperimentalConfig {
     pub multi_terminal: bool,
     pub aws_sdk_provider: bool,
     pub aws_sdk_fallback_to_cli: bool,
+    /// Cap on the number of formulae returned by `brew search ""`. Brew's
+    /// full index has tens of thousands of entries; the engine ranks
+    /// fuzz-matches over this list and rendering past ~1k swamps the popup.
+    /// Defaults to 1000; raise for unfiltered exploration, lower for slower
+    /// machines.
+    pub brew_search_cap: usize,
 }
 
 impl Default for ExperimentalConfig {
@@ -64,6 +70,7 @@ impl Default for ExperimentalConfig {
             multi_terminal: false,
             aws_sdk_provider: false,
             aws_sdk_fallback_to_cli: true,
+            brew_search_cap: 1_000,
         }
     }
 }
@@ -1573,6 +1580,19 @@ aws_sdk_fallback_to_cli = false
         let config: GhostConfig = toml::from_str(toml_str).unwrap();
         assert!(config.experimental.aws_sdk_provider);
         assert!(!config.experimental.aws_sdk_fallback_to_cli);
+    }
+
+    #[test]
+    fn experimental_brew_search_cap_defaults_and_parses() {
+        let default_config = GhostConfig::default();
+        assert_eq!(default_config.experimental.brew_search_cap, 1_000);
+
+        let toml_str = r#"
+[experimental]
+brew_search_cap = 250
+"#;
+        let config: GhostConfig = toml::from_str(toml_str).unwrap();
+        assert_eq!(config.experimental.brew_search_cap, 250);
     }
 
     #[test]

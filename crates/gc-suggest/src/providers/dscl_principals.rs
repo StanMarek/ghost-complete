@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 
-use super::util::spawn_with_timeout;
+use super::util::{is_binary_missing, spawn_with_timeout};
 use super::{Provider, ProviderCtx};
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
@@ -26,6 +26,10 @@ pub(crate) async fn run_dscl_list_with_binary(
     .await
     {
         Ok(stdout) => Some(stdout),
+        Err(error) if is_binary_missing(&error) => {
+            tracing::trace!(binary, "dscl binary not installed");
+            None
+        }
         Err(error) => {
             tracing::warn!(binary, error = %error, "dscl list command failed");
             None

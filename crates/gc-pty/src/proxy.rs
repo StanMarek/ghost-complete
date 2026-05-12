@@ -198,6 +198,8 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
         show_provider_errors: config.popup.show_provider_errors,
     };
 
+    gc_suggest::providers::brew::set_brew_search_cap(config.experimental.brew_search_cap);
+
     // Initialize suggestion handler with config
     let handler = Arc::new(Mutex::new(
         input_handler_for_resolution(&spec_dir_resolution, terminal_profile)?

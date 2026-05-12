@@ -90,7 +90,7 @@ where
     }
 
     let version = match spawn_with_timeout(
-        Path::new("/tmp"),
+        Path::new("/"),
         binary,
         args_vec.iter().map(String::as_str),
         None,
