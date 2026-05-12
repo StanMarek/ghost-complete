@@ -20,8 +20,19 @@ pub fn spawn_shell(shell: &str, args: &[String]) -> Result<SpawnedShell> {
     cmd.args(args);
     cmd.cwd(std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/")));
 
-    // Inherit the current environment
+    // Inherit the current environment — but strip
+    // AWS_EC2_METADATA_DISABLED if WE injected it at startup. Without
+    // this filter the proxy silently overrides an AWS SDK knob in
+    // every command the user runs inside the shell, which is exactly
+    // the kind of invisible side effect a transparent PTY proxy must
+    // not produce. If the user had the var set themselves the
+    // `imds_disabled_was_injected` flag is false and we pass it
+    // through.
+    let we_injected_imds = gc_suggest::aws::imds_disabled_was_injected();
     for (key, value) in std::env::vars() {
+        if we_injected_imds && key == gc_suggest::aws::IMDS_DISABLED_ENV {
+            continue;
+        }
         cmd.env(key, value);
     }
     // Belt-and-suspenders recursion guard. init.zsh checks this in the
