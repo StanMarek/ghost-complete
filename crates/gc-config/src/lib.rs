@@ -50,10 +50,22 @@ pub struct GhostConfig {
     pub experimental: ExperimentalConfig,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ExperimentalConfig {
     pub multi_terminal: bool,
+    pub aws_sdk_provider: bool,
+    pub aws_sdk_fallback_to_cli: bool,
+}
+
+impl Default for ExperimentalConfig {
+    fn default() -> Self {
+        Self {
+            multi_terminal: false,
+            aws_sdk_provider: false,
+            aws_sdk_fallback_to_cli: true,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1542,6 +1554,25 @@ max_results = 25
     fn test_experimental_defaults_to_off() {
         let config = GhostConfig::default();
         assert!(!config.experimental.multi_terminal);
+    }
+
+    #[test]
+    fn experimental_aws_sdk_defaults_are_conservative() {
+        let config = GhostConfig::default();
+        assert!(!config.experimental.aws_sdk_provider);
+        assert!(config.experimental.aws_sdk_fallback_to_cli);
+    }
+
+    #[test]
+    fn experimental_aws_sdk_flags_parse_from_toml() {
+        let toml_str = r#"
+[experimental]
+aws_sdk_provider = true
+aws_sdk_fallback_to_cli = false
+"#;
+        let config: GhostConfig = toml::from_str(toml_str).unwrap();
+        assert!(config.experimental.aws_sdk_provider);
+        assert!(!config.experimental.aws_sdk_fallback_to_cli);
     }
 
     #[test]

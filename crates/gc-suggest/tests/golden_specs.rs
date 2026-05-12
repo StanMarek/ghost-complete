@@ -343,12 +343,10 @@ fn aws_spec_includes_canonical_services() {
 }
 
 #[test]
-fn aws_profile_option_has_native_transform_generator() {
-    // --profile is the only AWS generator the converter could lower from
-    // upstream postProcess to a native transform pipeline; the others land
-    // as requires_js. If --profile ever flips back to requires_js or loses
-    // its split_lines+filter_empty+trim transforms, profile completion
-    // stops working — surface that loudly.
+fn aws_profile_option_has_native_profile_provider() {
+    // --profile must stay on the local-file native provider. If it flips
+    // back to a shell or JS path, profile completion regresses and the
+    // provider migration loses its one no-network AWS generator.
     let aws = load_aws_spec();
     let profile = aws
         .options
@@ -367,34 +365,26 @@ fn aws_profile_option_has_native_transform_generator() {
 
     assert!(
         !gen.requires_js,
-        "--profile generator must NOT be requires_js — the transform \
-         pipeline should have lowered it. If it flipped back, profile \
-         completion has regressed."
+        "--profile generator must NOT be requires_js; it should use the \
+         native aws_profile_names provider."
     );
     assert_eq!(
-        gen.script.as_deref(),
-        Some(
-            &[
-                "aws".to_string(),
-                "configure".to_string(),
-                "list-profiles".to_string()
-            ][..]
-        ),
-        "--profile generator must invoke exactly `aws configure list-profiles`; \
-         got script={:?}",
+        gen.generator_type.as_deref(),
+        Some("aws_profile_names"),
+        "--profile generator must use aws_profile_names; got type={:?}, script={:?}",
+        gen.generator_type,
         gen.script
     );
-    let transform_names: Vec<&str> = gen
-        .transforms
-        .iter()
-        .map(gc_suggest::transform::transform_name)
-        .collect();
-    for must in ["split_lines", "filter_empty", "trim"] {
-        assert!(
-            transform_names.contains(&must),
-            "--profile generator must include `{must}` transform; got {transform_names:?}"
-        );
-    }
+    assert!(
+        gen.script.is_none(),
+        "--profile must not shell out when aws_profile_names is available; got script={:?}",
+        gen.script
+    );
+    assert!(
+        gen.transforms.is_empty(),
+        "--profile provider should not carry shell transforms; got {:?}",
+        gen.transforms
+    );
     // The CHANGELOG promises directory-keyed caching on profile lookups
     // ("aws configure list-profiles" reads ~/.aws/config which can vary
     // per project root). Lock that in.

@@ -63,6 +63,49 @@ async fn generate(&self, ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
 
 `ProviderCtx::params_hash()` returns a `u64` over the sorted key/value pairs, suitable for in-process generator caches keyed on the spec's parameter selection. Cross-process stability is not a contract — the hash is stable within a single process only.
 
+## AWS providers
+
+UX-13 adds two AWS-specific provider types:
+
+| Type string | Source | Notes |
+|---|---|---|
+| `aws_sdk` | Native AWS SDK calls | Experimental and opt-in through `[experimental] aws_sdk_provider = true`. Can make outbound HTTPS calls to AWS endpoints. |
+| `aws_profile_names` | AWS profile files | Reads profile names from AWS config/credentials files for `aws --profile <Tab>`-style completions. It does not resolve credentials or call AWS. |
+
+`aws_sdk` replaces selected `aws` CLI script generators with typed SDK calls.
+The provider reads operation details from generator `params` such as service,
+operation, response field, and cache shape. The SDK path is default-off for
+one release:
+
+```toml
+[experimental]
+aws_sdk_provider = false
+aws_sdk_fallback_to_cli = true
+```
+
+With the default config, Ghost Complete does not make outbound AWS SDK calls.
+When `aws_sdk_provider = true`, completions use the normal AWS credential chain:
+environment credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, optional
+`AWS_SESSION_TOKEN`), selected profiles (`AWS_PROFILE` or
+`AWS_DEFAULT_PROFILE`), regions (`AWS_REGION` or `AWS_DEFAULT_REGION`), and
+the AWS config files. Profile names come from `~/.aws/config` sections such as
+`[profile dev]` and `~/.aws/credentials` sections such as `[dev]`; the file
+locations can be overridden with `AWS_CONFIG_FILE` and
+`AWS_SHARED_CREDENTIALS_FILE`.
+
+`aws_sdk_fallback_to_cli = true` keeps the current `aws` CLI script path as a
+last resort when SDK completions cannot run because credentials, profile
+selection, region configuration, or network access are unavailable. Users who
+do not install the AWS CLI can set it to `false`; in that mode SDK failures
+return no dynamic AWS suggestions instead of shelling out.
+
+`ghost-complete doctor` includes an AWS credential/profile health line. The
+check is intentionally local-only: it inspects relevant environment variables,
+AWS file existence, profile names, and visible region settings, but it never
+loads the AWS SDK and never makes a live AWS API call. Expired sessions, SSO
+login state, AssumeRole failures, and service authorization are still runtime
+conditions surfaced by the provider itself.
+
 ## Local-project providers
 
 A subset of providers do not shell out at all — they parse a project file in the user's CWD ancestry. Reference implementation: [`crates/gc-suggest/src/providers/local_project/`](../crates/gc-suggest/src/providers/local_project/) (UX-5). Same `Provider` trait as the subprocess providers, with two pattern differences:

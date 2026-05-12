@@ -256,6 +256,21 @@ describe('matchNativeGenerator', () => {
     );
   });
 
+  it('maps aws configure list-profiles to aws_profile_names only on the exact command', () => {
+    assert.deepStrictEqual(
+      matchNativeGenerator('aws', ['aws', 'configure', 'list-profiles']),
+      { type: 'aws_profile_names' },
+    );
+    assert.equal(
+      matchNativeGenerator('aws', ['aws', 'configure', 'get']),
+      null,
+    );
+    assert.equal(
+      matchNativeGenerator('aws', ['aws', 'configure', 'list-profiles', '--profile', 'dev']),
+      null,
+    );
+  });
+
   it('maps container and cluster tool scripts to native provider types', () => {
     assert.deepStrictEqual(
       matchNativeGenerator('docker', ['docker', 'images', '--format', '{{json .}}']),

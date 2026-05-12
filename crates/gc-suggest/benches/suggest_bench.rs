@@ -331,6 +331,72 @@ fn engine_benchmarks(c: &mut Criterion) {
     group.finish();
 }
 
+fn aws_sdk_ctx() -> CommandContext {
+    CommandContext {
+        command: Some("aws".into()),
+        args: vec![
+            "iam".into(),
+            "attach-role-policy".into(),
+            "--role-name".into(),
+        ],
+        current_word: String::new(),
+        word_index: 4,
+        is_flag: false,
+        is_long_flag: false,
+        preceding_flag: Some("--role-name".into()),
+        in_pipe: false,
+        in_redirect: false,
+        quote_state: QuoteState::None,
+        is_first_segment: true,
+    }
+}
+
+fn aws_sdk_engine_benchmarks(c: &mut Criterion) {
+    let spec_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs");
+    let ctx = aws_sdk_ctx();
+    let mut group = c.benchmark_group("engine_suggest_sync_aws_sdk");
+
+    group.bench_function("cold_iam_role_name_route", |b| {
+        b.iter(|| {
+            let store = SpecStore::load_from_dir(&spec_dir).unwrap().store;
+            let engine = SuggestionEngine::with_providers(
+                store,
+                HistoryProvider::from_entries(Vec::new()),
+                CommandsProvider::from_list(Vec::new()),
+            )
+            .with_aws_sdk_config(true, true);
+            let tmp = tempfile::TempDir::new().unwrap();
+            let result = engine
+                .suggest_sync(&ctx, tmp.path(), "aws iam attach-role-policy --role-name ")
+                .unwrap();
+            std::hint::black_box(result);
+        });
+    });
+
+    let store = SpecStore::load_from_dir(&spec_dir).unwrap().store;
+    let engine = SuggestionEngine::with_providers(
+        store,
+        HistoryProvider::from_entries(Vec::new()),
+        CommandsProvider::from_list(Vec::new()),
+    )
+    .with_aws_sdk_config(true, true);
+    let tmp = tempfile::TempDir::new().unwrap();
+    let _ = engine
+        .suggest_sync(&ctx, tmp.path(), "aws iam attach-role-policy --role-name ")
+        .unwrap();
+
+    group.bench_function("warm_iam_role_name_route", |b| {
+        b.iter(|| {
+            let result = engine
+                .suggest_sync(&ctx, tmp.path(), "aws iam attach-role-policy --role-name ")
+                .unwrap();
+            std::hint::black_box(result);
+        });
+    });
+
+    group.finish();
+}
+
 fn token_only_engine(source: &str) -> (SuggestionEngine, tempfile::TempDir) {
     let temp = tempfile::TempDir::new().unwrap();
     let escaped_source = serde_json::to_string(source).unwrap();
@@ -581,6 +647,7 @@ criterion_group!(
     resolution_benchmarks,
     transform_benchmarks,
     engine_benchmarks,
+    aws_sdk_engine_benchmarks,
     token_only_benchmarks,
     priority_sort_benchmarks,
     memory_benchmarks,

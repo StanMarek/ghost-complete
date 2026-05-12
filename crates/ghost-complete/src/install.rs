@@ -79,6 +79,8 @@ const DEFAULT_CONFIG_TOML: &str = "\
 
 # [experimental]
 # multi_terminal = false  # Set to true to enable unsupported/unknown terminals
+# aws_sdk_provider = false  # Opt in to native AWS SDK completions; may make outbound AWS calls
+# aws_sdk_fallback_to_cli = true  # Fall back to the aws CLI when SDK completions cannot run
 ";
 
 const INIT_BEGIN: &str = "# >>> ghost-complete initialize >>>";

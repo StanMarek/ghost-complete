@@ -142,7 +142,7 @@ describe('helper lowering through post-process conversion', () => {
     });
   });
 
-  it('processGenerator drops js_runtime and marks lowered helper generators', () => {
+  it('processGenerator keeps fallback script data when helper lowering maps to aws_sdk', () => {
     const out = processGenerator(
       {
         script: ['aws', 'iam', 'list-roles'],
@@ -152,6 +152,13 @@ describe('helper lowering through post-process conversion', () => {
     );
 
     assert.deepStrictEqual(out, {
+      type: 'aws_sdk',
+      params: {
+        service: 'iam',
+        operation: 'ListRoles',
+        field: 'Roles[*].RoleName',
+        description_field: 'Roles[*].Arn',
+      },
       script: ['aws', 'iam', 'list-roles'],
       transforms: [
         { type: 'json_path_extract', array: 'Roles', name_field: 'RoleName' },

@@ -240,11 +240,34 @@ Opt-in features that are not yet considered stable.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `multi_terminal` | bool | `false` | Enable unsupported/unknown terminals. All 9 supported terminals (Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app, Zed, VSCode) work without this flag. Set to `true` only if you want to try Ghost Complete on an unlisted terminal. |
+| `aws_sdk_provider` | bool | `false` | Opt in to native AWS SDK completions. Default `false` means Ghost Complete does not make outbound AWS SDK calls. |
+| `aws_sdk_fallback_to_cli` | bool | `true` | When native AWS SDK completions are enabled but cannot run, allow the existing `aws` CLI script path to produce slower fallback completions. |
 
 ```toml
 [experimental]
 multi_terminal = true
+aws_sdk_provider = false
+aws_sdk_fallback_to_cli = true
 ```
+
+`aws_sdk_provider` is intentionally default-off for the first AWS SDK release
+because it can make HTTPS calls to AWS endpoints while completing AWS
+arguments. Static completions and existing script-based AWS completions remain
+available without enabling it.
+
+`aws_sdk_fallback_to_cli` is independent. Keep it enabled if you have the AWS
+CLI installed and want completions to continue when SDK credentials, profile
+resolution, region configuration, or network access are unavailable. Set it to
+`false` only if you prefer SDK-backed completions to fail closed instead of
+shelling out to `aws`.
+
+The AWS SDK provider uses the normal AWS credential/profile environment:
+`AWS_ACCESS_KEY_ID` plus `AWS_SECRET_ACCESS_KEY`, optional
+`AWS_SESSION_TOKEN`, `AWS_PROFILE` or `AWS_DEFAULT_PROFILE`, and
+`AWS_REGION` or `AWS_DEFAULT_REGION`. It also reads profile names and regions
+from `~/.aws/config` and `~/.aws/credentials`, or from `AWS_CONFIG_FILE` and
+`AWS_SHARED_CREDENTIALS_FILE` when those are set. `ghost-complete doctor`
+reports the visible AWS env/file state without making live AWS calls.
 
 Ghost Complete auto-detects the terminal via `TERM_PROGRAM` and terminal-specific env vars (`KITTY_WINDOW_ID`, `WEZTERM_UNIX_SOCKET`, `ALACRITTY_SOCKET`, `ZED_TERM`, `VSCODE_IPC_HOOK_CLI`), then selects the appropriate rendering strategy:
 

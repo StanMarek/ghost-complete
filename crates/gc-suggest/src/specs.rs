@@ -1647,11 +1647,10 @@ impl SpecStore {
     /// embedded corpus (~1944 supported / ~1697 unsupported / ~3641 total
     /// at v0.13).
     ///
-    /// `lowered_to_transforms` and `token_only_promoted` are populated
-    /// today. The remaining migration-future fields
-    /// (`static_extracted_subprocess`, `aws_sdk_dispatched`,
-    /// `native_provider_dispatched`) stay at zero until the converter
-    /// emits the corresponding metadata.
+    /// `lowered_to_transforms`, `token_only_promoted`,
+    /// `aws_sdk_dispatched`, and `native_provider_dispatched` are
+    /// populated today. `static_extracted_subprocess` remains a future
+    /// migration field until the converter emits the corresponding metadata.
     ///
     /// This force-loads every entry through [`Self::resolved_entries`], so
     /// it is a diagnostic call (not a hot path). The trade-off is documented
@@ -1725,6 +1724,9 @@ fn accumulate_counters_from_generators(
                     .native_provider_counts
                     .entry(gen_type.to_string())
                     .or_insert(0) += 1;
+                if gen_type == providers::ProviderKind::AwsSdk.type_str() {
+                    counters.aws_sdk_dispatched += 1;
+                }
             }
         }
         if !gen.requires_js {
@@ -2706,6 +2708,15 @@ fn collect_generators(
                     kind,
                     params: Arc::new(gen.params.clone()),
                 });
+                if kind == providers::ProviderKind::AwsSdk
+                    && (gen.script.as_ref().is_some_and(|script| !script.is_empty())
+                        || gen
+                            .script_template
+                            .as_ref()
+                            .is_some_and(|template| !template.is_empty()))
+                {
+                    script.push(Arc::new(gen.clone()));
+                }
                 true
             } else if KNOWN_NATIVE_GENERATOR_TYPES.contains(&gen_type.as_str()) {
                 native.push(gen_type.clone());
@@ -3772,23 +3783,31 @@ mod tests {
         // are tracked separately from the remaining requires_js runtime
         // population.
         const MIN_REQUIRES_JS_WITH_RUNTIME: usize = 2_380;
-        const MIN_LOWERED_TO_TRANSFORMS: usize = 1_360;
+        const MIN_LOWERED_TO_TRANSFORMS: usize = 1_250;
+        const MIN_AWS_SDK_DISPATCHED: usize = 130;
         const EXPECTED_UNSUPPORTED_WITHOUT_RUNTIME: usize = 295;
 
-        fn count(v: &serde_json::Value) -> (usize, usize, usize, usize) {
-            // (requires_js_total, with_js_runtime, lowered, lowered_requires_js)
+        fn count(v: &serde_json::Value) -> (usize, usize, usize, usize, usize) {
+            // (requires_js_total, with_js_runtime, lowered, lowered_requires_js, aws_sdk)
             match v {
                 serde_json::Value::Object(map) => {
                     let mut total = 0;
                     let mut with_rt = 0;
                     let mut lowered = 0;
                     let mut lowered_requires_js = 0;
+                    let mut aws_sdk = 0;
                     let is_gen =
                         matches!(map.get("requires_js"), Some(serde_json::Value::Bool(true)));
                     let is_lowered = matches!(
                         map.get("_lowered_from_requires_js"),
                         Some(serde_json::Value::Bool(true))
                     );
+                    if matches!(
+                        map.get("type"),
+                        Some(serde_json::Value::String(gen_type)) if gen_type == "aws_sdk"
+                    ) {
+                        aws_sdk += 1;
+                    }
                     if is_gen {
                         total += 1;
                         if matches!(map.get("js_runtime"), Some(serde_json::Value::Object(_))) {
@@ -3802,29 +3821,32 @@ mod tests {
                         }
                     }
                     for child in map.values() {
-                        let (t, r, l, lr) = count(child);
+                        let (t, r, l, lr, a) = count(child);
                         total += t;
                         with_rt += r;
                         lowered += l;
                         lowered_requires_js += lr;
+                        aws_sdk += a;
                     }
-                    (total, with_rt, lowered, lowered_requires_js)
+                    (total, with_rt, lowered, lowered_requires_js, aws_sdk)
                 }
                 serde_json::Value::Array(arr) => {
                     let mut total = 0;
                     let mut with_rt = 0;
                     let mut lowered = 0;
                     let mut lowered_requires_js = 0;
+                    let mut aws_sdk = 0;
                     for child in arr {
-                        let (t, r, l, lr) = count(child);
+                        let (t, r, l, lr, a) = count(child);
                         total += t;
                         with_rt += r;
                         lowered += l;
                         lowered_requires_js += lr;
+                        aws_sdk += a;
                     }
-                    (total, with_rt, lowered, lowered_requires_js)
+                    (total, with_rt, lowered, lowered_requires_js, aws_sdk)
                 }
-                _ => (0, 0, 0, 0),
+                _ => (0, 0, 0, 0, 0),
             }
         }
 
@@ -3832,16 +3854,18 @@ mod tests {
         let mut total_with_runtime = 0;
         let mut total_lowered_to_transforms = 0;
         let mut total_lowered_requires_js = 0;
+        let mut total_aws_sdk_dispatched = 0;
         for name in crate::embedded::embedded_filenames() {
             let body = crate::embedded::embedded_spec_contents(name)
                 .expect("filename listed in index must resolve to a body");
             let v: serde_json::Value = serde_json::from_str(body)
                 .unwrap_or_else(|e| panic!("embedded spec {name} is not valid JSON: {e}"));
-            let (t, r, l, lr) = count(&v);
+            let (t, r, l, lr, a) = count(&v);
             total_requires_js += t;
             total_with_runtime += r;
             total_lowered_to_transforms += l;
             total_lowered_requires_js += lr;
+            total_aws_sdk_dispatched += a;
         }
         assert!(
             total_with_runtime >= MIN_REQUIRES_JS_WITH_RUNTIME,
@@ -3854,6 +3878,11 @@ mod tests {
             "embedded corpus invariant violated: only {total_lowered_to_transforms} generators \
              were marked as lowered from requires_js to native transforms. Lower bound is \
              {MIN_LOWERED_TO_TRANSFORMS}."
+        );
+        assert!(
+            total_aws_sdk_dispatched >= MIN_AWS_SDK_DISPATCHED,
+            "embedded corpus invariant violated: only {total_aws_sdk_dispatched} generators \
+             were mapped to aws_sdk. Lower bound is {MIN_AWS_SDK_DISPATCHED}."
         );
         assert_eq!(
             total_lowered_requires_js, 0,
@@ -4652,6 +4681,7 @@ mod tests {
                     "generators": [
                         {"type": "npm_scripts"},
                         {"type": "cargo_targets", "params": {"kind": "bin"}},
+                        {"type": "aws_sdk", "params": {"service": "iam", "operation": "ListUsers"}},
                         {"type": "git_branches"}
                     ]
                 }]
@@ -4662,12 +4692,14 @@ mod tests {
 
         accumulate_counters_from_spec(&spec, &mut counters);
 
-        assert_eq!(counters.native_provider_dispatched, 2);
+        assert_eq!(counters.native_provider_dispatched, 3);
+        assert_eq!(counters.aws_sdk_dispatched, 1);
         assert_eq!(counters.native_provider_counts.get("npm_scripts"), Some(&1));
         assert_eq!(
             counters.native_provider_counts.get("cargo_targets"),
             Some(&1)
         );
+        assert_eq!(counters.native_provider_counts.get("aws_sdk"), Some(&1));
         assert_eq!(counters.native_provider_counts.get("git_branches"), None);
     }
 
