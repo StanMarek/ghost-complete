@@ -1647,10 +1647,10 @@ impl SpecStore {
     /// embedded corpus (~1944 supported / ~1697 unsupported / ~3641 total
     /// at v0.13).
     ///
-    /// `lowered_to_transforms`, `token_only_promoted`,
-    /// `aws_sdk_dispatched`, and `native_provider_dispatched` are
-    /// populated today. `static_extracted_subprocess` remains a future
-    /// migration field until the converter emits the corresponding metadata.
+    /// `lowered_to_transforms` (ux-10b), `static_extracted_subprocess`
+    /// (ux-11), `token_only_promoted` (ux-12), `aws_sdk_dispatched`
+    /// (ux-13), and `native_provider_dispatched` (ux-14) are all
+    /// populated today.
     ///
     /// This force-loads every entry through [`Self::resolved_entries`], so
     /// it is a diagnostic call (not a hot path). The trade-off is documented
@@ -2232,11 +2232,15 @@ pub fn parse_spec_checked_and_sanitized(contents: &str) -> Result<CompletionSpec
 /// single keystroke's dispatch outcome) with diagnostic totals over every
 /// generator reachable from every loaded spec. Surfaced through
 /// [`SpecStore::counters`] and the `counters` block of `ghost-complete
-/// status --json`. `lowered_to_transforms` is populated for generators
-/// tagged with `_lowered_from_requires_js: true`, and
-/// `token_only_promoted` is populated today by the token-only sandbox. The
-/// remaining migration-future fields stay at zero until the converter
-/// starts emitting the corresponding metadata.
+/// status --json`. Every counter except `requires_js_unsupported` is
+/// populated by [`accumulate_counters_from_generators`] today:
+/// `lowered_to_transforms` from `_lowered_from_requires_js: true`
+/// (ux-10b), `static_extracted_subprocess` from
+/// `_static_extracted_subprocess: true` (ux-11), `token_only_promoted`
+/// from supported `kind == token_only` generators (ux-12),
+/// `aws_sdk_dispatched` from the `aws_sdk` provider type (ux-13), and
+/// `native_provider_dispatched` from any registered native provider
+/// type (ux-14).
 #[derive(Debug, Default, Clone, serde::Serialize)]
 pub struct SpecResolutionCounters {
     /// Total `requires_js` generators in the corpus.
@@ -2250,15 +2254,15 @@ pub struct SpecResolutionCounters {
     /// `_lowered_from_requires_js: true`.
     pub lowered_to_transforms: usize,
     /// Generators where the converter lifted a subprocess-driven JS
-    /// body into native script + transforms. Reserved for the
-    /// subprocess-lifting migration; stays at zero today.
+    /// body into native script + transforms. Populated from
+    /// `_static_extracted_subprocess: true` (ux-11).
     pub static_extracted_subprocess: usize,
     /// Generators promoted into the token-only sandbox. Populated today
     /// by [`accumulate_counters_from_generators`] for every supported
     /// `kind == token_only` generator.
     pub token_only_promoted: usize,
-    /// Generators dispatched through a typed AWS SDK call. Reserved for
-    /// the AWS-SDK migration; stays at zero today.
+    /// Generators dispatched through a typed AWS SDK call. Populated
+    /// when a generator's `type` is `aws_sdk` (ux-13).
     pub aws_sdk_dispatched: usize,
     /// Generators dispatched through a native tool provider.
     pub native_provider_dispatched: usize,
