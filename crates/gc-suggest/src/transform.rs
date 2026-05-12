@@ -654,10 +654,17 @@ pub fn apply_json_extract(
     name_path: &JsonPath,
     desc_path: Option<&JsonPath>,
 ) -> Vec<Suggestion> {
-    lines
+    let mut parse_failures = 0usize;
+    let suggestions: Vec<Suggestion> = lines
         .iter()
         .filter_map(|line| {
-            let obj: serde_json::Value = serde_json::from_str(line).ok()?;
+            let obj: serde_json::Value = match serde_json::from_str(line) {
+                Ok(v) => v,
+                Err(_) => {
+                    parse_failures += 1;
+                    return None;
+                }
+            };
             let text = name_path.lookup(&obj)?.as_str()?.to_string();
             let description =
                 desc_path.and_then(|dp| dp.lookup(&obj).and_then(|v| v.as_str()).map(String::from));
@@ -669,7 +676,18 @@ pub fn apply_json_extract(
                 ..Default::default()
             })
         })
-        .collect()
+        .collect();
+    // The first JSON-shaped line in a stream of plain-text output would
+    // parse; the rest would silently disappear. Without a diagnostic the
+    // user sees zero suggestions and has no idea why. Match
+    // apply_json_extract_array's warn-when-empty contract.
+    if suggestions.is_empty() && parse_failures > 0 {
+        tracing::debug!(
+            parse_failures,
+            "json_extract: all candidate lines failed JSON parse — upstream output is not line-delimited JSON",
+        );
+    }
+    suggestions
 }
 
 /// Parse the ENTIRE raw output as a single JSON blob, walk `path` to an array,
