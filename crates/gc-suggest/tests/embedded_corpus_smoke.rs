@@ -5,9 +5,9 @@
 //! The ≤ 200 ms ceiling is the SPEC acceptance criterion for ux-12b
 //! "all 709 specs decompress and parse … cumulative load time < 200 ms
 //! cold." That target is for the **release-profile** build — zstd-19
-//! decompression is CPU-bound and ~6x slower under debug builds, so the
-//! debug-profile budget is relaxed 10x to keep the correctness signal
-//! (every spec decompresses and parses) usable during local iteration.
+//! decompression is CPU-bound and materially slower under debug builds.
+//! The debug-profile budget is relaxed to keep the correctness signal
+//! (every spec decompresses and parses) stable on GitHub Actions runners.
 //!
 //! The correctness assertions (every spec resolves, every JSON parses)
 //! always run. The timing-budget assertion fires only when the
@@ -30,7 +30,7 @@ use std::time::Instant;
 use gc_suggest::{embedded_filenames, embedded_spec_contents, embedded_spec_count};
 
 #[cfg(debug_assertions)]
-const CORPUS_LOAD_BUDGET_MS: u128 = 2_000;
+const CORPUS_LOAD_BUDGET_MS: u128 = 4_000;
 #[cfg(not(debug_assertions))]
 const CORPUS_LOAD_BUDGET_MS: u128 = 200;
 
