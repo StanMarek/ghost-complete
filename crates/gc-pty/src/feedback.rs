@@ -45,7 +45,11 @@ impl AsyncFeedback {
                 }
                 DynamicResult::Empty { .. } => aggregation.empty_count += 1,
                 DynamicResult::Error { provider, message } => {
-                    tracing::warn!(provider = %provider, "dynamic provider failed: {message}");
+                    tracing::warn!(
+                        provider = %provider,
+                        error = %message,
+                        "dynamic provider failed"
+                    );
                     aggregation.failed.push(provider.to_string())
                 }
             }

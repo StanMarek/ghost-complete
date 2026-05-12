@@ -89,13 +89,28 @@ fn profile_suggestions(ctx: &ProviderCtx) -> Vec<Suggestion> {
 
 fn read_profile_names(config_path: &Path, credentials_path: &Path) -> BTreeSet<String> {
     let mut names = BTreeSet::new();
-    if let Ok(contents) = std::fs::read_to_string(config_path) {
+    if let Some(contents) = read_aws_ini(config_path) {
         parse_config_profiles(&contents, &mut names);
     }
-    if let Ok(contents) = std::fs::read_to_string(credentials_path) {
+    if let Some(contents) = read_aws_ini(credentials_path) {
         parse_credentials_profiles(&contents, &mut names);
     }
     names
+}
+
+fn read_aws_ini(path: &Path) -> Option<String> {
+    match std::fs::read_to_string(path) {
+        Ok(contents) => Some(contents),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => {
+            tracing::warn!(
+                path = %path.display(),
+                error = %error,
+                "aws profile names provider could not read ini file"
+            );
+            None
+        }
+    }
 }
 
 fn parse_config_profiles(contents: &str, names: &mut BTreeSet<String>) {

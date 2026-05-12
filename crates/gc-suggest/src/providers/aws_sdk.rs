@@ -16,7 +16,7 @@ use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 use super::{Provider, ProviderCtx};
 
 const AWS_SDK_TIMEOUT: Duration = Duration::from_millis(800);
-const AWS_SDK_CACHE_TTL: Duration = Duration::from_secs(30);
+const AWS_SDK_CACHE_TTL: Duration = Duration::from_secs(60);
 
 static AWS_SDK_SUGGESTION_CACHE: LazyLock<GeneratorCache> = LazyLock::new(GeneratorCache::new);
 
@@ -88,16 +88,21 @@ impl AwsSdk {
                     error = %error,
                     "aws sdk provider call failed"
                 );
-                if matches!(
-                    error.kind,
-                    crate::aws::error::AwsSdkErrorKind::AuthMissing
-                        | crate::aws::error::AwsSdkErrorKind::AuthExpired
-                ) {
-                    return Err(anyhow::anyhow!(
+                use crate::aws::error::AwsSdkErrorKind;
+                return match error.kind {
+                    AwsSdkErrorKind::AuthMissing | AwsSdkErrorKind::AuthExpired => {
+                        Err(anyhow::anyhow!(
                             "AWS credentials unavailable or expired; run `aws sso login` or configure AWS credentials"
-                        ));
-                }
-                return Ok(Vec::new());
+                        ))
+                    }
+                    AwsSdkErrorKind::Network => Err(anyhow::anyhow!(
+                        "AWS API unreachable ({service} {operation}); check network connectivity"
+                    )),
+                    AwsSdkErrorKind::Other => Err(anyhow::anyhow!(
+                        "AWS {service} {operation} failed: {}",
+                        error.message
+                    )),
+                };
             }
             Err(_) => {
                 tracing::warn!(service, operation, "aws sdk provider call timed out");
@@ -385,6 +390,57 @@ mod tests {
         assert!(
             err.to_string().contains("AWS credentials"),
             "auth failures should become user-visible provider diagnostics: {err}"
+        );
+    }
+
+    #[tokio::test]
+    async fn generate_surfaces_network_errors_for_ui_diagnostics() {
+        let runtime = ErrorRuntime {
+            error: AwsProviderError {
+                kind: crate::aws::error::AwsSdkErrorKind::Network,
+                message: "dispatch failure".to_string(),
+            },
+        };
+        let ctx = ctx([
+            ("service", "iam"),
+            ("operation", "ListUsers"),
+            ("field", "Users[*].UserName"),
+        ]);
+
+        let err = AwsSdk
+            .generate_with_runtime(&ctx, &runtime, Duration::from_millis(10))
+            .await
+            .unwrap_err();
+
+        assert!(
+            err.to_string().contains("unreachable"),
+            "network failures should reach the dynamic-feedback channel: {err}"
+        );
+    }
+
+    #[tokio::test]
+    async fn generate_surfaces_other_errors_for_ui_diagnostics() {
+        let runtime = ErrorRuntime {
+            error: AwsProviderError {
+                kind: crate::aws::error::AwsSdkErrorKind::Other,
+                message: "AccessDeniedException: not authorized".to_string(),
+            },
+        };
+        let ctx = ctx([
+            ("service", "iam"),
+            ("operation", "ListUsers"),
+            ("field", "Users[*].UserName"),
+        ]);
+
+        let err = AwsSdk
+            .generate_with_runtime(&ctx, &runtime, Duration::from_millis(10))
+            .await
+            .unwrap_err();
+
+        let rendered = err.to_string();
+        assert!(
+            rendered.contains("ListUsers") && rendered.contains("AccessDeniedException"),
+            "other failures should include the operation and underlying message: {rendered}"
         );
     }
 }
