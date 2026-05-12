@@ -1,5 +1,5 @@
 use std::collections::{BTreeMap, HashMap};
-use std::sync::{LazyLock, Mutex, OnceLock};
+use std::sync::{LazyLock, Mutex};
 
 use aws_config::BehaviorVersion;
 use aws_sdk_iam::types::PolicyScopeType;
@@ -25,8 +25,8 @@ impl AwsClients {
     }
 
     async fn config_for(profile: Option<&str>, region: Option<&str>) -> aws_config::SdkConfig {
-        disable_imds_once();
-
+        // IMDS is disabled via `AWS_EC2_METADATA_DISABLED`, set once at
+        // process startup in `main` (see `gc_suggest::aws::set_imds_disabled_env`).
         let mut loader = aws_config::defaults(BehaviorVersion::latest());
         if let Some(profile) = profile {
             loader = loader.profile_name(profile.to_string());
@@ -203,27 +203,6 @@ impl AwsClients {
 }
 
 pub(crate) static AWS_CLIENTS: LazyLock<AwsClients> = LazyLock::new(AwsClients::new);
-
-/// Set `AWS_EC2_METADATA_DISABLED=true` at most once for the lifetime of the
-/// process so that completion suggestions never block on a 169.254.169.254
-/// probe when there's no IMDS endpoint reachable. `std::env::set_var` is racy
-/// against other threads reading or writing the environment, so the `OnceLock`
-/// guarantees we make exactly one mutation across the program — the first
-/// `aws::config_for` call wins and every subsequent call is a no-op.
-fn disable_imds_once() {
-    static GATE: OnceLock<()> = OnceLock::new();
-    GATE.get_or_init(|| {
-        if std::env::var_os("AWS_EC2_METADATA_DISABLED").is_none() {
-            // SAFETY: This is called exactly once via `OnceLock::get_or_init`.
-            // The variable is only consumed by `aws_config::defaults(..).load()`
-            // which we drive serially through `config_for` — no other thread is
-            // observing or mutating it concurrently at this point in startup.
-            unsafe {
-                std::env::set_var("AWS_EC2_METADATA_DISABLED", "true");
-            }
-        }
-    });
-}
 
 #[cfg(test)]
 mod tests {
