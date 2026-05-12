@@ -107,9 +107,13 @@ const REPORTABLE_SUBPROCESS_DECLINES = new Set([
   'fetch-reference',
   'network-bound-command',
   'git-subprocess-not-native',
-  'transforms-unsupported',
   'nonliteral-command',
   'nonliteral-args',
+  // A parse failure in the Fig source is rare but signals upstream
+  // shape drift worth investigating. Pass it through the audit report
+  // so a future bump of @withfig/autocomplete can't silently move a
+  // batch of generators off the static-extract path.
+  'parse-error',
 ]);
 
 let activeDeclineCollector = null;
@@ -400,7 +404,7 @@ function applyCargoNativeProviderFixups(spec) {
       for (const [flag, kind] of targetKinds) {
         if (!namesInclude(opt.name, flag)) continue;
         const gen = firstArgGenerator(opt);
-        if (!/cargo[\s\S]*metadata[\s\S]*targets/.test(generatorSource(gen))) continue;
+        if (!isCargoMetadataGenerator(gen)) continue;
         setArgProvider(opt, provider('cargo_targets', { kind }));
       }
 
@@ -412,6 +416,25 @@ function applyCargoNativeProviderFixups(spec) {
       setArgProvider(opt, provider('cargo_features'));
     }
   });
+}
+
+/// `cargo metadata` shows up in two shapes after the converter pipeline:
+/// the legacy "preserved JS body" with the original async wrapper still
+/// in `js_runtime.source` (matched by the textual cargo/metadata/targets
+/// regex), and the post-ux-11 static-extracted shape where the script is
+/// already lifted into `gen.script` and the post-stmt body is minified
+/// (the `targets` token is renamed away). Detecting either is enough to
+/// route the option to the native cargo_targets provider.
+function isCargoMetadataGenerator(gen) {
+  if (!gen) return false;
+  if (
+    Array.isArray(gen.script) &&
+    gen.script[0] === 'cargo' &&
+    gen.script[1] === 'metadata'
+  ) {
+    return true;
+  }
+  return /cargo[\s\S]*metadata[\s\S]*targets/.test(generatorSource(gen));
 }
 
 function npmDependencyProviderFromSource(source) {

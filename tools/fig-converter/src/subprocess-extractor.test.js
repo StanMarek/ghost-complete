@@ -58,4 +58,31 @@ describe('extractSubprocessGenerator', () => {
     assert.equal(result.kind, 'declined');
     assert.equal(result.reason, 'git-subprocess-not-native');
   });
+
+  it('falls back to post_process JS when the post-step exceeds the transform pipeline', () => {
+    // SPEC § A point 4: "If the post-processing exceeds what the
+    // transform pipeline can express, leave the JS body but set
+    // `kind: post_process` and emit a working `js_runtime`." This is
+    // the path that lets us lift a cargo/npm/systemctl subprocess
+    // natively even when the post-step is too rich for transforms.
+    const result = extractSubprocessGenerator(`async (tokens, runShell) => {
+      const { stdout } = await runShell({ command: "cargo", args: ["metadata", "--format-version", "1", "--no-deps"] });
+      const parsed = JSON.parse(stdout);
+      const targets = parsed.packages.flatMap((p) => p.targets);
+      const bins = targets.filter((t) => t.kind.includes("bin"));
+      return bins.map((t) => ({ name: t.name, description: t.src_path }));
+    }`);
+
+    assert.equal(result.kind, 'fallback_post_process');
+    assert.deepStrictEqual(result.script, [
+      'cargo',
+      'metadata',
+      '--format-version',
+      '1',
+      '--no-deps',
+    ]);
+    assert.match(result.fallbackJsSource, /^function\(stdout\) \{/);
+    assert.match(result.fallbackJsSource, /JSON\.parse\(stdout\)/);
+    assert.match(result.fallbackJsSource, /p\.targets/);
+  });
 });
