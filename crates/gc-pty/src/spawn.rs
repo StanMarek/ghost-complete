@@ -72,47 +72,37 @@ pub fn spawn_shell(shell: &str, args: &[String]) -> Result<SpawnedShell> {
 mod tests {
     use portable_pty::CommandBuilder;
 
-    /// Reproduces the bug Codex flagged: `CommandBuilder::new` already
-    /// snapshots `AWS_EC2_METADATA_DISABLED` into its base env when the
-    /// var is set in the parent process, so merely skipping the key
-    /// inside the explicit-`env` loop is NOT sufficient. We need an
-    /// explicit `env_remove` for the strip to take effect.
+    /// Reproduces the bug Codex flagged: `CommandBuilder::new`
+    /// pre-snapshots the parent process env at construction time, so
+    /// merely skipping a key inside the explicit-`env` inheritance
+    /// loop is NOT sufficient to strip it from the child. An explicit
+    /// `env_remove` after construction is the only correct way.
+    ///
+    /// We use `PATH` because it is universally set by the test runner
+    /// and observing it requires zero process-env mutation — critical
+    /// under `cargo test`'s parallel harness, where any `set_var` in
+    /// one test races with every other test's env reads.
     #[test]
     fn command_builder_base_env_must_be_explicitly_stripped() {
-        // Snapshot any prior value so we don't bleed test state.
-        let prior = std::env::var_os("GC_TEST_BASE_ENV_PROBE");
-
-        // SAFETY: this test process is fully single-threaded by the
-        // time Rust's test harness invokes the test body for a leaf
-        // function with no `#[tokio::test]` / no spawned threads. We
-        // restore the prior value before returning.
-        unsafe {
-            std::env::set_var("GC_TEST_BASE_ENV_PROBE", "set-by-parent");
-        }
+        // Precondition for the test itself, not the code under test.
+        assert!(
+            std::env::var_os("PATH").is_some(),
+            "test runner must export PATH"
+        );
 
         let mut cmd = CommandBuilder::new("/bin/true");
-        // Without env_remove, the base env still carries the value.
-        let before = cmd.get_env("GC_TEST_BASE_ENV_PROBE").map(|v| v.to_owned());
-        cmd.env_remove("GC_TEST_BASE_ENV_PROBE");
-        let after = cmd.get_env("GC_TEST_BASE_ENV_PROBE").map(|v| v.to_owned());
-
-        // Restore parent env before any assertion that could fail.
-        // SAFETY: same justification as above.
-        unsafe {
-            if let Some(v) = prior {
-                std::env::set_var("GC_TEST_BASE_ENV_PROBE", v);
-            } else {
-                std::env::remove_var("GC_TEST_BASE_ENV_PROBE");
-            }
-        }
+        let before = cmd.get_env("PATH").map(|v| v.to_owned());
+        cmd.env_remove("PATH");
+        let after = cmd.get_env("PATH").map(|v| v.to_owned());
 
         assert!(
             before.is_some(),
-            "CommandBuilder::new must pre-snapshot parent env"
+            "CommandBuilder::new must pre-snapshot parent env from std::env"
         );
         assert!(
             after.is_none(),
-            "env_remove must clear the pre-snapshotted entry"
+            "env_remove must clear the pre-snapshotted entry — the production \
+             fix in spawn_shell relies on this contract"
         );
     }
 }
