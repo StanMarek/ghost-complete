@@ -772,10 +772,14 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 }
             }
 
-            // CD chaining: trigger suggestions on CWD change (OSC 7), gated by auto_trigger.
-            let cwd_dirty = {
+            // CD/env chaining: trigger suggestions on CWD or exported env changes,
+            // gated by auto_trigger.
+            let (cwd_dirty, shell_env_dirty) = {
                 match parser_for_stdout.lock() {
-                    Ok(mut p) => p.state_mut().take_cwd_dirty(),
+                    Ok(mut p) => {
+                        let state = p.state_mut();
+                        (state.take_cwd_dirty(), state.take_shell_env_dirty())
+                    }
                     Err(e) => {
                         tracing::warn!("parser mutex poisoned in stdout task: {e}");
                         break;
@@ -783,7 +787,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                 }
             };
 
-            if cwd_dirty {
+            if cwd_dirty || shell_env_dirty {
                 let mut render_buf = Vec::new();
                 let render_ticket = {
                     let mut h = match handler_for_stdout.lock() {
