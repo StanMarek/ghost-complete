@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::Path;
 
 use anyhow::Result;
@@ -12,34 +13,51 @@ impl EnvProvider {
     pub fn new() -> Self {
         Self
     }
+
+    pub fn provide_from_snapshot(
+        &self,
+        ctx: &CommandContext,
+        env: &HashMap<String, String>,
+    ) -> Result<Vec<Suggestion>> {
+        provide_env_suggestions(ctx, env.iter())
+    }
 }
 
 impl Provider for EnvProvider {
     fn provide(&self, ctx: &CommandContext, _cwd: &Path) -> Result<Vec<Suggestion>> {
-        if !ctx.current_word.starts_with('$') {
-            return Ok(Vec::new());
-        }
-
-        // Pre-filter: only allocate suggestions for vars matching the typed
-        // prefix (e.g. "$PA" → only vars starting with "PA"). Avoids creating
-        // hundreds of Suggestion objects on systems with large environments.
-        let typed_prefix = &ctx.current_word[1..]; // strip leading '$'
-
-        let suggestions = std::env::vars()
-            .filter(|(key, _)| typed_prefix.is_empty() || key.starts_with(typed_prefix))
-            .map(|(key, _)| Suggestion {
-                text: format!("${key}"),
-                description: None,
-                kind: SuggestionKind::EnvVar,
-                source: SuggestionSource::Env,
-                score: 0,
-                match_indices: Vec::new(),
-                priority: None,
-            })
-            .collect();
-
-        Ok(suggestions)
+        let env = std::env::vars().collect::<HashMap<_, _>>();
+        provide_env_suggestions(ctx, env.iter())
     }
+}
+
+fn provide_env_suggestions<'a, I>(ctx: &CommandContext, env: I) -> Result<Vec<Suggestion>>
+where
+    I: IntoIterator<Item = (&'a String, &'a String)>,
+{
+    if !ctx.current_word.starts_with('$') {
+        return Ok(Vec::new());
+    }
+
+    // Pre-filter: only allocate suggestions for vars matching the typed
+    // prefix (e.g. "$PA" → only vars starting with "PA"). Avoids creating
+    // hundreds of Suggestion objects on systems with large environments.
+    let typed_prefix = &ctx.current_word[1..]; // strip leading '$'
+
+    let suggestions = env
+        .into_iter()
+        .filter(|(key, _)| typed_prefix.is_empty() || key.starts_with(typed_prefix))
+        .map(|(key, _)| Suggestion {
+            text: format!("${key}"),
+            description: None,
+            kind: SuggestionKind::EnvVar,
+            source: SuggestionSource::Env,
+            score: 0,
+            match_indices: Vec::new(),
+            priority: None,
+        })
+        .collect();
+
+    Ok(suggestions)
 }
 
 #[cfg(test)]

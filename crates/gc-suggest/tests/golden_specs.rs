@@ -413,6 +413,83 @@ fn aws_profile_option_has_native_profile_provider() {
 }
 
 #[test]
+fn aws_region_option_is_available_as_global_flag() {
+    // `--region` is a standard AWS CLI global option. It must remain on the
+    // root aws spec so users can complete it before choosing a service.
+    let aws = load_aws_spec();
+    let region = aws
+        .options
+        .iter()
+        .find(|o| o.name.iter().any(|n| n == "--region"))
+        .expect("aws.options must contain the global --region option");
+
+    let args = region
+        .args
+        .as_ref()
+        .expect("--region must have args (the region name positional)");
+    assert_eq!(
+        args.name.as_deref(),
+        Some("region"),
+        "--region should describe its value as a region"
+    );
+}
+
+#[test]
+fn aws_root_suggests_region_flag_prefix() {
+    let engine = build_engine();
+    let buffer = "aws --reg";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let flags: Vec<&str> = result
+        .suggestions
+        .iter()
+        .filter(|s| s.kind == SuggestionKind::Flag)
+        .map(|s| s.text.as_str())
+        .collect();
+    assert!(
+        flags.contains(&"--region"),
+        "aws --reg must surface the --region flag; got {flags:?}"
+    );
+}
+
+#[test]
+fn aws_sso_includes_login_command() {
+    // `aws sso login` is a CLI customization command (not an IAM Identity
+    // Center Portal API operation), so the upstream service model alone does
+    // not guarantee it. Keep it pinned here.
+    let aws = load_aws_spec();
+    let sso = aws
+        .subcommands
+        .iter()
+        .find(|s| s.name == "sso")
+        .expect("aws.subcommands must contain sso");
+    let commands: std::collections::HashSet<&str> =
+        sso.subcommands.iter().map(|s| s.name.as_str()).collect();
+    assert!(
+        commands.contains("login"),
+        "aws sso is missing CLI customization command `login`; got {commands:?}"
+    );
+}
+
+#[test]
+fn aws_sso_suggests_login_subcommand() {
+    let engine = build_engine();
+    let buffer = "aws sso log";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let names: Vec<&str> = result
+        .suggestions
+        .iter()
+        .filter(|s| s.kind == SuggestionKind::Subcommand)
+        .map(|s| s.text.as_str())
+        .collect();
+    assert!(
+        names.contains(&"login"),
+        "aws sso log must surface login; got {names:?}"
+    );
+}
+
+#[test]
 fn aws_s3_has_core_action_subcommands() {
     // The s3 service-spec in upstream lists 9 actions: cp, ls, mb, mv,
     // presign, rb, rm, sync, website. Order is converter-determined; we

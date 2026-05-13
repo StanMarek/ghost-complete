@@ -122,6 +122,14 @@ describe('convertSingleSpec', () => {
     assert.equal(cache?.cache_by_directory, true);
     assert.equal(cache?.ttl_seconds, 300);
 
+    const region = result.spec.options.find((opt) => opt.name.includes('--region'));
+    assert.equal(region?.args?.name, 'region');
+
+    const sso = subcommand(result.spec, 'sso');
+    const login = subcommand(sso, 'login');
+    option(login, '--no-browser');
+    assert.equal(option(login, '--sso-session').args?.name, 'string');
+
     const sdk = findGenerator(
       result.spec,
       (candidate) => (

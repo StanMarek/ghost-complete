@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -377,7 +377,7 @@ pub enum TriggerPrepared {
         screen_cols: u16,
         /// Fingerprint to stamp on `last_trigger_fingerprint` after a
         /// successful merge render.
-        fingerprint: (u64, usize),
+        fingerprint: TriggerFingerprint,
         /// Current word at trigger time. Passed to `apply_block_result` so
         /// the merge step filters/ranks the combined pool against the user's
         /// query (mirrors the empty-vs-non-empty branch in `try_merge_dynamic`).
@@ -429,7 +429,7 @@ pub struct InputHandler {
     /// and must not be stored here. Reset when a CPR sync corrects the parser's
     /// cursor position (new prompt).
     overlay_scroll_deficit: u16,
-    /// Fingerprint (buffer hash + cursor offset) of the last trigger that
+    /// Fingerprint (buffer hash + cursor offset + shell env hash) of the last trigger that
     /// produced a visible popup. Used as an idempotency guard in the trigger
     /// paths (`InputHandler::trigger` and `prepare_trigger_with_block`/
     /// `apply_block_result`): when a new trigger arrives with an unchanged
@@ -439,7 +439,7 @@ pub struct InputHandler {
     /// silently dismiss a popup populated by a prior trigger's async merge.
     /// See the bug-repro test `test_trigger_idempotent_when_buffer_unchanged`.
     /// Reset by `dismiss()` so ESC-then-retrigger on the same buffer still works.
-    last_trigger_fingerprint: Option<(u64, usize)>,
+    last_trigger_fingerprint: Option<TriggerFingerprint>,
     /// Monotonic counter ticked by both `trigger()` and
     /// `prepare_trigger_with_block()` before the new sync pass runs.
     /// `spawn_generators` snapshots it into `spawned_generation`;
@@ -1055,7 +1055,7 @@ impl InputHandler {
     /// Read the last trigger fingerprint so tests can assert `apply_block_result`
     /// stamped it on success / left it untouched on stale.
     #[doc(hidden)]
-    pub fn last_trigger_fingerprint(&self) -> Option<(u64, usize)> {
+    pub fn last_trigger_fingerprint(&self) -> Option<TriggerFingerprint> {
         self.last_trigger_fingerprint
     }
 
@@ -1343,7 +1343,7 @@ impl InputHandler {
         // we can't read the buffer or cursor, so log and bail out — the next
         // PTY input drives a retry. Propagating the poison here would crash
         // the proxy.
-        let (buffer, cursor, cwd, cursor_row, cursor_col, screen_rows, screen_cols) =
+        let (buffer, cursor, cwd, shell_env, cursor_row, cursor_col, screen_rows, screen_cols) =
             match parser.lock() {
                 Ok(mut p) => {
                     // CPR sync means the parser's cursor_row now reflects reality,
@@ -1355,12 +1355,14 @@ impl InputHandler {
                     let buffer = state.command_buffer().unwrap_or("").to_string();
                     let cursor = state.buffer_cursor();
                     let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
+                    let shell_env = state.shell_env().cloned();
                     let (cursor_row, cursor_col) = state.cursor_position();
                     let (screen_rows, screen_cols) = state.screen_dimensions();
                     (
                         buffer,
                         cursor,
                         cwd,
+                        shell_env,
                         cursor_row,
                         cursor_col,
                         screen_rows,
@@ -1393,7 +1395,7 @@ impl InputHandler {
         // edit produces a different fingerprint — so ESC-dismiss and real
         // edits both take the full trigger path as before. The async
         // merge path (`try_merge_dynamic`) is separate and unaffected.
-        let fingerprint = buffer_fingerprint(&buffer, cursor);
+        let fingerprint = buffer_fingerprint(&buffer, cursor, shell_env.as_ref());
         if self.visible && self.last_trigger_fingerprint == Some(fingerprint) {
             return;
         }
@@ -1413,7 +1415,9 @@ impl InputHandler {
 
         self.buffer_generation = self.buffer_generation.wrapping_add(1);
 
-        let sync_result = self.engine.suggest_sync(&ctx, &cwd, &buffer);
+        let sync_result =
+            self.engine
+                .suggest_sync_with_env(&ctx, &cwd, &buffer, shell_env.as_ref());
 
         match sync_result {
             Ok(result) if !result.suggestions.is_empty() => {
@@ -1425,6 +1429,7 @@ impl InputHandler {
                     result.provider_generators,
                     &ctx,
                     &cwd,
+                    shell_env.clone(),
                 );
                 self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
                 self.last_trigger_fingerprint = Some(fingerprint);
@@ -1453,6 +1458,7 @@ impl InputHandler {
                         result.provider_generators,
                         &ctx,
                         &cwd,
+                        shell_env.clone(),
                     );
                 } else if self.visible {
                     self.dismiss(stdout);
@@ -1485,7 +1491,7 @@ impl InputHandler {
         let block_ms = self.render_block_ms;
 
         // Extract parser state.
-        let (buffer, cursor, cwd, cursor_row, cursor_col, screen_rows, screen_cols) =
+        let (buffer, cursor, cwd, shell_env, cursor_row, cursor_col, screen_rows, screen_cols) =
             match parser.lock() {
                 Ok(mut p) => {
                     if p.state_mut().take_cpr_synced() {
@@ -1495,12 +1501,14 @@ impl InputHandler {
                     let buffer = state.command_buffer().unwrap_or("").to_string();
                     let cursor = state.buffer_cursor();
                     let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
+                    let shell_env = state.shell_env().cloned();
                     let (cursor_row, cursor_col) = state.cursor_position();
                     let (screen_rows, screen_cols) = state.screen_dimensions();
                     (
                         buffer,
                         cursor,
                         cwd,
+                        shell_env,
                         cursor_row,
                         cursor_col,
                         screen_rows,
@@ -1522,7 +1530,7 @@ impl InputHandler {
             return TriggerPrepared::Painted;
         }
 
-        let fingerprint = buffer_fingerprint(&buffer, cursor);
+        let fingerprint = buffer_fingerprint(&buffer, cursor, shell_env.as_ref());
         if self.visible && self.last_trigger_fingerprint == Some(fingerprint) {
             return TriggerPrepared::Painted;
         }
@@ -1539,16 +1547,20 @@ impl InputHandler {
         self.pending_empty_count = 0;
         self.buffer_generation = self.buffer_generation.wrapping_add(1);
 
-        let result = match self.engine.suggest_sync(&ctx, &cwd, &buffer) {
-            Ok(r) => r,
-            Err(e) => {
-                tracing::debug!("suggest_sync failed in prepare_trigger_with_block: {e}");
-                if self.visible {
-                    self.dismiss(stdout);
+        let result =
+            match self
+                .engine
+                .suggest_sync_with_env(&ctx, &cwd, &buffer, shell_env.as_ref())
+            {
+                Ok(r) => r,
+                Err(e) => {
+                    tracing::debug!("suggest_sync failed in prepare_trigger_with_block: {e}");
+                    if self.visible {
+                        self.dismiss(stdout);
+                    }
+                    return TriggerPrepared::Painted;
                 }
-                return TriggerPrepared::Painted;
-            }
-        };
+            };
 
         let has_async = !result.script_generators.is_empty()
             || !result.git_generators.is_empty()
@@ -1573,6 +1585,7 @@ impl InputHandler {
                 result.provider_generators,
                 &ctx,
                 &cwd,
+                shell_env.clone(),
             );
         }
 
@@ -1627,7 +1640,7 @@ impl InputHandler {
         _cursor_col: u16,
         _screen_rows: u16,
         _screen_cols: u16,
-        fingerprint: (u64, usize),
+        fingerprint: TriggerFingerprint,
         _current_word: &str,
     ) {
         let was_timeout = rx_on_timeout.is_some();
@@ -1787,6 +1800,7 @@ impl InputHandler {
         provider_generators: Vec<gc_suggest::providers::ProviderResolution>,
         ctx: &gc_buffer::CommandContext,
         cwd: &std::path::Path,
+        shell_env: Option<HashMap<String, String>>,
     ) {
         if script_generators.is_empty()
             && git_generators.is_empty()
@@ -1838,7 +1852,11 @@ impl InputHandler {
             // scheduled this pass: script-only specs hit this branch on
             // every keystroke, and no current provider reads `ctx.env`,
             // so the collected map would be dead weight on the hot path.
-            let env = Arc::new(build_env_snapshot(!provider_generators.is_empty()));
+            let env = Arc::new(build_env_snapshot(
+                !provider_generators.is_empty(),
+                shell_env.as_ref(),
+            ));
+            let script_env = shell_env.map(Arc::new);
             // Base provider ctx; `resolve_provider_kinds` overlays
             // per-resolution params onto cloned contexts before
             // dispatching each provider.
@@ -1878,7 +1896,13 @@ impl InputHandler {
                     .await
             };
             let (script_res, git_results, provider_results) = tokio::join!(
-                engine.run_generators(&script_generators, &ctx, &cwd, timeout),
+                engine.run_generators_with_env(
+                    &script_generators,
+                    &ctx,
+                    &cwd,
+                    timeout,
+                    script_env.clone(),
+                ),
                 git_fut,
                 provider_fut,
             );
@@ -1960,7 +1984,13 @@ impl InputHandler {
             if should_run_aws_sdk_fallback {
                 let provider = ProviderTag::Script(ctx.command.clone().unwrap_or_default());
                 let message = match engine
-                    .run_generators(&aws_sdk_fallback_generators, &ctx, &cwd, timeout)
+                    .run_generators_with_env(
+                        &aws_sdk_fallback_generators,
+                        &ctx,
+                        &cwd,
+                        timeout,
+                        script_env.clone(),
+                    )
                     .await
                 {
                     Ok(results) if results.is_empty() => DynamicResult::Empty { provider },
@@ -2903,19 +2933,27 @@ const DEFAULT_TRIGGER_CHARS: &[char] = &[' ', '/', '-', '.'];
 /// value resolved from `gc_config::SuggestConfig::generator_timeout_ms`.
 pub const DEFAULT_GENERATOR_TIMEOUT_MS: u64 = 5000;
 
+type TriggerFingerprint = (u64, usize, u64);
+
 /// Compute a lightweight fingerprint of the current command-line buffer for
 /// the trigger-idempotency guard on `InputHandler::last_trigger_fingerprint`.
 /// Collision resistance doesn't need to be cryptographic — a same-content
 /// match just short-circuits `trigger()` (saving work and avoiding the
 /// stale-dismiss bug); a false collision would at worst miss one re-render,
-/// which the next real buffer edit fixes. `DefaultHasher` on the raw bytes
-/// of the buffer is sufficient.
-fn buffer_fingerprint(buffer: &str, cursor: usize) -> (u64, usize) {
+/// which the next real buffer edit or environment update fixes.
+fn buffer_fingerprint(
+    buffer: &str,
+    cursor: usize,
+    shell_env: Option<&std::collections::HashMap<String, String>>,
+) -> TriggerFingerprint {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
     let mut hasher = DefaultHasher::new();
     buffer.hash(&mut hasher);
-    (hasher.finish(), cursor)
+    let env_hash = shell_env
+        .map(gc_suggest::cache::hash_env)
+        .unwrap_or(u64::MAX);
+    (hasher.finish(), cursor, env_hash)
 }
 
 /// Build the env-var snapshot handed to providers as `ProviderCtx.env`.
@@ -2933,9 +2971,14 @@ fn buffer_fingerprint(buffer: &str, cursor: usize) -> (u64, usize) {
 /// collected map would be dead weight). When true, snapshots the full
 /// process env so providers observe a consistent view even if the
 /// shell mutates `$PATH` between their spawns.
-fn build_env_snapshot(has_providers: bool) -> std::collections::HashMap<String, String> {
+fn build_env_snapshot(
+    has_providers: bool,
+    shell_env: Option<&HashMap<String, String>>,
+) -> std::collections::HashMap<String, String> {
     if has_providers {
-        std::env::vars().collect()
+        shell_env
+            .cloned()
+            .unwrap_or_else(|| std::env::vars().collect())
     } else {
         std::collections::HashMap::new()
     }
@@ -3587,10 +3630,10 @@ mod tests {
         //      emitting a clear-popup ANSI sequence and tearing down the
         //      popup — it disappears for no user-driven reason.
         //
-        // `trigger()` fingerprints (buffer_hash, cursor_offset) and
-        // short-circuits when the fingerprint matches AND the popup is
-        // still visible. ESC clears the fingerprint (via `dismiss()`),
-        // and a genuine buffer edit produces a different fingerprint.
+        // `trigger()` fingerprints (buffer_hash, cursor_offset, env_hash)
+        // and short-circuits when the fingerprint matches AND the popup is
+        // still visible. ESC clears the fingerprint (via `dismiss()`), and a
+        // genuine buffer or environment edit produces a different fingerprint.
         let mut handler = make_visible_handler(vec![Suggestion {
             text: "prior-static".to_string(),
             ..Default::default()
@@ -3611,9 +3654,10 @@ mod tests {
         );
 
         // Seed the fingerprint as if a prior trigger had populated this
-        // popup for this exact buffer+cursor. This matches what the real
-        // code path sets on the `!result.suggestions.is_empty()` arm.
-        handler.last_trigger_fingerprint = Some(buffer_fingerprint(buffer, cursor));
+        // popup for this exact buffer+cursor with no shell env snapshot.
+        // This matches what the real code path sets on the
+        // `!result.suggestions.is_empty()` arm.
+        handler.last_trigger_fingerprint = Some(buffer_fingerprint(buffer, cursor, None));
 
         // First re-trigger: must be a full no-op (guard short-circuits
         // BEFORE suggest_sync runs, so no dismiss, no render, no writes).
@@ -3646,6 +3690,63 @@ mod tests {
             buf2.is_empty(),
             "second idempotent re-trigger must not emit ANY bytes, got {:?}",
             String::from_utf8_lossy(&buf2)
+        );
+    }
+
+    #[test]
+    fn trigger_recomputes_when_shell_env_changes_for_same_buffer() {
+        let mut handler = make_handler();
+        handler.engine = Arc::new(
+            SuggestionEngine::new(&[PathBuf::from(".")])
+                .unwrap()
+                .with_suggest_config(50, false, 0, false, false, false, true),
+        );
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        {
+            let mut p = parser.lock().unwrap();
+            p.process_bytes(b"\x1b]7773;AWS_REGION%3Dus-east-1\x07");
+            p.state_mut()
+                .predict_command_buffer("echo $AWS".to_string(), 9);
+        }
+
+        let mut first = Vec::new();
+        handler.trigger(&parser, &mut first);
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+        assert!(
+            handler.suggestions.iter().any(|s| s.text == "$AWS_REGION"),
+            "setup: first trigger should use initial shell env, got {:?}",
+            handler
+                .suggestions
+                .iter()
+                .map(|s| &s.text)
+                .collect::<Vec<_>>()
+        );
+
+        {
+            let mut p = parser.lock().unwrap();
+            p.process_bytes(b"\x1b]7773;AWS_PROFILE%3Dloftyworks-pay-dev\x07");
+        }
+
+        let mut second = Vec::new();
+        handler.trigger(&parser, &mut second);
+
+        assert!(
+            handler.suggestions.iter().any(|s| s.text == "$AWS_PROFILE"),
+            "same-buffer re-trigger must observe updated shell env, got {:?}",
+            handler
+                .suggestions
+                .iter()
+                .map(|s| &s.text)
+                .collect::<Vec<_>>()
+        );
+        assert!(
+            handler.suggestions.iter().all(|s| s.text != "$AWS_REGION"),
+            "updated shell env should replace prior snapshot, got {:?}",
+            handler
+                .suggestions
+                .iter()
+                .map(|s| &s.text)
+                .collect::<Vec<_>>()
         );
     }
 
@@ -5837,7 +5938,7 @@ mod tests {
             0,
             24,
             80,
-            (0, 0),
+            (0, 0, u64::MAX),
             "main",
         );
 
@@ -5882,7 +5983,7 @@ mod tests {
             0,
             24,
             120,
-            (0, 0),
+            (0, 0, u64::MAX),
             "main",
         );
 
@@ -6351,7 +6452,7 @@ mod tests {
         // optimization. A future refactor that collapsed the branch to
         // `std::env::vars().collect()` would flip this to non-empty on
         // every CI host (PATH is always set).
-        let snapshot = build_env_snapshot(false);
+        let snapshot = build_env_snapshot(false, None);
         assert!(
             snapshot.is_empty(),
             "expected empty map when has_providers=false, got {} entries",
@@ -6367,12 +6468,32 @@ mod tests {
         // both) and is part of the default shell environment. A future
         // refactor that collapsed the branch to always-empty would
         // break every provider that reads `ctx.env`.
-        let snapshot = build_env_snapshot(true);
+        let snapshot = build_env_snapshot(true, None);
         assert!(
             snapshot.contains_key("PATH"),
             "expected PATH in env snapshot when has_providers=true; \
              snapshot had {} entries",
             snapshot.len()
+        );
+    }
+
+    #[test]
+    fn build_env_snapshot_prefers_shell_reported_env() {
+        let shell_env = std::collections::HashMap::from([(
+            "AWS_PROFILE".to_string(),
+            "session-profile".to_string(),
+        )]);
+
+        let snapshot = build_env_snapshot(true, Some(&shell_env));
+
+        assert_eq!(
+            snapshot.get("AWS_PROFILE").map(String::as_str),
+            Some("session-profile")
+        );
+        assert_eq!(
+            snapshot.get("PATH"),
+            None,
+            "shell-reported env should be used as the authoritative snapshot"
         );
     }
 

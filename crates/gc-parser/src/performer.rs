@@ -1,9 +1,12 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use unicode_width::UnicodeWidthChar;
 use vte::Perform;
 
 use crate::state::{CprOwner, TerminalState};
+
+const OSC7773_MAX_ENCODED_ENV_BYTES: usize = 1024 * 1024;
 
 /// Helper: extract the first value from a CSI param subslice, or return the given default.
 fn csi_param(params: &vte::Params, index: usize, default: u16) -> u16 {
@@ -359,9 +362,56 @@ impl Perform for TerminalState {
                     );
                 }
             }
+            // OSC 7773 — Ghost Complete exported environment snapshot.
+            //
+            // The shell integration emits a single percent-encoded payload
+            // of NUL-separated `KEY=value` entries. NUL is unambiguous here
+            // because Unix environment strings cannot contain it; keeping the
+            // whole snapshot in one OSC parameter also avoids vte's bounded
+            // parameter storage truncating large environments.
+            b"7773" => match parse_osc7773_env(params) {
+                Some(env) => {
+                    tracing::debug!(len = env.len(), "OSC 7773 — shell env update");
+                    self.set_shell_env(env);
+                }
+                None => {
+                    tracing::warn!("OSC 7773 — malformed shell env snapshot, skipping");
+                }
+            },
             _ => {}
         }
     }
+}
+
+fn parse_osc7773_env(params: &[&[u8]]) -> Option<HashMap<String, String>> {
+    if params.len() < 2 || params[1].len() > OSC7773_MAX_ENCODED_ENV_BYTES {
+        return None;
+    }
+
+    let decoded = percent_decode_buffer(params[1])?;
+    let mut env = HashMap::new();
+    for raw_entry in decoded.split(|byte| *byte == 0) {
+        if raw_entry.is_empty() {
+            continue;
+        }
+        let entry = std::str::from_utf8(raw_entry).ok()?;
+        let (key, value) = entry.split_once('=')?;
+        if is_valid_env_name(key) {
+            env.insert(key.to_string(), value.to_string());
+        }
+    }
+    Some(env)
+}
+
+fn is_valid_env_name(name: &str) -> bool {
+    let mut chars = name.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    if !(first == '_' || first.is_ascii_alphabetic()) {
+        return false;
+    }
+    chars.all(|ch| ch == '_' || ch.is_ascii_alphanumeric())
 }
 
 /// Parse a `file://{host}/{path}` URI from OSC 7 into a `PathBuf`.
@@ -1626,6 +1676,47 @@ mod tests {
             p.state().command_buffer(),
             Some(std::str::from_utf8(smuggled).unwrap())
         );
+    }
+
+    #[test]
+    fn osc7773_updates_exported_shell_env() {
+        let mut p = make_parser();
+
+        p.process_bytes(b"\x1b]7773;AWS_PROFILE%3Ddev%00EMPTY%3D%00FOO%3Da%3Bb%0Ac\x07");
+
+        let env = p
+            .state()
+            .shell_env()
+            .expect("OSC 7773 should set shell env");
+        assert_eq!(env.get("AWS_PROFILE").map(String::as_str), Some("dev"));
+        assert_eq!(env.get("EMPTY").map(String::as_str), Some(""));
+        assert_eq!(env.get("FOO").map(String::as_str), Some("a;b\nc"));
+    }
+
+    #[test]
+    fn osc7773_replaces_previous_shell_env_snapshot() {
+        let mut p = make_parser();
+
+        p.process_bytes(b"\x1b]7773;AWS_PROFILE%3Ddev%00OLD%3Dgone\x07");
+        p.process_bytes(b"\x1b]7773;AWS_PROFILE%3Dprod\x07");
+
+        let env = p
+            .state()
+            .shell_env()
+            .expect("OSC 7773 should set shell env");
+        assert_eq!(env.get("AWS_PROFILE").map(String::as_str), Some("prod"));
+        assert_eq!(env.get("OLD"), None);
+    }
+
+    #[test]
+    fn osc7773_malformed_payload_keeps_previous_shell_env() {
+        let mut p = make_parser();
+
+        p.process_bytes(b"\x1b]7773;AWS_PROFILE%3Ddev\x07");
+        p.process_bytes(b"\x1b]7773;AWS_PROFILE%zzprod\x07");
+
+        let env = p.state().shell_env().expect("valid env should remain");
+        assert_eq!(env.get("AWS_PROFILE").map(String::as_str), Some("dev"));
     }
 
     #[test]

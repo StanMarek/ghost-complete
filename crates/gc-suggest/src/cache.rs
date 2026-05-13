@@ -30,6 +30,7 @@ pub enum CacheKey {
         spec_name: String,
         resolved_argv: Vec<String>,
         cwd: Option<String>,
+        env_hash: Option<u64>,
     },
     /// Post-processed suggestion list, partitioned by `source_hash` so two
     /// different `js_runtime.source` bodies on the same stdout can't share
@@ -42,6 +43,7 @@ pub enum CacheKey {
         resolved_argv: Vec<String>,
         cwd: Option<String>,
         source_hash: u64,
+        env_hash: Option<u64>,
     },
     /// Typed AWS SDK provider result. `params_hash` is produced from a stable
     /// ordered representation of the provider params; profile and region are
@@ -62,6 +64,7 @@ impl CacheKey {
             spec_name: spec_name.into(),
             resolved_argv: argv.iter().map(|s| s.to_string()).collect(),
             cwd: cwd.map(|p| p.to_string_lossy().to_string()),
+            env_hash: None,
         }
     }
 
@@ -72,6 +75,21 @@ impl CacheKey {
             spec_name: spec_name.into(),
             resolved_argv: argv.to_vec(),
             cwd: cwd.map(|p| p.to_string_lossy().to_string()),
+            env_hash: None,
+        }
+    }
+
+    pub fn from_strings_with_env(
+        spec_name: &str,
+        argv: &[String],
+        cwd: Option<&Path>,
+        env_hash: Option<u64>,
+    ) -> Self {
+        Self::Stdout {
+            spec_name: spec_name.into(),
+            resolved_argv: argv.to_vec(),
+            cwd: cwd.map(|p| p.to_string_lossy().to_string()),
+            env_hash,
         }
     }
 
@@ -88,6 +106,23 @@ impl CacheKey {
             resolved_argv: argv.to_vec(),
             cwd: cwd.map(|p| p.to_string_lossy().to_string()),
             source_hash,
+            env_hash: None,
+        }
+    }
+
+    pub fn js_processed_with_env(
+        spec_name: &str,
+        argv: &[String],
+        cwd: Option<&Path>,
+        source_hash: u64,
+        env_hash: Option<u64>,
+    ) -> Self {
+        Self::JsProcessed {
+            spec_name: spec_name.into(),
+            resolved_argv: argv.to_vec(),
+            cwd: cwd.map(|p| p.to_string_lossy().to_string()),
+            source_hash,
+            env_hash,
         }
     }
 }
@@ -102,6 +137,18 @@ pub fn hash_js_source(source: &str) -> u64 {
     use std::hash::{Hash, Hasher};
     let mut hasher = DefaultHasher::new();
     source.hash(&mut hasher);
+    hasher.finish()
+}
+
+pub fn hash_env(env: &HashMap<String, String>) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut entries = env.iter().collect::<Vec<_>>();
+    entries.sort_unstable_by_key(|(key, _)| *key);
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    for (key, value) in entries {
+        key.hash(&mut hasher);
+        value.hash(&mut hasher);
+    }
     hasher.finish()
 }
 
@@ -575,12 +622,14 @@ mod tests {
             spec_name: "spec".into(),
             resolved_argv: vec!["cmd".into()],
             cwd: None,
+            env_hash: None,
         };
         let js_key = CacheKey::JsProcessed {
             spec_name: "spec".into(),
             resolved_argv: vec!["cmd".into()],
             cwd: None,
             source_hash: 0,
+            env_hash: None,
         };
         assert_ne!(stdout_key, js_key);
     }
@@ -615,6 +664,7 @@ mod tests {
             spec_name: "kubectl".into(),
             resolved_argv: vec!["kubectl".into(), "get".into(), "pods".into()],
             cwd: None,
+            env_hash: None,
         };
         cache.insert_stdout(key.clone(), "raw\nstdout".into(), Duration::from_secs(60));
         assert!(cache.get(&key).is_none());
@@ -628,6 +678,7 @@ mod tests {
             spec_name: "kubectl".into(),
             resolved_argv: vec!["kubectl".into(), "get".into(), "pods".into()],
             cwd: None,
+            env_hash: None,
         };
         cache.insert(key.clone(), make_suggestions(), Duration::from_secs(60));
         assert!(cache.get_stdout(&key).is_none());

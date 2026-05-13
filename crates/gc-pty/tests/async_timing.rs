@@ -175,8 +175,8 @@ async fn fast_async_arrives_before_block_window() {
         0,
         24,
         80,
-        (0, 0), // fingerprint
-        "",     // current_word: empty in this fixture
+        (0, 0, u64::MAX), // fingerprint
+        "",               // current_word: empty in this fixture
     );
 
     // After merge: suggestions should contain both sync and async items.
@@ -233,7 +233,7 @@ async fn block_result_keeps_receiver_when_more_batches_may_arrive() {
         0,
         24,
         80,
-        (0, 0),
+        (0, 0, u64::MAX),
         "",
     );
 
@@ -332,7 +332,7 @@ async fn slow_async_falls_through_then_merges_on_arrival() {
         0,
         24,
         80,
-        (0, 0),
+        (0, 0, u64::MAX),
         "", // current_word: empty in this fixture
     );
 
@@ -508,7 +508,7 @@ async fn fast_async_with_typed_query_refilters_pool() {
         0,
         24,
         80,
-        (0, 0),
+        (0, 0, u64::MAX),
         "main",
     );
 
@@ -555,7 +555,7 @@ async fn empty_async_result_clears_loading_state() {
 
     let parser = make_parser();
     let mut render_buf = Vec::new();
-    let fp = (0xdead_beef_u64, 7_usize);
+    let fp = (0xdead_beef_u64, 7_usize, u64::MAX);
 
     handler.apply_block_result(
         &parser,
@@ -712,7 +712,7 @@ async fn stale_async_result_dropped_when_buffer_drifted() {
         0,
         24,
         80,
-        (0xfeed_face_u64, 5),
+        (0xfeed_face_u64, 5, u64::MAX),
         "main",
     );
 
@@ -764,7 +764,7 @@ async fn stale_generation_drops_async_result() {
         0,
         24,
         80,
-        (0, 0),
+        (0, 0, u64::MAX),
         "main",
     );
 

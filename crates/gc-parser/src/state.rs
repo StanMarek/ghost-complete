@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
@@ -52,6 +52,7 @@ pub struct TerminalState {
     display_dirty: bool,
     viewport_scroll_count: u16,
     cwd: Option<PathBuf>,
+    shell_env: Option<HashMap<String, String>>,
     in_prompt: bool,
     command_buffer: Option<String>,
     buffer_cursor: usize,
@@ -64,6 +65,7 @@ pub struct TerminalState {
     /// `mark_display_dirty`.
     buffer_pending_display: bool,
     cwd_dirty: bool,
+    shell_env_dirty: bool,
     cursor_sync_requested: bool,
     cpr_synced: bool,
     /// One-shot guard so the deprecation warning for the legacy OSC 7770
@@ -101,12 +103,14 @@ impl TerminalState {
             display_dirty: false,
             viewport_scroll_count: 0,
             cwd: None,
+            shell_env: None,
             in_prompt: false,
             command_buffer: None,
             buffer_cursor: 0,
             buffer_dirty: false,
             buffer_pending_display: false,
             cwd_dirty: false,
+            shell_env_dirty: false,
             cursor_sync_requested: false,
             cpr_synced: false,
             legacy_osc7770_warned: false,
@@ -156,6 +160,10 @@ impl TerminalState {
         self.cwd.as_ref()
     }
 
+    pub fn shell_env(&self) -> Option<&HashMap<String, String>> {
+        self.shell_env.as_ref()
+    }
+
     pub fn in_prompt(&self) -> bool {
         self.in_prompt
     }
@@ -188,6 +196,14 @@ impl TerminalState {
     pub fn take_cwd_dirty(&mut self) -> bool {
         let dirty = self.cwd_dirty;
         self.cwd_dirty = false;
+        dirty
+    }
+
+    /// Returns true if the shell-reported environment changed since the
+    /// last check, and clears the flag atomically.
+    pub fn take_shell_env_dirty(&mut self) -> bool {
+        let dirty = self.shell_env_dirty;
+        self.shell_env_dirty = false;
         dirty
     }
 
@@ -497,6 +513,13 @@ impl TerminalState {
         if self.cwd.as_ref() != Some(&path) {
             self.cwd = Some(path);
             self.cwd_dirty = true;
+        }
+    }
+
+    pub(crate) fn set_shell_env(&mut self, env: HashMap<String, String>) {
+        if self.shell_env.as_ref() != Some(&env) {
+            self.shell_env = Some(env);
+            self.shell_env_dirty = true;
         }
     }
 
@@ -945,6 +968,27 @@ mod tests {
         state.clear_command_buffer();
         assert!(!state.take_buffer_dirty());
         assert!(!state.buffer_pending_display());
+    }
+
+    #[test]
+    fn shell_env_dirty_tracks_snapshot_changes_only() {
+        let mut state = TerminalState::new(24, 80);
+        let first = HashMap::from([("AWS_REGION".to_string(), "us-east-1".to_string())]);
+        let second = HashMap::from([("AWS_PROFILE".to_string(), "loftyworks-pay-dev".to_string())]);
+
+        assert!(!state.take_shell_env_dirty());
+        state.set_shell_env(first.clone());
+        assert!(state.take_shell_env_dirty());
+        assert!(!state.take_shell_env_dirty());
+
+        state.set_shell_env(first);
+        assert!(
+            !state.take_shell_env_dirty(),
+            "unchanged env snapshot must not retrigger completion"
+        );
+
+        state.set_shell_env(second);
+        assert!(state.take_shell_env_dirty());
     }
 
     #[test]
