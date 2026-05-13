@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -1364,14 +1364,22 @@ impl SuggestionEngine {
             subcommands,
             options,
             native_generators,
-            provider_generators,
-            script_generators,
+            mut provider_generators,
+            mut script_generators,
             wants_filepaths,
             wants_folders_only,
             preceding_flag_has_args,
             past_double_dash,
             static_suggestions,
         } = specs::resolve_spec(spec.as_ref(), resolve_ctx.as_ref());
+
+        if resolve_ctx.command.as_deref() == Some("aws") {
+            let globals = aws_cli_globals(resolve_ctx.as_ref());
+            provider_generators =
+                apply_aws_cli_globals_to_provider_generators(provider_generators, &globals);
+            script_generators =
+                apply_aws_cli_globals_to_script_generators(script_generators, &globals);
+        }
 
         let git_generators = self.git_generators_from(&native_generators);
 
@@ -1688,6 +1696,167 @@ fn has_non_empty_script_or_template(gen: &GeneratorSpec) -> bool {
 fn is_aws_sdk_fallback_generator(gen: &GeneratorSpec) -> bool {
     gen.generator_type.as_deref() == Some(ProviderKind::AwsSdk.type_str())
         && has_non_empty_script_or_template(gen)
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+struct AwsCliGlobals {
+    profile: Option<String>,
+    region: Option<String>,
+}
+
+impl AwsCliGlobals {
+    fn is_empty(&self) -> bool {
+        self.profile.is_none() && self.region.is_none()
+    }
+}
+
+fn aws_cli_globals(ctx: &CommandContext) -> AwsCliGlobals {
+    let mut globals = AwsCliGlobals::default();
+    let args = &ctx.args;
+    let mut idx = 0;
+
+    while idx < args.len() {
+        let arg = args[idx].as_str();
+        if let Some(value) = arg.strip_prefix("--profile=") {
+            if let Some(value) = clean_cli_global_value(value) {
+                globals.profile = Some(value.to_string());
+            }
+            idx += 1;
+            continue;
+        }
+        if arg == "--profile" {
+            if let Some(value) = args
+                .get(idx + 1)
+                .and_then(|value| clean_cli_global_value(value))
+            {
+                globals.profile = Some(value.to_string());
+                idx += 2;
+            } else {
+                idx += 1;
+            }
+            continue;
+        }
+        if let Some(value) = arg.strip_prefix("--region=") {
+            if let Some(value) = clean_cli_global_value(value) {
+                globals.region = Some(value.to_string());
+            }
+            idx += 1;
+            continue;
+        }
+        if arg == "--region" {
+            if let Some(value) = args
+                .get(idx + 1)
+                .and_then(|value| clean_cli_global_value(value))
+            {
+                globals.region = Some(value.to_string());
+                idx += 2;
+            } else {
+                idx += 1;
+            }
+            continue;
+        }
+        idx += 1;
+    }
+
+    globals
+}
+
+fn clean_cli_global_value(value: &str) -> Option<&str> {
+    let value = value.trim();
+    if value.is_empty() {
+        None
+    } else {
+        Some(value)
+    }
+}
+
+fn apply_aws_cli_globals_to_provider_generators(
+    generators: Vec<ProviderResolution>,
+    globals: &AwsCliGlobals,
+) -> Vec<ProviderResolution> {
+    if globals.is_empty() {
+        return generators;
+    }
+
+    generators
+        .into_iter()
+        .map(|mut resolution| {
+            if resolution.kind == ProviderKind::AwsSdk {
+                let mut params: BTreeMap<String, String> = resolution.params.as_ref().clone();
+                if let Some(profile) = &globals.profile {
+                    params.insert("profile".to_string(), profile.clone());
+                }
+                if let Some(region) = &globals.region {
+                    params.insert("region".to_string(), region.clone());
+                }
+                resolution.params = Arc::new(params);
+            }
+            resolution
+        })
+        .collect()
+}
+
+fn apply_aws_cli_globals_to_script_generators(
+    generators: Vec<Arc<GeneratorSpec>>,
+    globals: &AwsCliGlobals,
+) -> Vec<Arc<GeneratorSpec>> {
+    if globals.is_empty() {
+        return generators;
+    }
+
+    generators
+        .into_iter()
+        .map(|gen| {
+            if !is_aws_sdk_fallback_generator(&gen) {
+                return gen;
+            }
+            let Some(script) = gen.script.as_ref() else {
+                return gen;
+            };
+            let rewritten = aws_script_with_globals(script, globals);
+            if rewritten == *script {
+                return gen;
+            }
+
+            let mut clone = gen.as_ref().clone();
+            clone.script = Some(rewritten);
+            Arc::new(clone)
+        })
+        .collect()
+}
+
+fn aws_script_with_globals(script: &[String], globals: &AwsCliGlobals) -> Vec<String> {
+    if globals.is_empty() || script.first().map(String::as_str) != Some("aws") {
+        return script.to_vec();
+    }
+
+    let mut rewritten = Vec::with_capacity(script.len() + 4);
+    rewritten.push("aws".to_string());
+    if let Some(profile) = &globals.profile {
+        rewritten.push("--profile".to_string());
+        rewritten.push(profile.clone());
+    }
+    if let Some(region) = &globals.region {
+        rewritten.push("--region".to_string());
+        rewritten.push(region.clone());
+    }
+
+    let mut idx = 1;
+    while idx < script.len() {
+        let arg = script[idx].as_str();
+        if matches!(arg, "--profile" | "--region") {
+            idx += 2;
+            continue;
+        }
+        if arg.starts_with("--profile=") || arg.starts_with("--region=") {
+            idx += 1;
+            continue;
+        }
+        rewritten.push(script[idx].clone());
+        idx += 1;
+    }
+
+    rewritten
 }
 
 /// Filter a generator slice through [`is_supported_script_generator`]
@@ -3152,6 +3321,108 @@ mod tests {
             results.script_generators.len(),
             1,
             "CLI fallback must survive an explicit fallback=false when the native provider is also off"
+        );
+    }
+
+    #[test]
+    fn aws_sdk_provider_params_include_typed_profile() {
+        let engine = make_engine().with_aws_sdk_config(true, true);
+        let buffer = "aws --profile loftyworks-pay-dev iam attach-role-policy --role-name ";
+        let ctx = gc_buffer::parse_command_context(buffer, buffer.chars().count());
+
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), buffer)
+            .unwrap();
+        let provider = results
+            .provider_generators
+            .iter()
+            .find(|resolution| resolution.kind == ProviderKind::AwsSdk)
+            .expect("aws_sdk provider should be scheduled for --role-name");
+
+        assert_eq!(
+            provider.params.get("profile").map(String::as_str),
+            Some("loftyworks-pay-dev"),
+            "typed --profile must override inherited AWS_PROFILE for provider dispatch"
+        );
+    }
+
+    #[test]
+    fn aws_cli_fallback_script_includes_typed_profile() {
+        let engine = make_engine();
+        let buffer = "aws --profile loftyworks-pay-dev iam attach-role-policy --role-name ";
+        let ctx = gc_buffer::parse_command_context(buffer, buffer.chars().count());
+
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), buffer)
+            .unwrap();
+        let script = results
+            .script_generators
+            .iter()
+            .find(|gen| gen.generator_type.as_deref() == Some("aws_sdk"))
+            .and_then(|gen| gen.script.as_ref())
+            .expect("aws_sdk CLI fallback script should be scheduled");
+
+        assert_eq!(
+            script
+                .iter()
+                .take(5)
+                .map(String::as_str)
+                .collect::<Vec<_>>(),
+            vec![
+                "aws",
+                "--profile",
+                "loftyworks-pay-dev",
+                "iam",
+                "list-roles"
+            ],
+            "fallback CLI script must pass the typed profile before the service command"
+        );
+    }
+
+    #[test]
+    fn aws_cli_globals_support_inline_profile_and_late_region() {
+        let engine = make_engine().with_aws_sdk_config(true, true);
+        let buffer = "aws iam attach-role-policy --profile=pay-dev --region eu-west-1 --role-name ";
+        let ctx = gc_buffer::parse_command_context(buffer, buffer.chars().count());
+
+        let results = engine
+            .suggest_sync(&ctx, Path::new("/tmp"), buffer)
+            .unwrap();
+        let provider = results
+            .provider_generators
+            .iter()
+            .find(|resolution| resolution.kind == ProviderKind::AwsSdk)
+            .expect("aws_sdk provider should be scheduled for --role-name");
+        assert_eq!(
+            provider.params.get("profile").map(String::as_str),
+            Some("pay-dev")
+        );
+        assert_eq!(
+            provider.params.get("region").map(String::as_str),
+            Some("eu-west-1")
+        );
+
+        let script = results
+            .script_generators
+            .iter()
+            .find(|gen| gen.generator_type.as_deref() == Some("aws_sdk"))
+            .and_then(|gen| gen.script.as_ref())
+            .expect("aws_sdk CLI fallback script should be scheduled");
+        assert_eq!(
+            script
+                .iter()
+                .take(7)
+                .map(String::as_str)
+                .collect::<Vec<_>>(),
+            vec![
+                "aws",
+                "--profile",
+                "pay-dev",
+                "--region",
+                "eu-west-1",
+                "iam",
+                "list-roles",
+            ]
         );
     }
 
