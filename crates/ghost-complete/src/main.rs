@@ -153,6 +153,62 @@ fn init_tracing(level: &str, log_file: Option<&str>) -> Result<()> {
     Ok(())
 }
 
+/// Silently refresh `~/.config/ghost-complete/specs/` when the embedded
+/// corpus is newer than the version stamped on disk.
+///
+/// The auto-refresh is gated on the **default** install mirror path
+/// only. A user who pointed `[paths] spec_dirs` at a custom location is
+/// expressing intent to manage their own corpus, and we never overwrite
+/// that. We also never delete or recreate the mirror dir — we only
+/// rewrite the embedded filenames in place and bump the stamp, so any
+/// extra files a user dropped in survive untouched.
+///
+/// All outcomes route through `tracing` and never to stdout/stderr —
+/// the proxy is about to take over the user's terminal and any
+/// spontaneous printf here would smear into the shell prompt. Doctor
+/// surfaces a `[WARN]` separately when the auto-refresh failed.
+fn auto_refresh_install_mirror_if_stale(config: &gc_config::GhostConfig) {
+    if !config.paths.spec_dirs.is_empty() {
+        // Honor explicit overrides: a user who configured
+        // `[paths] spec_dirs` is in control of their own mirror.
+        return;
+    }
+    let Some(install_dir) = gc_suggest::mirror::default_install_mirror_dir() else {
+        // HOME unset — nothing we can do.
+        return;
+    };
+    let outcome = gc_suggest::mirror::refresh_install_mirror_if_stale(
+        &install_dir,
+        gc_suggest::mirror::CURRENT_VERSION,
+        gc_suggest::mirror::write_embedded_mirror,
+    );
+    match outcome {
+        gc_suggest::mirror::RefreshOutcome::NotInstalled
+        | gc_suggest::mirror::RefreshOutcome::AlreadyFresh => {}
+        gc_suggest::mirror::RefreshOutcome::Refreshed {
+            previous_version,
+            skipped_user_edited,
+        } => {
+            tracing::info!(
+                previous = %previous_version,
+                current = %gc_suggest::mirror::CURRENT_VERSION,
+                install_dir = %install_dir.display(),
+                skipped_user_edited = skipped_user_edited.len(),
+                "refreshed stale install-mirror spec corpus"
+            );
+        }
+        gc_suggest::mirror::RefreshOutcome::Failed { reason } => {
+            tracing::warn!(
+                install_dir = %install_dir.display(),
+                error = %reason,
+                "could not refresh stale install-mirror spec corpus — \
+                 stale specs may win precedence over the embedded set. \
+                 Run `ghost-complete install` to refresh manually."
+            );
+        }
+    }
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
@@ -216,6 +272,17 @@ fn main() -> Result<()> {
 
     let config =
         gc_config::GhostConfig::load(cli.config.as_deref()).context("failed to load config")?;
+
+    // Auto-refresh the install mirror (`~/.config/ghost-complete/specs/`)
+    // if a previous binary version installed it. The mirror takes
+    // filesystem precedence over the embedded corpus, so without this
+    // refresh an operator who installed v0.15 and upgraded the binary to
+    // v0.16 would silently keep serving v0.15 completions at every
+    // keystroke. Skipped for users who explicitly configured
+    // `[paths] spec_dirs` to a non-default location — those are
+    // intentional overrides we must not clobber. See `gc_suggest::mirror`
+    // for the full rationale.
+    auto_refresh_install_mirror_if_stale(&config);
 
     tracing::info!(shell = %shell, "starting ghost-complete proxy");
 

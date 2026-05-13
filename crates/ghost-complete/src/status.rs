@@ -277,7 +277,7 @@ fn render_coverage_trend(out: &mut dyn Write, baseline: Option<&CoverageBaseline
     )?;
     // Keep the user aware of which release row we're comparing against —
     // helps when someone runs this months after the last release.
-    writeln!(out, "  (baseline: v{} → v{})", prev.version, curr.version)?;
+    writeln!(out, "  (baseline: {} → {})", prev.version, curr.version)?;
     Ok(())
 }
 
@@ -588,10 +588,15 @@ fn scan_resolved_specs(
 
     let registered_specs = store.len();
 
-    // Diagnostic-only walk over the structured loader for the schema-1.6+
-    // `counters` block. Force-loads every resolved spec; the same parse
-    // work already runs during this status scan, so the cost is incremental.
-    let counters = store.counters();
+    // Migration-progress counters for the schema-1.6+ `counters` block.
+    // Computed against the **embedded** corpus, NOT the runtime-resolved
+    // view: `~/.config/ghost-complete/specs/` may carry a stale mirror
+    // from an older release (pre-ux-10b / pre-ux-13 / pre-ux-14) that
+    // takes precedence over the embedded copy and would zero out the
+    // converter-progress buckets if we walked `store.counters()` here.
+    // Filesystem overrides exist to hot-patch broken specs, not to lie
+    // about ship statistics. See [`gc_suggest::embedded_corpus_counters`].
+    let counters = gc_suggest::embedded_corpus_counters();
 
     Ok(StatusOutcome {
         fs_specs,
@@ -1514,17 +1519,26 @@ mod tests {
         p
     }
 
+    /// Helper: assert the **loaded-view** requires_js totals. Reads the
+    /// legacy `requires_js_generators_*` fields (sourced from
+    /// `scan_spec_files`), NOT the `counters` block — the latter now
+    /// reports migration progress against the embedded corpus regardless
+    /// of which spec dirs the test configured.
     fn assert_outcome_requires_js_counters(
         outcome: &StatusOutcome,
         total: usize,
         supported: usize,
         unsupported: usize,
     ) {
-        assert_eq!(outcome.counters.requires_js_total, total);
-        assert_eq!(outcome.counters.requires_js_supported, supported);
-        assert_eq!(outcome.counters.requires_js_unsupported, unsupported);
+        assert_eq!(outcome.requires_js_generators_total, total);
+        assert_eq!(outcome.requires_js_generators_supported, supported);
+        assert_eq!(outcome.requires_js_generators_unsupported, unsupported);
     }
 
+    /// Helper: assert the **loaded-view** requires_js totals reported in
+    /// `status --json` `spec_counts.requires_js_generators_*`. The
+    /// `counters` block intentionally reports embedded-corpus migration
+    /// progress, not the resolved view, so it cannot be used here.
     fn assert_json_requires_js_counters(
         cfg: &std::path::Path,
         total: u64,
@@ -1534,20 +1548,41 @@ mod tests {
         let mut out = Vec::new();
         run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
         let parsed: serde_json::Value = serde_json::from_slice(&out).unwrap();
-        let counters = &parsed["counters"];
-        assert_eq!(counters["requires_js_total"].as_u64().unwrap(), total);
+        let spec_counts = &parsed["spec_counts"];
         assert_eq!(
-            counters["requires_js_supported"].as_u64().unwrap(),
+            spec_counts["requires_js_generators_total"]
+                .as_u64()
+                .unwrap(),
+            total
+        );
+        assert_eq!(
+            spec_counts["requires_js_generators_supported"]
+                .as_u64()
+                .unwrap(),
             supported
         );
         assert_eq!(
-            counters["requires_js_unsupported"].as_u64().unwrap(),
+            spec_counts["requires_js_generators_unsupported"]
+                .as_u64()
+                .unwrap(),
             unsupported
         );
     }
 
     #[test]
     fn status_json_reports_native_provider_counts() {
+        // The `counters` block describes migration progress against the
+        // **embedded** corpus (so a stale filesystem mirror cannot lie
+        // about ship statistics). A test fixture spec dir therefore
+        // does NOT influence `counters.native_provider_*`; the
+        // assertions below pin the embedded corpus shape instead.
+        // Shape contracts pinned here:
+        //   - Known native-provider types appear as bucket keys with
+        //     non-zero counts.
+        //   - Non-provider generator types (`git_branches`) do NOT
+        //     appear in the map (only `ProviderKind`-registered types).
+        //   - `native_provider_dispatched` equals the sum of the bucket
+        //     values.
         let tmp = tempfile::TempDir::new().unwrap();
         let spec_dir = tmp.path().join("specs");
         std::fs::create_dir_all(&spec_dir).unwrap();
@@ -1573,24 +1608,33 @@ mod tests {
         let parsed: serde_json::Value = serde_json::from_slice(&out).unwrap();
 
         assert_eq!(parsed["schema_version"], "1.10");
-        assert_eq!(
-            parsed["counters"]["native_provider_dispatched"]
-                .as_u64()
-                .unwrap(),
-            2
+        let dispatched = parsed["counters"]["native_provider_dispatched"]
+            .as_u64()
+            .unwrap();
+        assert!(
+            dispatched >= 500,
+            "embedded corpus should ship at least 500 native-provider dispatches; saw {dispatched}"
         );
+        let bucket_sum: u64 = parsed["counters"]["native_provider_counts"]
+            .as_object()
+            .unwrap()
+            .values()
+            .map(|v| v.as_u64().unwrap())
+            .sum();
         assert_eq!(
-            parsed["counters"]["native_provider_counts"]["npm_scripts"]
-                .as_u64()
-                .unwrap(),
-            1
+            bucket_sum, dispatched,
+            "bucket map values must sum to native_provider_dispatched"
         );
-        assert_eq!(
-            parsed["counters"]["native_provider_counts"]["ansible_doc_modules"]
+        assert!(
+            parsed["counters"]["native_provider_counts"]["aws_sdk"]
                 .as_u64()
-                .unwrap(),
-            1
+                .unwrap()
+                >= 100,
+            "embedded corpus must surface ux-13 aws_sdk dispatches"
         );
+        // `git_branches` is a native template generator type but is NOT
+        // a `ProviderKind`, so it is intentionally absent from the
+        // native-provider bucket map.
         assert!(parsed["counters"]["native_provider_counts"]["git_branches"].is_null());
     }
 
@@ -2330,7 +2374,7 @@ mod tests {
         // (baseline) must appear ONLY on the trailing disambiguation
         // line — never on a per-metric line.
         for line in txt.lines() {
-            if line.starts_with("  (baseline: v") {
+            if line.starts_with("  (baseline: ") {
                 continue;
             }
             assert!(
@@ -2657,11 +2701,12 @@ mod tests {
     }
 
     /// Top-level `counters` block carries [`gc_suggest::SpecResolutionCounters`].
-    /// Pin the eight expected fields and the populated-vs-zero contract:
-    /// the first three fields (total / supported / unsupported) match the
-    /// structured walk over the SpecStore; `token_only_promoted` is
-    /// populated today; the remaining migration-future fields stay at
-    /// zero until the matching converter migrations land.
+    /// As of v0.16 the block reports migration progress against the
+    /// **embedded** corpus (not the resolved view) so a stale filesystem
+    /// mirror cannot zero out ship statistics. Pin the eight expected
+    /// fields are present; the test fixture spec dir does not influence
+    /// the values (those are pinned by the embedded-corpus regression
+    /// guard in gc-suggest's `embedded_corpus_counters_match_raw_json_invariants`).
     #[test]
     fn status_json_includes_counters_block() {
         let tmp = tempfile::TempDir::new().unwrap();
@@ -2733,59 +2778,60 @@ mod tests {
         let counters = &parsed["counters"];
         assert!(counters.is_object(), "counters must be a top-level object");
 
-        // Populated by this PR.
-        assert_eq!(counters["requires_js_total"].as_u64().unwrap(), 3);
-        assert_eq!(counters["requires_js_supported"].as_u64().unwrap(), 2);
-        assert_eq!(counters["requires_js_unsupported"].as_u64().unwrap(), 1);
+        // `counters` reports embedded-corpus migration progress, NOT
+        // the loaded view — so the synthetic spec dir's values do not
+        // appear here. Verify the schema fields exist and that the
+        // shipped corpus contributes the expected non-zero migration
+        // progress. Exact values are pinned by the embedded-corpus
+        // regression test in gc-suggest.
+        for field in [
+            "requires_js_total",
+            "requires_js_supported",
+            "requires_js_unsupported",
+            "lowered_to_transforms",
+            "static_extracted_subprocess",
+            "token_only_promoted",
+            "aws_sdk_dispatched",
+            "native_provider_dispatched",
+        ] {
+            assert!(counters[field].is_u64(), "counters.{field} must be a u64");
+        }
+        assert!(
+            counters["lowered_to_transforms"].as_u64().unwrap() >= 1_250,
+            "embedded corpus must contribute ux-10b lowered transforms"
+        );
+        assert!(
+            counters["aws_sdk_dispatched"].as_u64().unwrap() >= 130,
+            "embedded corpus must contribute ux-13 aws_sdk dispatches"
+        );
+        assert!(
+            counters["native_provider_dispatched"].as_u64().unwrap() >= 500,
+            "embedded corpus must contribute ux-14 native-provider dispatches"
+        );
 
-        // Migration fields — token_only is populated by ux-12; this
-        // fixture has no ux-10b lowered generator, so lowered stays zero.
-        assert_eq!(counters["lowered_to_transforms"].as_u64().unwrap(), 0);
-        assert_eq!(counters["static_extracted_subprocess"].as_u64().unwrap(), 0);
-        assert_eq!(counters["token_only_promoted"].as_u64().unwrap(), 1);
-        assert_eq!(counters["aws_sdk_dispatched"].as_u64().unwrap(), 0);
-        assert_eq!(counters["native_provider_dispatched"].as_u64().unwrap(), 0);
-
-        // The structured `counters` block and the legacy raw-JSON
-        // `spec_counts` block must agree on every requires_js statistic
-        // — they share the same supported predicate
-        // (`gc_suggest::specs::is_requires_js_supported` for the
-        // structured walk, `supported_kind` for the raw-JSON walk).
-        // Without this lockstep, every downstream migration phase
-        // (ux-10/11/12/13/14) would track different numbers depending
-        // on which block the consumer reads.
+        // The loaded-view `spec_counts` block still reflects the
+        // synthetic fixture; it intentionally diverges from the
+        // embedded-corpus `counters` block now.
         let counts = &parsed["spec_counts"];
+        assert_eq!(
+            counts["requires_js_generators_total"].as_u64().unwrap(),
+            3,
+            "loaded view should reflect the three requires_js generators in the fixture"
+        );
         assert_eq!(
             counts["requires_js_generators_token_only"]
                 .as_u64()
                 .unwrap(),
-            1
+            1,
+            "loaded-view spec_counts still tracks the synthetic fixture's token-only generator"
         );
+        // Top-level mirror reflects embedded `counters.token_only_promoted`.
         assert_eq!(
             parsed["requires_js_generators_token_only"]
                 .as_u64()
                 .unwrap(),
-            1
-        );
-        assert_eq!(
-            parsed["requires_js_generators_lowered_to_transforms"]
-                .as_u64()
-                .unwrap(),
-            0
-        );
-        assert_eq!(
-            counters["requires_js_total"].as_u64().unwrap(),
-            counts["requires_js_generators_total"].as_u64().unwrap(),
-        );
-        assert_eq!(
-            counters["requires_js_supported"].as_u64().unwrap(),
-            counts["requires_js_generators_supported"].as_u64().unwrap(),
-        );
-        assert_eq!(
-            counters["requires_js_unsupported"].as_u64().unwrap(),
-            counts["requires_js_generators_unsupported"]
-                .as_u64()
-                .unwrap(),
+            counters["token_only_promoted"].as_u64().unwrap(),
+            "top-level mirror must equal counters.token_only_promoted (embedded view)"
         );
     }
 
@@ -2817,20 +2863,27 @@ mod tests {
             serde_json::from_str(&String::from_utf8_lossy(&out)).unwrap();
 
         assert_eq!(parsed["schema_version"], "1.10");
-        assert!(parsed["requires_js_generators_lowered_to_transforms"].is_number());
-        assert_eq!(
-            parsed["requires_js_generators_lowered_to_transforms"]
-                .as_u64()
-                .unwrap(),
-            1
+        // `counters.lowered_to_transforms` and the mirrored top-level
+        // `requires_js_generators_lowered_to_transforms` both report
+        // the embedded-corpus ux-10b migration progress (>= 1250),
+        // independent of the synthetic test fixture.
+        let lowered = parsed["requires_js_generators_lowered_to_transforms"]
+            .as_u64()
+            .expect("requires_js_generators_lowered_to_transforms must be a u64");
+        assert!(
+            lowered >= 1_250,
+            "embedded corpus ships >= 1250 lowered transforms; saw {lowered}"
         );
         assert_eq!(
             parsed["counters"]["lowered_to_transforms"]
                 .as_u64()
                 .unwrap(),
-            1
+            lowered,
+            "top-level mirror must match counters.lowered_to_transforms"
         );
-        assert_eq!(parsed["counters"]["requires_js_total"].as_u64().unwrap(), 0);
+        // The legacy spec_counts block still reflects the loaded view
+        // (synthetic fixture has no requires_js generators, just one
+        // lowered marker).
         assert_eq!(
             parsed["spec_counts"]["requires_js_generators_total"]
                 .as_u64()
@@ -2867,19 +2920,23 @@ mod tests {
             serde_json::from_str(&String::from_utf8_lossy(&out)).unwrap();
 
         assert_eq!(parsed["schema_version"], "1.10");
-        assert_eq!(
-            parsed["requires_js_generators_static_extracted"]
-                .as_u64()
-                .unwrap(),
-            1
-        );
+        // `counters.static_extracted_subprocess` and the mirrored
+        // top-level `requires_js_generators_static_extracted` both
+        // report ux-11 migration progress against the **embedded**
+        // corpus, independent of the synthetic test fixture.
+        let static_extracted = parsed["requires_js_generators_static_extracted"]
+            .as_u64()
+            .expect("requires_js_generators_static_extracted must be a u64");
         assert_eq!(
             parsed["counters"]["static_extracted_subprocess"]
                 .as_u64()
                 .unwrap(),
-            1
+            static_extracted,
+            "top-level mirror must match counters.static_extracted_subprocess"
         );
-        assert_eq!(parsed["counters"]["requires_js_total"].as_u64().unwrap(), 0);
+        // The loaded-view spec_counts still reflects the synthetic
+        // fixture (no requires_js generators, just one static-extracted
+        // marker).
         assert_eq!(
             parsed["spec_counts"]["requires_js_generators_total"]
                 .as_u64()
@@ -3612,10 +3669,18 @@ mod tests {
             0
         );
 
+        // Note: `counters` now reports embedded-corpus migration
+        // progress (independent of the synthetic fixture), so we verify
+        // only that the loaded-view `spec_counts` mirror reflects the
+        // unsupported-empty-argv behaviour here.
+
+        // The structured-walk `counters` block always describes the
+        // embedded corpus, so verify the schema fields are present but
+        // not their fixture-derived values.
         let counters = &parsed["counters"];
-        assert_eq!(counters["requires_js_total"].as_u64().unwrap(), 2);
-        assert_eq!(counters["requires_js_supported"].as_u64().unwrap(), 0);
-        assert_eq!(counters["requires_js_unsupported"].as_u64().unwrap(), 2);
+        assert!(counters["requires_js_total"].as_u64().is_some());
+        assert!(counters["requires_js_supported"].as_u64().is_some());
+        assert!(counters["requires_js_unsupported"].as_u64().is_some());
     }
 
     /// Regression guard for code-1: the engine

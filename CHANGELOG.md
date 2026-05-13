@@ -7,12 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_No unreleased changes._
+
+## [0.16.0] - 2026-05-13
+
 ### Added
 
 - Native completion migration - Phase 1 (ux-10b): `json_path_extract`
   transforms, JSONPath `[*]` wildcard projection, Fig helper recovery in the
   converter, comma-list postProcess lowering, and status accounting for
   `requires_js_generators_lowered_to_transforms`.
+- Native completion migration - Phase 2 (ux-11): static subprocess extraction
+  lifts single-call Fig JS wrappers into native `script` / `script_template`
+  plus transforms, marks them with `_static_extracted_subprocess`, and reports
+  progress via `counters.static_extracted_subprocess` in
+  `crates/gc-suggest/src/specs.rs` (#124, 062ce35).
 - Migration precursor (ux-9b): `SpecResolutionCounters` exposed in
   `ghost-complete status --json` (schema 1.6) with `requires_js_total`,
   `requires_js_supported`, `requires_js_unsupported`,
@@ -30,26 +39,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   delta budget from 2 MB to 5 MB.
 - Native completion migration - Phase 5 (ux-14): native tool providers for
   Cargo, npm, Docker/Podman, kubectl, tmux, systemd, Homebrew, and macOS
-  directory-service principals. The scoped regenerated corpus now reports 621
-  native Rust generators, `status --json` exposes per-provider counts under
-  `counters.native_provider_counts`, and the schema is bumped to 1.10.
+  directory-service principals. The current corpus reports 582
+  provider-dispatched generators, `status --json` exposes per-provider counts
+  under `counters.native_provider_counts`, and the schema is bumped to 1.10.
+- Install spec-mirror auto-refresh: the proxy detects when
+  `~/.config/ghost-complete/specs/` was written by an older binary and
+  silently overwrites it from the embedded archive on startup. A
+  `.ghost-complete-version` stamp pins the writer version; user-curated
+  `[paths] spec_dirs` overrides skip the refresh. `ghost-complete doctor`
+  now reports the mirror state as a `[OK]`/`[WARN]` check so operators see
+  whether their installed corpus matches the binary. The new module lives
+  at `crates/gc-suggest/src/mirror.rs`; install and the proxy share a
+  single writer. The auto-refresh now sha256-fingerprints each mirror
+  file at write time and skips files the user has edited, surfacing them
+  through the doctor check rather than silently overwriting them.
+- Config editor (`ghost-complete config edit`) now exposes
+  `popup.render_block_ms`, `suggest.providers.js_runtime`,
+  `experimental.aws_sdk_provider`, `experimental.aws_sdk_fallback_to_cli`,
+  and `experimental.brew_search_cap`, and introduces a `FieldType::U16`
+  variant so `popup.feedback_dismiss_ms` (`u16` in the schema) no longer
+  silently saturates when the user enters a value above `u16::MAX`.
 
 ### Changed
 
+- `ghost-complete status --json` `counters.*` block now describes
+  migration progress against the **embedded** corpus (the JSON shipped
+  inside the binary) rather than the runtime-resolved view. A stale
+  `~/.config/ghost-complete/specs/` mirror saved before ux-10b/ux-13/ux-14
+  markers existed previously took filesystem precedence and silently
+  zeroed out `lowered_to_transforms`, `aws_sdk_dispatched`, and the
+  native-provider buckets — turning the marketing-facing counters into
+  an operator-trust failure. Filesystem overrides still hot-patch
+  individual broken specs at dispatch time; they no longer mask ship
+  statistics. The mirrored top-level fields
+  (`requires_js_generators_lowered_to_transforms`,
+  `requires_js_generators_static_extracted`,
+  `requires_js_generators_token_only`) now match `counters.*` and the
+  loaded-view `spec_counts.*` block continues to reflect the user's
+  resolved corpus. New `gc_suggest::embedded_corpus_counters()` helper
+  is the canonical source for these counters.
 - Embedded completion specs are now zstd-compressed at build time
   (level 19) into a single archive emitted by `gc-suggest/build.rs`.
-  Stripped release binary drops by ~91.6 MB on macOS arm64
-  (108.4 MB → 11.8 MB). Decompression is lazy at first spec lookup —
+  Stripped release binary drops by 91.60 MB on macOS arm64
+  (103.41 MB → 11.81 MB). Decompression is lazy at first spec lookup —
   bodies leak into a `&'static str` cache so the warm path stays at
   tens of nanoseconds. First-touch latency for the largest embedded
   spec (`aws`, ~36 MB) is ~167 ms; every other spec decompresses in
   under 2 ms. Full-corpus cold decompress + parse (711 specs) completes
   in 183 ms. See `docs/plans/ux-12b-zstd-spec-compression/SPEC.md` and
   `benchmarks/v0.16.0-ux12b.md`.
-- Release profile sets `strip = "symbols"`. The release binary measures
-  ~103.5 MB stripped (was ~104.8 MB unstripped); `benchmarks/binary-size-baseline.txt`
-  refreshed to match. The 110 MB absolute ceiling is unchanged, leaving
-  ~6.5 MB of headroom for further spec restoration or compression work.
+- Release profile keeps `strip = "symbols"`. After zstd compression,
+  `benchmarks/binary-size-baseline.txt` records a 21,383,696-byte stripped
+  release binary for CI delta checks. The 110 MB absolute ceiling is unchanged.
+- Diagnostic warnings emitted while loading specs
+  (`removed N suggestion(s)`, `suggestion in <spec> has empty name`,
+  `removed N generator(s) with invalid pipelines`) are now deduplicated
+  and emitted at `debug!` level instead of `warn!`. Default verbosity now
+  produces zero stderr lines for `status`, `status --json`, `doctor`,
+  `validate-specs`, and `config`; opt-in via `RUST_LOG=gc_suggest=debug`
+  still surfaces the per-spec details.
+- `ghost-complete status` baseline labels in the embedded
+  `docs/coverage-baseline.json` snapshot drop the speculative
+  `v0.17.0`/`v0.18.0` future-version prefixes; the trend block now renders
+  with the actual phase names so the v0.16.0 release output reads
+  consistently.
 
 ## [0.15.0] - 2026-05-08
 
@@ -921,6 +974,7 @@ silently changed behaviour.
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.16.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.16.0
 [0.15.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.15.0
 [0.14.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.14.0
 [0.13.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.13.0

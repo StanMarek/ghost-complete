@@ -304,6 +304,66 @@ fn check_specs_for_resolution(dirs: &[PathBuf], include_embedded: bool) -> Check
     }
     CheckResult::ok(msg)
 }
+/// Check the install mirror's version stamp against the running
+/// binary. The auto-refresh path in `main.rs` keeps the mirror in lock
+/// step with the embedded corpus on every proxy start — but if that
+/// refresh ever fails (read-only home, EACCES, disk full) the stale
+/// mirror still wins precedence over the embedded specs at runtime, so
+/// the user keeps getting the OLD corpus silently. Surface it loudly
+/// here.
+fn check_install_mirror_stamp(config: &gc_config::GhostConfig) -> CheckResult {
+    // Honour explicit overrides: if the user pointed `[paths] spec_dirs`
+    // at a custom location, the default mirror is irrelevant (and we
+    // never write to it either — see `auto_refresh_install_mirror_if_stale`).
+    if !config.paths.spec_dirs.is_empty() {
+        return CheckResult::skip("Spec mirror — skipped (custom [paths] spec_dirs configured)");
+    }
+    let Some(install_dir) = gc_suggest::mirror::default_install_mirror_dir() else {
+        return CheckResult::skip("Spec mirror — HOME unset, cannot resolve install dir");
+    };
+    let status =
+        gc_suggest::mirror::mirror_status(&install_dir, gc_suggest::mirror::CURRENT_VERSION);
+    match status {
+        gc_suggest::mirror::MirrorStatus::NotInstalled => {
+            CheckResult::ok("Spec mirror not installed (using embedded corpus directly)")
+        }
+        gc_suggest::mirror::MirrorStatus::Fresh => {
+            // Fresh stamp — but the auto-refresh may have skipped
+            // user-edited files. Surface those so the operator
+            // knows the embedded improvements are NOT winning for
+            // those specific files.
+            let edited = gc_suggest::mirror::list_user_edited_specs(&install_dir);
+            if edited.is_empty() {
+                CheckResult::ok(format!(
+                    "Spec mirror at {} is up to date (v{})",
+                    install_dir.display(),
+                    gc_suggest::mirror::CURRENT_VERSION
+                ))
+            } else {
+                CheckResult::warn(format!(
+                    "Spec mirror at {} has {} user-edited spec(s) skipped from auto-refresh: {}. \
+                     Delete the file(s) and re-run `ghost-complete install` to take the embedded version.",
+                    install_dir.display(),
+                    edited.len(),
+                    edited.join(", ")
+                ))
+            }
+        }
+        gc_suggest::mirror::MirrorStatus::Unstamped => CheckResult::warn(format!(
+            "Spec mirror at {} is from an older version (no version stamp); \
+             current binary is v{}. Run `ghost-complete install` to refresh.",
+            install_dir.display(),
+            gc_suggest::mirror::CURRENT_VERSION
+        )),
+        gc_suggest::mirror::MirrorStatus::Stale { on_disk } => CheckResult::warn(format!(
+            "Spec mirror at {} is from v{on_disk}; current binary is v{}. \
+             Run `ghost-complete install` to refresh.",
+            install_dir.display(),
+            gc_suggest::mirror::CURRENT_VERSION
+        )),
+    }
+}
+
 /// Count generators on a single spec that carry a `_corrected_in` marker.
 /// Walks args, options, and the full subcommand tree iteratively to avoid
 /// re-introducing the recursion-depth attack surface removed from the other
@@ -1179,6 +1239,18 @@ pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
         Some(cfg) => results.push(check_specs(cfg)),
         None => results.push(CheckResult::skip(
             "Completion specs — config invalid, cannot resolve spec dirs",
+        )),
+    }
+
+    // Spec mirror stamp: surfaces stale `~/.config/ghost-complete/specs/`
+    // when the auto-refresh on proxy startup could not run (read-only
+    // home, EACCES, etc.). Without this check, an upgrade where the
+    // mirror auto-refresh silently fails leaves the user serving stale
+    // specs at every keystroke with no visible signal.
+    match &config {
+        Some(cfg) => results.push(check_install_mirror_stamp(cfg)),
+        None => results.push(CheckResult::skip(
+            "Spec mirror — config invalid, cannot resolve install dir",
         )),
     }
 

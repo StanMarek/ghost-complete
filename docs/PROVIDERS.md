@@ -33,7 +33,7 @@ Script + transform lowering is tracked separately from native providers. A gener
 
 ## Generator-spec `params`
 
-Generators may carry a flat string-to-string `params` map that the engine threads into the dispatched provider via `ProviderCtx::params`. This is the channel ux-13/14 spec-driven providers (e.g. the planned `AwsSdk` provider) will use to route on structured selection (service, region, profile) without inventing a new generator schema per command. As of the ux-9b precursor no in-tree provider reads the field — the plumbing is purely additive.
+Generators may carry a flat string-to-string `params` map that the engine threads into the dispatched provider via `ProviderCtx::params`. This is the channel ux-13/14 spec-driven providers use to route on structured selection (service, region, profile) without inventing a new generator schema per command. Existing providers that do not need parameters ignore the field.
 
 JSON shape on a generator:
 
@@ -106,6 +106,11 @@ loads the AWS SDK and never makes a live AWS API call. Expired sessions, SSO
 login state, AssumeRole failures, and service authorization are still runtime
 conditions surfaced by the provider itself.
 
+`ghost-complete status --json` reports SDK rewrites through
+`counters.aws_sdk_dispatched`; those entries also contribute to
+`counters.native_provider_dispatched` and
+`counters.native_provider_counts.aws_sdk`.
+
 ## Local-project providers
 
 A subset of providers do not shell out at all — they parse a project file in the user's CWD ancestry. Reference implementation: [`crates/gc-suggest/src/providers/local_project/`](../crates/gc-suggest/src/providers/local_project/) (UX-5). Same `Provider` trait as the subprocess providers, with two pattern differences:
@@ -124,8 +129,10 @@ A subset of providers do not shell out at all — they parse a project file in t
 ### ux-14 tool providers
 
 Phase 5 adds typed providers for CLI state that was previously fetched through
-Fig JS generators. The scoped regenerated corpus now contains 621 native Rust
-generator entries, including 448 dispatched through the provider registry.
+Fig JS generators. The current corpus contains 582 provider-dispatched
+generator entries. `ghost-complete status --json` reports this total as
+`counters.native_provider_dispatched` and groups it under
+`counters.native_provider_counts`.
 
 | Type string | Provider file | Source | Notes |
 |---|---|---|---|

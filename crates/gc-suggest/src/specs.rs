@@ -866,8 +866,16 @@ fn parse_entry_source(source: &SpecSource) -> Result<Arc<CompletionSpec>, String
     let mut spec =
         parse_spec_checked_and_sanitized(&contents).map_err(|e| format!("parse: {e}"))?;
     let warnings = validate_spec_generators(&mut spec);
+    // Per-load corpus data-quality warnings (empty names, hidden entries,
+    // invalid transform pipelines, unknown `type` strings) are routed through
+    // `debug!`.  Surfacing these at `warn!` polluted every read-only CLI
+    // (`status`, `doctor`, `config`) with hundreds of stderr lines even on a
+    // clean install — see v0.16.0 release prep.  Users who want full visibility
+    // can either:
+    //   * run `ghost-complete validate-specs` (renders the Vec directly), or
+    //   * set `RUST_LOG=gc_suggest=debug` for live tracing.
     for w in &warnings {
-        tracing::warn!("{}: {w}", spec.name);
+        tracing::debug!("{}: {w}", spec.name);
     }
     Ok(Arc::new(spec))
 }
@@ -1623,12 +1631,12 @@ impl SpecStore {
         self.filesystem_paths()
     }
 
-    /// Corpus-wide [`SpecResolutionCounters`] across every loaded spec.
+    /// Corpus-wide [`SpecResolutionCounters`] across the runtime-resolved
+    /// spec set (one entry per alias after lazy fallback resolution).
     ///
-    /// Walks the resolved-entry set (one entry per alias after lazy
-    /// fallback resolution) and visits every [`GeneratorSpec`] reachable
-    /// from each [`CompletionSpec`] (args, options, recursive
-    /// subcommands). For each `requires_js` generator:
+    /// Visits every [`GeneratorSpec`] reachable from each
+    /// [`CompletionSpec`] (args, options, recursive subcommands). For
+    /// each `requires_js` generator:
     ///   - `requires_js_total` increments unconditionally;
     ///   - `requires_js_supported` increments when [`is_requires_js_supported`]
     ///     returns true (post_process+script with non-empty source, OR
@@ -1643,9 +1651,18 @@ impl SpecStore {
     /// gate inside `collect_generators` and the raw-JSON walker in
     /// `ghost-complete::status::scan_spec_files`, so the schema-1.6
     /// `counters.requires_js_supported` agrees byte-for-byte with the
-    /// legacy `spec_counts.requires_js_generators_supported` against the
-    /// embedded corpus (~1944 supported / ~1697 unsupported / ~3641 total
-    /// at v0.13).
+    /// legacy `spec_counts.requires_js_generators_supported` over the
+    /// same store.
+    ///
+    /// **For the `counters` block of `ghost-complete status --json`
+    /// (which reports migration progress against the corpus Ghost
+    /// Complete ships), callers should use [`embedded_corpus_counters`]
+    /// instead** — a stale filesystem mirror (e.g. an old
+    /// `~/.config/ghost-complete/specs/` mirror saved before ux-10b
+    /// markers existed) silently overrides embedded specs here and
+    /// would zero out `lowered_to_transforms`, `aws_sdk_dispatched`,
+    /// and the native-provider buckets. Filesystem overrides exist to
+    /// hot-patch individual broken specs, not to change ship statistics.
     ///
     /// `lowered_to_transforms` (ux-10b), `static_extracted_subprocess`
     /// (ux-11), `token_only_promoted` (ux-12), `aws_sdk_dispatched`
@@ -1666,6 +1683,50 @@ impl SpecStore {
         }
         counters
     }
+}
+
+/// Walk the entire embedded corpus once and accumulate
+/// [`SpecResolutionCounters`]. The result is cached for the process
+/// lifetime — every spec body is `'static` and parsing is deterministic,
+/// so re-walking would just waste work on every `status --json` call.
+///
+/// This is the canonical source of "migration progress" statistics for
+/// the `counters` block of `ghost-complete status --json`. Unlike
+/// [`SpecStore::counters`], it is intentionally **independent of the
+/// runtime resolution view**: a user who carries an obsolete
+/// `~/.config/ghost-complete/specs/` mirror (pre-ux-10b, pre-ux-13,
+/// pre-ux-14) would otherwise see `lowered_to_transforms`,
+/// `aws_sdk_dispatched`, and the native-provider buckets all silently
+/// zeroed out, because the filesystem override masks the embedded spec
+/// before counter accumulation runs. Filesystem overrides exist so
+/// users can hot-patch individual broken specs, not to change ship
+/// statistics.
+pub fn embedded_corpus_counters() -> SpecResolutionCounters {
+    static CACHED: OnceLock<SpecResolutionCounters> = OnceLock::new();
+    CACHED
+        .get_or_init(|| {
+            let mut counters = SpecResolutionCounters::default();
+            for filename in crate::embedded::embedded_filenames() {
+                let Some(body) = crate::embedded::embedded_spec_contents(filename) else {
+                    tracing::warn!(
+                        filename,
+                        "embedded spec listed in index but absent from archive"
+                    );
+                    continue;
+                };
+                match parse_spec_checked_and_sanitized(body) {
+                    Ok(mut spec) => {
+                        let _ = validate_spec_generators(&mut spec);
+                        accumulate_counters_from_spec(&spec, &mut counters);
+                    }
+                    Err(e) => {
+                        tracing::warn!(filename, error = %e, "failed to parse embedded spec for counters");
+                    }
+                }
+            }
+            counters
+        })
+        .clone()
 }
 
 fn accumulate_counters_from_spec(spec: &CompletionSpec, counters: &mut SpecResolutionCounters) {
@@ -2818,6 +2879,16 @@ pub fn validate_spec_generators(spec: &mut CompletionSpec) -> Vec<String> {
         stack.extend(sub.subcommands.iter_mut());
     }
 
+    // Dedupe identical warnings before returning. Specs like `remotion`,
+    // `lsof`, and `micro` hit the same empty-name / hidden-suggestion path
+    // across dozens of nested arg specs; emitting one record per occurrence
+    // turns into pure stderr spam in `status` / `doctor`.  We preserve order
+    // (first occurrence wins) so the validate-specs JSON output stays stable.
+    // Per-occurrence detail is still available at `debug!` via the individual
+    // helpers below.
+    let mut seen = std::collections::HashSet::with_capacity(warnings.len());
+    warnings.retain(|w| seen.insert(w.clone()));
+
     warnings
 }
 
@@ -2846,7 +2917,12 @@ fn validate_arg_generators(arg_spec: &mut ArgSpec, spec_name: &str, warnings: &m
         }
     });
     if arg_spec.generators.len() < original_len {
-        tracing::warn!(
+        // Per-arg-spec drops are demoted to `debug!`. `validate_spec_generators`
+        // aggregates a single deduped warning per spec, and `load_spec_from_source`
+        // logs that at `warn!`.  Emitting one record per ArgSpec here spams the
+        // CLI (remotion-style specs nest hundreds of arg specs and fire this
+        // path repeatedly).  Opt back in with `RUST_LOG=gc_suggest=debug`.
+        tracing::debug!(
             "{spec_name}: removed {} generator(s) with invalid transform pipelines",
             original_len - arg_spec.generators.len()
         );
@@ -2868,7 +2944,9 @@ fn validate_arg_generators(arg_spec: &mut ArgSpec, spec_name: &str, warnings: &m
         true
     });
     if arg_spec.suggestions.len() < original_suggestions_len {
-        tracing::warn!(
+        // See the comment above: per-arg-spec drops are noisy and routed through
+        // the aggregated `warnings` Vec (deduped in `validate_spec_generators`).
+        tracing::debug!(
             "{spec_name}: removed {} suggestion(s) (empty name or hidden)",
             original_suggestions_len - arg_spec.suggestions.len()
         );
@@ -3900,6 +3978,68 @@ mod tests {
              js_runtime out of {total_requires_js}. If this is intentional, refresh \
              docs/coverage-baseline.json and this invariant together."
         );
+    }
+
+    #[test]
+    fn embedded_corpus_counters_match_raw_json_invariants() {
+        // Regression guard: the runtime-computed `embedded_corpus_counters()`
+        // — the source of `status --json` `counters` — MUST agree with the
+        // raw-JSON invariant walker in
+        // `test_corpus_js_runtime_and_lowered_transform_invariants` over the
+        // embedded corpus. The bug this regression-tests pinned down: a
+        // stale `~/.config/ghost-complete/specs/` mirror was overriding the
+        // embedded corpus inside `SpecStore::counters()`, silently zeroing
+        // `lowered_to_transforms`, `aws_sdk_dispatched`, and the native
+        // provider buckets in `status --json` even though the shipped
+        // corpus carried them.
+        let counters = embedded_corpus_counters();
+
+        // Matches the raw-JSON invariant `MIN_LOWERED_TO_TRANSFORMS`.
+        assert!(
+            counters.lowered_to_transforms >= 1_250,
+            "embedded_corpus_counters underreports lowered transforms: {} < 1250 \
+             (raw-JSON invariant guarantees at least 1250 _lowered_from_requires_js markers \
+             in the embedded corpus)",
+            counters.lowered_to_transforms
+        );
+
+        // Matches the raw-JSON invariant `MIN_AWS_SDK_DISPATCHED`.
+        assert!(
+            counters.aws_sdk_dispatched >= 130,
+            "embedded_corpus_counters underreports aws_sdk dispatches: {} < 130",
+            counters.aws_sdk_dispatched
+        );
+
+        // ux-14 native provider dispatches: at minimum the AWS SDK
+        // alone clears 130, plus k8s/tmux/systemd/brew/dscl/cargo
+        // metadata each contribute multiple buckets. 500 is the soft
+        // floor; the actual shipped figure is ~580.
+        assert!(
+            counters.native_provider_dispatched >= 500,
+            "embedded_corpus_counters underreports native provider dispatches: {} < 500",
+            counters.native_provider_dispatched
+        );
+
+        // The native-provider bucket map must include ux-13 (`aws_sdk`)
+        // and at least the most common ux-14 providers. The earlier bug
+        // surfaced as a tiny bucket map (~15 entries) where these were
+        // entirely missing because the user's stale filesystem corpus
+        // overrode the shipped specs.
+        for provider in [
+            "aws_sdk",
+            "k8s_contexts",
+            "k8s_resources",
+            "tmux_sessions",
+            "systemd_units",
+            "brew_formulae_installed",
+        ] {
+            assert!(
+                counters.native_provider_counts.contains_key(provider),
+                "embedded_corpus_counters missing native_provider_counts[{provider}]; \
+                 buckets: {:?}",
+                counters.native_provider_counts.keys().collect::<Vec<_>>()
+            );
+        }
     }
 
     #[test]
@@ -5059,10 +5199,14 @@ mod tests {
             SuggestionEntry::Plain(s) => assert_eq!(s, "ok"),
             _ => panic!("expected Plain(\"ok\")"),
         }
+        // Warnings are deduped inside `validate_spec_generators` — two empty
+        // entries inside the same arg produce identical strings, which collapse
+        // to a single record. Per-occurrence detail stays available at
+        // `RUST_LOG=gc_suggest=debug`.
         assert_eq!(
             warnings.len(),
-            2,
-            "expected two warnings (one per empty entry)"
+            1,
+            "expected one deduped warning covering both empty entries"
         );
         for w in &warnings {
             assert!(
@@ -5070,6 +5214,44 @@ mod tests {
                 "warning should contain the spec name 'x', got: {w}"
             );
         }
+    }
+
+    #[test]
+    fn warnings_are_deduped_across_nested_arg_specs() {
+        // Regression for the v0.16.0 CLI-noise fix: specs that hit the same
+        // empty-name path in many nested arg specs (remotion, lsof, micro)
+        // used to emit one warning per occurrence, producing 50+ stderr lines
+        // on `ghost-complete status`.  Validate that `validate_spec_generators`
+        // collapses identical messages.
+        let json = r#"{
+            "name": "noisy",
+            "subcommands": [
+                {
+                    "name": "a",
+                    "args": {"name": "x", "suggestions": [{"name": ""}, "ok"]}
+                },
+                {
+                    "name": "b",
+                    "args": {"name": "y", "suggestions": [{"name": ""}, "ok"]}
+                },
+                {
+                    "name": "c",
+                    "args": {"name": "z", "suggestions": [{"name": ""}, "ok"]}
+                }
+            ]
+        }"#;
+        let mut spec = parse_spec_checked_and_sanitized(json).unwrap();
+        let warnings = validate_spec_generators(&mut spec);
+        assert_eq!(
+            warnings.len(),
+            1,
+            "three identical empty-name warnings across three arg specs must collapse to one, got: {warnings:?}"
+        );
+        assert!(
+            warnings[0].contains("noisy") && warnings[0].contains("empty name"),
+            "deduped warning should still describe the issue, got: {}",
+            warnings[0]
+        );
     }
 
     #[test]

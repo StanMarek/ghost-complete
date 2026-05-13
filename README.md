@@ -18,6 +18,8 @@ Ghost Complete sits inside your terminal's data stream as a PTY proxy, intercept
 
 Inspired by the [Fig](https://fig.io) autocomplete experience. Built from scratch in Rust.
 
+Zstd compression preserves the embedded 711-spec corpus while shrinking the benchmarked macOS arm64 release binary from 103.41 MB to 11.81 MB.
+
 ## Status
 
 Ghost Complete is under active development. Contributions and bug reports are welcome.
@@ -73,7 +75,7 @@ ghost-complete install
 
 - Adds shell integration to `~/.zshrc` (auto-wraps your shell via PTY proxy)
 - Deploys shell scripts for bash/fish to `~/.config/ghost-complete/shell/`
-- Installs 709 completion specs to `~/.config/ghost-complete/specs/`
+- Installs 711 completion specs to `~/.config/ghost-complete/specs/`
 - Creates default config at `~/.config/ghost-complete/config.toml` (never overwrites existing)
 
 ### Uninstall
@@ -164,7 +166,7 @@ See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for the full reference.
 
 ## Completion Specs
 
-Ghost Complete ships with 709 Fig-compatible JSON completion specs covering git, docker, cargo, npm, kubectl, brew, curl, ssh, and 700+ more — converted from the [Fig](https://fig.io) autocomplete ecosystem.
+Ghost Complete ships with 711 Fig-compatible JSON completion specs covering git, docker, cargo, npm, kubectl, brew, curl, ssh, and 700+ more — converted from the [Fig](https://fig.io) autocomplete ecosystem.
 
 Beyond specs, built-in providers offer:
 - **Environment variables** — `echo $HOM` → `$HOME`
@@ -223,7 +225,7 @@ The PTY proxy sits between the terminal and the shell, rendering popups via pure
 
 **Why custom JSON specs instead of using the shell's built-in completions?**
 
-Specs are declarative and fast — microsecond loads, no shell execution. They use the same format [Fig](https://fig.io) used, so there's a large existing ecosystem to draw from. Ghost Complete ships with 709 specs today, and many include dynamic generators that execute shell commands for live results (e.g., listing running containers, git branches, installed packages). Commands without a spec fall back to filesystem completions. Adding new specs is straightforward — see [docs/COMPLETION_SPEC.md](docs/COMPLETION_SPEC.md), and contributions are welcome.
+Specs are declarative and fast — microsecond loads, no shell execution. They use the same format [Fig](https://fig.io) used, so there's a large existing ecosystem to draw from. Ghost Complete ships with 711 specs today, and many include dynamic generators that execute shell commands for live results (e.g., listing running containers, git branches, installed packages). Commands without a spec fall back to filesystem completions. Adding new specs is straightforward — see [docs/COMPLETION_SPEC.md](docs/COMPLETION_SPEC.md), and contributions are welcome.
 
 **Where's the config documentation? I'm having popup alignment issues.**
 

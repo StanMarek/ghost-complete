@@ -12,7 +12,13 @@ use crate::sanitize::{sanitize_for_terminal, sanitize_path};
 // `~/.config/ghost-complete/specs`, so we re-export the accessor
 // functions from the canonical home; `status.rs` and the install tests
 // reach them through `crate::install::*` exactly as before.
-pub(crate) use gc_suggest::{embedded_filenames, embedded_spec_contents, embedded_spec_count};
+pub(crate) use gc_suggest::embedded_spec_count;
+// `embedded_filenames` is referenced only by the in-file test module
+// (after `copy_specs` was refactored to call
+// `gc_suggest::mirror::write_embedded_mirror`); a non-test `use` would
+// emit an `unused_imports` warning under `-D warnings`.
+#[cfg(test)]
+use gc_suggest::embedded_filenames;
 
 // Pre-v0.12.4 the runtime materialised the embedded corpus to
 // `~/.cache/ghost-complete/embedded-specs/` on first start. v0.12.4+ no
@@ -162,37 +168,29 @@ fn remove_block(content: &str, begin: &str, end: &str) -> (String, bool) {
 
 fn copy_specs(config_dir: &Path) -> Result<()> {
     let dest = config_dir.join("specs");
-    fs::create_dir_all(&dest).with_context(|| format!("failed to create {}", dest.display()))?;
-
-    let mut count = 0;
-    for name in embedded_filenames() {
-        let contents = embedded_spec_contents(name)
-            .with_context(|| format!("embedded spec missing from archive: {name}"))?;
-        // The embedded archive ships minified JSON to keep the binary
-        // small. On-disk specs in `~/.config/ghost-complete/specs/`
-        // are user-facing — users diff them, hand-edit overrides, and
-        // expect a structured tree. Pretty-print on install so the
-        // on-disk format matches the pre-ux-12b behavior. The
-        // one-shot parse-and-format runs only on install.
-        let dest_file = dest.join(name);
-        match serde_json::from_str::<serde_json::Value>(contents) {
-            Ok(value) => {
-                let pretty = serde_json::to_string_pretty(&value)
-                    .with_context(|| format!("failed to format spec: {name}"))?;
-                fs::write(&dest_file, &pretty)
-                    .with_context(|| format!("failed to write spec: {}", dest_file.display()))?;
-            }
-            Err(_) => {
-                fs::write(&dest_file, contents.as_bytes())
-                    .with_context(|| format!("failed to write spec: {}", dest_file.display()))?;
-            }
-        }
-        count += 1;
-    }
+    // Delegates to `gc_suggest::mirror::write_embedded_mirror` so the
+    // install path and the proxy-startup auto-refresh path stay in lock
+    // step. Writing the version stamp (`.ghost-complete-version`)
+    // happens inside the helper after every spec body is on disk, so a
+    // crash mid-install leaves the mirror in a state that the next
+    // launch detects as still stale and retries — preventing the
+    // upgrade-staleness regression that motivated the auto-refresh in
+    // the first place.
+    let skipped =
+        gc_suggest::mirror::write_embedded_mirror(&dest, gc_suggest::mirror::CURRENT_VERSION)
+            .with_context(|| format!("failed to install completion specs to {}", dest.display()))?;
     println!(
-        "  Installed {count} completion specs to {}",
+        "  Installed {} completion specs to {}",
+        embedded_spec_count(),
         sanitize_path(&dest)
     );
+    if !skipped.is_empty() {
+        println!(
+            "  Skipped {} user-edited spec(s) (delete the file(s) and re-run `ghost-complete install` to overwrite): {}",
+            skipped.len(),
+            skipped.join(", ")
+        );
+    }
     Ok(())
 }
 
@@ -1220,10 +1218,36 @@ mod tests {
                 "expected spec {name} to be installed"
             );
         }
+        // Spec count + 1 version-stamp file (`.ghost-complete-version`)
+        // written by `gc_suggest::mirror::write_embedded_mirror`.
         assert_eq!(
             fs::read_dir(&dest).unwrap().count(),
-            embedded_spec_count(),
-            "spec count mismatch"
+            embedded_spec_count() + 1,
+            "spec count mismatch (expected {} specs + 1 version stamp)",
+            embedded_spec_count()
+        );
+        // Stamp file must be present and carry the current binary version.
+        // The v2 stamp format is `ghost-complete-mirror v2\n<version>\n<hash>  <filename>\n...`
+        // so we check that the version appears as the second line.
+        let stamp_path = dest.join(gc_suggest::mirror::STAMP_FILENAME);
+        assert!(stamp_path.is_file(), "version stamp must be written");
+        let stamp_body = fs::read_to_string(&stamp_path).unwrap();
+        let mut lines = stamp_body.lines();
+        assert_eq!(
+            lines.next(),
+            Some("ghost-complete-mirror v2"),
+            "v2 stamp must begin with the magic header"
+        );
+        assert_eq!(
+            lines.next(),
+            Some(gc_suggest::mirror::CURRENT_VERSION),
+            "stamp must record the current binary version"
+        );
+        // Subsequent lines are per-file hashes; at least one must
+        // exist (we just wrote the whole embedded corpus).
+        assert!(
+            lines.next().is_some(),
+            "v2 stamp must record at least one per-file hash"
         );
 
         // Installed specs are written pretty-printed so users can diff

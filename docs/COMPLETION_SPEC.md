@@ -1,6 +1,6 @@
 # Completion Spec Format
 
-Ghost Complete uses a Fig-compatible JSON format for completion specs. Specs define the subcommands, options, and argument types for a CLI tool. Ghost Complete ships with 709 built-in specs covering common commands (git, docker, cargo, npm, kubectl, brew, and 700+ more).
+Ghost Complete uses a Fig-compatible JSON format for completion specs. Specs define the subcommands, options, and argument types for a CLI tool. Ghost Complete ships with 711 built-in specs covering common commands (git, docker, cargo, npm, kubectl, brew, and 700+ more).
 
 ## Overview
 
@@ -161,6 +161,10 @@ Built-in generators that run natively without spawning external processes:
 | `npm_scripts` | Keys of `scripts` in the nearest ancestor `package.json`; description is the script value (truncated to 120 chars). |
 | `cargo_workspace_members` | Workspace member package names from the nearest ancestor `Cargo.toml`; falls back to the single `package.name` when no `[workspace]` table is present. |
 
+The ux-14 migration expands provider-backed generators across cargo metadata targets/features, npm local dependency fields, Docker/Podman images/containers/volumes/networks, kubectl contexts/namespaces/resources/pods/nodes/services, tmux sessions/windows/panes/clients, systemd units, Homebrew formulae/casks, and macOS `dscl` principals. See [`docs/PROVIDERS.md`](./PROVIDERS.md) for the full provider table and counter contracts.
+
+AWS SDK-backed generators are available through the opt-in `aws_sdk` provider; see [`docs/PROVIDERS.md`](./PROVIDERS.md) for configuration, credentials, fallback behavior, and status counters.
+
 #### Script generators
 
 Execute an external command and turn its stdout into suggestions. The command is executed directly (no shell expansion via `sh -c`).
@@ -242,6 +246,8 @@ Example `token_only` generator:
   }
 }
 ```
+
+Token-only runtime generators run inside `JsRuntimeKind::TokenOnly` with `tokens`, `searchTerm`, and `currentToken` exposed but no `executeShellCommand`, cwd, env, `fig`, or `__ghost` host API. They provide sync-like latency for pure token logic and do not loosen the `self_contained` requirement for `script_function` or `custom` generators.
 
 The converter populates `js_runtime` for `post_process` bodies the matcher cannot lower to declarative transforms. For Fig `script: (...) => [...]` and `custom: async () => [...]` sources, it emits `script_function` / `custom` only when static analysis proves the function is self-contained; closure-dependent bodies that are host-API-free are promoted to `token_only`, and the rest remain `requires_js` without runtime metadata and are skipped. The runtime can be disabled wholesale via `[suggest.providers] js_runtime = false` in `config.toml`; in that mode static portions (subcommands, options) of `requires_js` specs continue to work and the JS-backed generators silently no-op.
 
@@ -439,7 +445,7 @@ field, so upstream Fig-converter specs that already set it are honoured.
 
 ## Bundled spec priorities
 
-A subset of the 709 specs shipped in `specs/` carry curated `priority`
+A subset of the 711 specs shipped in `specs/` carry curated `priority`
 values on the most-used subcommands and on dangerous flags — most
 specs rely entirely on the per-kind base values from the table above.
 Three layers stack to produce any explicit `priority` field:

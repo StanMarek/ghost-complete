@@ -19,6 +19,7 @@ pub mod git;
 pub mod history;
 pub mod js_runtime;
 pub mod json_path;
+pub mod mirror;
 pub mod pipeline;
 pub mod priority;
 mod provider;
@@ -39,8 +40,8 @@ pub use engine::{SuggestionEngine, SyncResult};
 pub use json_path::{JsonPath, JsonPathSegment};
 pub use pipeline::try_run_pipeline;
 pub use specs::{
-    check_json_depth, parse_spec_checked_and_sanitized, sanitize_spec_strings,
-    spawn_spec_cache_sweep, spawn_spec_cache_sweep_for_test, AliasConflict,
+    check_json_depth, embedded_corpus_counters, parse_spec_checked_and_sanitized,
+    sanitize_spec_strings, spawn_spec_cache_sweep, spawn_spec_cache_sweep_for_test, AliasConflict,
     AliasConflictDisposition, AliasConflictKind, AliasOwner, CompletionSpec, EvictionReport,
     SpecCacheSweep, SpecEntry, SpecEntryLoadError, SpecLoadResult, SpecLocation, SpecLookupError,
     SpecResolutionCounters, SpecStore, SweepReport, MAX_SPEC_JSON_DEPTH,

@@ -1,6 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FieldType {
     Bool,
+    U16,
     U64,
     Usize,
     String,
@@ -110,10 +111,10 @@ pub fn all_fields() -> Vec<FieldMeta> {
         FieldMeta {
             section: "popup",
             key: "feedback_dismiss_ms",
-            field_type: FieldType::U64,
+            field_type: FieldType::U16,
             default: "1200",
             reload: ReloadBehavior::Live,
-            help: "Milliseconds before Empty/Error feedback auto-dismisses",
+            help: "Milliseconds before Empty/Error feedback auto-dismisses (0-10000)",
         },
         FieldMeta {
             section: "popup",
@@ -130,6 +131,14 @@ pub fn all_fields() -> Vec<FieldMeta> {
             default: "false",
             reload: ReloadBehavior::Live,
             help: "Show provider names in error feedback",
+        },
+        FieldMeta {
+            section: "popup",
+            key: "render_block_ms",
+            field_type: FieldType::U16,
+            default: "80",
+            reload: ReloadBehavior::Live,
+            help: "Maximum time (ms) the popup will block waiting for a higher-priority async generator before painting sync results (0-300)",
         },
         FieldMeta {
             section: "popup",
@@ -236,6 +245,14 @@ pub fn all_fields() -> Vec<FieldMeta> {
             default: "true",
             reload: ReloadBehavior::RequiresRestart,
             help: "Enable git branch/tag/remote completions",
+        },
+        FieldMeta {
+            section: "suggest.providers",
+            key: "js_runtime",
+            field_type: FieldType::Bool,
+            default: "true",
+            reload: ReloadBehavior::RequiresRestart,
+            help: "Global kill switch for QuickJS evaluation of requires_js generators. Disable to skip all JS-backed completions.",
         },
         // suggest.spec_cache
         FieldMeta {
@@ -418,6 +435,30 @@ pub fn all_fields() -> Vec<FieldMeta> {
             reload: ReloadBehavior::RequiresRestart,
             help: "Enable proxy in unsupported terminals",
         },
+        FieldMeta {
+            section: "experimental",
+            key: "aws_sdk_provider",
+            field_type: FieldType::Bool,
+            default: "false",
+            reload: ReloadBehavior::RequiresRestart,
+            help: "Use native AWS SDK provider for AWS CLI completions (vs. shelling to `aws`). Experimental — opt-in for one release before default.",
+        },
+        FieldMeta {
+            section: "experimental",
+            key: "aws_sdk_fallback_to_cli",
+            field_type: FieldType::Bool,
+            default: "true",
+            reload: ReloadBehavior::RequiresRestart,
+            help: "When aws_sdk_provider is on but credentials/profile are unavailable, fall back to shelling out to the AWS CLI.",
+        },
+        FieldMeta {
+            section: "experimental",
+            key: "brew_search_cap",
+            field_type: FieldType::Usize,
+            default: "1000",
+            reload: ReloadBehavior::RequiresRestart,
+            help: "Maximum number of formulae returned by the Homebrew search provider. Lower it on modest machines; raise it to scan more of the formula corpus.",
+        },
     ]
 }
 
@@ -489,5 +530,124 @@ mod tests {
                 "popup.{expected} missing from config editor"
             );
         }
+    }
+
+    fn find_field(section: &str, key: &str) -> FieldMeta {
+        all_fields()
+            .into_iter()
+            .find(|f| f.section == section && f.key == key)
+            .unwrap_or_else(|| panic!("{section}.{key} should be registered"))
+    }
+
+    #[test]
+    fn new_fields_registered_with_expected_sections() {
+        for (section, key) in [
+            ("popup", "render_block_ms"),
+            ("suggest.providers", "js_runtime"),
+            ("experimental", "aws_sdk_provider"),
+            ("experimental", "aws_sdk_fallback_to_cli"),
+            ("experimental", "brew_search_cap"),
+        ] {
+            let field = find_field(section, key);
+            assert_eq!(field.section, section);
+            assert_eq!(field.key, key);
+        }
+    }
+
+    /// Pulls a scalar value from a serialized config and renders it the way the
+    /// editor would. Used to confirm `FieldMeta.default` strings match the
+    /// schema's actual defaults — if `gc-config` changes a default the editor
+    /// will fail this test until resynced.
+    fn rendered_default(cfg_value: &toml::Value, section: &str, key: &str) -> String {
+        let mut current = cfg_value;
+        for part in section.split('.') {
+            current = current
+                .as_table()
+                .and_then(|t| t.get(part))
+                .unwrap_or_else(|| panic!("section {section} should exist"));
+        }
+        let v = current
+            .as_table()
+            .and_then(|t| t.get(key))
+            .unwrap_or_else(|| panic!("{section}.{key} should exist"));
+        match v {
+            toml::Value::Boolean(b) => b.to_string(),
+            toml::Value::Integer(i) => i.to_string(),
+            toml::Value::String(s) => s.clone(),
+            other => other.to_string(),
+        }
+    }
+
+    #[test]
+    fn new_field_defaults_match_schema() {
+        let cfg = gc_config::GhostConfig::default();
+        let serialized = toml::Value::try_from(&cfg).expect("default config serializes");
+
+        for (section, key) in [
+            ("popup", "render_block_ms"),
+            ("popup", "feedback_dismiss_ms"),
+            ("suggest.providers", "js_runtime"),
+            ("experimental", "aws_sdk_provider"),
+            ("experimental", "aws_sdk_fallback_to_cli"),
+            ("experimental", "brew_search_cap"),
+        ] {
+            let field = find_field(section, key);
+            let rendered = rendered_default(&serialized, section, key);
+            assert_eq!(
+                rendered, field.default,
+                "{section}.{key}: editor default {:?} drifted from schema default {:?}",
+                field.default, rendered
+            );
+        }
+    }
+
+    #[test]
+    fn new_field_defaults_round_trip_through_toml() {
+        // For each new field, build a minimal `[section] key = <default>` doc,
+        // deserialize as `GhostConfig`, then reserialize and confirm the value
+        // at the same path matches the editor's `default` string.
+        for (section, key) in [
+            ("popup", "render_block_ms"),
+            ("popup", "feedback_dismiss_ms"),
+            ("suggest.providers", "js_runtime"),
+            ("experimental", "aws_sdk_provider"),
+            ("experimental", "aws_sdk_fallback_to_cli"),
+            ("experimental", "brew_search_cap"),
+        ] {
+            let field = find_field(section, key);
+            let doc = format!("[{section}]\n{key} = {}\n", field.default);
+            let cfg: gc_config::GhostConfig = toml::from_str(&doc)
+                .unwrap_or_else(|e| panic!("{section}.{key} parse failed: {e}"));
+            let round = toml::Value::try_from(&cfg).expect("config serializes");
+            let rendered = rendered_default(&round, section, key);
+            assert_eq!(
+                rendered, field.default,
+                "{section}.{key} did not survive serialize/deserialize round-trip"
+            );
+        }
+    }
+
+    #[test]
+    fn feedback_dismiss_ms_is_u16_typed() {
+        let field = find_field("popup", "feedback_dismiss_ms");
+        assert_eq!(field.field_type, FieldType::U16);
+    }
+
+    #[test]
+    fn feedback_dismiss_ms_above_u16_max_clamps_silently_in_schema() {
+        // Sanity check on the saturating deserializer: values above u16::MAX
+        // are silently capped at 65535, then `normalize()` further clamps into
+        // operating range [0, 10_000]. The editor's `commit_toml_update` is
+        // what surfaces this to the user as a "would be clamped" error.
+        let doc = "[popup]\nfeedback_dismiss_ms = 99999\n";
+        let cfg: gc_config::GhostConfig = toml::from_str(doc).unwrap();
+        assert_eq!(cfg.popup.feedback_dismiss_ms, u16::MAX);
+
+        let mut normalized = cfg;
+        normalized.normalize();
+        assert!(
+            normalized.popup.feedback_dismiss_ms <= 10_000,
+            "normalize should clamp feedback_dismiss_ms into operating range"
+        );
     }
 }
