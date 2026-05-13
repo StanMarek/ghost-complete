@@ -168,9 +168,25 @@ fn copy_specs(config_dir: &Path) -> Result<()> {
     for name in embedded_filenames() {
         let contents = embedded_spec_contents(name)
             .with_context(|| format!("embedded spec missing from archive: {name}"))?;
+        // The embedded archive ships minified JSON to keep the binary
+        // small. On-disk specs in `~/.config/ghost-complete/specs/`
+        // are user-facing — users diff them, hand-edit overrides, and
+        // expect a structured tree. Pretty-print on install so the
+        // on-disk format matches the pre-ux-12b behavior. The
+        // one-shot parse-and-format runs only on install.
         let dest_file = dest.join(name);
-        fs::write(&dest_file, contents)
-            .with_context(|| format!("failed to write spec: {}", dest_file.display()))?;
+        match serde_json::from_str::<serde_json::Value>(contents) {
+            Ok(value) => {
+                let pretty = serde_json::to_string_pretty(&value)
+                    .with_context(|| format!("failed to format spec: {name}"))?;
+                fs::write(&dest_file, &pretty)
+                    .with_context(|| format!("failed to write spec: {}", dest_file.display()))?;
+            }
+            Err(_) => {
+                fs::write(&dest_file, contents.as_bytes())
+                    .with_context(|| format!("failed to write spec: {}", dest_file.display()))?;
+            }
+        }
         count += 1;
     }
     println!(
@@ -1208,6 +1224,20 @@ mod tests {
             fs::read_dir(&dest).unwrap().count(),
             embedded_spec_count(),
             "spec count mismatch"
+        );
+
+        // Installed specs are written pretty-printed so users can diff
+        // and hand-edit them. The build-time minifier strips newlines
+        // entirely; a pretty-printed file MUST contain at least one
+        // newline. Pick a representative spec to assert on.
+        let installed = fs::read_to_string(dest.join("git.json")).unwrap();
+        assert!(
+            installed.contains('\n'),
+            "installed git.json should be pretty-printed, got minified single-line JSON"
+        );
+        assert!(
+            installed.trim_start().starts_with('{'),
+            "installed git.json should still be valid JSON"
         );
     }
 

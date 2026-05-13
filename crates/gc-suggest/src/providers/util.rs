@@ -24,10 +24,23 @@ where
         command.envs(env);
     }
 
-    let output = tokio::time::timeout(timeout, command.output())
-        .await
-        .map_err(|_| anyhow!("{binary} timed out after {}ms", timeout.as_millis()))?
-        .with_context(|| format!("{binary} command failed to spawn"))?;
+    let output = match tokio::time::timeout(timeout, command.output()).await {
+        Err(_) => {
+            return Err(anyhow!(
+                "{binary} timed out after {}ms",
+                timeout.as_millis()
+            ))
+        }
+        Ok(Ok(output)) => output,
+        Ok(Err(io_err)) => {
+            let context = if io_err.kind() == std::io::ErrorKind::NotFound {
+                format!("{binary}: binary not installed")
+            } else {
+                format!("{binary} command failed to spawn")
+            };
+            return Err(anyhow::Error::new(io_err).context(context));
+        }
+    };
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -39,6 +52,17 @@ where
     }
 
     String::from_utf8(output.stdout).with_context(|| format!("{binary} emitted non-UTF8 stdout"))
+}
+
+/// Returns true if `error` represents a `binary not installed` spawn
+/// failure (`io::ErrorKind::NotFound`). Callers use this to demote the
+/// log level from `warn` to `trace` so a user without optional tools
+/// (`kubectl`, `multipass`, `docker`, ...) does not see a warning every
+/// time they trigger a related completion.
+pub(crate) fn is_binary_missing(error: &anyhow::Error) -> bool {
+    error
+        .downcast_ref::<std::io::Error>()
+        .is_some_and(|io_err| io_err.kind() == std::io::ErrorKind::NotFound)
 }
 
 pub(crate) fn parse_json_lines<T: DeserializeOwned>(stdout: &str) -> Result<Vec<T>> {

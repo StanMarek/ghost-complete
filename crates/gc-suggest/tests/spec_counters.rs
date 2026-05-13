@@ -2,12 +2,14 @@
 //! diagnostics for the requires_js migration plan.
 //!
 //! These pin the per-shape contributions to the [`SpecResolutionCounters`]
-//! fields so future converter work can extend the remaining
-//! migration-future fields (`static_extracted_subprocess`,
-//! `aws_sdk_dispatched`, `native_provider_dispatched`) without
-//! re-deriving the requires_js totals. `lowered_to_transforms` and
-//! `token_only_promoted` are already populated today and are exercised in
-//! this file.
+//! fields. Every counter is populated today: `lowered_to_transforms`
+//! (ux-10b), `static_extracted_subprocess` (ux-11),
+//! `token_only_promoted` (ux-12), `aws_sdk_dispatched` (ux-13), and
+//! `native_provider_dispatched` (ux-14). The orthogonality contract
+//! between these markers is pinned by
+//! [`lowered_and_native_provider_markers_are_orthogonal`] so a future
+//! converter that emits both annotations on the same generator does
+//! not silently double-count.
 //!
 //! The "supported" classification mirrors the engine's runtime dispatch
 //! gate (see [`gc_suggest::specs::is_requires_js_supported`]):
@@ -529,4 +531,94 @@ fn token_only_with_empty_source_does_not_increment_promoted_counter() {
         counters.token_only_promoted, 0,
         "whitespace-only token_only source must not count as promoted"
     );
+}
+
+/// Pins the orthogonality contract between converter markers
+/// (`_lowered_from_requires_js`, `_static_extracted_subprocess`) and
+/// the native provider `type` field. A future converter pass that
+/// lowers a JS body into a native script + transforms while also
+/// emitting a native `type` would otherwise double-bump without any
+/// signal. The bumps for lowered/native/aws-sdk are independent; the
+/// generator's `requires_js: false` shape means it should NOT enter
+/// the requires_js totals.
+#[test]
+fn lowered_and_native_provider_markers_are_orthogonal() {
+    let dir = TempDir::new().unwrap();
+    write_spec(
+        dir.path(),
+        "lowered-and-native.json",
+        r#"{
+            "name": "lowered-and-native",
+            "args": [{
+                "name": "target",
+                "generators": [{
+                    "type": "npm_scripts",
+                    "_lowered_from_requires_js": true,
+                    "script": ["npm", "run"],
+                    "transforms": ["split_lines"]
+                }]
+            }]
+        }"#,
+    );
+    let counters = SpecStore::load_from_dir(dir.path())
+        .unwrap()
+        .store
+        .counters();
+
+    assert_eq!(
+        counters.lowered_to_transforms, 1,
+        "the converter marker still increments the lowered counter"
+    );
+    assert_eq!(
+        counters.native_provider_dispatched, 1,
+        "the native `type` still increments the native dispatch counter"
+    );
+    assert_eq!(counters.static_extracted_subprocess, 0);
+    assert_eq!(counters.aws_sdk_dispatched, 0);
+    assert_eq!(counters.requires_js_total, 0);
+    assert_eq!(counters.requires_js_supported, 0);
+    assert_eq!(counters.requires_js_unsupported, 0);
+    assert_eq!(
+        counters.native_provider_counts.get("npm_scripts").copied(),
+        Some(1)
+    );
+}
+
+/// The `aws_sdk` provider type is a special case of
+/// `native_provider_dispatched`: it bumps BOTH the native dispatch
+/// counter AND the dedicated `aws_sdk_dispatched` slot so the AWS
+/// migration progress can be reported separately.
+#[test]
+fn aws_sdk_provider_increments_both_native_and_aws_counters() {
+    let dir = TempDir::new().unwrap();
+    write_spec(
+        dir.path(),
+        "aws-sdk-generator.json",
+        r#"{
+            "name": "aws-sdk-generator",
+            "args": [{
+                "name": "role-name",
+                "generators": [{
+                    "type": "aws_sdk",
+                    "params": {
+                        "service": "iam",
+                        "operation": "ListRoles",
+                        "field": "Roles[*].RoleName"
+                    }
+                }]
+            }]
+        }"#,
+    );
+    let counters = SpecStore::load_from_dir(dir.path())
+        .unwrap()
+        .store
+        .counters();
+
+    assert_eq!(counters.aws_sdk_dispatched, 1);
+    assert_eq!(counters.native_provider_dispatched, 1);
+    assert_eq!(
+        counters.native_provider_counts.get("aws_sdk").copied(),
+        Some(1)
+    );
+    assert_eq!(counters.requires_js_total, 0);
 }

@@ -89,13 +89,28 @@ fn profile_suggestions(ctx: &ProviderCtx) -> Vec<Suggestion> {
 
 fn read_profile_names(config_path: &Path, credentials_path: &Path) -> BTreeSet<String> {
     let mut names = BTreeSet::new();
-    if let Ok(contents) = std::fs::read_to_string(config_path) {
+    if let Some(contents) = read_aws_ini(config_path) {
         parse_config_profiles(&contents, &mut names);
     }
-    if let Ok(contents) = std::fs::read_to_string(credentials_path) {
+    if let Some(contents) = read_aws_ini(credentials_path) {
         parse_credentials_profiles(&contents, &mut names);
     }
     names
+}
+
+fn read_aws_ini(path: &Path) -> Option<String> {
+    match std::fs::read_to_string(path) {
+        Ok(contents) => Some(contents),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => {
+            tracing::warn!(
+                path = %path.display(),
+                error = %error,
+                "aws profile names provider could not read ini file"
+            );
+            None
+        }
+    }
 }
 
 fn parse_config_profiles(contents: &str, names: &mut BTreeSet<String>) {
@@ -109,10 +124,18 @@ fn parse_config_profiles(contents: &str, names: &mut BTreeSet<String>) {
 }
 
 fn parse_credentials_profiles(contents: &str, names: &mut BTreeSet<String>) {
+    // AWS credentials files only define bare `[name]` sections. The
+    // `[profile name]` shape belongs to `~/.aws/config` — anything that
+    // looks like that here is malformed, and the SDK ignores it, so we
+    // ignore it too instead of minting a phantom `"profile name"` entry.
     for section in ini_sections(contents) {
-        if let Some(profile) = clean(section) {
-            names.insert(profile.to_string());
+        let Some(profile) = clean(section) else {
+            continue;
+        };
+        if profile.split_whitespace().count() != 1 {
+            continue;
         }
+        names.insert(profile.to_string());
     }
 }
 
@@ -169,5 +192,49 @@ fn provider_suggestion(text: String, description: Option<String>) -> Suggestion 
         kind: SuggestionKind::ProviderValue,
         source: SuggestionSource::Provider,
         ..Default::default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse_credentials(contents: &str) -> BTreeSet<String> {
+        let mut names = BTreeSet::new();
+        parse_credentials_profiles(contents, &mut names);
+        names
+    }
+
+    fn parse_config(contents: &str) -> BTreeSet<String> {
+        let mut names = BTreeSet::new();
+        parse_config_profiles(contents, &mut names);
+        names
+    }
+
+    #[test]
+    fn credentials_parser_accepts_bare_profile_sections() {
+        let names = parse_credentials("[default]\n[prod]\n[staging]\n");
+        assert!(names.contains("default"));
+        assert!(names.contains("prod"));
+        assert!(names.contains("staging"));
+    }
+
+    #[test]
+    fn credentials_parser_rejects_config_style_profile_prefix() {
+        let names = parse_credentials("[profile prod]\n[default]\n");
+        assert!(
+            !names.contains("profile prod"),
+            "credentials file must not mint a `[profile name]` section as a profile"
+        );
+        assert!(names.contains("default"));
+    }
+
+    #[test]
+    fn config_parser_strips_profile_prefix_and_keeps_default() {
+        let names = parse_config("[profile dev]\n[default]\n[profile prod]\n");
+        assert!(names.contains("default"));
+        assert!(names.contains("dev"));
+        assert!(names.contains("prod"));
+        assert!(!names.contains("profile dev"));
     }
 }

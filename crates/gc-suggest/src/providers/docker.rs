@@ -12,7 +12,7 @@ use std::time::Duration;
 use anyhow::Result;
 use serde::Deserialize;
 
-use super::util::{parse_json_lines, spawn_with_timeout};
+use super::util::{is_binary_missing, parse_json_lines, spawn_with_timeout};
 use super::{Provider, ProviderCtx};
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
@@ -212,6 +212,10 @@ async fn run_docker_json_lines_with_binary(
     .await
     {
         Ok(stdout) => Some(stdout),
+        Err(error) if is_binary_missing(&error) => {
+            tracing::trace!(binary, "docker-family binary not installed");
+            None
+        }
         Err(error) => {
             tracing::warn!(binary, error = %error, "docker provider command failed");
             None

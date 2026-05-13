@@ -93,8 +93,13 @@ impl JsonPath {
                 } else if let Ok(n) = inner.parse::<usize>() {
                     JsonPathSegment::Index(n)
                 } else {
+                    let hint = if inner.starts_with('?') {
+                        "; JSONPath filter expressions ([?(...)]) are not supported"
+                    } else {
+                        ""
+                    };
                     return Err(format!(
-                        "bracket segment must be a quoted key or number, got {inner:?}"
+                        "bracket segment must be a quoted key or number, got {inner:?}{hint}"
                     ));
                 };
                 if matches!(seg, JsonPathSegment::Wildcard) {

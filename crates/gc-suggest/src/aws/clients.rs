@@ -25,10 +25,8 @@ impl AwsClients {
     }
 
     async fn config_for(profile: Option<&str>, region: Option<&str>) -> aws_config::SdkConfig {
-        if std::env::var_os("AWS_EC2_METADATA_DISABLED").is_none() {
-            std::env::set_var("AWS_EC2_METADATA_DISABLED", "true");
-        }
-
+        // IMDS is disabled via `AWS_EC2_METADATA_DISABLED`, set once at
+        // process startup in `main` (see `gc_suggest::aws::set_imds_disabled_env`).
         let mut loader = aws_config::defaults(BehaviorVersion::latest());
         if let Some(profile) = profile {
             loader = loader.profile_name(profile.to_string());

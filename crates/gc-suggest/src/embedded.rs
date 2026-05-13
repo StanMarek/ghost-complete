@@ -81,6 +81,22 @@ fn parse_archive() -> EmbeddedIndex {
     let mut cursor: usize = 0;
     let entry_count = read_u32(ARCHIVE, &mut cursor) as usize;
 
+    // Minimum per-entry footprint = [u16 name_len][>=1 name byte][u8 has_alias=0][u32 blob_len][>=0 blob]
+    // = 2 + 1 + 1 + 4 = 8 bytes. A truncated or otherwise-corrupt
+    // entry_count larger than (ARCHIVE.len() - 4) / 8 cannot
+    // possibly be valid, and an unsanitised value would request a
+    // multi-gigabyte allocation in `with_capacity` below. Convert
+    // that into a clear diagnostic instead of an OOM crash.
+    const MIN_ENTRY_BYTES: usize = 8;
+    let body_bytes = ARCHIVE.len().saturating_sub(4);
+    let max_plausible = body_bytes / MIN_ENTRY_BYTES;
+    assert!(
+        entry_count <= max_plausible,
+        "embedded_specs.bin: entry_count {entry_count} is implausibly large for archive of {} bytes \
+         (max plausible {max_plausible}) — archive is truncated or has a corrupt header",
+        ARCHIVE.len()
+    );
+
     let mut filenames: Vec<&'static str> = Vec::with_capacity(entry_count);
     let mut aliases: Vec<Option<&'static str>> = Vec::with_capacity(entry_count);
     let mut blobs: HashMap<&'static str, &'static [u8]> = HashMap::with_capacity(entry_count);
@@ -240,7 +256,13 @@ pub fn embedded_spec_contents(filename: &str) -> Option<&'static str> {
 
     // Fast path: cache hit.
     {
-        let guard = idx.cache.lock().unwrap_or_else(|p| p.into_inner());
+        let guard = idx.cache.lock().unwrap_or_else(|poison| {
+            tracing::error!(
+                "embedded spec cache mutex was poisoned by an earlier panic; \
+                 recovering the inner map (suggestions may be stale until process restart)"
+            );
+            poison.into_inner()
+        });
         if let Some(s) = guard.get(archive_key) {
             return Some(*s);
         }
@@ -265,7 +287,13 @@ pub fn embedded_spec_contents(filename: &str) -> Option<&'static str> {
     });
     let leaked: &'static str = Box::leak(owned.into_boxed_str());
 
-    let mut guard = idx.cache.lock().unwrap_or_else(|p| p.into_inner());
+    let mut guard = idx.cache.lock().unwrap_or_else(|poison| {
+        tracing::error!(
+            "embedded spec cache mutex was poisoned by an earlier panic; \
+             recovering the inner map (suggestions may be stale until process restart)"
+        );
+        poison.into_inner()
+    });
     // Re-check: another thread may have populated the slot between our
     // lock-drop and re-acquire. If so, prefer the existing pointer so
     // callers that hold both side-by-side compare equal.

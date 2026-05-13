@@ -4,7 +4,7 @@ use std::time::Duration;
 use anyhow::Result;
 use serde::Deserialize;
 
-use super::util::{parse_json_root, spawn_with_timeout};
+use super::util::{is_binary_missing, parse_json_root, spawn_with_timeout};
 use super::version_probe;
 use super::{Provider, ProviderCtx};
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
@@ -171,6 +171,10 @@ async fn run_systemctl_stdout(cwd: &Path, binary: &str, args: &[&str]) -> Option
     .await
     {
         Ok(stdout) => Some(stdout),
+        Err(error) if is_binary_missing(&error) => {
+            tracing::trace!(binary, "systemctl binary not installed");
+            None
+        }
         Err(error) => {
             tracing::warn!(binary, error = %error, "systemctl provider command failed");
             None
@@ -179,18 +183,20 @@ async fn run_systemctl_stdout(cwd: &Path, binary: &str, args: &[&str]) -> Option
 }
 
 fn json_args(scope: SystemdScope) -> Vec<&'static str> {
-    let mut args = vec!["list-units", "-o", "json", "--all", "--full"];
+    let mut args = Vec::with_capacity(7);
     if scope.is_user() {
         args.push("--user");
     }
+    args.extend_from_slice(&["list-units", "-o", "json", "--all", "--full"]);
     args
 }
 
 fn text_args(scope: SystemdScope) -> Vec<&'static str> {
-    let mut args = vec!["list-units", "--no-legend", "--all", "--full"];
+    let mut args = Vec::with_capacity(5);
     if scope.is_user() {
         args.push("--user");
     }
+    args.extend_from_slice(&["list-units", "--no-legend", "--all", "--full"]);
     args
 }
 

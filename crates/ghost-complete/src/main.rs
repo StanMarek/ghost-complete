@@ -219,6 +219,16 @@ fn main() -> Result<()> {
 
     tracing::info!(shell = %shell, "starting ghost-complete proxy");
 
+    // SAFETY: must run while the process is still single-threaded.
+    // We're in `fn main` before any `std::thread::spawn` or tokio
+    // runtime construction; the AWS SDK reads this env var later from
+    // many threads but never writes it, and nothing else in our
+    // process mutates the environment after this point. See the
+    // `gc_suggest::aws::set_imds_disabled_env` SAFETY doc.
+    unsafe {
+        gc_suggest::aws::set_imds_disabled_env();
+    }
+
     let rt = tokio::runtime::Runtime::new().context("failed to create tokio runtime")?;
     let exit_code = rt.block_on(gc_pty::run_proxy(&shell, &args, &config))?;
 

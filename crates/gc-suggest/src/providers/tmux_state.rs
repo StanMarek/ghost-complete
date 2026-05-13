@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 
-use super::util::spawn_with_timeout;
+use super::util::{is_binary_missing, spawn_with_timeout};
 use super::{Provider, ProviderCtx};
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
@@ -82,6 +82,14 @@ async fn run_tmux_with_binary(cwd: &Path, binary: &str, query: TmuxQuery) -> Opt
     .await
     {
         Ok(stdout) => Some(stdout),
+        Err(error) if is_binary_missing(&error) => {
+            tracing::trace!(binary, "tmux binary not installed");
+            None
+        }
+        Err(error) if error.to_string().contains("no server running") => {
+            tracing::trace!(binary, "tmux server not running");
+            None
+        }
         Err(error) => {
             tracing::warn!(binary, error = %error, "tmux provider command failed");
             None

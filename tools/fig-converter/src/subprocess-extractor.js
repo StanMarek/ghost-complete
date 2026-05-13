@@ -106,7 +106,19 @@ export function extractSubprocessGenerator(source) {
     };
   }
 
-  return decline('transforms-unsupported');
+  // SPEC § A point 4 — "If the post-processing exceeds what the
+  // transform pipeline can express, leave the JS body but set
+  // `kind: post_process` and emit a working `js_runtime`." We already
+  // verified the post-statement body references neither `tokens` nor
+  // the runner (lines 88-93), so what remains is a pure
+  // stdout-to-suggestions JS function — exactly what the supported
+  // PostProcess path expects. Lift the script natively; keep the body
+  // as the post-process JS source.
+  return {
+    kind: 'fallback_post_process',
+    script: [command, ...args],
+    fallbackJsSource: postProcessSource,
+  };
 }
 
 function decline(reason) {

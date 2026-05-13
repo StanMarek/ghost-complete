@@ -12,7 +12,7 @@ use std::time::Duration;
 use anyhow::Result;
 use serde::Deserialize;
 
-use super::util::{parse_json_root, spawn_with_timeout};
+use super::util::{is_binary_missing, parse_json_root, spawn_with_timeout};
 use super::version_probe;
 use super::{Provider, ProviderCtx};
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
@@ -234,6 +234,10 @@ async fn run_kubectl_with_args(
     .await
     {
         Ok(stdout) => Some(stdout),
+        Err(error) if is_binary_missing(&error) => {
+            tracing::trace!(binary, "kubectl binary not installed");
+            None
+        }
         Err(error) => {
             tracing::warn!(binary, error = %error, "kubectl provider command failed");
             None
@@ -248,12 +252,7 @@ async fn generate_kubectl_with_binary(
 ) -> Result<Vec<Suggestion>> {
     let use_legacy_resources = if kind == K8sKind::Resources {
         matches!(
-            version_probe::probe_version_with_args(
-                binary,
-                ["version", "--client", "--short"],
-                "1.11",
-            )
-            .await,
+            version_probe::probe_version_with_args(binary, ["version", "--client"], "1.11",).await,
             Some(false)
         )
     } else {
@@ -270,6 +269,11 @@ async fn generate_kubectl_with_binary(
         Some(stdout) => stdout,
         None if !use_legacy_resources => match kind.legacy_args() {
             Some(args) => {
+                tracing::debug!(
+                    binary,
+                    ?kind,
+                    "kubectl modern args failed; retrying with legacy args"
+                );
                 match run_kubectl_with_args(&ctx.cwd, ctx.env.as_ref(), binary, args).await {
                     Some(stdout) => stdout,
                     None => return Ok(Vec::new()),

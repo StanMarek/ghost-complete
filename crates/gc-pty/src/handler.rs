@@ -2954,11 +2954,17 @@ fn generator_depends_on_current_word(gen: &gc_suggest::specs::GeneratorSpec) -> 
 
     // PostProcess JS bodies receive only the script's stdout — the live
     // current_word never reaches them. Pin the dependency only for the
-    // shapes that actually read it (Custom, ScriptFunction).
+    // shapes that actually read it: Custom and ScriptFunction get the
+    // raw tokens via `ctx`; TokenOnly bodies receive `tokens`,
+    // `currentToken`, and `previousToken` as the only globals (see
+    // `install_token_only_globals`) so their suggestions go stale the
+    // moment the user types another character.
     gen.requires_js
         && matches!(
             gen.js_runtime.as_ref().map(|rt| rt.kind.clone()),
-            Some(JsRuntimeKind::Custom) | Some(JsRuntimeKind::ScriptFunction)
+            Some(JsRuntimeKind::Custom)
+                | Some(JsRuntimeKind::ScriptFunction)
+                | Some(JsRuntimeKind::TokenOnly)
         )
 }
 
@@ -6095,6 +6101,20 @@ mod tests {
         assert!(
             !generator_depends_on_current_word(&gen),
             "PostProcess only sees stdout — must not pin current_word"
+        );
+    }
+
+    #[test]
+    fn js_runtime_token_only_pins_current_word() {
+        // TokenOnly bodies receive `tokens`, `currentToken`, and
+        // `previousToken` as their entire input surface (see
+        // `install_token_only_globals`). Without pinning, suggestions
+        // computed for `kubectl get po` would silently merge with the
+        // popup when the user later types the `d` of `pods`.
+        let gen = js_runtime_generator(Some(gc_suggest::specs::JsRuntimeKind::TokenOnly));
+        assert!(
+            generator_depends_on_current_word(&gen),
+            "TokenOnly bodies branch on tokens/currentToken — must pin current_word"
         );
     }
 

@@ -235,16 +235,26 @@ impl GeneratorCache {
                 PendingProbe::Lead(sender) => sender,
             };
 
+            // RAII cleanup: removing from `pending` and notifying
+            // waiters must run on every leader exit path — success,
+            // failure, panic, AND async cancellation (a higher-level
+            // task being dropped mid-`producer().await`). Without the
+            // guard, cancellation strands the pending entry and every
+            // future waiter blocks on a `recv()` that never fires.
+            let _guard = PendingGuard {
+                pending: &self.pending,
+                key: &key,
+                sender,
+            };
+
             let result = producer().await;
             if let Ok(suggestions) = &result {
                 self.insert(key.clone(), suggestions.clone(), ttl);
             }
-
-            {
-                let mut pending = self.pending.lock().unwrap_or_else(|e| e.into_inner());
-                pending.remove(&key);
-            }
-            let _ = sender.send(());
+            // _guard drops here, removing the pending entry and
+            // broadcasting the wake-up — waiters loop back and either
+            // hit the freshly-inserted cache entry (success path) or
+            // race to become the next leader (failure path).
             return result;
         }
     }
@@ -322,6 +332,24 @@ impl GeneratorCache {
 impl Default for GeneratorCache {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// RAII handle held by the leader inside [`GeneratorCache::get_or_try_insert_with`].
+/// Drop removes the pending slot and notifies waiters whether the producer
+/// returned `Ok`, returned `Err`, panicked, or the surrounding task was
+/// cancelled mid-`await`.
+struct PendingGuard<'a> {
+    pending: &'a Mutex<HashMap<CacheKey, broadcast::Sender<()>>>,
+    key: &'a CacheKey,
+    sender: broadcast::Sender<()>,
+}
+
+impl Drop for PendingGuard<'_> {
+    fn drop(&mut self) {
+        let mut pending = self.pending.lock().unwrap_or_else(|e| e.into_inner());
+        pending.remove(self.key);
+        let _ = self.sender.send(());
     }
 }
 
@@ -604,5 +632,48 @@ mod tests {
         cache.insert(key.clone(), make_suggestions(), Duration::from_secs(60));
         assert!(cache.get_stdout(&key).is_none());
         assert!(cache.get(&key).is_some());
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_pending_slot_cleared_on_producer_error() {
+        let cache = GeneratorCache::new();
+        let key = CacheKey::new("spec", &["argv"], None);
+
+        let result: Result<Vec<Suggestion>, &str> = cache
+            .get_or_try_insert_with(key.clone(), Duration::from_secs(60), || async {
+                Err("boom")
+            })
+            .await;
+        assert!(result.is_err());
+
+        let pending = cache.pending.lock().unwrap_or_else(|e| e.into_inner());
+        assert!(
+            !pending.contains_key(&key),
+            "pending slot must be released when the producer returns Err"
+        );
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn test_pending_slot_cleared_on_cancellation() {
+        let cache = GeneratorCache::new();
+        let key = CacheKey::new("spec", &["argv"], None);
+
+        let producer = cache.get_or_try_insert_with::<&str, _, _>(
+            key.clone(),
+            Duration::from_secs(60),
+            || async {
+                std::future::pending::<()>().await;
+                Ok(vec![])
+            },
+        );
+
+        let timed_out = tokio::time::timeout(Duration::from_millis(50), producer).await;
+        assert!(timed_out.is_err(), "producer should still be pending");
+
+        let pending = cache.pending.lock().unwrap_or_else(|e| e.into_inner());
+        assert!(
+            !pending.contains_key(&key),
+            "pending slot must be released when the leader is cancelled mid-await"
+        );
     }
 }

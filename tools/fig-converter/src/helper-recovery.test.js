@@ -82,6 +82,28 @@ describe('matchHelperLookup', () => {
     }
   });
 
+  it('lowers named function expression bodies the same as anonymous ones', async () => {
+    // SPEC § D enumerates `function name(t){...}` as one of the
+    // accepted shapes; Babel parses these as FunctionExpression with
+    // `id` set, which the matcher should accept without depending on
+    // anonymity. Pinning this prevents a future predicate tightening
+    // from silently dropping helper bodies that happen to be named.
+    const registry = await loadHelperRegistry();
+    assert.deepStrictEqual(
+      matchHelperLookup(
+        'function listRoles(t){return l(t,"Roles","RoleName")}',
+        registry,
+      ),
+      {
+        transforms: [
+          { type: 'json_path_extract', array: 'Roles', name_field: 'RoleName' },
+        ],
+        requires_js: false,
+        lowered_from_requires_js: true,
+      },
+    );
+  });
+
   it('recognizes f helper calls but keeps them on the JS fallback', async () => {
     const registry = await loadHelperRegistry();
     const fnSource = 'stdout=>f(stdout,"lambda.amazonaws.com")';

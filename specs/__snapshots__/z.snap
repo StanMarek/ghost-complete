@@ -1,3 +1,38 @@
 {
+  "args": {
+    "generators": [
+      {
+        "cache": {
+          "cache_by_directory": false,
+          "ttl_seconds": 60
+        },
+        "script": [
+          "zoxide",
+          "query",
+          "--list"
+        ],
+        "transforms": [
+          "split_lines",
+          "filter_empty",
+          "trim"
+        ]
+      }
+    ],
+    "isOptional": true,
+    "isVariadic": true,
+    "name": "keywords",
+    "suggestions": [
+      {
+        "description": "Previous directory ($OLDPWD)",
+        "name": "-"
+      },
+      {
+        "description": "Home directory",
+        "name": "~"
+      }
+    ],
+    "template": "folders"
+  },
+  "description": "Jump to a directory using fuzzy matching against the zoxide database",
   "name": "z"
 }

@@ -1,5 +1,10 @@
 // Fig-compatible single-letter helpers vendored from @withfig/autocomplete.
 //
+// Pinned upstream: @withfig/autocomplete 2.692.3, npm gitHead
+// aef52acff84c45edde61ae610cc2c964802b9a38 — keep in sync with
+// `tools/fig-converter/src/helper-registry.json`'s `_pinned_to`.
+// Refresh both files together when bumping the upstream bundle.
+//
 // Source reference: @withfig/autocomplete generators in
 //   build/aws/*.js
 // The upstream repository bundles each sub-spec independently, so the
@@ -19,8 +24,9 @@
 // upstream bundle changes shape.
 //
 // Shapes:
-//   l(stdout, "Field", "Sub")  -> [{name: String(row[Sub])}] for row in stdout.Field where row[Sub] != null
-//   l(stdout, "Field")          -> [{name: String(x)}] for x in stdout.Field where x != null
+//   l(stdout, "Field")                       -> [{name}]
+//   l(stdout, "Field", "Sub")                -> [{name: row.Sub}]
+//   l(stdout, "Field", "Sub", "DescField")   -> [{name: row.Sub, description: row.DescField}]
 //   p, c, d, h                  -> aliases for l. The upstream minifier
 //                                   picks a different letter per sub-spec,
 //                                   so we install all five names to one
@@ -30,9 +36,14 @@
 //   f(stdout, "principalDomain")
 //      filters Roles whose AssumeRolePolicyDocument permits the given
 //      Principal.Service. Used by `aws iam list-roles` bodies.
+//
+// The 4-arity shape mirrors the converter's helper-matcher in
+// tools/fig-converter/src/helper-matcher.js: a 3rd string arg is
+// projected as a description so the native-lowered transform and the
+// JS fallback produce the same suggestion shape.
 
 (function (globalScope) {
-  function listExtract(stdout, arrayField, nameField) {
+  function listExtract(stdout, arrayField, nameField, descriptionField) {
     let parsed;
     try {
       parsed = JSON.parse(stdout);
@@ -55,7 +66,12 @@
       if (item == null || typeof item !== "object") continue;
       const v = item[nameField];
       if (v == null) continue;
-      out.push({ name: String(v) });
+      const entry = { name: String(v) };
+      if (descriptionField !== undefined) {
+        const d = item[descriptionField];
+        if (d != null) entry.description = String(d);
+      }
+      out.push(entry);
     }
     return out;
   }

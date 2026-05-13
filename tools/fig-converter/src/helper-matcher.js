@@ -48,9 +48,11 @@ export function matchHelperLookup(fnSource, helperRegistry) {
     transform.name_field = namePath;
   }
   if (stringArgs[2] !== undefined) {
-    // Fig's minified helper aliases tolerate extra arguments. When a
-    // third static field is present we preserve that author intent as a
-    // native description projection instead of discarding it.
+    // 4-arity helper calls (e.g. `l(t,"Users","UserName","Arn")`) carry
+    // an explicit description field. Both the lowered native transform
+    // and the JS fallback in crates/gc-jsrt/src/helpers.js honor the
+    // 3rd string arg as the description projection so the two paths
+    // produce equivalent {name, description} suggestion shapes.
     const descriptionPath = jsonPathFlatKey(stringArgs[2]);
     if (descriptionPath === null) return null;
     transform.description_field = descriptionPath;

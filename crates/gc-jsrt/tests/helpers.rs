@@ -153,6 +153,53 @@ async fn helper_h_two_arg_form() {
     );
 }
 
+/// 4-arity helper bodies project a description field. The converter's
+/// helper-matcher emits a `json_path_extract` with `description_field`
+/// set, so the JS fallback path must produce the same {name,
+/// description} shape — otherwise specs that route through JS would
+/// silently lose descriptions relative to their lowered counterparts.
+#[tokio::test]
+async fn helper_l_four_arg_form_extracts_name_and_description() {
+    let worker = JsWorker::spawn().expect("spawn worker");
+    let stdout = r#"{"Roles":[{"RoleName":"admin","Arn":"arn:aws:iam::1:role/admin"},{"RoleName":"viewer","Arn":"arn:aws:iam::1:role/viewer"}]}"#;
+    let body = r#"function(t){return l(t,"Roles","RoleName","Arn")}"#;
+    let out = run(&worker, &post_process_program(body, stdout)).await;
+    let pairs: Vec<_> = out
+        .suggestions()
+        .iter()
+        .map(|s| (s.name.as_str(), s.description.as_deref().unwrap_or("")))
+        .collect();
+    assert_eq!(
+        pairs,
+        [
+            ("admin", "arn:aws:iam::1:role/admin"),
+            ("viewer", "arn:aws:iam::1:role/viewer"),
+        ],
+        "diagnostics: {:?}",
+        out.diagnostics
+    );
+}
+
+/// A 4-arity call where the description field is absent on a row
+/// should still emit a name-only suggestion for that row — losing the
+/// description is preferable to dropping the row entirely.
+#[tokio::test]
+async fn helper_l_four_arg_form_omits_description_when_missing() {
+    let worker = JsWorker::spawn().expect("spawn worker");
+    let stdout = r#"{"Roles":[{"RoleName":"admin","Arn":"arn:role/admin"},{"RoleName":"viewer"}]}"#;
+    let body = r#"function(t){return l(t,"Roles","RoleName","Arn")}"#;
+    let out = run(&worker, &post_process_program(body, stdout)).await;
+    let pairs: Vec<_> = out
+        .suggestions()
+        .iter()
+        .map(|s| (s.name.as_str(), s.description.clone()))
+        .collect();
+    assert_eq!(
+        pairs,
+        [("admin", Some("arn:role/admin".into())), ("viewer", None),]
+    );
+}
+
 // --- f: filter IAM roles by AssumeRolePolicyDocument Principal.Service ----
 
 /// Percent-encode non-unreserved bytes (RFC 3986 unreserved set).

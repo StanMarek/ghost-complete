@@ -178,10 +178,11 @@ impl ProviderCtx {
 
     /// Stable hash of [`Self::params`] suitable for in-process cache
     /// keys. `BTreeMap` iteration order is deterministic, and
-    /// [`std::collections::hash_map::DefaultHasher`] is fixed-seed,
-    /// so the result is stable across calls within a process. Cross-
-    /// process stability is NOT guaranteed and not required — this
-    /// hash exists for the in-process generator cache only.
+    /// [`std::collections::hash_map::DefaultHasher`] produces the same
+    /// digest for the same input within a single binary build (the
+    /// stdlib disclaims cross-release stability of the algorithm
+    /// itself, which is acceptable here because this hash is consumed
+    /// only by an in-process generator cache and never persisted).
     pub fn params_hash(&self) -> u64 {
         use std::hash::{Hash, Hasher};
         let mut hasher = std::collections::hash_map::DefaultHasher::new();

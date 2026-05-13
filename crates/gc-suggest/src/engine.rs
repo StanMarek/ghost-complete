@@ -1436,7 +1436,13 @@ impl SuggestionEngine {
                 if !is_aws_sdk_fallback_generator(gen) {
                     return true;
                 }
-                self.aws_sdk_fallback_to_cli
+                // `aws_sdk_fallback_to_cli = false` only suppresses the CLI
+                // fallback when the native AWS provider is *also* enabled —
+                // the flag means "the native provider supersedes CLI". If
+                // the native provider is off, CLI is the only path that
+                // produces completions, so an explicit `fallback = false`
+                // must not strand the user with an empty popup.
+                !self.providers_aws_sdk || self.aws_sdk_fallback_to_cli
             })
             .collect()
     }
@@ -3127,7 +3133,12 @@ mod tests {
     }
 
     #[test]
-    fn aws_sdk_provider_disabled_can_disable_cli_fallback_too() {
+    fn aws_sdk_fallback_flag_only_applies_when_native_provider_enabled() {
+        // `aws_sdk_fallback_to_cli = false` is meant for "the native
+        // provider supersedes CLI"; when the native provider is OFF the
+        // flag must NOT also suppress the CLI script, otherwise the
+        // popup stays empty for a user who never opted into the native
+        // path.
         let (_spec_dir, engine) = aws_sdk_routing_engine();
         let engine = engine.with_aws_sdk_config(false, false);
         let ctx = make_ctx(Some("awsx"), vec![], "", 1);
@@ -3137,7 +3148,11 @@ mod tests {
             .unwrap();
 
         assert!(results.provider_generators.is_empty());
-        assert!(results.script_generators.is_empty());
+        assert_eq!(
+            results.script_generators.len(),
+            1,
+            "CLI fallback must survive an explicit fallback=false when the native provider is also off"
+        );
     }
 
     #[tokio::test]
