@@ -50,7 +50,9 @@ _No unreleased changes._
   now reports the mirror state as a `[OK]`/`[WARN]` check so operators see
   whether their installed corpus matches the binary. The new module lives
   at `crates/gc-suggest/src/mirror.rs`; install and the proxy share a
-  single writer.
+  single writer. The auto-refresh now sha256-fingerprints each mirror
+  file at write time and skips files the user has edited, surfacing them
+  through the doctor check rather than silently overwriting them.
 - Config editor (`ghost-complete config edit`) now exposes
   `popup.render_block_ms`, `suggest.providers.js_runtime`,
   `experimental.aws_sdk_provider`, `experimental.aws_sdk_fallback_to_cli`,

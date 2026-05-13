@@ -176,13 +176,21 @@ fn copy_specs(config_dir: &Path) -> Result<()> {
     // launch detects as still stale and retries — preventing the
     // upgrade-staleness regression that motivated the auto-refresh in
     // the first place.
-    gc_suggest::mirror::write_embedded_mirror(&dest, gc_suggest::mirror::CURRENT_VERSION)
-        .with_context(|| format!("failed to install completion specs to {}", dest.display()))?;
+    let skipped =
+        gc_suggest::mirror::write_embedded_mirror(&dest, gc_suggest::mirror::CURRENT_VERSION)
+            .with_context(|| format!("failed to install completion specs to {}", dest.display()))?;
     println!(
         "  Installed {} completion specs to {}",
         embedded_spec_count(),
         sanitize_path(&dest)
     );
+    if !skipped.is_empty() {
+        println!(
+            "  Skipped {} user-edited spec(s) (delete the file(s) and re-run `ghost-complete install` to overwrite): {}",
+            skipped.len(),
+            skipped.join(", ")
+        );
+    }
     Ok(())
 }
 
@@ -1219,10 +1227,28 @@ mod tests {
             embedded_spec_count()
         );
         // Stamp file must be present and carry the current binary version.
+        // The v2 stamp format is `ghost-complete-mirror v2\n<version>\n<hash>  <filename>\n...`
+        // so we check that the version appears as the second line.
         let stamp_path = dest.join(gc_suggest::mirror::STAMP_FILENAME);
         assert!(stamp_path.is_file(), "version stamp must be written");
         let stamp_body = fs::read_to_string(&stamp_path).unwrap();
-        assert_eq!(stamp_body.trim(), gc_suggest::mirror::CURRENT_VERSION);
+        let mut lines = stamp_body.lines();
+        assert_eq!(
+            lines.next(),
+            Some("ghost-complete-mirror v2"),
+            "v2 stamp must begin with the magic header"
+        );
+        assert_eq!(
+            lines.next(),
+            Some(gc_suggest::mirror::CURRENT_VERSION),
+            "stamp must record the current binary version"
+        );
+        // Subsequent lines are per-file hashes; at least one must
+        // exist (we just wrote the whole embedded corpus).
+        assert!(
+            lines.next().is_some(),
+            "v2 stamp must record at least one per-file hash"
+        );
 
         // Installed specs are written pretty-printed so users can diff
         // and hand-edit them. The build-time minifier strips newlines

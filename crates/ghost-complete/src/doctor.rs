@@ -327,11 +327,28 @@ fn check_install_mirror_stamp(config: &gc_config::GhostConfig) -> CheckResult {
         gc_suggest::mirror::MirrorStatus::NotInstalled => {
             CheckResult::ok("Spec mirror not installed (using embedded corpus directly)")
         }
-        gc_suggest::mirror::MirrorStatus::Fresh => CheckResult::ok(format!(
-            "Spec mirror at {} is up to date (v{})",
-            install_dir.display(),
-            gc_suggest::mirror::CURRENT_VERSION
-        )),
+        gc_suggest::mirror::MirrorStatus::Fresh => {
+            // Fresh stamp — but the auto-refresh may have skipped
+            // user-edited files. Surface those so the operator
+            // knows the embedded improvements are NOT winning for
+            // those specific files.
+            let edited = gc_suggest::mirror::list_user_edited_specs(&install_dir);
+            if edited.is_empty() {
+                CheckResult::ok(format!(
+                    "Spec mirror at {} is up to date (v{})",
+                    install_dir.display(),
+                    gc_suggest::mirror::CURRENT_VERSION
+                ))
+            } else {
+                CheckResult::warn(format!(
+                    "Spec mirror at {} has {} user-edited spec(s) skipped from auto-refresh: {}. \
+                     Delete the file(s) and re-run `ghost-complete install` to take the embedded version.",
+                    install_dir.display(),
+                    edited.len(),
+                    edited.join(", ")
+                ))
+            }
+        }
         gc_suggest::mirror::MirrorStatus::Unstamped => CheckResult::warn(format!(
             "Spec mirror at {} is from an older version (no version stamp); \
              current binary is v{}. Run `ghost-complete install` to refresh.",

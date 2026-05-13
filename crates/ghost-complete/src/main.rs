@@ -185,11 +185,15 @@ fn auto_refresh_install_mirror_if_stale(config: &gc_config::GhostConfig) {
     match outcome {
         gc_suggest::mirror::RefreshOutcome::NotInstalled
         | gc_suggest::mirror::RefreshOutcome::AlreadyFresh => {}
-        gc_suggest::mirror::RefreshOutcome::Refreshed { previous_version } => {
+        gc_suggest::mirror::RefreshOutcome::Refreshed {
+            previous_version,
+            skipped_user_edited,
+        } => {
             tracing::info!(
                 previous = %previous_version,
                 current = %gc_suggest::mirror::CURRENT_VERSION,
                 install_dir = %install_dir.display(),
+                skipped_user_edited = skipped_user_edited.len(),
                 "refreshed stale install-mirror spec corpus"
             );
         }
