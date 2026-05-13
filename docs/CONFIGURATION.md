@@ -34,6 +34,7 @@ Controls the popup appearance.
 | `feedback_dismiss_ms` | integer | `1200` | Milliseconds to keep Empty/Error feedback visible. Set to `0` to disable auto-dismiss. Values above `10000` are clamped. |
 | `spinner` | bool | `true` | Animate Loading feedback when the popup is wide enough |
 | `show_provider_errors` | bool | `false` | Show provider names in error feedback. Disabled by default for shared-screen privacy. |
+| `render_block_ms` | integer | `80` | Maximum time in milliseconds to block before painting sync results while waiting for the first high-priority async generator. Set to `0` to paint immediately. Clamped to `[0, 300]`. |
 | `min_width` | integer | `20` | Lower bound for popup width in display columns. Clamped to `[10, 500]`. If `max_width` is lower after normalization, `max_width` is raised to `min_width`. |
 | `max_width` | integer | `60` | Upper bound for popup width in display columns. Clamped to `[min_width, 500]` and additionally to the live `screen_cols` at render time. Bump this on wide terminals to give descriptions more room before the truncation ellipsis (`…`) kicks in. |
 | `description_box` | string | `"off"` | Adjacent description box mode. `"off"` keeps the legacy inline-truncated behavior. `"side"` renders a wrapped multi-line box next to the main popup for the selected suggestion when the inline description would be hidden or truncated. The box is capped by `description_box_lines` and available rows; short descriptions that already fit don't trigger it. Falls back to a stacked-below box when there's no horizontal room, and to inline truncation when neither fits. |
@@ -48,6 +49,7 @@ borders = false
 feedback_dismiss_ms = 1200
 spinner = true
 show_provider_errors = false
+render_block_ms = 80
 min_width = 20
 max_width = 60
 description_box = "off"
@@ -121,7 +123,7 @@ Enable or disable individual suggestion providers.
 | `filesystem` | bool | `true` | File and directory completions |
 | `specs` | bool | `true` | Fig-compatible JSON spec completions |
 | `git` | bool | `true` | Git context completions (branches, tags, remotes) |
-| `js_runtime` | bool | `true` | QuickJS evaluator for `requires_js` spec generators. Set `false` to disable JS-backed `post_process`, `script_function`, and `custom` generators while keeping static spec completions. |
+| `js_runtime` | bool | `true` | QuickJS evaluator for `requires_js` spec generators. Set `false` to disable JS-backed `post_process`, `script_function`, `custom`, and `token_only` generators while keeping static spec completions. |
 
 ```toml
 [suggest.providers]
@@ -242,12 +244,14 @@ Opt-in features that are not yet considered stable.
 | `multi_terminal` | bool | `false` | Enable unsupported/unknown terminals. All 9 supported terminals (Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app, Zed, VSCode) work without this flag. Set to `true` only if you want to try Ghost Complete on an unlisted terminal. |
 | `aws_sdk_provider` | bool | `false` | Opt in to native AWS SDK completions. Default `false` means Ghost Complete does not make outbound AWS SDK calls. |
 | `aws_sdk_fallback_to_cli` | bool | `true` | When native AWS SDK completions are enabled but cannot run, allow the existing `aws` CLI script path to produce slower fallback completions. |
+| `brew_search_cap` | integer | `1000` | Ceiling on `brew search ""` results considered by the searchable-formulae provider. Lower this on slower machines; raise for broader unfiltered exploration. |
 
 ```toml
 [experimental]
 multi_terminal = true
 aws_sdk_provider = false
 aws_sdk_fallback_to_cli = true
+brew_search_cap = 1000
 ```
 
 `aws_sdk_provider` is intentionally default-off for the first AWS SDK release
@@ -404,7 +408,7 @@ match_highlight = "underline"
 | `[trigger]` | `auto_chars` | Yes |
 | `[trigger]` | `delay_ms` | No |
 | `[trigger]` | `auto_trigger` | Yes |
-| `[popup]` | `max_visible`, `borders`, `feedback_dismiss_ms`, `spinner`, `show_provider_errors`, `min_width`, `max_width`, `description_box`, `description_box_max_width`, `description_box_lines`, `description_box_debounce_ms` | Yes |
+| `[popup]` | `max_visible`, `borders`, `feedback_dismiss_ms`, `spinner`, `show_provider_errors`, `render_block_ms`, `min_width`, `max_width`, `description_box`, `description_box_max_width`, `description_box_lines`, `description_box_debounce_ms` | Yes |
 | `[suggest]` | All fields | No |
 | `[suggest.providers]` | All fields | No |
 | `[paths]` | All fields | No |

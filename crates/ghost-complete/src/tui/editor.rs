@@ -227,9 +227,51 @@ fn apply_field_removal(app: &mut App, section: &str, key: &str) {
     }
 }
 
+/// Pull an integer literal out of the raw TOML before serde's saturating
+/// deserializer collapses out-of-range u16 values to 65535. Returns `None`
+/// for missing keys, non-integer literals, or malformed TOML.
+fn raw_integer_field(raw_toml: &str, section: &str, key: &str) -> Option<i64> {
+    let root: toml::Value = toml::from_str(raw_toml).ok()?;
+    let mut current = &root;
+    for part in section.split('.') {
+        current = current.as_table()?.get(part)?;
+    }
+    current.as_table()?.get(key)?.as_integer()
+}
+
 fn commit_toml_update(app: &mut App, field_key: String, new_toml: String) {
     if new_toml == app.raw_toml {
         app.errors.retain(|(k, _)| k != &field_key);
+        return;
+    }
+
+    // Surface u16 overflows before serde silently saturates them at 65535.
+    // The schema's `deserialize_saturating_u16` clips anything over u16::MAX to
+    // 65535, which `normalize()` then clamps further. Without this pre-check
+    // the user sees no feedback for clearly-out-of-range values.
+    let u16_overflow = {
+        let parts: Vec<&str> = field_key.rsplitn(2, '.').collect();
+        if let [key, section] = parts.as_slice() {
+            let is_u16 = app
+                .all_fields
+                .iter()
+                .any(|f| f.section == *section && f.key == *key && f.field_type == FieldType::U16);
+            if is_u16 {
+                raw_integer_field(&new_toml, section, key)
+                    .filter(|n| !(0..=i64::from(u16::MAX)).contains(n))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    };
+    if let Some(n) = u16_overflow {
+        set_error(
+            app,
+            &field_key,
+            format!("value {n} out of range: must fit in u16 (0-{})", u16::MAX),
+        );
         return;
     }
 
@@ -260,6 +302,28 @@ fn commit_toml_update(app: &mut App, field_key: String, new_toml: String) {
                     format!(
                         "value {} out of range: would be clamped to {}",
                         new_config.suggest.max_results, normalized.suggest.max_results
+                    ),
+                );
+                return;
+            }
+            if normalized.popup.feedback_dismiss_ms != new_config.popup.feedback_dismiss_ms {
+                set_error(
+                    app,
+                    &field_key,
+                    format!(
+                        "value {} out of range: would be clamped to {}",
+                        new_config.popup.feedback_dismiss_ms, normalized.popup.feedback_dismiss_ms
+                    ),
+                );
+                return;
+            }
+            if normalized.popup.render_block_ms != new_config.popup.render_block_ms {
+                set_error(
+                    app,
+                    &field_key,
+                    format!(
+                        "value {} out of range: would be clamped to {}",
+                        new_config.popup.render_block_ms, normalized.popup.render_block_ms
                     ),
                 );
                 return;

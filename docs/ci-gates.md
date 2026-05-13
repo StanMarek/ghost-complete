@@ -17,7 +17,7 @@ Seven CI gates live in `.github/workflows/ci.yml`: binary size, snapshot diff, f
 **Purpose:** enforces two independent size constraints on the release binary, and records the measured size as a workflow artifact:
 
 1. **Recorded size artifact** — every CI run writes `size.txt` (single integer, bytes, with trailing newline — same format as [`benchmarks/binary-size-baseline.txt`](../benchmarks/binary-size-baseline.txt)) and uploads it as the `ghost-complete-size` workflow artifact. PR reviewers and the release author can download the artifact from the run summary page to see the exact byte count without re-running the job. The size is computed with `wc -c` rather than `du -b` because BSD `du` on `macos-latest` runners has no `-b` flag.
-2. **Absolute ceiling (110 MB)** — the binary must not exceed 110 MB. Raising it requires an explicit plan amendment. The ceiling moved from 30 MB to 110 MB in `ux-8` to admit the AWS completion spec; zstd-compressing embedded specs (a separate plan) is the principled reclaim path that should drop the binary back near the original ceiling.
+2. **Absolute ceiling (110 MB)** — the binary must not exceed 110 MB. Raising it requires an explicit plan amendment. The ceiling moved from 30 MB to 110 MB in `ux-8` to admit the AWS completion spec; the ux-12b zstd compression work reclaimed the embedded-corpus growth while keeping the ceiling unchanged.
 3. **Per-phase delta budget (default +2 MB, label override +5 MB)** — the binary must not have grown by more than the delta budget since the size recorded in [`benchmarks/binary-size-baseline.txt`](../benchmarks/binary-size-baseline.txt). The default budget is `PHASE_BUDGET` (`2MB`). On `pull_request` events, applying the **`binary-size-allow-delta`** label raises the budget to `LABEL_OVERRIDE_BUDGET` (`5MB`) for that PR only — the gate's "Pick delta budget" step inspects `github.event.pull_request.labels` and emits the override decision in the job log. Label add/remove events rerun the PR workflow, so adding the override after a failed size gate is enough to re-evaluate the current label set. Pushes to trunk branches (`master` or `main`) always use the strict 2 MB budget (no PR labels to read). The label is the explicit acknowledgement that a PR is expected to grow the binary; without it, growth >2 MB fails the gate. Update the baseline file in the same PR (see "Baseline maintenance" below) once the change is justified — the override is for the merge, not for permanent tolerance. Create the label one-time via `gh label create binary-size-allow-delta --description "Raise binary-size delta budget from 2MB to 5MB for this PR" --color FBCA04`; the gate fails closed (strict 2 MB) if the label is missing.
 
 **Stripping note.** The release profile sets `strip = "symbols"`. The size measurement in this gate reflects the stripped binary, and [`benchmarks/binary-size-baseline.txt`](../benchmarks/binary-size-baseline.txt) is captured from the same stripped build — baseline and live measurement use the same shape. Toggling `strip` off would invalidate the baseline.
@@ -27,7 +27,7 @@ Seven CI gates live in `.github/workflows/ci.yml`: binary size, snapshot diff, f
 - Absolute ceiling failure: binary size exceeds 110 MB.
 - Delta budget failure: binary grew by more than the selected budget (2 MB strict / 5 MB with label) since the baseline was recorded.
 
-**Status today:** production-live and **passing**. The binary-size intervention (minified embedded specs + stripped `js_source`) dropped the binary to ~28.4 MB, under the original 30 MB ceiling. The `ux-8` AWS spec restoration brought the binary to ~102 MB; the ceiling moved to 110 MB to match plus headroom. The artifact upload + label override were added in `ux-9b` Phase 4. Ready to add to branch protection.
+**Status today:** production-live and **passing**. The binary-size baseline is 21,383,696 bytes (~20.4 MiB, ~21.4 MB), under the original 30 MB ceiling and well below the 110 MB absolute ceiling. The `ux-8` AWS spec restoration previously brought the binary to ~102 MB; ux-12b zstd compression reclaimed that embedded-corpus growth. The artifact upload + label override were added in `ux-9b` Phase 4. Ready to add to branch protection.
 
 **How to debug locally:**
 
@@ -70,7 +70,7 @@ du -b target/release/ghost-complete > benchmarks/binary-size-baseline.txt
 
 **Failure modes:** diff found between a spec file and its snapshot.
 
-**Status today:** production-live. `specs/__snapshots__/` is populated (709 snapshots). `scripts/check-snapshots.sh` runs on every CI build.
+**Status today:** production-live. `specs/__snapshots__/` is populated (711 snapshots). `scripts/check-snapshots.sh` runs on every CI build.
 
 **How to debug locally:**
 
@@ -239,7 +239,7 @@ These checks are added **alongside** any existing required checks (e.g. `Check`,
 
 **"Why is the ceiling 110 MB?"**
 
-The 30 MB ceiling was set during the requires-js-specs initiative as the target the binary needed to reach after specs were trimmed. The intervention (minified embedded specs + stripped `js_source`) brought the release binary to ~28.4 MB, under budget. In `ux-8` the AWS spec was restored: 409 inlined service sub-specs (upstream ships 418 `.js` files but the top-level `aws.js` only references 408 via `loadSpec` — 9 deprecated services are unreferenced) carrying ~28 MB of upstream description text, which `include_str!` roundtrips into ~2× `__const` data. The release binary moved to ~102 MB; the ceiling moved to 110 MB to match plus ~8% headroom. The delta budget (`PHASE_BUDGET=2MB`) still handles the near-term constraint — "don't grow from the current baseline". These are two independent checks; both must pass. zstd-compressing embedded specs is tracked as a follow-on plan; landing it should let the ceiling drop back near the original 30 MB level.
+The 30 MB ceiling was set during the requires-js-specs initiative as the target the binary needed to reach after specs were trimmed. The first intervention (minified embedded specs + stripped `js_source`) brought the release binary under that budget. In `ux-8` the AWS spec was restored: 409 inlined service sub-specs (upstream ships 418 `.js` files but the top-level `aws.js` only references 408 via `loadSpec` — 9 deprecated services are unreferenced) carrying ~28 MB of upstream description text, which the old `include_str!` path round-tripped into ~2× `__const` data. The release binary moved to ~102 MB; the ceiling moved to 110 MB to match plus ~8% headroom. The ux-12b zstd archive replaced that raw embedded JSON path, and the current binary-size baseline is 21,383,696 bytes. The delta budget (`PHASE_BUDGET=2MB`) still handles the near-term constraint — "don't grow from the current baseline". These are two independent checks; both must pass.
 
 **"When should I apply the `binary-size-allow-delta` label?"**
 

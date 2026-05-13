@@ -1,22 +1,23 @@
 # Specs
 
-Ghost Complete ships 709 Fig-compatible JSON completion specs sourced from
+Ghost Complete ships 711 Fig-compatible JSON completion specs sourced from
 [`@withfig/autocomplete`](https://github.com/withfig/autocomplete) and converted
-offline. The converted JSON lives under [`specs/`](../specs/) (~74 MB on disk
-since the AWS spec was restored in `ux-8`) and is embedded into the binary at
-build time via `include_str!`, so the shipped `ghost-complete` has zero
-runtime spec-fetch cost and no network dependency. The embed is produced by
+offline. The converted JSON lives under [`specs/`](../specs/) and is embedded
+into the binary at build time via a compressed archive, so the shipped
+`ghost-complete` has zero runtime spec-fetch cost and no network dependency.
+The embed is produced by
 [`crates/gc-suggest/build.rs`](../crates/gc-suggest/build.rs), which minifies
-each spec and defensively strips any straggler `js_source` field before
-`include_str!` bakes it into the binary. The converter no longer emits
-`js_source` — runtime-needed JS is preserved on
+each spec, defensively strips any straggler `js_source` field, zstd-compresses
+the bodies at level 19, and emits `embedded_specs.bin` for `include_bytes!`.
+The converter does not emit `js_source` — runtime-needed JS is preserved on
 `js_runtime.source` (a structured object the build pipeline retains untouched).
 Stale user-installed specs from older converter versions are still tolerated:
 the embed pass drops their `js_source` so the embedded format stays uniform.
-The release binary measures ~102 MB (under the 110 MB CI ceiling enforced by
-[`docs/ci-gates.md`](./ci-gates.md#binary-size-gate); zstd-compressing the
-embedded corpus is the queued reclaim path). On-disk `specs/*.json` remain
-pretty-printed; only the binary-embedded copies are minified.
+The ux-12b zstd pass compressed the embedded corpus into a 3.70 MB archive and
+dropped the benchmarked macOS arm64 release binary from 103.41 MB to 11.81 MB;
+see [`benchmarks/v0.16.0-ux12b.md`](../benchmarks/v0.16.0-ux12b.md). On-disk
+`specs/*.json` remain pretty-printed; only the binary-embedded copies are
+minified and compressed.
 
 **JavaScript runtime:** the JS runtime lives in [`gc-jsrt`](../crates/gc-jsrt/)
 — a bounded QuickJS evaluator (via rquickjs, default on). Upstream specs
@@ -31,11 +32,11 @@ and the umbrella initiative referenced below.
 ## Conversion pipeline
 
 ```
-┌─────────────────┐   npm run convert    ┌──────────────┐   build.rs     ┌─────────────┐   include_str!   ┌───────────┐
+┌─────────────────┐   npm run convert    ┌──────────────┐   build.rs     ┌─────────────┐   include_bytes!  ┌───────────┐
 │ @withfig/...    │ ────────────────────▶│ specs/*.json │ ─────────────▶ │ OUT_DIR/    │ ───────────────▶ │ Rust bin  │
 │ (TS + JS AST)   │                      │ (committed,  │                │ *.json      │                  │ (runtime) │
 └─────────────────┘                      │  pretty)     │                │ (minified,  │                  └───────────┘
-       ▲                                 └──────────────┘                │  no js_src) │
+       ▲                                 └──────────────┘                │  zstd bin) │
        │                                        ▲                        └─────────────┘
  upstream updates                    post-process-matcher.js
  (manual pull-through)               + native-map.js rules
@@ -56,9 +57,10 @@ Stages:
    touching converter logic — the Rust `cargo test` suite does not cover it.
 3. **`specs/*.json`** — committed, pretty-printed output. Snapshot-diff CI gate
    guards against silent large-scale regeneration drift.
-4. **`crates/gc-suggest/build.rs`** — minifies each spec into `OUT_DIR` so
-   `include_str!` bakes a compact copy into the binary. Drops any legacy
-   `js_source` field defensively (the converter no longer emits it;
+4. **`crates/gc-suggest/build.rs`** — minifies each spec, zstd-compresses the
+   bodies at level 19, and emits `embedded_specs.bin` so `include_bytes!`
+   bakes a compact archive into the binary. Drops any legacy
+   `js_source` field defensively (the converter does not emit it;
    structured `js_runtime.source` survives untouched and is asserted
    present at the same depth). Hand-editing the embed list (or bypassing
    `build.rs`) would break the binary-size gate.
@@ -260,4 +262,4 @@ Optional: coverage badge evaluated and skipped — the shields.io
 `dynamic/json` endpoint fetches from `raw.githubusercontent.com` on the
 default branch, which 404s until this worktree merges to `master`.
 Re-evaluate post-merge; the endpoint URL shape that works is
-`https://img.shields.io/badge/dynamic/json?url=<raw.githubusercontent.com URL>&label=fully%20functional&query=%24.releases%5B-1%3A%5D.fully_functional&suffix=%20%2F%20709`.
+`https://img.shields.io/badge/dynamic/json?url=<raw.githubusercontent.com URL>&label=fully%20functional&query=%24.releases%5B-1%3A%5D.fully_functional&suffix=%20%2F%20711`.
