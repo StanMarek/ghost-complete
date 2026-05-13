@@ -304,7 +304,7 @@ function applySpecFixups(spec, specName) {
   }
 
   if (specName === 'aws' && spec.name === 'aws') {
-    applyAwsProfileCacheFixup(spec);
+    applyAwsCliFixups(spec);
   }
 
   if (specName === 'brew' && spec.name === 'brew') {
@@ -567,7 +567,64 @@ function applyCargoPriorityFixups(spec) {
   walk(spec);
 }
 
-function applyAwsProfileCacheFixup(spec) {
+function ensureOption(options, option) {
+  if (!Array.isArray(options)) return;
+  const names = Array.isArray(option.name) ? option.name : [option.name];
+  const exists = options.some((opt) => names.some((name) => namesInclude(opt?.name, name)));
+  if (!exists) options.push(option);
+}
+
+function ensureSubcommand(subcommands, subcommand, beforeName = null) {
+  if (!Array.isArray(subcommands)) return;
+  if (subcommands.some((sub) => sub?.name === subcommand.name)) return;
+  if (beforeName) {
+    const index = subcommands.findIndex((sub) => sub?.name === beforeName);
+    if (index !== -1) {
+      subcommands.splice(index, 0, subcommand);
+      return;
+    }
+  }
+  subcommands.push(subcommand);
+}
+
+function applyAwsCliFixups(spec) {
+  if (!Array.isArray(spec.options)) spec.options = [];
+  ensureOption(spec.options, {
+    args: {
+      name: 'region',
+    },
+    description: 'The region to use. Overrides config/env settings.',
+    name: ['--region'],
+  });
+
+  const sso = (spec.subcommands ?? []).find((sub) => sub?.name === 'sso');
+  if (sso) {
+    if (!Array.isArray(sso.subcommands)) sso.subcommands = [];
+    ensureSubcommand(
+      sso.subcommands,
+      {
+        description:
+          'Retrieves and caches an AWS IAM Identity Center access token to exchange for AWS credentials.',
+        name: 'login',
+        options: [
+          {
+            description:
+              'Disables automatically opening the verification URL in the default browser.',
+            name: ['--no-browser'],
+          },
+          {
+            args: {
+              name: 'string',
+            },
+            description: 'An explicit SSO session to use to login.',
+            name: ['--sso-session'],
+          },
+        ],
+      },
+      'logout',
+    );
+  }
+
   const profile = (spec.options ?? []).find((opt) => {
     const names = Array.isArray(opt?.name) ? opt.name : [opt?.name];
     return names.includes('--profile');
