@@ -59,6 +59,28 @@ _gc_urlencode_buffer() {
     printf '%s' "$encoded"
 }
 
+_gc_report_env() {
+    [[ -n "$GHOST_COMPLETE_ACTIVE" ]] || return
+
+    local key meta value encoded payload=""
+
+    for key in ${(ok)parameters[(R)*export*]}; do
+        meta="${parameters[$key]}"
+        [[ "$meta" == *scalar* ]] || continue
+        [[ -n "$key" && "$key" != [0-9]* && "$key" != *[^a-zA-Z0-9_]* ]] || continue
+
+        value="${(P)key}"
+        encoded="$(_gc_urlencode_buffer "${key}=${value}")"
+        payload+="${encoded}%00"
+    done
+
+    if [[ "$payload" == "${_GC_LAST_ENV_PAYLOAD-}" ]]; then
+        return
+    fi
+    typeset -g _GC_LAST_ENV_PAYLOAD="$payload"
+    printf '\e]7773;%s\a' "$payload"
+}
+
 # True when the host terminal natively parses OSC 133 for its own prompt
 # tracking (or emits its own proprietary markers on top, like VSCode's
 # OSC 633). In those terminals our OSC 7771 fallback is redundant — the
@@ -77,6 +99,7 @@ _gc_precmd() {
     # Mark: prompt is about to be displayed
     printf '\e]133;A\a'
     _gc_native_osc133 || printf '\e]7771;A\a'
+    _gc_report_env
 }
 
 _gc_preexec() {

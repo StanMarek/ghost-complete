@@ -551,6 +551,7 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     let stdout_handle = tokio::task::spawn_blocking(move || {
         let mut buf = [0u8; 8192];
         let mut pending_trigger = PendingTrigger::new();
+        let mut private_osc_filter = PrivateOscFilter::default();
         loop {
             let n = match reader.read(&mut buf) {
                 Ok(0) => break, // PTY closed
@@ -617,10 +618,11 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
             }
 
             let write_result: std::io::Result<()> = {
+                let filtered = private_osc_filter.filter(&buf[..n]);
                 let mut stdout = std::io::stdout().lock();
                 stdout
                     .write_all(&cleanup)
-                    .and_then(|()| stdout.write_all(&buf[..n]))
+                    .and_then(|()| stdout.write_all(&filtered))
                     .and_then(|()| {
                         if send_cpr {
                             tracing::debug!("sending CPR request (CSI 6n)");
@@ -1022,6 +1024,87 @@ fn poll_until(
                 return None;
             }
         }
+    }
+}
+
+#[derive(Debug, Default)]
+struct PrivateOscFilter {
+    state: PrivateOscFilterState,
+}
+
+#[derive(Debug, Default)]
+enum PrivateOscFilterState {
+    #[default]
+    Normal,
+    Esc,
+    OscPrefix {
+        matched: usize,
+    },
+    Strip,
+    StripEsc,
+}
+
+impl PrivateOscFilter {
+    fn filter(&mut self, input: &[u8]) -> Vec<u8> {
+        const CODE: &[u8; 4] = b"7773";
+        let mut out = Vec::with_capacity(input.len());
+
+        for &byte in input {
+            match self.state {
+                PrivateOscFilterState::Normal => {
+                    if byte == 0x1b {
+                        self.state = PrivateOscFilterState::Esc;
+                    } else {
+                        out.push(byte);
+                    }
+                }
+                PrivateOscFilterState::Esc => {
+                    if byte == b']' {
+                        self.state = PrivateOscFilterState::OscPrefix { matched: 0 };
+                    } else {
+                        out.push(0x1b);
+                        out.push(byte);
+                        self.state = PrivateOscFilterState::Normal;
+                    }
+                }
+                PrivateOscFilterState::OscPrefix { matched } => {
+                    if matched < CODE.len() && byte == CODE[matched] {
+                        self.state = PrivateOscFilterState::OscPrefix {
+                            matched: matched + 1,
+                        };
+                    } else if matched == CODE.len() && (byte == b';' || byte == 0x07) {
+                        self.state = if byte == 0x07 {
+                            PrivateOscFilterState::Normal
+                        } else {
+                            PrivateOscFilterState::Strip
+                        };
+                    } else if matched == CODE.len() && byte == 0x1b {
+                        self.state = PrivateOscFilterState::StripEsc;
+                    } else {
+                        out.extend_from_slice(b"\x1b]");
+                        out.extend_from_slice(&CODE[..matched]);
+                        out.push(byte);
+                        self.state = PrivateOscFilterState::Normal;
+                    }
+                }
+                PrivateOscFilterState::Strip => {
+                    if byte == 0x07 {
+                        self.state = PrivateOscFilterState::Normal;
+                    } else if byte == 0x1b {
+                        self.state = PrivateOscFilterState::StripEsc;
+                    }
+                }
+                PrivateOscFilterState::StripEsc => {
+                    if byte == b'\\' {
+                        self.state = PrivateOscFilterState::Normal;
+                    } else if byte != 0x1b {
+                        self.state = PrivateOscFilterState::Strip;
+                    }
+                }
+            }
+        }
+
+        out
     }
 }
 
@@ -1586,6 +1669,38 @@ mod tests {
             &Terminal::Unknown("foot".into()),
             true
         ));
+    }
+
+    #[test]
+    fn private_osc_filter_strips_shell_env_frames() {
+        let mut filter = PrivateOscFilter::default();
+
+        let out = filter.filter(b"before\x1b]7773;AWS_PROFILE%3Ddev%00SECRET%3Dx\x07after");
+
+        assert_eq!(out, b"beforeafter");
+    }
+
+    #[test]
+    fn private_osc_filter_preserves_other_osc_frames() {
+        let mut filter = PrivateOscFilter::default();
+
+        let input = b"before\x1b]7772;0;echo\x07after";
+        let out = filter.filter(input);
+
+        assert_eq!(out, input);
+    }
+
+    #[test]
+    fn private_osc_filter_strips_shell_env_frames_across_chunks() {
+        let mut filter = PrivateOscFilter::default();
+
+        let first = filter.filter(b"before\x1b]777");
+        let second = filter.filter(b"3;AWS_PROFILE%3Ddev");
+        let third = filter.filter(b"%00SECRET%3Dx\x07after");
+
+        assert_eq!(first, b"before");
+        assert!(second.is_empty());
+        assert_eq!(third, b"after");
     }
 
     #[test]

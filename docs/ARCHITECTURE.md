@@ -52,7 +52,7 @@ Ghost Complete is a terminal-native autocomplete engine that works as a PTY prox
 1. User types a keystroke in the terminal emulator
 2. `gc-pty` receives it on stdin — if the popup is visible, intercept navigation keys (Tab, arrows, Escape, Enter); otherwise forward to the shell PTY
 3. Shell produces output, which flows through `gc-parser` (VT state tracking) then to terminal stdout
-4. `gc-parser` tracks cursor position, screen dimensions, and prompt boundaries using OSC 133 / OSC 7771 markers
+4. `gc-parser` tracks cursor position, screen dimensions, prompt boundaries, CWD, and the shell's exported env snapshot using shell-emitted OSC markers
 5. On trigger conditions (space after command, `/`, `-`, `--`, Ctrl+/, or delay timeout), `gc-suggest` computes ranked suggestions
 6. Static suggestions (subcommands, options, templates) render immediately via `gc-overlay`
 7. Script generators execute async in background; results merge into the popup progressively without resetting cursor position
@@ -65,7 +65,7 @@ The workspace contains 9 crates under `crates/`:
 |-------|---------|------------------|
 | [`ghost-complete`](../crates/ghost-complete/) | Binary entry point, CLI (`clap`), install/uninstall, `status`, `doctor`, `validate-specs` | clap |
 | [`gc-pty`](../crates/gc-pty/) | PTY proxy event loop — spawns shell, multiplexes stdin/stdout with `tokio::select!`, handles SIGWINCH, async generator merge | portable-pty, tokio |
-| [`gc-parser`](../crates/gc-parser/) | VT escape sequence parsing — cursor position, screen dimensions, prompt boundaries (OSC 133 + OSC 7771), CWD (OSC 7) | vte |
+| [`gc-parser`](../crates/gc-parser/) | VT escape sequence parsing — cursor position, screen dimensions, prompt boundaries (OSC 133 + OSC 7771), CWD (OSC 7), exported env (OSC 7773) | vte |
 | [`gc-buffer`](../crates/gc-buffer/) | Command line reconstruction — current command, argument position, pipes, redirects, quotes | |
 | [`gc-suggest`](../crates/gc-suggest/) | Suggestion engine — dispatches to providers, fuzzy-ranks with nucleo, async generators with transform pipelines and TTL caching | nucleo, serde_json |
 | [`gc-overlay`](../crates/gc-overlay/) | ANSI popup rendering — cursor save/restore, synchronized output, scroll-to-make-room, scrollbar, fuzzy match highlighting | |
@@ -110,6 +110,7 @@ We use the `vte` crate — a parser-only VT state machine that fires callbacks p
 - Screen dimensions
 - Prompt boundaries (via OSC 133 / OSC 7771)
 - Current working directory (via OSC 7)
+- Exported shell environment snapshot (via OSC 7773)
 
 This keeps memory usage minimal and parsing fast. The tradeoff: cursor position can drift from reality over time (complex escape sequences we don't fully model). We correct for this using CPR sync — periodically requesting the terminal's actual cursor position via `CSI 6n` and reconciling.
 
@@ -265,8 +266,9 @@ Shell integration scripts in `shell/` emit semantic prompt markers:
 
 - **OSC 133** — standard semantic prompt protocol (supported by Ghostty, Kitty, WezTerm, Rio)
 - **OSC 7771** — Ghost Complete's own marker (used as fallback on Alacritty, iTerm2, Terminal.app)
+- **OSC 7773** — Ghost Complete's exported environment snapshot, consumed by the proxy and stripped before terminal output
 
-Both are emitted simultaneously by the integration scripts, so the parser can use whichever the terminal supports.
+Prompt markers are emitted simultaneously by the integration scripts, so the parser can use whichever the terminal supports.
 
 Without shell integration, features are limited — prompt boundary detection falls back to heuristics, and manual trigger (Ctrl+/) is the only way to invoke completions.
 
@@ -297,3 +299,20 @@ read-only path for one release: the first hit per process logs a one-shot
 `tracing::warn!` and subsequent hits drop to `trace!`. The 7770 dispatch
 arm is scheduled for `#[ignore]` in v0.11.0 and removal in v0.12.0. New
 shell integrations only emit 7772.
+
+### Environment Reporting (OSC 7773)
+
+The zsh integration reports exported scalar parameters at each prompt via
+OSC 7773. The payload is a single percent-encoded field containing
+NUL-separated `KEY=value` entries:
+
+```
+\e]7773;<percent-encoded-env-snapshot>\a
+```
+
+The PTY proxy consumes the frame, stores the snapshot on parser state, and
+filters the frame out of the byte stream before writing shell output to the
+terminal. Providers, JS host contexts, and script generators use this live
+snapshot instead of the proxy process's startup environment, so `export
+AWS_PROFILE=...` or other session-level env changes affect completions on
+the next prompt.

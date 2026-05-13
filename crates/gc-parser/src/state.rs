@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
@@ -52,6 +52,7 @@ pub struct TerminalState {
     display_dirty: bool,
     viewport_scroll_count: u16,
     cwd: Option<PathBuf>,
+    shell_env: Option<HashMap<String, String>>,
     in_prompt: bool,
     command_buffer: Option<String>,
     buffer_cursor: usize,
@@ -101,6 +102,7 @@ impl TerminalState {
             display_dirty: false,
             viewport_scroll_count: 0,
             cwd: None,
+            shell_env: None,
             in_prompt: false,
             command_buffer: None,
             buffer_cursor: 0,
@@ -154,6 +156,10 @@ impl TerminalState {
 
     pub fn cwd(&self) -> Option<&PathBuf> {
         self.cwd.as_ref()
+    }
+
+    pub fn shell_env(&self) -> Option<&HashMap<String, String>> {
+        self.shell_env.as_ref()
     }
 
     pub fn in_prompt(&self) -> bool {
@@ -498,6 +504,10 @@ impl TerminalState {
             self.cwd = Some(path);
             self.cwd_dirty = true;
         }
+    }
+
+    pub(crate) fn set_shell_env(&mut self, env: HashMap<String, String>) {
+        self.shell_env = Some(env);
     }
 
     /// Apply a shell-reported buffer state (typically from OSC 7770/7772).

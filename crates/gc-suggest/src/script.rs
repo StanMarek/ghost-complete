@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::Path;
 
 use anyhow::Result;
@@ -20,6 +21,18 @@ pub(crate) const MAX_GENERATOR_STDOUT_BYTES: usize = 1024 * 1024;
 /// for declarative-script callers that never read stderr.
 pub async fn run_script(argv: &[&str], cwd: &Path, timeout_ms: u64) -> Result<String> {
     match run_script_full(argv, cwd, timeout_ms).await {
+        Ok(out) => Ok(out.stdout),
+        Err(e) => Err(shell_run_error_to_anyhow(&e, argv)),
+    }
+}
+
+pub async fn run_script_with_env(
+    argv: &[&str],
+    cwd: &Path,
+    timeout_ms: u64,
+    env: Option<&HashMap<String, String>>,
+) -> Result<String> {
+    match run_script_full_with_env(argv, cwd, timeout_ms, env).await {
         Ok(out) => Ok(out.stdout),
         Err(e) => Err(shell_run_error_to_anyhow(&e, argv)),
     }
@@ -62,15 +75,24 @@ fn shell_run_error_to_anyhow(e: &ShellRunError, argv: &[&str]) -> anyhow::Error 
 /// surface the captured stderr through `ShellRunError::NonZeroExit` so JS
 /// callers via `EngineShellRunner` can branch on the real diagnostic.
 ///
-/// The child inherits the full process environment (minus
+/// The default path inherits the full process environment (minus
 /// `GHOST_COMPLETE_ACTIVE`) because generators like `gh`, `aws`, and
-/// `kubectl` require auth tokens to produce useful completions. On
-/// timeout the child is killed and `Err(ShellRunError::Timeout)` is
-/// returned.
+/// `kubectl` require auth tokens to produce useful completions. The
+/// `_with_env` variant installs the supplied shell snapshot instead. On
+/// timeout the child is killed and `Err(ShellRunError::Timeout)` is returned.
 pub async fn run_script_full(
     argv: &[&str],
     cwd: &Path,
     timeout_ms: u64,
+) -> std::result::Result<ShellRunOutput, ShellRunError> {
+    run_script_full_with_env(argv, cwd, timeout_ms, None).await
+}
+
+pub async fn run_script_full_with_env(
+    argv: &[&str],
+    cwd: &Path,
+    timeout_ms: u64,
+    env: Option<&HashMap<String, String>>,
 ) -> std::result::Result<ShellRunOutput, ShellRunError> {
     if argv.is_empty() {
         return Err(ShellRunError::ArgvParse("empty script command".to_string()));
@@ -94,18 +116,28 @@ pub async fn run_script_full(
         cmd.args(&argv[1..]);
     }
     cmd.current_dir(cwd);
-    // Generators inherit the full process environment because many legitimate
-    // completions require auth tokens (GITHUB_TOKEN for `gh`, AWS credentials
-    // for `aws`, etc.). Env isolation via a deny-list would silently break
-    // authenticated completions for gh/aws/kubectl/npm and similar tools that
-    // rely on inherited tokens. If ever revisited, use an allow-list with
-    // explicit per-spec opt-in. The specs are either embedded in the binary
-    // (trusted) or user-installed. If an attacker can write to
-    // ~/.config/ghost-complete/specs/, they already have shell access.
+    // Without a shell-reported snapshot, generators inherit the full process
+    // environment because many legitimate completions require auth tokens
+    // (GITHUB_TOKEN for `gh`, AWS credentials for `aws`, etc.). Env isolation
+    // via a deny-list would silently break authenticated completions for
+    // gh/aws/kubectl/npm and similar tools that rely on inherited tokens. If
+    // ever revisited, use an allow-list with explicit per-spec opt-in. The
+    // specs are either embedded in the binary (trusted) or user-installed. If
+    // an attacker can write to ~/.config/ghost-complete/specs/, they already
+    // have shell access.
     //
     // The only var we strip is our own re-entry guard, so nested shells don't
     // think they're still inside the proxy.
-    cmd.env_remove("GHOST_COMPLETE_ACTIVE");
+    if let Some(env) = env {
+        cmd.env_clear();
+        for (key, value) in env {
+            if key != "GHOST_COMPLETE_ACTIVE" {
+                cmd.env(key, value);
+            }
+        }
+    } else {
+        cmd.env_remove("GHOST_COMPLETE_ACTIVE");
+    }
     cmd.stdout(std::process::Stdio::piped());
     cmd.stderr(std::process::Stdio::piped());
 

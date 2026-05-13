@@ -22,6 +22,7 @@
 //! tokio panics in that situation (`Cannot block the current thread
 //! from within a runtime`). The JS worker thread is the only caller.
 
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -30,13 +31,14 @@ use tokio::runtime::Handle;
 
 use gc_jsrt::{ShellRunError, ShellRunOutput, ShellRunner};
 
-use crate::script::run_script_full;
+use crate::script::run_script_full_with_env;
 
 /// Engine-side [`ShellRunner`] backed by `tokio::process::Command` via
 /// the existing `script::run_script_full` helper.
 pub struct EngineShellRunner {
     /// Tokio handle the worker thread uses to drive `run_script_full`.
     handle: Handle,
+    env: Option<Arc<HashMap<String, String>>>,
 }
 
 impl EngineShellRunner {
@@ -45,6 +47,14 @@ impl EngineShellRunner {
     pub fn from_current_handle() -> Self {
         Self {
             handle: Handle::current(),
+            env: None,
+        }
+    }
+
+    pub fn from_current_handle_with_env(env: Option<Arc<HashMap<String, String>>>) -> Self {
+        Self {
+            handle: Handle::current(),
+            env,
         }
     }
 
@@ -64,13 +74,14 @@ impl ShellRunner for EngineShellRunner {
         let argv_owned: Vec<String> = argv.to_vec();
         let cwd_owned = cwd.to_path_buf();
         let timeout_ms = timeout.as_millis() as u64;
+        let env = self.env.clone();
         // `block_on` on a tokio Handle from outside the runtime works:
         // it parks the calling (worker) thread until the future
         // resolves on the runtime threadpool. We are NEVER on a tokio
         // task here — see the module-level safety note.
         self.handle.block_on(async move {
             let argv_refs: Vec<&str> = argv_owned.iter().map(|s| s.as_str()).collect();
-            run_script_full(&argv_refs, &cwd_owned, timeout_ms).await
+            run_script_full_with_env(&argv_refs, &cwd_owned, timeout_ms, env.as_deref()).await
         })
     }
 
@@ -118,7 +129,7 @@ mod tests {
             .expect("tokio runtime");
         let handle = rt.handle().clone();
         std::thread::spawn(move || {
-            let runner = EngineShellRunner { handle };
+            let runner = EngineShellRunner { handle, env: None };
             runner.run_argv(
                 &argv,
                 std::path::Path::new("/tmp"),
@@ -137,7 +148,7 @@ mod tests {
             .expect("tokio runtime");
         let handle = rt.handle().clone();
         std::thread::spawn(move || {
-            let runner = EngineShellRunner { handle };
+            let runner = EngineShellRunner { handle, env: None };
             runner.run_string(
                 &command,
                 std::path::Path::new("/tmp"),

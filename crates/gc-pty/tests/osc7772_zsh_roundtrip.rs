@@ -75,6 +75,29 @@ fn emit_via_real_zsh(buffer: &[u8], cursor: usize) -> Vec<u8> {
     output.stdout
 }
 
+/// Run the production zsh env reporter after applying the supplied shell body.
+fn emit_env_via_real_zsh(setup: &str) -> Vec<u8> {
+    let zsh_init = repo_root().join("shell/ghost-complete.zsh");
+    assert!(zsh_init.exists(), "shell/ghost-complete.zsh not found");
+
+    let script = format!(
+        "source {init_q}; {setup}; _gc_report_env",
+        init_q = shell_quote(zsh_init.to_str().expect("path is utf-8")),
+    );
+
+    let output = Command::new("zsh")
+        .arg("-c")
+        .arg(&script)
+        .output()
+        .expect("zsh -c failed to launch");
+    assert!(
+        output.status.success(),
+        "zsh exited non-zero: stderr={:?}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    output.stdout
+}
+
 /// POSIX-quote a string for safe interpolation as one zsh argument.
 fn shell_quote(s: &str) -> String {
     // Single-quote everything; close-quote, escape any `'` as `'\''`,
@@ -156,4 +179,30 @@ fn osc7772_real_zsh_roundtrip() {
     assert_roundtrips("embedded ESC+ST", b"foo\x1b\\bar");
     assert_roundtrips("all-encoded percent", b"abc%20def");
     assert_roundtrips("empty buffer", b"");
+}
+
+#[test]
+fn osc7773_real_zsh_env_roundtrip() {
+    if !zsh_available() {
+        if std::env::var_os("CI").is_some() {
+            panic!(
+                "zsh not on PATH but running under CI — install zsh or mark this test #[ignore] explicitly"
+            );
+        }
+        eprintln!("skipping osc7773_real_zsh_env_roundtrip: zsh not on PATH (local dev)");
+        return;
+    }
+
+    let stdout = emit_env_via_real_zsh(
+        "export GHOST_COMPLETE_ACTIVE=1; export AWS_PROFILE=dev; export EMPTY=; export FOO=$'a;b\\nc'; unset UNEXPORTED",
+    );
+
+    let mut p = TerminalParser::new(24, 80);
+    p.process_bytes(&stdout);
+    let env = p.state().shell_env().expect("OSC 7773 env report expected");
+
+    assert_eq!(env.get("AWS_PROFILE").map(String::as_str), Some("dev"));
+    assert_eq!(env.get("EMPTY").map(String::as_str), Some(""));
+    assert_eq!(env.get("FOO").map(String::as_str), Some("a;b\nc"));
+    assert_eq!(env.get("UNEXPORTED"), None);
 }

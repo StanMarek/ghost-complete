@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -1343,7 +1343,7 @@ impl InputHandler {
         // we can't read the buffer or cursor, so log and bail out — the next
         // PTY input drives a retry. Propagating the poison here would crash
         // the proxy.
-        let (buffer, cursor, cwd, cursor_row, cursor_col, screen_rows, screen_cols) =
+        let (buffer, cursor, cwd, shell_env, cursor_row, cursor_col, screen_rows, screen_cols) =
             match parser.lock() {
                 Ok(mut p) => {
                     // CPR sync means the parser's cursor_row now reflects reality,
@@ -1355,12 +1355,14 @@ impl InputHandler {
                     let buffer = state.command_buffer().unwrap_or("").to_string();
                     let cursor = state.buffer_cursor();
                     let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
+                    let shell_env = state.shell_env().cloned();
                     let (cursor_row, cursor_col) = state.cursor_position();
                     let (screen_rows, screen_cols) = state.screen_dimensions();
                     (
                         buffer,
                         cursor,
                         cwd,
+                        shell_env,
                         cursor_row,
                         cursor_col,
                         screen_rows,
@@ -1413,7 +1415,9 @@ impl InputHandler {
 
         self.buffer_generation = self.buffer_generation.wrapping_add(1);
 
-        let sync_result = self.engine.suggest_sync(&ctx, &cwd, &buffer);
+        let sync_result =
+            self.engine
+                .suggest_sync_with_env(&ctx, &cwd, &buffer, shell_env.as_ref());
 
         match sync_result {
             Ok(result) if !result.suggestions.is_empty() => {
@@ -1425,6 +1429,7 @@ impl InputHandler {
                     result.provider_generators,
                     &ctx,
                     &cwd,
+                    shell_env.clone(),
                 );
                 self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
                 self.last_trigger_fingerprint = Some(fingerprint);
@@ -1453,6 +1458,7 @@ impl InputHandler {
                         result.provider_generators,
                         &ctx,
                         &cwd,
+                        shell_env.clone(),
                     );
                 } else if self.visible {
                     self.dismiss(stdout);
@@ -1485,7 +1491,7 @@ impl InputHandler {
         let block_ms = self.render_block_ms;
 
         // Extract parser state.
-        let (buffer, cursor, cwd, cursor_row, cursor_col, screen_rows, screen_cols) =
+        let (buffer, cursor, cwd, shell_env, cursor_row, cursor_col, screen_rows, screen_cols) =
             match parser.lock() {
                 Ok(mut p) => {
                     if p.state_mut().take_cpr_synced() {
@@ -1495,12 +1501,14 @@ impl InputHandler {
                     let buffer = state.command_buffer().unwrap_or("").to_string();
                     let cursor = state.buffer_cursor();
                     let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
+                    let shell_env = state.shell_env().cloned();
                     let (cursor_row, cursor_col) = state.cursor_position();
                     let (screen_rows, screen_cols) = state.screen_dimensions();
                     (
                         buffer,
                         cursor,
                         cwd,
+                        shell_env,
                         cursor_row,
                         cursor_col,
                         screen_rows,
@@ -1539,16 +1547,20 @@ impl InputHandler {
         self.pending_empty_count = 0;
         self.buffer_generation = self.buffer_generation.wrapping_add(1);
 
-        let result = match self.engine.suggest_sync(&ctx, &cwd, &buffer) {
-            Ok(r) => r,
-            Err(e) => {
-                tracing::debug!("suggest_sync failed in prepare_trigger_with_block: {e}");
-                if self.visible {
-                    self.dismiss(stdout);
+        let result =
+            match self
+                .engine
+                .suggest_sync_with_env(&ctx, &cwd, &buffer, shell_env.as_ref())
+            {
+                Ok(r) => r,
+                Err(e) => {
+                    tracing::debug!("suggest_sync failed in prepare_trigger_with_block: {e}");
+                    if self.visible {
+                        self.dismiss(stdout);
+                    }
+                    return TriggerPrepared::Painted;
                 }
-                return TriggerPrepared::Painted;
-            }
-        };
+            };
 
         let has_async = !result.script_generators.is_empty()
             || !result.git_generators.is_empty()
@@ -1573,6 +1585,7 @@ impl InputHandler {
                 result.provider_generators,
                 &ctx,
                 &cwd,
+                shell_env.clone(),
             );
         }
 
@@ -1787,6 +1800,7 @@ impl InputHandler {
         provider_generators: Vec<gc_suggest::providers::ProviderResolution>,
         ctx: &gc_buffer::CommandContext,
         cwd: &std::path::Path,
+        shell_env: Option<HashMap<String, String>>,
     ) {
         if script_generators.is_empty()
             && git_generators.is_empty()
@@ -1838,7 +1852,11 @@ impl InputHandler {
             // scheduled this pass: script-only specs hit this branch on
             // every keystroke, and no current provider reads `ctx.env`,
             // so the collected map would be dead weight on the hot path.
-            let env = Arc::new(build_env_snapshot(!provider_generators.is_empty()));
+            let env = Arc::new(build_env_snapshot(
+                !provider_generators.is_empty(),
+                shell_env.as_ref(),
+            ));
+            let script_env = shell_env.map(Arc::new);
             // Base provider ctx; `resolve_provider_kinds` overlays
             // per-resolution params onto cloned contexts before
             // dispatching each provider.
@@ -1878,7 +1896,13 @@ impl InputHandler {
                     .await
             };
             let (script_res, git_results, provider_results) = tokio::join!(
-                engine.run_generators(&script_generators, &ctx, &cwd, timeout),
+                engine.run_generators_with_env(
+                    &script_generators,
+                    &ctx,
+                    &cwd,
+                    timeout,
+                    script_env.clone(),
+                ),
                 git_fut,
                 provider_fut,
             );
@@ -1960,7 +1984,13 @@ impl InputHandler {
             if should_run_aws_sdk_fallback {
                 let provider = ProviderTag::Script(ctx.command.clone().unwrap_or_default());
                 let message = match engine
-                    .run_generators(&aws_sdk_fallback_generators, &ctx, &cwd, timeout)
+                    .run_generators_with_env(
+                        &aws_sdk_fallback_generators,
+                        &ctx,
+                        &cwd,
+                        timeout,
+                        script_env.clone(),
+                    )
                     .await
                 {
                     Ok(results) if results.is_empty() => DynamicResult::Empty { provider },
@@ -2933,9 +2963,14 @@ fn buffer_fingerprint(buffer: &str, cursor: usize) -> (u64, usize) {
 /// collected map would be dead weight). When true, snapshots the full
 /// process env so providers observe a consistent view even if the
 /// shell mutates `$PATH` between their spawns.
-fn build_env_snapshot(has_providers: bool) -> std::collections::HashMap<String, String> {
+fn build_env_snapshot(
+    has_providers: bool,
+    shell_env: Option<&HashMap<String, String>>,
+) -> std::collections::HashMap<String, String> {
     if has_providers {
-        std::env::vars().collect()
+        shell_env
+            .cloned()
+            .unwrap_or_else(|| std::env::vars().collect())
     } else {
         std::collections::HashMap::new()
     }
@@ -6351,7 +6386,7 @@ mod tests {
         // optimization. A future refactor that collapsed the branch to
         // `std::env::vars().collect()` would flip this to non-empty on
         // every CI host (PATH is always set).
-        let snapshot = build_env_snapshot(false);
+        let snapshot = build_env_snapshot(false, None);
         assert!(
             snapshot.is_empty(),
             "expected empty map when has_providers=false, got {} entries",
@@ -6367,12 +6402,32 @@ mod tests {
         // both) and is part of the default shell environment. A future
         // refactor that collapsed the branch to always-empty would
         // break every provider that reads `ctx.env`.
-        let snapshot = build_env_snapshot(true);
+        let snapshot = build_env_snapshot(true, None);
         assert!(
             snapshot.contains_key("PATH"),
             "expected PATH in env snapshot when has_providers=true; \
              snapshot had {} entries",
             snapshot.len()
+        );
+    }
+
+    #[test]
+    fn build_env_snapshot_prefers_shell_reported_env() {
+        let shell_env = std::collections::HashMap::from([(
+            "AWS_PROFILE".to_string(),
+            "session-profile".to_string(),
+        )]);
+
+        let snapshot = build_env_snapshot(true, Some(&shell_env));
+
+        assert_eq!(
+            snapshot.get("AWS_PROFILE").map(String::as_str),
+            Some("session-profile")
+        );
+        assert_eq!(
+            snapshot.get("PATH"),
+            None,
+            "shell-reported env should be used as the authoritative snapshot"
         );
     }
 

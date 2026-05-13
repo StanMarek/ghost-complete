@@ -10,7 +10,7 @@ use tokio::sync::Semaphore;
 
 use crate::alias::AliasStore;
 use crate::alias_expand::expand_alias_for_spec;
-use crate::cache::{hash_js_source, CacheKey, GeneratorCache};
+use crate::cache::{hash_env, hash_js_source, CacheKey, GeneratorCache};
 use crate::commands::CommandsProvider;
 use crate::env::EnvProvider;
 use crate::filesystem::FilesystemProvider;
@@ -22,7 +22,7 @@ use crate::js_runtime::{JsExecContext, JsRuntimeAdapter};
 use crate::priority;
 use crate::provider::Provider;
 use crate::providers::{self, ProviderCtx, ProviderKind, ProviderResolution};
-use crate::script::{run_script, substitute_template};
+use crate::script::{run_script_with_env, substitute_template};
 use crate::shell_runner::EngineShellRunner;
 use crate::specs::{self, GeneratorSpec, JsRuntimeKind, JsRuntimeSpec, SpecStore};
 use crate::ssh::SshHostCache;
@@ -521,6 +521,21 @@ impl SuggestionEngine {
         cwd: &Path,
         timeout_ms: u64,
     ) -> Result<Vec<Suggestion>> {
+        self.run_generators_with_env(generators, ctx, cwd, timeout_ms, None)
+            .await
+    }
+
+    /// Run pre-resolved script generators with an optional shell-reported
+    /// environment snapshot. When present, subprocesses and JS host contexts
+    /// use this snapshot instead of the proxy process environment.
+    pub async fn run_generators_with_env(
+        &self,
+        generators: &[Arc<specs::GeneratorSpec>],
+        ctx: &CommandContext,
+        cwd: &Path,
+        timeout_ms: u64,
+        shell_env: Option<Arc<HashMap<String, String>>>,
+    ) -> Result<Vec<Suggestion>> {
         if generators.is_empty() {
             return Ok(Vec::new());
         }
@@ -532,6 +547,7 @@ impl SuggestionEngine {
 
         let semaphore = Arc::new(Semaphore::new(MAX_CONCURRENT_GENERATORS));
         let mut handles = Vec::new();
+        let env_hash = shell_env.as_deref().map(hash_env);
 
         for (idx, gen) in generators.iter().enumerate() {
             // Borrow the inner GeneratorSpec once; we pass references into
@@ -615,7 +631,7 @@ impl SuggestionEngine {
                         continue;
                     }
                 };
-                let exec_ctx = make_js_exec_context(ctx, cwd);
+                let exec_ctx = make_js_exec_context(ctx, cwd, shell_env.as_deref());
                 let cmd_name = command.to_string();
                 let generator_index = idx;
                 let js_runtime = Arc::clone(&self.js_runtime);
@@ -623,6 +639,7 @@ impl SuggestionEngine {
                 let transforms = gen.transforms.clone();
                 let cache = gen.cache.clone();
                 let cache_store = Arc::clone(&self.generator_cache);
+                let env = shell_env.clone();
                 let permit = Arc::clone(&semaphore);
                 handles.push(tokio::spawn(async move {
                     let _permit = permit
@@ -640,6 +657,8 @@ impl SuggestionEngine {
                         cache,
                         cache_store,
                         js_runtime,
+                        env,
+                        env_hash,
                     )
                     .await
                 }));
@@ -659,13 +678,14 @@ impl SuggestionEngine {
                         continue;
                     }
                 };
-                let exec_ctx = make_js_exec_context(ctx, cwd);
+                let exec_ctx = make_js_exec_context(ctx, cwd, shell_env.as_deref());
                 let cmd_name = command.to_string();
                 let generator_index = idx;
                 let js_runtime = Arc::clone(&self.js_runtime);
                 let cwd_buf = cwd.to_path_buf();
                 let cache = gen.cache.clone();
                 let cache_store = Arc::clone(&self.generator_cache);
+                let env = shell_env.clone();
                 let permit = Arc::clone(&semaphore);
                 handles.push(tokio::spawn(async move {
                     let _permit = permit
@@ -682,6 +702,8 @@ impl SuggestionEngine {
                         cache,
                         cache_store,
                         js_runtime,
+                        env,
+                        env_hash,
                     )
                     .await
                 }));
@@ -701,7 +723,7 @@ impl SuggestionEngine {
                         continue;
                     }
                 };
-                let exec_ctx = make_js_exec_context(ctx, cwd);
+                let exec_ctx = make_js_exec_context(ctx, cwd, None);
                 let cmd_name = command.to_string();
                 let generator_index = idx;
                 let generator_id = token_only_generator_id(&cmd_name, generator_index);
@@ -756,15 +778,21 @@ impl SuggestionEngine {
             if let Some(rt) = js_dispatch.as_ref() {
                 // For JS dispatch, peek the post-processed cache up front so a
                 // warm hit avoids both the script spawn AND the JS evaluation.
-                let js_key =
-                    CacheKey::js_processed(command, &argv, cache_cwd, hash_js_source(&rt.source));
+                let js_key = CacheKey::js_processed_with_env(
+                    command,
+                    &argv,
+                    cache_cwd,
+                    hash_js_source(&rt.source),
+                    env_hash,
+                );
                 if let Some(cached) = self.generator_cache.get(&js_key) {
                     tracing::debug!("js post-process cache hit for generator {:?}", argv);
                     handles.push(tokio::spawn(async move { Ok::<_, anyhow::Error>(cached) }));
                     continue;
                 }
             } else {
-                let suggestions_key = CacheKey::from_strings(command, &argv, cache_cwd);
+                let suggestions_key =
+                    CacheKey::from_strings_with_env(command, &argv, cache_cwd, env_hash);
                 if let Some(cached) = self.generator_cache.get(&suggestions_key) {
                     tracing::debug!("cache hit for generator {:?}", argv);
                     handles.push(tokio::spawn(async move { Ok::<_, anyhow::Error>(cached) }));
@@ -780,6 +808,7 @@ impl SuggestionEngine {
             let cmd_name = command.to_string();
             let js_runtime = Arc::clone(&self.js_runtime);
             let generator_index = idx;
+            let env = shell_env.clone();
 
             handles.push(tokio::spawn(async move {
                 let _permit = permit
@@ -793,13 +822,18 @@ impl SuggestionEngine {
                 // step follows. Only the cache layer and the post-processing
                 // body differ. Stdout cache is keyed by argv only — two
                 // generators with the same script share its spawn cost.
-                let stdout_key =
-                    CacheKey::from_strings(&cmd_name, &argv, cache_cwd_owned(&cache, &cwd));
+                let stdout_key = CacheKey::from_strings_with_env(
+                    &cmd_name,
+                    &argv,
+                    cache_cwd_owned(&cache, &cwd),
+                    env_hash,
+                );
                 let output: String = if let Some(cached) = cache_store.get_stdout(&stdout_key) {
                     tracing::debug!("script stdout cache hit for {:?}", argv);
                     cached
                 } else {
-                    let fresh = run_script(&argv_refs, &cwd, timeout_ms).await?;
+                    let fresh =
+                        run_script_with_env(&argv_refs, &cwd, timeout_ms, env.as_deref()).await?;
                     if let Some(ref cache_cfg) = cache {
                         if cache_cfg.ttl_seconds > 0 {
                             cache_store.insert_stdout(
@@ -876,14 +910,15 @@ impl SuggestionEngine {
                             None
                         };
                         let key = if let Some(rt) = js_dispatch.as_ref() {
-                            CacheKey::js_processed(
+                            CacheKey::js_processed_with_env(
                                 &cmd_name,
                                 &argv,
                                 cache_cwd,
                                 hash_js_source(&rt.source),
+                                env_hash,
                             )
                         } else {
-                            CacheKey::from_strings(&cmd_name, &argv, cache_cwd)
+                            CacheKey::from_strings_with_env(&cmd_name, &argv, cache_cwd, env_hash)
                         };
                         cache_store.insert(
                             key,
@@ -1144,6 +1179,16 @@ impl SuggestionEngine {
         cwd: &Path,
         buffer: &str,
     ) -> Result<SyncResult> {
+        self.suggest_sync_with_env(ctx, cwd, buffer, None)
+    }
+
+    pub fn suggest_sync_with_env(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        buffer: &str,
+        shell_env: Option<&HashMap<String, String>>,
+    ) -> Result<SyncResult> {
         use crate::context::{classify, ClassifyInput, Context};
 
         let spec_matched = self.spec_for_ctx(ctx).is_some();
@@ -1173,7 +1218,7 @@ impl SuggestionEngine {
                 // (but do not replace) spec results — they're allowed inside
                 // SpecArg context.
                 let mut candidates = Vec::new();
-                self.extend_with_env_vars(ctx, cwd, &mut candidates);
+                self.extend_with_env_vars(ctx, cwd, shell_env, &mut candidates);
                 self.extend_with_ssh_hosts(ctx, &mut candidates);
                 match self.try_suggest_from_spec(ctx, cwd, buffer, candidates) {
                     Ok(result) => Ok(result),
@@ -1187,7 +1232,7 @@ impl SuggestionEngine {
                 // No spec at all — fall back to the historical behavior:
                 // filesystem + history + situational injections.
                 let mut candidates = Vec::new();
-                self.extend_with_env_vars(ctx, cwd, &mut candidates);
+                self.extend_with_env_vars(ctx, cwd, shell_env, &mut candidates);
                 self.extend_with_ssh_hosts(ctx, &mut candidates);
                 Ok(self.suggest_filesystem_fallback(ctx, cwd, buffer, candidates, "fallback"))
             }
@@ -1263,12 +1308,17 @@ impl SuggestionEngine {
         &self,
         ctx: &CommandContext,
         cwd: &Path,
+        shell_env: Option<&HashMap<String, String>>,
         candidates: &mut Vec<Suggestion>,
     ) {
         if !ctx.current_word.starts_with('$') {
             return;
         }
-        match self.env_provider.provide(ctx, cwd) {
+        let provided = match shell_env {
+            Some(env) => self.env_provider.provide_from_snapshot(ctx, env),
+            None => self.env_provider.provide(ctx, cwd),
+        };
+        match provided {
             Ok(env_vars) => candidates.extend(env_vars),
             Err(e) => tracing::warn!("env provider error: {e}"),
         }
@@ -1904,7 +1954,11 @@ fn filter_supported_script_generators(
 ///
 /// Mirrors the full process environment except `GHOST_COMPLETE_ACTIVE`
 /// (matching `script::run_script`).
-fn make_js_exec_context(ctx: &CommandContext, cwd: &Path) -> JsExecContext {
+fn make_js_exec_context(
+    ctx: &CommandContext,
+    cwd: &Path,
+    shell_env: Option<&HashMap<String, String>>,
+) -> JsExecContext {
     let mut tokens: Vec<String> = Vec::with_capacity(2 + ctx.args.len());
     if let Some(cmd) = ctx.command.as_ref() {
         tokens.push(cmd.clone());
@@ -1912,11 +1966,16 @@ fn make_js_exec_context(ctx: &CommandContext, cwd: &Path) -> JsExecContext {
     tokens.extend(ctx.args.iter().cloned());
     tokens.push(ctx.current_word.clone());
 
-    // Snapshot the process env so generators that read `env.HOME` /
-    // `env.PATH` keep working. Mutations inside JS are confined to the
-    // host object and do not leak back into the engine.
+    // Snapshot the live shell env when available, otherwise fall back to the
+    // proxy process env so generators that read `env.HOME` / `env.PATH` keep
+    // working. Mutations inside JS are confined to the host object and do not
+    // leak back into the engine.
+    let env_iter: Box<dyn Iterator<Item = (String, String)> + '_> = match shell_env {
+        Some(env) => Box::new(env.iter().map(|(k, v)| (k.clone(), v.clone()))),
+        None => Box::new(std::env::vars()),
+    };
     let mut env = std::collections::BTreeMap::new();
-    for (k, v) in std::env::vars() {
+    for (k, v) in env_iter {
         if k == "GHOST_COMPLETE_ACTIVE" {
             continue;
         }
@@ -1952,6 +2011,8 @@ async fn run_script_function_dispatch(
     cache: Option<crate::specs::CacheConfig>,
     cache_store: Arc<crate::cache::GeneratorCache>,
     js_runtime: Arc<JsRuntimeAdapter>,
+    env: Option<Arc<HashMap<String, String>>>,
+    env_hash: Option<u64>,
 ) -> Result<Vec<Suggestion>> {
     let timeout = Duration::from_millis(rt.timeout_ms.unwrap_or(timeout_ms));
     let generator_id = format!("{cmd_name}#{generator_index}#script_function");
@@ -1989,23 +2050,25 @@ async fn run_script_function_dispatch(
     // namespaced by `kind=script_function` so a future post-process
     // generator with the same script doesn't share the cache slot.
     let cache_cwd = cache_cwd_owned(&cache, &cwd);
-    let suggestions_key = CacheKey::js_processed(
+    let suggestions_key = CacheKey::js_processed_with_env(
         &cmd_name,
         &argv,
         cache_cwd,
         hash_js_source(&format!("script_function:{}", rt.source)),
+        env_hash,
     );
     if let Some(cached) = cache_store.get(&suggestions_key) {
         tracing::debug!("script_function cache hit for {:?}", argv);
         return Ok(cached);
     }
-    let stdout_key = CacheKey::from_strings(&cmd_name, &argv, cache_cwd_owned(&cache, &cwd));
+    let stdout_key =
+        CacheKey::from_strings_with_env(&cmd_name, &argv, cache_cwd_owned(&cache, &cwd), env_hash);
     let argv_refs: Vec<&str> = argv.iter().map(|s| s.as_str()).collect();
     let stdout: String = if let Some(cached) = cache_store.get_stdout(&stdout_key) {
         tracing::debug!("script_function stdout cache hit for {:?}", argv);
         cached
     } else {
-        let fresh = run_script(&argv_refs, &cwd, timeout_ms).await?;
+        let fresh = run_script_with_env(&argv_refs, &cwd, timeout_ms, env.as_deref()).await?;
         if let Some(ref cache_cfg) = cache {
             if cache_cfg.ttl_seconds > 0 {
                 cache_store.insert_stdout(
@@ -2060,6 +2123,8 @@ async fn run_custom_dispatch(
     cache: Option<crate::specs::CacheConfig>,
     cache_store: Arc<crate::cache::GeneratorCache>,
     js_runtime: Arc<JsRuntimeAdapter>,
+    env: Option<Arc<HashMap<String, String>>>,
+    env_hash: Option<u64>,
 ) -> Result<Vec<Suggestion>> {
     let timeout = Duration::from_millis(rt.timeout_ms.unwrap_or(timeout_ms));
     let generator_id = format!("{cmd_name}#{generator_index}#custom");
@@ -2084,11 +2149,12 @@ async fn run_custom_dispatch(
         current = exec_ctx.current_token,
         previous = exec_ctx.previous_token,
     );
-    let cache_key = CacheKey::js_processed(
+    let cache_key = CacheKey::js_processed_with_env(
         &cmd_name,
         std::slice::from_ref(&cmd_name), // argv slot is unused for custom
         Some(cwd.as_path()),
         hash_js_source(&key_source),
+        env_hash,
     );
     if let Some(cached) = cache_store.get(&cache_key) {
         tracing::debug!("custom cache hit for spec {}", cmd_name);
@@ -2097,7 +2163,7 @@ async fn run_custom_dispatch(
 
     // Build a runner backed by the current tokio runtime so the worker
     // can `block_on` synchronously inside `executeShellCommand`.
-    let runner = EngineShellRunner::from_current_handle().into_arc();
+    let runner = EngineShellRunner::from_current_handle_with_env(env).into_arc();
 
     let js_output = match js_runtime
         .custom(
@@ -3376,6 +3442,64 @@ mod tests {
                 "list-roles"
             ],
             "fallback CLI script must pass the typed profile before the service command"
+        );
+    }
+
+    #[test]
+    fn suggest_sync_with_env_uses_shell_reported_env_vars() {
+        let engine = make_engine();
+        let ctx = make_ctx(Some("echo"), vec![], "$AWS", 1);
+        let env = HashMap::from([("AWS_PROFILE".to_string(), "session".to_string())]);
+
+        let results = engine
+            .suggest_sync_with_env(&ctx, Path::new("/tmp"), "echo $AWS", Some(&env))
+            .unwrap();
+
+        assert!(
+            results.suggestions.iter().any(|s| s.text == "$AWS_PROFILE"),
+            "shell-reported env should drive $VAR suggestions, got {:?}",
+            results
+                .suggestions
+                .iter()
+                .map(|s| &s.text)
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[tokio::test]
+    async fn run_generators_with_env_uses_env_and_partitions_cache_by_env() {
+        let engine = make_engine();
+        let ctx = make_ctx(Some("envtest"), vec![], "", 1);
+        let gen: specs::GeneratorSpec = serde_json::from_value(serde_json::json!({
+            "script": ["/bin/sh", "-c", "printf '%s\\n' \"$AWS_PROFILE\""],
+            "cache": { "ttl_seconds": 60 }
+        }))
+        .unwrap();
+        let generators = vec![Arc::new(gen)];
+        let cwd = Path::new("/tmp");
+
+        let first_env = Arc::new(HashMap::from([(
+            "AWS_PROFILE".to_string(),
+            "dev-profile".to_string(),
+        )]));
+        let first = engine
+            .run_generators_with_env(&generators, &ctx, cwd, 5_000, Some(first_env))
+            .await
+            .unwrap();
+
+        let second_env = Arc::new(HashMap::from([(
+            "AWS_PROFILE".to_string(),
+            "prod-profile".to_string(),
+        )]));
+        let second = engine
+            .run_generators_with_env(&generators, &ctx, cwd, 5_000, Some(second_env))
+            .await
+            .unwrap();
+
+        assert_eq!(first[0].text, "dev-profile");
+        assert_eq!(
+            second[0].text, "prod-profile",
+            "changing shell env must not reuse cached script output from the prior profile"
         );
     }
 
