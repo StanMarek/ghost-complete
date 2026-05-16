@@ -7,7 +7,7 @@ mod tui;
 mod validate;
 
 use anyhow::{Context, Result};
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use tracing_subscriber::EnvFilter;
 
 #[derive(Parser)]
@@ -22,24 +22,73 @@ use tracing_subscriber::EnvFilter;
         ")"
     ),
     about = "Terminal-native autocomplete engine",
-    after_help = "COMMANDS:\n  install          Install shell integration (zsh)\n  uninstall        Remove shell integration\n  validate-specs   Validate completion spec files\n  status           Show loaded specs and JS compatibility\n  config           Show resolved configuration\n  config edit      Open interactive config editor\n  doctor           Run health checks\n\nSHELL SUPPORT:\n  zsh   Full support (auto-installed into ~/.zshrc)"
+    after_help = "SHELL SUPPORT:\n  zsh   Full support (auto-installed into ~/.zshrc)\n\nWith no subcommand, ghost-complete starts in proxy mode wrapping $SHELL.\nTo wrap a specific shell, run e.g. `ghost-complete /bin/zsh -l`.\nIf your shell binary is named like a subcommand, prefix with `--`:\n  ghost-complete -- install --some-flag"
 )]
 struct Cli {
     /// Path to config file
-    #[arg(long)]
+    #[arg(long, global = true)]
     config: Option<String>,
 
     /// Log level (trace, debug, info, warn, error)
-    #[arg(long, default_value = "warn")]
+    #[arg(long, global = true, default_value = "warn")]
     log_level: String,
 
     /// Log to file instead of stderr
-    #[arg(long)]
+    #[arg(long, global = true)]
     log_file: Option<String>,
 
-    /// Shell command and arguments (default: $SHELL or /bin/zsh)
-    #[arg(trailing_var_arg = true)]
-    shell_args: Vec<String>,
+    #[command(subcommand)]
+    command: Option<Command>,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    /// Install shell integration (zsh)
+    Install {
+        /// Print what would be installed without writing files
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Remove shell integration
+    Uninstall,
+    /// Validate completion spec files
+    #[command(name = "validate-specs")]
+    ValidateSpecs {
+        /// Treat warnings as failures
+        #[arg(long)]
+        strict: bool,
+        /// Emit JSON output
+        #[arg(long)]
+        json: bool,
+    },
+    /// Show loaded specs and JS compatibility
+    Status {
+        /// Exit nonzero if coverage regressed against the baseline
+        #[arg(long)]
+        strict: bool,
+        /// Emit JSON output
+        #[arg(long)]
+        json: bool,
+        /// Override the embedded coverage baseline
+        #[arg(long, value_name = "PATH")]
+        baseline: Option<std::path::PathBuf>,
+    },
+    /// Show or edit resolved configuration
+    Config {
+        #[command(subcommand)]
+        subcommand: Option<ConfigCommand>,
+    },
+    /// Run health checks
+    Doctor,
+    /// Proxy fallback for shell commands such as `ghost-complete /bin/zsh -l`
+    #[command(external_subcommand)]
+    External(Vec<String>),
+}
+
+#[derive(Subcommand)]
+enum ConfigCommand {
+    /// Open the interactive config editor
+    Edit,
 }
 
 fn default_log_file() -> Option<String> {
@@ -211,67 +260,72 @@ fn auto_refresh_install_mirror_if_stale(config: &gc_config::GhostConfig) {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+    let config_path = cli.config;
+    let log_level = cli.log_level;
+    let log_file = cli.log_file;
 
-    match cli.shell_args.first().map(|s| s.as_str()) {
-        Some("install") => {
-            init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-            let dry_run = cli.shell_args.iter().any(|s| s == "--dry-run");
-            return install::run_install(dry_run);
+    match cli.command {
+        Some(Command::Install { dry_run }) => {
+            init_tracing(&log_level, log_file.as_deref())?;
+            install::run_install(dry_run)
         }
-        Some("uninstall") => {
-            init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-            return install::run_uninstall();
+        Some(Command::Uninstall) => {
+            init_tracing(&log_level, log_file.as_deref())?;
+            install::run_uninstall()
         }
-        Some("validate-specs") => {
-            init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-            return validate::run_validate_specs(cli.config.as_deref());
+        Some(Command::ValidateSpecs { .. }) => {
+            init_tracing(&log_level, log_file.as_deref())?;
+            validate::run_validate_specs(config_path.as_deref())
         }
-        Some("status") => {
-            init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-            // Mirror `validate-specs --strict` / `install --dry-run`: the
-            // top-level clap parser just collects a trailing arg list, so we
-            // scan it ourselves for the status-specific flags.
-            let strict = cli.shell_args.iter().any(|s| s == "--strict");
-            let json = cli.shell_args.iter().any(|s| s == "--json");
-            let baseline_path = parse_baseline_flag(&cli.shell_args)?;
-            return status::run_status_with_opts(
-                cli.config.as_deref(),
-                strict,
-                json,
-                baseline_path.as_deref(),
-            );
+        Some(Command::Status {
+            strict,
+            json,
+            baseline,
+        }) => {
+            init_tracing(&log_level, log_file.as_deref())?;
+            status::run_status_with_opts(config_path.as_deref(), strict, json, baseline.as_deref())
         }
-        Some("config") => {
-            if cli.shell_args.get(1).map(|s| s.as_str()) == Some("edit") {
-                init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-                tui::run_config_editor(cli.config.as_deref())?;
-                std::process::exit(0);
-            }
-            init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-            return config_cmd::run_config(cli.config.as_deref());
+        Some(Command::Config {
+            subcommand: Some(ConfigCommand::Edit),
+        }) => {
+            init_tracing(&log_level, log_file.as_deref())?;
+            tui::run_config_editor(config_path.as_deref())?;
+            Ok(())
         }
-        Some("doctor") => {
-            init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-            return doctor::run_doctor(cli.config.as_deref());
+        Some(Command::Config { subcommand: None }) => {
+            init_tracing(&log_level, log_file.as_deref())?;
+            config_cmd::run_config(config_path.as_deref())
         }
-        _ => {}
+        Some(Command::Doctor) => {
+            init_tracing(&log_level, log_file.as_deref())?;
+            doctor::run_doctor(config_path.as_deref())
+        }
+        Some(Command::External(argv)) => run_proxy(&log_level, log_file, &config_path, argv),
+        None => run_proxy(&log_level, log_file, &config_path, Vec::new()),
     }
+}
 
+fn run_proxy(
+    log_level: &str,
+    cli_log_file: Option<String>,
+    config_path: &Option<String>,
+    argv: Vec<String>,
+) -> Result<()> {
     // Proxy mode — default to log file, never stderr
-    let log_file = cli.log_file.or_else(default_log_file);
-    init_tracing(&cli.log_level, log_file.as_deref())?;
+    let log_file = cli_log_file.or_else(default_log_file);
+    init_tracing(log_level, log_file.as_deref())?;
 
-    let (shell, args) = if cli.shell_args.is_empty() {
+    let (shell, args) = if argv.is_empty() {
         (resolve_default_shell(), vec![])
     } else {
-        let mut iter = cli.shell_args.into_iter();
-        let shell = iter.next().unwrap();
+        let mut iter = argv.into_iter();
+        let shell = iter.next().expect("argv non-empty branch already checked");
         let args: Vec<String> = iter.collect();
         (shell, args)
     };
 
     let config =
-        gc_config::GhostConfig::load(cli.config.as_deref()).context("failed to load config")?;
+        gc_config::GhostConfig::load(config_path.as_deref()).context("failed to load config")?;
 
     // Auto-refresh the install mirror (`~/.config/ghost-complete/specs/`)
     // if a previous binary version installed it. The mirror takes

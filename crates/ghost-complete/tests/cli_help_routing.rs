@@ -38,7 +38,10 @@ fn assert_success(output: &std::process::Output, context: &str) {
 #[test]
 fn top_level_help_lists_real_subcommands() {
     let tmp = isolated_home();
-    let output = cmd_with_isolated_home(tmp.path()).arg("--help").output().unwrap();
+    let output = cmd_with_isolated_home(tmp.path())
+        .arg("--help")
+        .output()
+        .unwrap();
 
     assert_success(&output, "top-level --help");
     let stdout = String::from_utf8_lossy(&output.stdout);
