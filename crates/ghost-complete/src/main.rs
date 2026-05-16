@@ -273,9 +273,9 @@ fn main() -> Result<()> {
             init_tracing(&log_level, log_file.as_deref())?;
             install::run_uninstall()
         }
-        Some(Command::ValidateSpecs { .. }) => {
+        Some(Command::ValidateSpecs { strict, json }) => {
             init_tracing(&log_level, log_file.as_deref())?;
-            validate::run_validate_specs(config_path.as_deref())
+            validate::run_validate_specs_with_opts(config_path.as_deref(), strict, json)
         }
         Some(Command::Status {
             strict,

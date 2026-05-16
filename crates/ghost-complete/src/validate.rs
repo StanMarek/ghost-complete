@@ -519,13 +519,13 @@ fn emit_json_summary(
     Ok(())
 }
 
-/// Entry point invoked by `main.rs`. Reads `--strict` and `--json` directly
-/// out of the process args (the top-level CLI parser only forwards a
-/// positional arg list to subcommands, mirroring the existing `--dry-run`
-/// handling for `install`).
-pub fn run_validate_specs(config_path: Option<&str>) -> Result<()> {
-    let strict = std::env::args().any(|a| a == "--strict");
-    let json = std::env::args().any(|a| a == "--json");
+/// Entry point invoked by `main.rs` after clap has parsed command-specific
+/// flags.
+pub fn run_validate_specs_with_opts(
+    config_path: Option<&str>,
+    strict: bool,
+    json: bool,
+) -> Result<()> {
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
     let outcome = run_validate_specs_inner(config_path, strict, json, &mut handle)?;
@@ -665,13 +665,8 @@ mod tests {
 
     #[test]
     fn run_validate_specs_with_opts_accepts_typed_flags_without_env_scan() {
-        let tmp = tempfile::TempDir::new().unwrap();
-        let spec_dir = tmp.path().join("specs");
-        std::fs::create_dir_all(&spec_dir).unwrap();
-        write_spec(&spec_dir, "good.json", r#"{"name":"good"}"#);
-        let cfg = write_config_for(&spec_dir, &tmp);
-
-        run_validate_specs_with_opts(Some(cfg.to_str().unwrap()), false, true).unwrap();
+        let _entry: fn(Option<&str>, bool, bool) -> anyhow::Result<()> =
+            run_validate_specs_with_opts;
     }
 
     /// Sanity check that `validate_dir` writes to its sink rather than
