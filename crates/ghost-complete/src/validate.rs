@@ -663,6 +663,17 @@ mod tests {
         assert!(!outcome.strict_failed);
     }
 
+    #[test]
+    fn run_validate_specs_with_opts_accepts_typed_flags_without_env_scan() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        write_spec(&spec_dir, "good.json", r#"{"name":"good"}"#);
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        run_validate_specs_with_opts(Some(cfg.to_str().unwrap()), false, true).unwrap();
+    }
+
     /// Sanity check that `validate_dir` writes to its sink rather than
     /// stdout — keeps the rest of the test surface clean.
     #[test]
