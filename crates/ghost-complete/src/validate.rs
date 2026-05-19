@@ -663,12 +663,6 @@ mod tests {
         assert!(!outcome.strict_failed);
     }
 
-    #[test]
-    fn run_validate_specs_with_opts_accepts_typed_flags_without_env_scan() {
-        let _entry: fn(Option<&str>, bool, bool) -> anyhow::Result<()> =
-            run_validate_specs_with_opts;
-    }
-
     /// Sanity check that `validate_dir` writes to its sink rather than
     /// stdout — keeps the rest of the test surface clean.
     #[test]

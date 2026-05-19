@@ -7,8 +7,37 @@ mod tui;
 mod validate;
 
 use anyhow::{Context, Result};
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use tracing_subscriber::EnvFilter;
+
+/// Closed set of `--log-level` values, validated by clap at parse time.
+///
+/// The fallback in `init_tracing` silently rewrites invalid free-form
+/// strings to `warn`; modeling the flag as a `ValueEnum` lets clap reject
+/// typos at the parse boundary so `--log-level deubg` errors out instead
+/// of silently logging at `warn`. The `RUST_LOG` env-var path stays
+/// free-form because `EnvFilter` syntax is richer than a single level.
+#[derive(Debug, Clone, Copy, ValueEnum)]
+#[value(rename_all = "lower")]
+enum LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
+impl LogLevel {
+    fn as_filter_str(self) -> &'static str {
+        match self {
+            LogLevel::Trace => "trace",
+            LogLevel::Debug => "debug",
+            LogLevel::Info => "info",
+            LogLevel::Warn => "warn",
+            LogLevel::Error => "error",
+        }
+    }
+}
 
 #[derive(Parser)]
 #[command(
@@ -30,8 +59,8 @@ struct Cli {
     config: Option<String>,
 
     /// Log level (trace, debug, info, warn, error)
-    #[arg(long, global = true, default_value = "warn")]
-    log_level: String,
+    #[arg(long, global = true, value_enum, default_value_t = LogLevel::Warn)]
+    log_level: LogLevel,
 
     /// Log to file instead of stderr
     #[arg(long, global = true)]
@@ -63,7 +92,7 @@ enum Command {
     },
     /// Show loaded specs and JS compatibility
     Status {
-        /// Exit nonzero if coverage regressed against the baseline
+        /// Exit nonzero if any spec failed to parse or no runtime specs are available
         #[arg(long)]
         strict: bool,
         /// Emit JSON output
@@ -75,12 +104,17 @@ enum Command {
     },
     /// Show or edit resolved configuration
     Config {
+        /// `None` means "print resolved config to stdout"; `Some(Edit)` launches the interactive editor.
         #[command(subcommand)]
         subcommand: Option<ConfigCommand>,
     },
     /// Run health checks
     Doctor,
-    /// Proxy fallback for shell commands such as `ghost-complete /bin/zsh -l`
+    // Catch-all for argv that doesn't match a named subcommand — clap routes
+    // it here so we can dispatch to proxy mode without emitting an "unknown
+    // subcommand" error. clap suppresses `///` docs on `external_subcommand`
+    // variants from `--help`, so the user-facing description lives in the
+    // top-level `after_help` block.
     #[command(external_subcommand)]
     External(Vec<String>),
 }
@@ -138,13 +172,17 @@ where
         .unwrap_or_else(|| DEFAULT_FALLBACK_SHELL.to_string())
 }
 
-fn init_tracing(level: &str, log_file: Option<&str>) -> Result<()> {
+fn init_tracing(level: LogLevel, log_file: Option<&str>) -> Result<()> {
     // Prefer `RUST_LOG` (standard ecosystem env var) when set; fall back to
     // the `--log-level` flag value otherwise. This matches how every other
     // tracing/log-based Rust binary behaves and keeps `--log-level` as a
     // convenient default for users who don't want to export an env var.
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::try_new(level).unwrap_or_else(|_| EnvFilter::new("warn")));
+    // `level.as_filter_str()` is one of the static strings clap's ValueEnum
+    // accepts, so `EnvFilter::try_new` cannot fail here — the
+    // `unwrap_or_else` is defensive.
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+        EnvFilter::try_new(level.as_filter_str()).unwrap_or_else(|_| EnvFilter::new("warn"))
+    });
 
     if let Some(path) = log_file {
         let file = std::fs::OpenOptions::new()
@@ -232,15 +270,15 @@ fn main() -> Result<()> {
 
     match cli.command {
         Some(Command::Install { dry_run }) => {
-            init_tracing(&log_level, log_file.as_deref())?;
+            init_tracing(log_level, log_file.as_deref())?;
             install::run_install(dry_run)
         }
         Some(Command::Uninstall) => {
-            init_tracing(&log_level, log_file.as_deref())?;
+            init_tracing(log_level, log_file.as_deref())?;
             install::run_uninstall()
         }
         Some(Command::ValidateSpecs { strict, json }) => {
-            init_tracing(&log_level, log_file.as_deref())?;
+            init_tracing(log_level, log_file.as_deref())?;
             validate::run_validate_specs_with_opts(config_path.as_deref(), strict, json)
         }
         Some(Command::Status {
@@ -248,33 +286,35 @@ fn main() -> Result<()> {
             json,
             baseline,
         }) => {
-            init_tracing(&log_level, log_file.as_deref())?;
+            init_tracing(log_level, log_file.as_deref())?;
             status::run_status_with_opts(config_path.as_deref(), strict, json, baseline.as_deref())
         }
         Some(Command::Config {
             subcommand: Some(ConfigCommand::Edit),
         }) => {
-            init_tracing(&log_level, log_file.as_deref())?;
+            init_tracing(log_level, log_file.as_deref())?;
             tui::run_config_editor(config_path.as_deref())?;
             Ok(())
         }
         Some(Command::Config { subcommand: None }) => {
-            init_tracing(&log_level, log_file.as_deref())?;
+            init_tracing(log_level, log_file.as_deref())?;
             config_cmd::run_config(config_path.as_deref())
         }
         Some(Command::Doctor) => {
-            init_tracing(&log_level, log_file.as_deref())?;
+            init_tracing(log_level, log_file.as_deref())?;
             doctor::run_doctor(config_path.as_deref())
         }
-        Some(Command::External(argv)) => run_proxy(&log_level, log_file, &config_path, argv),
-        None => run_proxy(&log_level, log_file, &config_path, Vec::new()),
+        Some(Command::External(argv)) => {
+            run_proxy(log_level, log_file, config_path.as_deref(), argv)
+        }
+        None => run_proxy(log_level, log_file, config_path.as_deref(), Vec::new()),
     }
 }
 
 fn run_proxy(
-    log_level: &str,
+    log_level: LogLevel,
     cli_log_file: Option<String>,
-    config_path: &Option<String>,
+    config_path: Option<&str>,
     argv: Vec<String>,
 ) -> Result<()> {
     // Proxy mode — default to log file, never stderr
@@ -290,8 +330,7 @@ fn run_proxy(
         (shell, args)
     };
 
-    let config =
-        gc_config::GhostConfig::load(config_path.as_deref()).context("failed to load config")?;
+    let config = gc_config::GhostConfig::load(config_path).context("failed to load config")?;
 
     // Auto-refresh the install mirror (`~/.config/ghost-complete/specs/`)
     // if a previous binary version installed it. The mirror takes

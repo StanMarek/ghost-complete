@@ -79,4 +79,54 @@ fn uninstall_help_does_not_write_zshrc() {
         !home.join(".zshrc").exists(),
         "uninstall --help must NOT create ~/.zshrc",
     );
+    assert!(
+        !home.join(".config/ghost-complete").exists(),
+        "uninstall --help must NOT create ~/.config/ghost-complete/",
+    );
+    assert!(
+        !home.join(".backup.ghost-complete").exists(),
+        "uninstall --help must NOT create ~/.backup.ghost-complete",
+    );
+}
+
+#[test]
+fn install_dry_run_through_clap_does_not_write() {
+    let tmp = TempDir::new().expect("tempdir");
+    let home = tmp.path();
+
+    let output = command_with_isolated_home(home)
+        .arg("install")
+        .arg("--dry-run")
+        .output()
+        .expect("spawn ghost-complete");
+
+    assert!(
+        output.status.success(),
+        "install --dry-run should exit 0; got {:?}\nstderr: {}",
+        output.status,
+        String::from_utf8_lossy(&output.stderr),
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("Dry run:"),
+        "expected dry-run banner in stdout; got:\n{stdout}",
+    );
+
+    assert!(
+        !home.join(".zshrc").exists(),
+        "install --dry-run must NOT create ~/.zshrc",
+    );
+    assert!(
+        !home.join(".config/ghost-complete/shell").exists(),
+        "install --dry-run must NOT create ~/.config/ghost-complete/shell",
+    );
+    assert!(
+        !home.join(".config/ghost-complete/specs").exists(),
+        "install --dry-run must NOT create ~/.config/ghost-complete/specs",
+    );
+    assert!(
+        !home.join(".config/ghost-complete/config.toml").exists(),
+        "install --dry-run must NOT create ~/.config/ghost-complete/config.toml",
+    );
 }
