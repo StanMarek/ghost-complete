@@ -103,7 +103,7 @@ enum Command {
         json: bool,
         /// Override the embedded coverage baseline
         #[arg(long, value_name = "PATH")]
-        baseline: Option<std::path::PathBuf>,
+        baseline: Option<PathBuf>,
     },
     /// Show or edit resolved configuration
     Config {
@@ -180,10 +180,11 @@ fn init_tracing(level: LogLevel, log_file: Option<&Path>) -> Result<()> {
     // the `--log-level` flag value otherwise. This matches how every other
     // tracing/log-based Rust binary behaves and keeps `--log-level` as a
     // convenient default for users who don't want to export an env var.
-    // `level.as_filter_str()` returns one of the static strings clap's
-    // ValueEnum accepts, so `EnvFilter::try_new` cannot fail here — `expect`
-    // documents the invariant and makes any future regression in
-    // `as_filter_str` loud rather than silent.
+    // `level.as_filter_str()` returns one of the five fixed level directives
+    // (`trace`/`debug`/`info`/`warn`/`error`), all of which are valid
+    // `EnvFilter` syntax, so `try_new` cannot fail here — `expect` documents
+    // the invariant and makes any future regression in `as_filter_str` loud
+    // rather than silent.
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
         EnvFilter::try_new(level.as_filter_str())
             .expect("LogLevel ValueEnum variant maps to a valid EnvFilter directive")
@@ -353,10 +354,11 @@ fn run_proxy(
     tracing::info!(shell = %Path::new(&shell).display(), "starting ghost-complete proxy");
 
     // SAFETY: must run while the process is still single-threaded.
-    // We're in `fn main` before any `std::thread::spawn` or tokio
-    // runtime construction; the AWS SDK reads this env var later from
-    // many threads but never writes it, and nothing else in our
-    // process mutates the environment after this point. See the
+    // We're in `fn run_proxy`, called synchronously from `fn main`
+    // before any `std::thread::spawn` or tokio runtime construction;
+    // the AWS SDK reads this env var later from many threads but never
+    // writes it, and nothing else in our process mutates the
+    // environment after this point. See the
     // `gc_suggest::aws::set_imds_disabled_env` SAFETY doc.
     unsafe {
         gc_suggest::aws::set_imds_disabled_env();

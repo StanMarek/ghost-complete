@@ -369,6 +369,166 @@ fn status_strict_flag_propagates_from_cli() {
     );
 }
 
+/// End-to-end regression guard: `status --json` must route through the JSON
+/// formatter (`run_status_json`) rather than the text formatter. The sibling
+/// `strict` flag is already covered by `status_strict_flag_propagates_from_cli`;
+/// this is the symmetric `json` flag test. A refactor that transposed
+/// `(strict, json)` or hard-coded `json=false` during dispatch in `main.rs`
+/// would silently regress users to the text formatter — but both existing
+/// strict tests would still pass. Parsing stdout as a JSON object and pinning
+/// the `schema_version` key catches that regression.
+#[test]
+fn status_json_flag_propagates_from_cli() {
+    let tmp = isolated_home();
+    let spec_dir = tmp.path().join("specs");
+    std::fs::create_dir_all(&spec_dir).unwrap();
+    let cfg = write_config_with_spec_dir(&tmp, &spec_dir);
+
+    let output = cmd_with_isolated_home(tmp.path())
+        .arg("--config")
+        .arg(&cfg)
+        .arg("status")
+        .arg("--json")
+        .output()
+        .unwrap();
+
+    assert_success(&output, "status --json");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    // The JSON formatter emits a single pretty-printed JSON object followed
+    // by a trailing newline. If `--json` did not reach the handler, the text
+    // formatter would have run and stdout would not parse as JSON.
+    let parsed: serde_json::Value = serde_json::from_str(stdout.trim()).unwrap_or_else(|e| {
+        panic!(
+            "`status --json` stdout must parse as a JSON object — the `json` \
+             flag was dropped during routing if this fails. parse error: {e}\n\
+             stdout:\n{stdout}"
+        )
+    });
+    assert!(
+        parsed.is_object(),
+        "expected a JSON object at the top level, got: {parsed}"
+    );
+    assert!(
+        parsed.get("schema_version").is_some(),
+        "expected `schema_version` key from run_status_json — its absence \
+         means the text formatter ran instead of the JSON formatter.\n\
+         parsed:\n{parsed}"
+    );
+    // Pin a second well-known key for defense-in-depth: a malformed
+    // alternative formatter producing `{}` would otherwise satisfy the
+    // `schema_version` check above only after a deliberate sabotage.
+    assert!(
+        parsed.get("spec_counts").is_some(),
+        "expected `spec_counts` key from run_status_json — its absence \
+         suggests the JSON shape regressed or a different formatter ran.\n\
+         parsed:\n{parsed}"
+    );
+}
+
+/// End-to-end regression guard: `validate-specs --json` must route through
+/// the NDJSON formatter rather than the text formatter. Mirrors
+/// `status_json_flag_propagates_from_cli` for the sibling subcommand. A
+/// refactor that hard-coded `json=false` or transposed `(strict, json)` in
+/// `main.rs` dispatch would silently regress users to the text formatter —
+/// the existing strict tests would still pass.
+///
+/// The validate output is NDJSON (one JSON object per line) — one row per
+/// spec plus a trailing `{"summary":{...}}` row.
+#[test]
+fn validate_specs_json_flag_propagates_from_cli() {
+    let tmp = isolated_home();
+    let spec_dir = tmp.path().join("specs");
+    std::fs::create_dir_all(&spec_dir).unwrap();
+    // A trivially well-formed spec produces one `{"spec_name":..., "ok":true}`
+    // row in NDJSON mode, plus the trailing summary row.
+    std::fs::write(spec_dir.join("ok.json"), r#"{"name":"ok"}"#).unwrap();
+    let cfg = write_config_with_spec_dir(&tmp, &spec_dir);
+
+    let output = cmd_with_isolated_home(tmp.path())
+        .arg("--config")
+        .arg(&cfg)
+        .arg("validate-specs")
+        .arg("--json")
+        .output()
+        .unwrap();
+
+    assert_success(&output, "validate-specs --json");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    // NDJSON: split on lines, skip empties, parse each as a JSON object.
+    let rows: Vec<serde_json::Value> = stdout
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .map(|l| {
+            serde_json::from_str(l).unwrap_or_else(|e| {
+                panic!(
+                    "`validate-specs --json` line must parse as JSON — the \
+                     `json` flag was dropped during routing if this fails. \
+                     line: {l:?}\nparse error: {e}\nstdout:\n{stdout}"
+                )
+            })
+        })
+        .collect();
+
+    assert!(
+        !rows.is_empty(),
+        "expected at least one NDJSON row from validate-specs --json; got \
+         empty stdout. The `json` flag likely did not reach the handler.\n\
+         stdout:\n{stdout}"
+    );
+
+    // A per-spec row carries `spec_name`; the trailing row carries `summary`.
+    let per_spec_rows: Vec<&serde_json::Value> = rows
+        .iter()
+        .filter(|r| r.get("spec_name").is_some())
+        .collect();
+    let summary_rows: Vec<&serde_json::Value> =
+        rows.iter().filter(|r| r.get("summary").is_some()).collect();
+
+    assert_eq!(
+        per_spec_rows.len(),
+        1,
+        "expected exactly one per-spec NDJSON row for our `ok.json` spec; \
+         got {}. rows:\n{rows:#?}",
+        per_spec_rows.len()
+    );
+    assert_eq!(
+        summary_rows.len(),
+        1,
+        "expected exactly one trailing summary NDJSON row; got {}. If this \
+         is 0, the text formatter ran instead of the JSON formatter.\n\
+         rows:\n{rows:#?}",
+        summary_rows.len()
+    );
+
+    // Pin the per-spec row shape — proves `emit_json_spec` ran with the
+    // expected fields rather than e.g. an arbitrary alternative formatter
+    // emitting JSON-shaped but mislabeled output.
+    let spec_row = per_spec_rows[0];
+    assert_eq!(
+        spec_row["ok"],
+        serde_json::Value::Bool(true),
+        "expected ok=true for a well-formed spec; got row:\n{spec_row}"
+    );
+    assert!(
+        spec_row.get("divergences").is_some() && spec_row.get("warnings").is_some(),
+        "expected `divergences` and `warnings` keys on the per-spec row — \
+         their absence means the wrong formatter ran.\nrow:\n{spec_row}"
+    );
+
+    // Defense-in-depth: the text formatter emits a `Validating specs in ...`
+    // banner before any per-spec output. Its absence is an independent
+    // signal that the JSON path ran.
+    assert!(
+        !stdout.contains("Validating specs in"),
+        "`validate-specs --json` stdout must NOT contain the text formatter's \
+         `Validating specs in` banner. Routing regressed: --json fell through \
+         to the text formatter.\nstdout:\n{stdout}"
+    );
+}
+
 /// End-to-end regression guard for the `--baseline <path>` positive path:
 /// the parsed `Option<PathBuf>` must reach `status::run_status_with_opts`
 /// as `baseline.as_deref()`. The existing
