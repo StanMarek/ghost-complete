@@ -1,7 +1,8 @@
-//! Regression tests for help paths on write-capable commands.
+//! Regression tests pinning read-only invocations on write-capable commands.
 //!
-//! `install --help` must be read-only. These tests run with an isolated HOME so
-//! a regression cannot mutate the caller's real shell files.
+//! `install --help` and `install --dry-run` must never mutate the caller's
+//! HOME. These tests run with an isolated HOME so a regression cannot touch
+//! the caller's real shell files.
 
 use std::path::PathBuf;
 use std::process::Command;

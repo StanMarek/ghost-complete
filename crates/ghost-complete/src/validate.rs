@@ -421,7 +421,7 @@ pub struct ValidateOutcome {
 ///   `... | jq 'select(.spec_name)'`  → per-spec rows
 ///   `... | jq 'select(.summary)'`    → summary row
 pub fn run_validate_specs_inner(
-    config_path: Option<&str>,
+    config_path: Option<&Path>,
     strict: bool,
     json: bool,
     out: &mut dyn std::io::Write,
@@ -522,7 +522,7 @@ fn emit_json_summary(
 /// Entry point invoked by `main.rs` after clap has parsed command-specific
 /// flags.
 pub fn run_validate_specs_with_opts(
-    config_path: Option<&str>,
+    config_path: Option<&Path>,
     strict: bool,
     json: bool,
 ) -> Result<()> {
@@ -580,8 +580,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let outcome =
-            run_validate_specs_inner(Some(cfg.to_str().unwrap()), false, false, &mut out).unwrap();
+        let outcome = run_validate_specs_inner(Some(&cfg), false, false, &mut out).unwrap();
         let txt = String::from_utf8_lossy(&out);
         assert!(
             outcome.counts.warnings > 0,
@@ -620,8 +619,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let outcome =
-            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        let outcome = run_validate_specs_inner(Some(&cfg), true, false, &mut out).unwrap();
         assert!(outcome.counts.warnings > 0);
         assert!(
             outcome.strict_failed,
@@ -656,8 +654,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let outcome =
-            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        let outcome = run_validate_specs_inner(Some(&cfg), true, false, &mut out).unwrap();
         assert_eq!(outcome.counts.warnings, 0);
         assert_eq!(outcome.counts.failed, 0);
         assert!(!outcome.strict_failed);
@@ -700,7 +697,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_validate_specs_inner(Some(cfg.to_str().unwrap()), false, true, &mut out).unwrap();
+        run_validate_specs_inner(Some(&cfg), false, true, &mut out).unwrap();
         let rows = parse_ndjson(&out);
 
         assert_eq!(
@@ -736,7 +733,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_validate_specs_inner(Some(cfg.to_str().unwrap()), false, true, &mut out).unwrap();
+        run_validate_specs_inner(Some(&cfg), false, true, &mut out).unwrap();
         let rows = parse_ndjson(&out);
 
         let spec_row = rows
@@ -773,7 +770,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_validate_specs_inner(Some(cfg.to_str().unwrap()), false, true, &mut out).unwrap();
+        run_validate_specs_inner(Some(&cfg), false, true, &mut out).unwrap();
         let rows = parse_ndjson(&out);
 
         let spec_row = rows
@@ -814,7 +811,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_validate_specs_inner(Some(cfg.to_str().unwrap()), false, true, &mut out).unwrap();
+        run_validate_specs_inner(Some(&cfg), false, true, &mut out).unwrap();
         let rows = parse_ndjson(&out);
 
         let summary = rows
@@ -876,7 +873,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_validate_specs_inner(Some(cfg.to_str().unwrap()), false, true, &mut out).unwrap();
+        run_validate_specs_inner(Some(&cfg), false, true, &mut out).unwrap();
         let rows = parse_ndjson(&out);
 
         let summary = rows
@@ -904,7 +901,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_validate_specs_inner(Some(cfg.to_str().unwrap()), false, true, &mut out).unwrap();
+        run_validate_specs_inner(Some(&cfg), false, true, &mut out).unwrap();
         let txt = String::from_utf8_lossy(&out);
 
         assert!(
@@ -941,8 +938,7 @@ mod tests {
 
         // Non-strict mode: no warning, no strict_failed.
         let mut out = Vec::new();
-        let outcome =
-            run_validate_specs_inner(Some(cfg.to_str().unwrap()), false, false, &mut out).unwrap();
+        let outcome = run_validate_specs_inner(Some(&cfg), false, false, &mut out).unwrap();
         assert_eq!(
             outcome.counts.warnings, 0,
             "non-strict mode must not warn on missing js_runtime"
@@ -951,8 +947,7 @@ mod tests {
 
         // Strict mode: at least one warning + strict_failed=true.
         let mut out = Vec::new();
-        let outcome =
-            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        let outcome = run_validate_specs_inner(Some(&cfg), true, false, &mut out).unwrap();
         assert!(
             outcome.counts.warnings > 0,
             "strict mode must surface a warning for missing js_runtime"
@@ -996,8 +991,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let outcome =
-            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        let outcome = run_validate_specs_inner(Some(&cfg), true, false, &mut out).unwrap();
         assert!(
             outcome.counts.warnings > 0,
             "strict mode must warn on missing js_runtime in option args array"
@@ -1037,8 +1031,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let outcome =
-            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        let outcome = run_validate_specs_inner(Some(&cfg), true, false, &mut out).unwrap();
         assert_eq!(outcome.counts.warnings, 0);
         assert!(!outcome.strict_failed);
     }
@@ -1068,8 +1061,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let outcome =
-            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        let outcome = run_validate_specs_inner(Some(&cfg), true, false, &mut out).unwrap();
         assert!(outcome.counts.warnings > 0);
         assert!(outcome.strict_failed);
     }
@@ -1132,8 +1124,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let outcome =
-            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        let outcome = run_validate_specs_inner(Some(&cfg), true, false, &mut out).unwrap();
         assert!(
             outcome.counts.warnings > 0,
             "strict mode must warn on missing js_runtime at deep nesting"
@@ -1185,8 +1176,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let outcome =
-            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        let outcome = run_validate_specs_inner(Some(&cfg), true, false, &mut out).unwrap();
         assert!(
             outcome.counts.warnings > 0,
             "strict mode must warn on script_function without self_contained"
@@ -1228,8 +1218,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let outcome =
-            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        let outcome = run_validate_specs_inner(Some(&cfg), true, false, &mut out).unwrap();
         assert!(outcome.counts.warnings > 0);
         assert!(outcome.strict_failed);
         let txt = String::from_utf8_lossy(&out);
@@ -1271,8 +1260,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let outcome =
-            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        let outcome = run_validate_specs_inner(Some(&cfg), true, false, &mut out).unwrap();
         assert!(
             outcome.counts.warnings > 0,
             "strict mode must warn on post_process without script/script_template"
@@ -1314,8 +1302,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let outcome =
-            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        let outcome = run_validate_specs_inner(Some(&cfg), true, false, &mut out).unwrap();
         assert_eq!(outcome.counts.warnings, 0);
         assert!(!outcome.strict_failed);
     }
@@ -1348,8 +1335,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let outcome =
-            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        let outcome = run_validate_specs_inner(Some(&cfg), true, false, &mut out).unwrap();
         assert_eq!(outcome.counts.warnings, 0);
         assert!(!outcome.strict_failed);
     }
@@ -1382,8 +1368,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let outcome =
-            run_validate_specs_inner(Some(cfg.to_str().unwrap()), true, false, &mut out).unwrap();
+        let outcome = run_validate_specs_inner(Some(&cfg), true, false, &mut out).unwrap();
         assert!(outcome.counts.warnings > 0);
         let txt = String::from_utf8_lossy(&out);
         assert!(

@@ -6,16 +6,19 @@ mod status;
 mod tui;
 mod validate;
 
+use std::ffi::OsString;
+use std::path::{Path, PathBuf};
+
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand, ValueEnum};
 use tracing_subscriber::EnvFilter;
 
 /// Closed set of `--log-level` values, validated by clap at parse time.
 ///
-/// The fallback in `init_tracing` silently rewrites invalid free-form
-/// strings to `warn`; modeling the flag as a `ValueEnum` lets clap reject
-/// typos at the parse boundary so `--log-level deubg` errors out instead
-/// of silently logging at `warn`. The `RUST_LOG` env-var path stays
+/// Before this enum existed, `--log-level deubg` would silently fall back
+/// to `warn` inside `init_tracing`. Modeling the flag as a `ValueEnum`
+/// lets clap reject typos at the parse boundary so the fallback path is
+/// unreachable for `--log-level`; the `RUST_LOG` env-var path stays
 /// free-form because `EnvFilter` syntax is richer than a single level.
 #[derive(Debug, Clone, Copy, ValueEnum)]
 #[value(rename_all = "lower")]
@@ -56,7 +59,7 @@ impl LogLevel {
 struct Cli {
     /// Path to config file
     #[arg(long, global = true)]
-    config: Option<String>,
+    config: Option<PathBuf>,
 
     /// Log level (trace, debug, info, warn, error)
     #[arg(long, global = true, value_enum, default_value_t = LogLevel::Warn)]
@@ -64,7 +67,7 @@ struct Cli {
 
     /// Log to file instead of stderr
     #[arg(long, global = true)]
-    log_file: Option<String>,
+    log_file: Option<PathBuf>,
 
     #[command(subcommand)]
     command: Option<Command>,
@@ -114,9 +117,11 @@ enum Command {
     // it here so we can dispatch to proxy mode without emitting an "unknown
     // subcommand" error. clap suppresses `///` docs on `external_subcommand`
     // variants from `--help`, so the user-facing description lives in the
-    // top-level `after_help` block.
+    // top-level `after_help` block. `Vec<OsString>` preserves non-UTF-8 argv
+    // (e.g. file-system names) the shell-wrapper invocations may carry; clap
+    // derives the right parser automatically under `external_subcommand`.
     #[command(external_subcommand)]
-    External(Vec<String>),
+    External(Vec<OsString>),
 }
 
 #[derive(Subcommand)]
@@ -125,7 +130,7 @@ enum ConfigCommand {
     Edit,
 }
 
-fn default_log_file() -> Option<String> {
+fn default_log_file() -> Option<PathBuf> {
     let state_dir = dirs::state_dir()
         .or_else(|| dirs::home_dir().map(|h| h.join(".local/state")))
         .map(|d| d.join("ghost-complete"));
@@ -142,11 +147,7 @@ fn default_log_file() -> Option<String> {
         );
         return None;
     }
-    Some(
-        dir.join("ghost-complete.log")
-            .to_string_lossy()
-            .into_owned(),
-    )
+    Some(dir.join("ghost-complete.log"))
 }
 
 /// Default fallback shell when `$SHELL` is unset, empty, or unreadable.
@@ -154,34 +155,38 @@ const DEFAULT_FALLBACK_SHELL: &str = "/bin/zsh";
 
 /// Resolve the default shell from `$SHELL`, falling back to [`DEFAULT_FALLBACK_SHELL`].
 ///
-/// `env::var("SHELL")` returns `Ok("")` when the variable is set but empty —
-/// passing that straight to the PTY spawn produces an opaque `ENOENT` and a
-/// confused user. Treat empty as missing so the fallback applies.
-fn resolve_default_shell() -> String {
-    resolve_default_shell_from(|name| std::env::var(name).ok())
+/// `env::var_os("SHELL")` returns `Some("")` when the variable is set but
+/// empty — passing that straight to the PTY spawn produces an opaque
+/// `ENOENT` and a confused user. Treat empty as missing so the fallback
+/// applies. Returns `OsString` so a hypothetically non-UTF-8 `$SHELL`
+/// survives end-to-end into the spawn.
+fn resolve_default_shell() -> OsString {
+    resolve_default_shell_from(|name| std::env::var_os(name))
 }
 
 /// Pure helper used by [`resolve_default_shell`]; takes an env-lookup closure
 /// so the resolution rules can be unit-tested without touching process state.
-fn resolve_default_shell_from<F>(lookup: F) -> String
+fn resolve_default_shell_from<F>(lookup: F) -> OsString
 where
-    F: Fn(&str) -> Option<String>,
+    F: Fn(&str) -> Option<OsString>,
 {
     lookup("SHELL")
         .filter(|s| !s.is_empty())
-        .unwrap_or_else(|| DEFAULT_FALLBACK_SHELL.to_string())
+        .unwrap_or_else(|| OsString::from(DEFAULT_FALLBACK_SHELL))
 }
 
-fn init_tracing(level: LogLevel, log_file: Option<&str>) -> Result<()> {
+fn init_tracing(level: LogLevel, log_file: Option<&Path>) -> Result<()> {
     // Prefer `RUST_LOG` (standard ecosystem env var) when set; fall back to
     // the `--log-level` flag value otherwise. This matches how every other
     // tracing/log-based Rust binary behaves and keeps `--log-level` as a
     // convenient default for users who don't want to export an env var.
-    // `level.as_filter_str()` is one of the static strings clap's ValueEnum
-    // accepts, so `EnvFilter::try_new` cannot fail here — the
-    // `unwrap_or_else` is defensive.
+    // `level.as_filter_str()` returns one of the static strings clap's
+    // ValueEnum accepts, so `EnvFilter::try_new` cannot fail here — `expect`
+    // documents the invariant and makes any future regression in
+    // `as_filter_str` loud rather than silent.
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-        EnvFilter::try_new(level.as_filter_str()).unwrap_or_else(|_| EnvFilter::new("warn"))
+        EnvFilter::try_new(level.as_filter_str())
+            .expect("LogLevel ValueEnum variant maps to a valid EnvFilter directive")
     });
 
     if let Some(path) = log_file {
@@ -189,7 +194,7 @@ fn init_tracing(level: LogLevel, log_file: Option<&str>) -> Result<()> {
             .create(true)
             .append(true)
             .open(path)
-            .with_context(|| format!("failed to open log file: {}", path))?;
+            .with_context(|| format!("failed to open log file: {}", path.display()))?;
 
         tracing_subscriber::fmt()
             .with_env_filter(filter)
@@ -293,8 +298,7 @@ fn main() -> Result<()> {
             subcommand: Some(ConfigCommand::Edit),
         }) => {
             init_tracing(log_level, log_file.as_deref())?;
-            tui::run_config_editor(config_path.as_deref())?;
-            Ok(())
+            tui::run_config_editor(config_path.as_deref())
         }
         Some(Command::Config { subcommand: None }) => {
             init_tracing(log_level, log_file.as_deref())?;
@@ -311,11 +315,14 @@ fn main() -> Result<()> {
     }
 }
 
+// `cli_log_file` is taken by value because the body consumes it for the
+// `.or_else(default_log_file)` chain below; `config_path` is borrowed
+// because no caller hands ownership down beyond this stack frame.
 fn run_proxy(
     log_level: LogLevel,
-    cli_log_file: Option<String>,
-    config_path: Option<&str>,
-    argv: Vec<String>,
+    cli_log_file: Option<PathBuf>,
+    config_path: Option<&Path>,
+    argv: Vec<OsString>,
 ) -> Result<()> {
     // Proxy mode — default to log file, never stderr
     let log_file = cli_log_file.or_else(default_log_file);
@@ -326,7 +333,7 @@ fn run_proxy(
     } else {
         let mut iter = argv.into_iter();
         let shell = iter.next().expect("argv non-empty branch already checked");
-        let args: Vec<String> = iter.collect();
+        let args: Vec<OsString> = iter.collect();
         (shell, args)
     };
 
@@ -343,7 +350,7 @@ fn run_proxy(
     // for the full rationale.
     auto_refresh_install_mirror_if_stale(&config);
 
-    tracing::info!(shell = %shell, "starting ghost-complete proxy");
+    tracing::info!(shell = %Path::new(&shell).display(), "starting ghost-complete proxy");
 
     // SAFETY: must run while the process is still single-threaded.
     // We're in `fn main` before any `std::thread::spawn` or tokio
@@ -364,28 +371,29 @@ fn run_proxy(
 #[cfg(test)]
 mod tests {
     use super::{resolve_default_shell_from, DEFAULT_FALLBACK_SHELL};
+    use std::ffi::OsString;
 
     #[test]
     fn resolve_default_shell_uses_env_when_set() {
         let shell = resolve_default_shell_from(|name| {
             assert_eq!(name, "SHELL");
-            Some("/usr/local/bin/fish".to_string())
+            Some(OsString::from("/usr/local/bin/fish"))
         });
-        assert_eq!(shell, "/usr/local/bin/fish");
+        assert_eq!(shell, OsString::from("/usr/local/bin/fish"));
     }
 
     #[test]
     fn resolve_default_shell_falls_back_when_unset() {
         let shell = resolve_default_shell_from(|_| None);
-        assert_eq!(shell, DEFAULT_FALLBACK_SHELL);
+        assert_eq!(shell, OsString::from(DEFAULT_FALLBACK_SHELL));
     }
 
     #[test]
     fn resolve_default_shell_falls_back_when_empty() {
-        // Regression: `env::var("SHELL")` returns `Ok("")` when SHELL is set
-        // but empty. Without the empty filter, the PTY spawn fails with a
+        // Regression: `env::var_os("SHELL")` returns `Some("")` when SHELL is
+        // set but empty. Without the empty filter, the PTY spawn fails with a
         // cryptic ENOENT instead of using the fallback.
-        let shell = resolve_default_shell_from(|_| Some(String::new()));
-        assert_eq!(shell, DEFAULT_FALLBACK_SHELL);
+        let shell = resolve_default_shell_from(|_| Some(OsString::new()));
+        assert_eq!(shell, OsString::from(DEFAULT_FALLBACK_SHELL));
     }
 }

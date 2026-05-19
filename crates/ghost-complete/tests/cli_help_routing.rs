@@ -108,6 +108,50 @@ fn status_baseline_without_value_fails_at_parse_time() {
     );
 }
 
+/// Pins clap's `ValueEnum` rejection of typo'd `--log-level` values at the
+/// parse boundary. The `LogLevel` enum was introduced specifically so a
+/// typo like `--log-level deubg` errors out instead of silently being
+/// rewritten to `warn` inside `init_tracing`. If a future refactor reverted
+/// the field to `log_level: String` (or dropped `value_enum` /
+/// `default_value_t`), the rejection would silently disappear and the
+/// silent-rewrite-to-warn behavior would return — this test fails loudly
+/// in that scenario.
+#[test]
+fn invalid_log_level_rejected_at_parse_time() {
+    let tmp = isolated_home();
+    let output = cmd_with_isolated_home(tmp.path())
+        .arg("--log-level")
+        .arg("deubg")
+        .arg("status")
+        .output()
+        .unwrap();
+
+    assert!(
+        !output.status.success(),
+        "typo'd --log-level must error at parse time; got success.\n\
+         stdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr),
+    );
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("--log-level") && stderr.contains("invalid value"),
+        "expected clap ValueEnum rejection mentioning `--log-level` and \
+         `invalid value`. If this regressed, the `LogLevel` enum was likely \
+         reverted to a free-form `String`, restoring the silent-rewrite-to-warn \
+         fallback in init_tracing.\nstderr:\n{stderr}"
+    );
+    // Sanity check that clap is suggesting one of the legal values — pins
+    // the `[possible values: ...]` rendering that ValueEnum produces.
+    assert!(
+        stderr.contains("possible values") || stderr.contains("debug"),
+        "expected clap to surface `possible values` or a typo suggestion. \
+         Its absence suggests the ValueEnum derive was dropped.\n\
+         stderr:\n{stderr}"
+    );
+}
+
 #[test]
 fn unknown_flag_on_real_subcommand_fails() {
     let tmp = isolated_home();
@@ -325,6 +369,66 @@ fn status_strict_flag_propagates_from_cli() {
     );
 }
 
+/// End-to-end regression guard for the `--baseline <path>` positive path:
+/// the parsed `Option<PathBuf>` must reach `status::run_status_with_opts`
+/// as `baseline.as_deref()`. The existing
+/// `status_baseline_without_value_fails_at_parse_time` covers the bare
+/// `--baseline` negative case at parse time, but no test confirms a value
+/// is actually forwarded through clap → `main.rs` dispatch → the status
+/// handler. If a regression hard-coded `baseline.as_deref()` to `None`
+/// (e.g. a refactor accidentally dropping the destructure binding),
+/// `--baseline /missing.json` would silently fall through to the embedded
+/// baseline lookup instead of erroring with the authoritative
+/// `baseline file does not exist` message at status.rs:166. This test
+/// pins that contract end-to-end.
+#[test]
+fn status_baseline_path_propagates_from_cli() {
+    let tmp = isolated_home();
+    let missing_baseline = tmp.path().join("nonexistent-baseline.json");
+    assert!(
+        !missing_baseline.exists(),
+        "preconditions: baseline path must not exist for this test to be meaningful"
+    );
+
+    let output = cmd_with_isolated_home(tmp.path())
+        .arg("status")
+        .arg("--baseline")
+        .arg(&missing_baseline)
+        .output()
+        .unwrap();
+
+    assert!(
+        !output.status.success(),
+        "`status --baseline <missing>` must exit non-zero — load_baseline \
+         must surface the missing path as an error. If this exited 0, the \
+         parsed PathBuf likely never reached run_status_with_opts \
+         (`baseline.as_deref()` was dropped or hard-coded to None).\n\
+         stdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr),
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let combined = format!("{stdout}\n{stderr}");
+    assert!(
+        combined.contains("baseline file does not exist"),
+        "expected the authoritative `baseline file does not exist` bail \
+         message (status.rs:166) — its absence means the explicit-baseline \
+         arm of load_baseline was not reached and the CLI value was \
+         silently dropped during routing.\nstdout:\n{stdout}\nstderr:\n{stderr}"
+    );
+    // Also pin that the error references the path we supplied, ruling out
+    // a routing arm that pointed load_baseline at a different (stale) value.
+    assert!(
+        combined.contains("nonexistent-baseline.json"),
+        "expected the error to mention our supplied baseline path. Its \
+         absence means the parsed value was dropped or replaced by a \
+         different path before reaching load_baseline.\n\
+         stdout:\n{stdout}\nstderr:\n{stderr}"
+    );
+}
+
 /// `config edit` must route to the interactive TUI path, not to the
 /// read-only `config` dump path. With stdin forced to `Stdio::null()`,
 /// `enable_raw_mode()` (in the TUI entry) fails fast in a non-TTY
@@ -384,6 +488,21 @@ fn config_edit_attempts_tui_not_dump() {
         "`config edit` stdout must NOT contain the `config` dump's fallback banner. \
          Routing regressed: `Config edit` fell through to the dump path.\n\
          stdout:\n{stdout}"
+    );
+
+    // Positive TUI-arm signal: with stdin=null and stdout=piped, the TUI's
+    // `enable_raw_mode()` fails with a recognisable error chain
+    // (`failed to enable raw mode\n\nCaused by:\n    Device not
+    // configured`). Pinning this stderr fingerprint closes the gap where a
+    // refactor could re-route `Config { subcommand: Some(Edit) }` to an
+    // arbitrary wrong arm (e.g. `doctor::run_doctor`) whose non-zero exit
+    // and absence of dump markers would otherwise pass silently.
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("raw mode") || stderr.contains("raw_mode"),
+        "expected TUI-init failure signature (`raw mode`) in stderr — its \
+         absence suggests `config edit` did not route to the TUI arm.\n\
+         stderr:\n{stderr}"
     );
 }
 
@@ -449,11 +568,12 @@ fn dash_dash_escape_routes_subcommand_named_shell_to_external() {
 /// Invokes ghost-complete with NO positional argv and no subcommand. The
 /// proxy reads `$SHELL` via `resolve_default_shell()`, logs `"starting
 /// ghost-complete proxy"` with that shell, then bails when `enable_raw_mode`
-/// fails (stdin/stdout are not a TTY because we route them through
-/// `Stdio::piped`). The log file is the deterministic signal: if the `None`
-/// arm regressed (e.g. swapped with `External`, hard-coded a different
-/// shell, or panicked), the recorded `shell=` line would not match the
-/// $SHELL value we set — or the log would be empty because tracing never
+/// fails (stdin is routed through `Stdio::null()` and stdout/stderr through
+/// `Stdio::piped()` — none of them is a TTY, so `enable_raw_mode` fails
+/// fast). The log file is the deterministic signal: if the `None` arm
+/// regressed (e.g. swapped with `External`, hard-coded a different shell,
+/// or panicked), the recorded `shell=` line would not match the $SHELL
+/// value we set — or the log would be empty because tracing never
 /// initialised.
 ///
 /// Avoids the PTY harness intentionally — the PTY-backed harness always
