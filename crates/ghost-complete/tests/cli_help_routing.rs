@@ -677,7 +677,15 @@ fn config_edit_attempts_tui_not_dump() {
 #[test]
 fn dash_dash_escape_routes_subcommand_named_shell_to_external() {
     let tmp = isolated_home();
+    // Pin a supported terminal. CI runners leave `TERM_PROGRAM` unset, so
+    // `TerminalProfile::detect()` yields `Terminal::Unknown`, which routes
+    // `run_proxy` into the `multi_terminal`-gated exec-fallback (`execvp`,
+    // surfacing a bare `failed to exec shell: ... (os error 2)`) instead of
+    // the PTY proxy spawn path whose `failed to spawn shell process` signature
+    // this test fingerprints. Mirrors the `TERM_PROGRAM` pin in
+    // `tests/harness/mod.rs`.
     let output = cmd_with_isolated_home(tmp.path())
+        .env("TERM_PROGRAM", "ghostty")
         .arg("--")
         .arg("/tmp/ghost-complete-bogus-shell-does-not-exist/install")
         .arg("--some-flag")
