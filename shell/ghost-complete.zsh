@@ -91,6 +91,9 @@ _gc_report_env() {
 # is active, signalled by VSCODE_INJECTION being set).
 _gc_native_osc133() {
     [[ "$TERM_PROGRAM" == "ghostty" || -n "$GHOSTTY_RESOURCES_DIR" ]] && return 0
+    [[ -n "$KITTY_WINDOW_ID" ]] && return 0
+    [[ -n "$WEZTERM_UNIX_SOCKET" || "$TERM_PROGRAM" == "WezTerm" ]] && return 0
+    [[ "$TERM_PROGRAM" == "rio" ]] && return 0
     [[ -n "$ZED_TERM" ]] && return 0
     [[ -n "$VSCODE_INJECTION" ]] && return 0
     return 1

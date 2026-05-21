@@ -825,6 +825,19 @@ mod tests {
             ZSH_INTEGRATION.contains("_gc_native_osc133 || printf '\\e]7771;C"),
             "_gc_preexec must suppress OSC 7771 when terminal parses OSC 133 natively"
         );
+        // New native-OSC-133 terminals — match PromptDetection::Osc133 in gc-terminal.
+        assert!(
+            ZSH_INTEGRATION.contains("KITTY_WINDOW_ID") || ZSH_INTEGRATION.contains("kitty"),
+            "_gc_native_osc133 must recognise Kitty"
+        );
+        assert!(
+            ZSH_INTEGRATION.contains("WEZTERM_UNIX_SOCKET") || ZSH_INTEGRATION.contains("WezTerm"),
+            "_gc_native_osc133 must recognise WezTerm"
+        );
+        assert!(
+            ZSH_INTEGRATION.contains("\"rio\""),
+            "_gc_native_osc133 must recognise Rio"
+        );
     }
 
     #[test]
