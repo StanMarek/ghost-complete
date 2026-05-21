@@ -99,8 +99,8 @@ pub fn popup_additional_scroll_deficit(
     // render the popup at row 1 over prior scrollback. Discard it instead
     // and treat this render as fresh — anchored to cursor_row, scrolling
     // only the room actually needed below. Same guard mirrored in
-    // `render_popup` and `render_feedback_only_popup`; keep all three in
-    // sync.
+    // `render_popup_unframed` and `render_feedback_only_popup_unframed`;
+    // keep all three in sync.
     let effective_prior = if prior_deficit >= cursor_row {
         0
     } else {
