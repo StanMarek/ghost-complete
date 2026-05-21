@@ -841,6 +841,22 @@ mod tests {
     }
 
     #[test]
+    fn report_buffer_is_gated_on_active() {
+        // GC-private frames must not leak to terminals when the proxy is absent.
+        let body = ZSH_INTEGRATION
+            .split("_gc_report_buffer()")
+            .nth(1)
+            .expect("found _gc_report_buffer")
+            .split("\n}\n")
+            .next()
+            .expect("found end brace");
+        assert!(
+            body.contains("GHOST_COMPLETE_ACTIVE"),
+            "_gc_report_buffer must check $GHOST_COMPLETE_ACTIVE before emitting OSC 7772"
+        );
+    }
+
+    #[test]
     fn test_zsh_integration_vscode_injection_not_ipc_hook() {
         // Extract just the _gc_native_osc133 helper body to avoid matching
         // the unrelated __ghost_complete_init block (which does check

@@ -56,8 +56,11 @@ fn emit_via_real_zsh(buffer: &[u8], cursor: usize) -> Vec<u8> {
     // Single-line zsh script: source the integration, set BUFFER and
     // CURSOR, invoke the reporter. `$'…'` escapes through every byte
     // literally — no quoting hazards.
+    // GHOST_COMPLETE_ACTIVE=1 must be set so _gc_report_buffer does not
+    // early-return (the gate added in Task 7 guards against leaking
+    // OSC 7772 to terminals when the proxy is absent).
     let script = format!(
-        "source {init_q}; BUFFER={buf_lit}; CURSOR={cursor}; _gc_report_buffer",
+        "GHOST_COMPLETE_ACTIVE=1; source {init_q}; BUFFER={buf_lit}; CURSOR={cursor}; _gc_report_buffer",
         init_q = shell_quote(zsh_init.to_str().expect("path is utf-8")),
         buf_lit = to_zsh_literal(buffer),
     );

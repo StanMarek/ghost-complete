@@ -146,6 +146,7 @@ _gc_osc7_precmd() {
 # during the deprecation window but logs a one-shot warn! to nudge the
 # user (or distro packager) towards a fresh shell integration.
 _gc_report_buffer() {
+    [[ -n "$GHOST_COMPLETE_ACTIVE" ]] || return
     local encoded
     encoded="$(_gc_urlencode_buffer "$BUFFER")"
     printf '\e]7772;%d;%s\a' "$CURSOR" "$encoded"
