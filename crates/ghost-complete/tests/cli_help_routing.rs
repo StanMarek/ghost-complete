@@ -666,55 +666,62 @@ fn config_edit_attempts_tui_not_dump() {
     );
 }
 
-/// Verifies the documented `--` escape hatch from `after_help`: argv after
-/// `--` must route through the `External(Vec<OsString>)` arm into proxy
-/// mode rather than trip a clap-level "unrecognized subcommand" / "unknown
-/// argument" error. If clap stopped honouring `--` for `external_subcommand`
-/// (or the arm was deleted), this test fails and signals that the
-/// `after_help` advice is misleading.
+/// Verifies the documented `--` escape hatch from `after_help`: a shell
+/// binary whose name collides with a real subcommand can still be launched
+/// by prefixing `--`. The test drives both halves — with `--`, clap must
+/// route the name through the `External(Vec<OsString>)` arm into proxy
+/// mode; without `--`, clap must claim it as that subcommand — so it fails
+/// if clap ever stops honouring `--` for `external_subcommand` (the case
+/// that would make the `after_help` advice misleading).
+///
+/// The escape token is `validate-specs`: a registered subcommand name, so
+/// `--` is load-bearing rather than decorative, and one no real `$PATH`
+/// binary can shadow, so the proxy's spawn fails fast.
 ///
 /// The positive signal is the `--log-file` log, not the process's
-/// stdout/stderr: `run_proxy` records `starting ghost-complete proxy` with
-/// `shell=<argv[0]>` before handing off to `gc_pty::run_proxy`, so it is
-/// captured no matter where the proxy later bails. Asserting on the
-/// spawn-failure *message* instead would be environment dependent —
-/// `gc_pty`'s `spawn_shell` queries the terminal size before spawning, and
-/// `crossterm`'s size query fails on a headless CI runner (`ioctl` has no
-/// tty, `tput` has no `$TERM`), so the proxy bails with `failed to query
-/// terminal size` long before it reaches the spawn. Mirrors the log-based
-/// signal in `proxy_with_no_args_uses_default_shell_from_env`.
+/// stdout/stderr. `run_proxy` records `starting ghost-complete proxy` with
+/// `shell=<argv[0]>` before handing off to `gc_pty::run_proxy` — before any
+/// terminal detection or terminal I/O — so it is captured wherever the
+/// proxy later bails. The proxy's failure *message* is environment
+/// dependent (`failed to spawn shell process` / `failed to exec shell` /
+/// `failed to query terminal size`, depending on terminal detection and
+/// whether `crossterm` can size a headless runner), so asserting on it
+/// would re-couple this routing test to terminal state. Mirrors the
+/// log-based signal in `proxy_with_no_args_uses_default_shell_from_env`.
 #[test]
 fn dash_dash_escape_routes_subcommand_named_shell_to_external() {
+    // A registered subcommand name (`Command::ValidateSpecs`) that no real
+    // `$PATH` binary can shadow.
+    let escape_token = "validate-specs";
+
+    // With `--`: clap must route `validate-specs` through the External arm
+    // so it becomes the proxy's shell.
     let tmp = isolated_home();
     let log_file = tmp.path().join("escape.log");
-    // A path that cannot exist on the filesystem; its final component
-    // (`install`) echoes the `after_help` example `ghost-complete -- install`.
-    let bogus_shell = "/tmp/ghost-complete-bogus-shell-does-not-exist/install";
-
-    let output = cmd_with_isolated_home(tmp.path())
+    let escaped = cmd_with_isolated_home(tmp.path())
         .arg("--log-level")
         .arg("info")
         .arg("--log-file")
         .arg(&log_file)
         .arg("--")
-        .arg(bogus_shell)
+        .arg(escape_token)
         .arg("--some-flag")
         .output()
         .unwrap();
 
     assert!(
-        !output.status.success(),
+        !escaped.status.success(),
         "spawning a non-existent shell must fail with non-zero exit.\n\
          stdout:\n{}\nstderr:\n{}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&escaped.stdout),
+        String::from_utf8_lossy(&escaped.stderr),
     );
 
     // clap's "unrecognized subcommand" / "unknown argument" / "for more
     // information, try '--help'" wording must NOT appear — those signal the
     // `External` arm did not catch the routing and clap rejected the input
     // at parse time.
-    let stderr = String::from_utf8_lossy(&output.stderr);
+    let escaped_stderr = String::from_utf8_lossy(&escaped.stderr);
     let clap_signatures = [
         "unrecognized subcommand",
         "error: unrecognized",
@@ -722,19 +729,18 @@ fn dash_dash_escape_routes_subcommand_named_shell_to_external() {
     ];
     for sig in &clap_signatures {
         assert!(
-            !stderr.to_lowercase().contains(&sig.to_lowercase()),
+            !escaped_stderr.to_lowercase().contains(&sig.to_lowercase()),
             "stderr must not contain clap-level `{sig}` — the `--` escape \
              hatch should route past clap into the External arm.\n\
-             stderr:\n{stderr}"
+             stderr:\n{escaped_stderr}"
         );
     }
 
     // Positive signal: the `External` arm reached `run_proxy`, which logs
     // `starting ghost-complete proxy` with `shell=<argv[0]>`. Both strings
-    // present proves the `--`-escaped argv was forwarded into proxy mode as
-    // the shell rather than being rejected by clap at parse time. Reading
-    // the log keeps the assertion independent of the headless-CI
-    // terminal-size failure described above.
+    // present prove the `--`-escaped subcommand name was forwarded into
+    // proxy mode as the shell. Reading the log keeps the assertion
+    // independent of the environment-dependent failure message above.
     let log = std::fs::read_to_string(&log_file)
         .unwrap_or_else(|e| panic!("log file at {} unreadable: {e}", log_file.display()));
     assert!(
@@ -743,9 +749,31 @@ fn dash_dash_escape_routes_subcommand_named_shell_to_external() {
          routed into the External arm and reached run_proxy.\nlog:\n{log}"
     );
     assert!(
-        log.contains(bogus_shell),
-        "log must record `shell={bogus_shell}` — proves the `--`-escaped \
-         argv[0] became the proxy's shell.\nlog:\n{log}"
+        log.contains(&format!("shell={escape_token}")),
+        "log must record `shell={escape_token}` — proves the `--`-escaped \
+         subcommand name became the proxy's shell.\nlog:\n{log}"
+    );
+
+    // Negative control: the SAME argv without the leading `--`. clap must
+    // now claim `validate-specs` as `Command::ValidateSpecs` and reject the
+    // bogus `--some-flag` at parse time. Without this half a regression that
+    // made `--` decorative would go unnoticed — the positive case alone
+    // cannot tell "escaped by `--`" from "never collided in the first place".
+    let tmp_claimed = isolated_home();
+    let claimed = cmd_with_isolated_home(tmp_claimed.path())
+        .arg(escape_token)
+        .arg("--some-flag")
+        .output()
+        .unwrap();
+
+    let claimed_stderr = String::from_utf8_lossy(&claimed.stderr);
+    assert!(
+        !claimed.status.success()
+            && claimed_stderr.contains(escape_token)
+            && claimed_stderr.contains("--some-flag"),
+        "without `--`, `{escape_token}` must be claimed as a clap subcommand \
+         that rejects `--some-flag` at parse time — proving the `--` in the \
+         positive case is load-bearing.\nstderr:\n{claimed_stderr}"
     );
 }
 
