@@ -674,9 +674,11 @@ fn config_edit_attempts_tui_not_dump() {
 /// if clap ever stops honouring `--` for `external_subcommand` (the case
 /// that would make the `after_help` advice misleading).
 ///
-/// The escape token is `validate-specs`: a registered subcommand name, so
-/// `--` is load-bearing rather than decorative, and one no real `$PATH`
-/// binary can shadow, so the proxy's spawn fails fast.
+/// The escape token is `validate-specs`, a registered subcommand name, so
+/// `--` is load-bearing rather than decorative. The positive case pins
+/// `$PATH` to an empty directory and drops `RUST_LOG`, so neither the
+/// proxy's shell lookup nor the log filter depends on the test runner's
+/// environment.
 ///
 /// The positive signal is the `--log-file` log, not the process's
 /// stdout/stderr. `run_proxy` records `starting ghost-complete proxy` with
@@ -690,15 +692,23 @@ fn config_edit_attempts_tui_not_dump() {
 /// log-based signal in `proxy_with_no_args_uses_default_shell_from_env`.
 #[test]
 fn dash_dash_escape_routes_subcommand_named_shell_to_external() {
-    // A registered subcommand name (`Command::ValidateSpecs`) that no real
-    // `$PATH` binary can shadow.
+    // A registered subcommand name (`Command::ValidateSpecs`).
     let escape_token = "validate-specs";
 
     // With `--`: clap must route `validate-specs` through the External arm
     // so it becomes the proxy's shell.
     let tmp = isolated_home();
     let log_file = tmp.path().join("escape.log");
+    // Pin the environment so this case is deterministic regardless of the
+    // test runner: `$PATH` is an empty dir, so the proxy's lookup of
+    // `validate-specs` always fails (no binary by that name can be found on
+    // it); and `RUST_LOG` is dropped, so `--log-level info` — not an
+    // inherited filter — governs whether the startup line is recorded.
+    let empty_path = tmp.path().join("no-bin");
+    std::fs::create_dir_all(&empty_path).expect("create empty PATH dir");
     let escaped = cmd_with_isolated_home(tmp.path())
+        .env("PATH", &empty_path)
+        .env_remove("RUST_LOG")
         .arg("--log-level")
         .arg("info")
         .arg("--log-file")
