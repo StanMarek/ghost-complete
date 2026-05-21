@@ -6,11 +6,16 @@ use std::thread;
 use std::time::Duration;
 
 /// Convert an OSC 7772 envelope (raw bytes) into a `printf`-compatible shell
-/// command string. Each byte that is not a printable ASCII non-quote character
-/// is emitted as a `\xHH` octal-style escape that `/bin/sh`'s `printf`
-/// interprets via `%b` format or just passed as octal `\OOO`. We use `\NNN`
-/// octal escapes since POSIX `printf` with `%b` and `\xHH` is not universal;
-/// octal `\NNN` (3-digit, leading zero) is universally supported.
+/// command string. Each non-printable byte is emitted as an octal `\NNN`
+/// escape (3-digit, leading zero) that `/bin/sh`'s `printf` interprets — we
+/// use octal `\NNN` rather than `\xHH` because hex escapes in `printf` are
+/// not universally supported, whereas octal `\NNN` is POSIX-portable.
+///
+/// `%` (0x25) is emitted as `%%`: the envelope payload is percent-encoded, so
+/// any buffer char outside the allow-list arrives as `%XX`. A literal `%` in
+/// `printf`'s format string starts a conversion specifier and would truncate
+/// the OSC frame, so it must be doubled. `'` is backslash-escaped so it does
+/// not close the single-quoted format argument.
 ///
 /// The envelope is wrapped in `printf '...'` so the shell emits the bytes to
 /// its stdout (which gc-parser sees as PTY output), and a `; read <gate>`
@@ -20,11 +25,42 @@ fn osc_printf_cmd(envelope: &[u8], gate: &str) -> String {
     for &b in envelope {
         match b {
             b'\'' => escaped.push_str("\\'"),
-            0x20..=0x7e => escaped.push(b as char), // printable ASCII (not quote)
+            b'%' => escaped.push_str("%%"), // literal % — printf format escape
+            0x20..=0x7e => escaped.push(b as char), // printable ASCII (not quote/percent)
             _ => escaped.push_str(&format!("\\{:03o}", b)),
         }
     }
     format!("printf '{}'; read {}", escaped, gate)
+}
+
+/// A percent-encoded byte in the envelope payload (`%XX`) must be doubled to
+/// `%%XX` in the `printf` format string. A bare `%` starts a printf
+/// conversion specifier and would truncate the OSC frame at that point — see
+/// the commit that introduced this escape. A buffer containing `;` encodes to
+/// `%3B` via the OSC 7772 allow-list, exercising the percent path.
+#[test]
+fn osc_printf_cmd_doubles_percent_in_format_string() {
+    let envelope = build_osc7772_envelope("a;b", 3);
+    // Sanity: the envelope itself carries exactly one single-percent escape.
+    assert_eq!(
+        envelope.iter().filter(|&&b| b == b'%').count(),
+        1,
+        "envelope should percent-encode ';' as exactly one %3B: {:?}",
+        String::from_utf8_lossy(&envelope),
+    );
+
+    let cmd = osc_printf_cmd(&envelope, "_gate");
+    assert!(
+        cmd.contains("%%3B"),
+        "printf format must double the percent (%%3B), got: {cmd:?}",
+    );
+    // Every `%` in the format must be part of a `%%` pair: stripping all
+    // `%%` pairs must leave zero stray `%`. A bare `%3B` (the bug) leaves one.
+    let stray_percents = cmd.replace("%%", "").matches('%').count();
+    assert_eq!(
+        stray_percents, 0,
+        "printf format must not leave a bare single percent, got: {cmd:?}",
+    );
 }
 
 /// DECSC. Emitted by both `render_popup` and `clear_popup`; presence after a
