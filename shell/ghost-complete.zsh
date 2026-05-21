@@ -60,26 +60,80 @@ _gc_urlencode_buffer() {
     printf '%s' "$encoded"
 }
 
+# Shell-side budgets. Below the Rust hard cap (1 MiB) so we never produce
+# a frame the parser will reject silently. Per-entry cap drops individual
+# pathological values (e.g. a multi-MB LS_COLORS) without losing the rest.
+typeset -gri _GC_ENV_TOTAL_BUDGET=524288
+typeset -gri _GC_ENV_PER_VALUE_CAP=16384
+
 _gc_report_env() {
     [[ -n "$GHOST_COMPLETE_ACTIVE" ]] || return
 
-    local key meta value encoded payload=""
+    local key meta value encoded entry payload="" truncated=0
+    local -i used=0
 
-    for key in ${(ok)parameters[(R)*export*]}; do
-        meta="${parameters[$key]}"
-        [[ "$meta" == *scalar* ]] || continue
-        [[ -n "$key" && "$key" != [0-9]* && "$key" != *[^a-zA-Z0-9_]* ]] || continue
+    # High-priority groups first so credentials/PATH survive a tight budget.
+    local -a essentials=(PATH HOME USER SHELL PWD OLDPWD LANG TERM \
+        GHOSTTY_RESOURCES_DIR KITTY_WINDOW_ID WEZTERM_UNIX_SOCKET \
+        ALACRITTY_SOCKET ZED_TERM VSCODE_INJECTION ITERM_SESSION_ID)
+    local -a auth_prefixes=(AWS_ GITHUB_ GH_ GOOGLE_ DOCKER_ KUBECONFIG \
+        SSH_AUTH_SOCK XDG_)
 
-        value="${(P)key}"
-        encoded="$(_gc_urlencode_buffer "${key}=${value}")"
-        payload+="${encoded}%00"
+    _gc_env_emit() {
+        local k="$1"
+        # Skip GC-internal vars so we never leak our own state.
+        case "$k" in
+            GHOST_COMPLETE_*|_GC_*) return ;;
+        esac
+        [[ -n "$k" && "$k" != [0-9]* && "$k" != *[^a-zA-Z0-9_]* ]] || return
+        meta="${parameters[$k]}"
+        [[ "$meta" == *scalar* && "$meta" == *export* ]] || return
+        value="${(P)k}"
+        entry="$(_gc_urlencode_buffer "${k}=${value}")"
+        if (( ${#entry} > _GC_ENV_PER_VALUE_CAP )); then
+            truncated=1
+            return
+        fi
+        if (( used + ${#entry} + 3 > _GC_ENV_TOTAL_BUDGET )); then
+            truncated=1
+            return
+        fi
+        payload+="${entry}%00"
+        (( used += ${#entry} + 3 ))
+    }
+
+    local k_seen=""
+    for key in "${essentials[@]}"; do
+        _gc_env_emit "$key"
+        k_seen+="|$key|"
     done
+    local prefix
+    for key in ${(ok)parameters[(R)*export*]}; do
+        for prefix in "${auth_prefixes[@]}"; do
+            [[ "$key" == ${prefix}* ]] || continue
+            [[ "$k_seen" == *"|$key|"* ]] && continue
+            _gc_env_emit "$key"
+            k_seen+="|$key|"
+        done
+    done
+    for key in ${(ok)parameters[(R)*export*]}; do
+        [[ "$k_seen" == *"|$key|"* ]] && continue
+        _gc_env_emit "$key"
+    done
+
+    unset -f _gc_env_emit
 
     if [[ "$payload" == "${_GC_LAST_ENV_PAYLOAD-}" ]]; then
         return
     fi
     typeset -g _GC_LAST_ENV_PAYLOAD="$payload"
     printf '\e]7773;%s\a' "$payload"
+
+    # Truncation diagnostic on OSC 7774. One-shot via _GC_ENV_TRUNCATED_REPORTED.
+    if (( truncated )) && [[ -z "${_GC_ENV_TRUNCATED_REPORTED-}" ]]; then
+        typeset -g _GC_ENV_TRUNCATED_REPORTED=1
+        printf '\e]7774;env_truncated;%d\a' "$used"
+    fi
 }
 
 # True when the host terminal natively parses OSC 133 for its own prompt

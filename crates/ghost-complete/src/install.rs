@@ -1543,6 +1543,18 @@ mod tests {
     }
 
     #[test]
+    fn report_env_respects_per_value_and_total_budgets() {
+        assert!(
+            ZSH_INTEGRATION.contains("_GC_ENV_TOTAL_BUDGET"),
+            "_gc_report_env must declare a total byte budget"
+        );
+        assert!(
+            ZSH_INTEGRATION.contains("_GC_ENV_PER_VALUE_CAP"),
+            "_gc_report_env must declare a per-value cap"
+        );
+    }
+
+    #[test]
     fn test_post_install_summary_uses_sanitized_paths() {
         // Pin the sanitization invariant. We can't blanket-assert
         // `!contains('\x1b')` because the helper intentionally emits ANSI
