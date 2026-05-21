@@ -181,6 +181,7 @@ pub fn spawn_config_watcher(
                     config.popup.description_box_max_width,
                     config.popup.description_box_lines,
                     config.popup.description_box_debounce_ms,
+                    config.popup.render_block_ms as u64,
                 );
                 (cleanup, h.overlay_write_ticket())
             };

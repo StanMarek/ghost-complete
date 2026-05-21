@@ -591,6 +591,11 @@ impl InputHandler {
         self
     }
 
+    /// Return the current render-block budget in milliseconds.
+    pub fn render_block_ms(&self) -> u64 {
+        self.render_block_ms
+    }
+
     /// Set popup min/max width bounds (display columns). Stored on the
     /// handler and read on every render; further clamping against the live
     /// `screen_cols` happens inside `compute_layout`.
@@ -755,6 +760,7 @@ impl InputHandler {
         detail_box_max_width: u16,
         detail_box_lines: u16,
         detail_box_debounce_ms: u16,
+        render_block_ms: u64,
     ) -> Vec<u8> {
         let mut cleanup = Vec::new();
         let mut cleanup_scope: Option<CleanupScope> = None;
@@ -823,6 +829,7 @@ impl InputHandler {
         self.detail_box_max_width = detail_box_max_width;
         self.detail_box_lines = detail_box_lines;
         self.detail_box_debounce_ms = detail_box_debounce_ms as u64;
+        self.render_block_ms = render_block_ms;
 
         cleanup
     }
@@ -4618,6 +4625,7 @@ mod tests {
             60,
             5,
             80,
+            80,
         );
 
         assert_eq!(handler.theme.selected_on, vec![0x1B, b'[', b'1', b'm']);
@@ -4650,6 +4658,7 @@ mod tests {
             60,
             5,
             80,
+            80,
         );
 
         assert_eq!(handler.keybindings, new_kb);
@@ -4671,6 +4680,7 @@ mod tests {
             DescriptionBoxMode::Off,
             60,
             5,
+            80,
             80,
         );
 
@@ -4694,6 +4704,7 @@ mod tests {
             60,
             5,
             80,
+            80,
         );
 
         assert_eq!(handler.trigger_chars, vec!['@', '#', '!']);
@@ -4716,6 +4727,7 @@ mod tests {
             90,
             7,
             0,
+            80,
         );
 
         assert_eq!(handler.min_popup_width, 35);
@@ -4760,6 +4772,7 @@ mod tests {
             30,
             3,
             0,
+            80,
         );
 
         assert!(
@@ -4816,6 +4829,7 @@ mod tests {
             60,
             5,
             80,
+            80,
         );
 
         let output = String::from_utf8_lossy(&cleanup);
@@ -4862,6 +4876,7 @@ mod tests {
             60,
             5,
             80,
+            80,
         );
 
         let output = String::from_utf8_lossy(&cleanup);
@@ -4899,6 +4914,27 @@ mod tests {
             dismiss_output.contains("\x1b[6;1H"),
             "main popup must remain clearable after detail-only cleanup: {dismiss_output:?}"
         );
+    }
+
+    #[test]
+    fn render_block_ms_propagates_on_config_reload() {
+        let mut handler = make_handler().with_render_block_ms(80);
+        handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/'],
+            10,
+            1200,
+            true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
+            150,
+        );
+        assert_eq!(handler.render_block_ms(), 150);
     }
 
     // --- auto_trigger tests ---
@@ -4954,6 +4990,7 @@ mod tests {
             60,
             5,
             80,
+            80,
         );
 
         assert!(!handler.auto_trigger_enabled());
@@ -4981,6 +5018,7 @@ mod tests {
             DescriptionBoxMode::Off,
             60,
             5,
+            80,
             80,
         );
 
@@ -5016,6 +5054,7 @@ mod tests {
             60,
             5,
             80,
+            80,
         );
 
         assert!(
@@ -5050,6 +5089,7 @@ mod tests {
             DescriptionBoxMode::Off,
             60,
             5,
+            80,
             80,
         );
 
@@ -7220,6 +7260,7 @@ mod tests {
             DescriptionBoxMode::Side,
             60,
             5,
+            80,
             80,
         );
 
