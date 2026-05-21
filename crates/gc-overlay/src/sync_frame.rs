@@ -17,6 +17,9 @@ where
     F: FnOnce(&mut Vec<u8>),
 {
     let sync = matches!(profile.render_strategy(), RenderStrategy::Synchronized);
+    // Captured before `begin_sync` so a no-op-body rollback (`truncate(pre)`)
+    // also drops the speculative `begin_sync`; `body_pre` (after it) is the
+    // baseline for detecting whether the body wrote anything.
     let pre = buf.len();
     if sync {
         ansi::begin_sync(buf);
