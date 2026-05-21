@@ -217,26 +217,9 @@ pub fn render_popup(
     feedback: FeedbackKind,
     profile: &TerminalProfile,
 ) -> PopupLayout {
-    // Fast-exit paths emit ZERO bytes — check before entering the sync frame.
-    if suggestions.is_empty() && !feedback.reserves_row() {
-        return PopupLayout {
-            start_row: 0,
-            start_col: 0,
-            width: 0,
-            height: 0,
-            scroll_deficit: prior_deficit,
-        };
-    }
-    if screen_cols < min_width {
-        return PopupLayout {
-            start_row: 0,
-            start_col: 0,
-            width: 0,
-            height: 0,
-            scroll_deficit: prior_deficit,
-        };
-    }
-
+    // Pure wrapper: all early-exit logic lives in `render_popup_unframed`.
+    // `with_overlay_update_frame` already short-circuits a no-op body to
+    // zero bytes, so an early-exit unframed render emits nothing here too.
     let mut layout = None;
     crate::sync_frame::with_overlay_update_frame(buf, profile, |buf| {
         layout = Some(render_popup_unframed(
@@ -807,9 +790,8 @@ fn truncate_to_display_cols(text: &str, max_cols: usize) -> (String, usize) {
 /// single `with_overlay_update_frame` call so the whole clear is one atomic
 /// synchronized frame on `RenderStrategy::Synchronized` terminals.
 pub fn clear_popup(buf: &mut Vec<u8>, layout: &PopupLayout, profile: &TerminalProfile) {
-    if layout.height == 0 || layout.width == 0 {
-        return;
-    }
+    // Pure wrapper: the zero-size guard lives in `clear_popup_unframed`.
+    // `with_overlay_update_frame` short-circuits a no-op body to zero bytes.
     crate::sync_frame::with_overlay_update_frame(buf, profile, |buf| {
         clear_popup_unframed(buf, layout);
     });
