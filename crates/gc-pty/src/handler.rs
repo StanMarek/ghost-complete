@@ -12,8 +12,8 @@ use gc_overlay::types::{
 };
 use gc_overlay::{
     clear_detail_box, clear_popup, compute_detail_layout, description_overflows_main_popup,
-    popup_additional_scroll_deficit, render_detail_box, render_indicator_row, render_popup,
-    DetailLayout, FeedbackKind, PopupTheme,
+    popup_additional_scroll_deficit, render_detail_box, render_indicator_row, DetailLayout,
+    FeedbackKind, PopupTheme,
 };
 use gc_parser::TerminalParser;
 use gc_suggest::{SpecCacheSweep, Suggestion, SuggestionEngine};
@@ -2292,11 +2292,8 @@ impl InputHandler {
         screen_rows: u16,
         screen_cols: u16,
     ) {
-        // For PreRenderBuffer strategy, we must combine clear + render into a
-        // single buffer and emit one write() call for flicker-free atomicity.
-        // For Synchronized strategy, DECSET 2026 markers handle this at the
-        // terminal level so separate writes are fine.
-        let mut buf = Vec::new();
+        // `bump_output_epoch` stays OUTSIDE the frame — exactly one bump per
+        // render_at call regardless of strategy.
         self.bump_output_epoch();
 
         let feedback = self.current_feedback_kind();
@@ -2316,17 +2313,28 @@ impl InputHandler {
             && !matches!(&feedback, FeedbackKind::None)
             && self.overlay_scroll_deficit > 0;
 
+        // Stage every overlay byte into inner_buf first.  All calls here are
+        // normal method calls on &mut self — no borrow-checker issue.  The
+        // resulting bytes are then handed to with_overlay_update_frame so the
+        // entire update is enclosed in exactly ONE balanced DECSET 2026 pair
+        // on Synchronized terminals.  On PreRenderBuffer terminals the frame
+        // helper is a no-op and the single write_all below provides atomicity.
+        let mut inner_buf = Vec::with_capacity(2048);
+
+        // 1. Clear prior popup if no scroll is needed.
         let can_clear_old = additional_scroll == 0 && !feedback_only_repaint_after_scroll;
         if can_clear_old {
             if let Some(ref layout) = self.last_layout {
-                clear_popup(&mut buf, layout, &self.terminal_profile);
+                gc_overlay::clear_popup_unframed(&mut inner_buf, layout);
             }
             // Clear the previous detail box in lockstep so it can't survive a
             // popup repaint as a ghost rectangle.
             if let Some(ref det) = self.last_detail_layout {
-                clear_detail_box(&mut buf, det);
+                clear_detail_box(&mut inner_buf, det);
             }
         }
+
+        // 2. Compute the post-scroll position of any old detail layout.
         let scrolled_old_detail_layout = if additional_scroll > 0 {
             self.last_detail_layout
                 .as_ref()
@@ -2335,8 +2343,9 @@ impl InputHandler {
             None
         };
 
-        let layout = render_popup(
-            &mut buf,
+        // 3. Render new popup (unframed — no sync markers).
+        let layout = gc_overlay::render_popup_unframed(
+            &mut inner_buf,
             &self.suggestions,
             &self.overlay,
             cursor_row,
@@ -2349,24 +2358,35 @@ impl InputHandler {
             &self.theme,
             self.overlay_scroll_deficit,
             feedback,
-            &self.terminal_profile,
         );
 
-        // Detail-box pass: only renders when the feature is on, the main
-        // popup is non-empty, and there's a selected suggestion with a
-        // description.
+        // 4. Detail-box pass (render_detail_box is already unframed).
         let new_detail_layout =
-            self.maybe_render_detail(&mut buf, &layout, screen_rows, screen_cols);
+            self.maybe_render_detail(&mut inner_buf, &layout, screen_rows, screen_cols);
+
+        // 5. Clear scrolled-out portions of old detail (unframed).
         if let Some(ref old_detail) = scrolled_old_detail_layout {
             let mut covers = vec![OverlayRect::from_popup(&layout)];
             if let Some(ref new_detail) = new_detail_layout {
                 covers.push(OverlayRect::from_detail(new_detail));
             }
-            clear_detail_box_uncovered_by(&mut buf, old_detail, &covers);
+            clear_detail_box_uncovered_by(&mut inner_buf, old_detail, &covers);
         }
 
-        let _ = stdout.write_all(&buf);
-        let _ = stdout.flush();
+        // Wrap the entire update in ONE sync frame.  On Synchronized profiles
+        // this emits exactly one begin_sync / end_sync pair around all the
+        // bytes staged above.  On PreRenderBuffer profiles the helper is a
+        // transparent pass-through.  If inner_buf is empty (no-op render) the
+        // helper short-circuits and buf stays empty — no 16-byte no-op pair.
+        let mut buf = Vec::with_capacity(inner_buf.len() + 16);
+        gc_overlay::with_overlay_update_frame(&mut buf, &self.terminal_profile, |b| {
+            b.extend_from_slice(&inner_buf);
+        });
+
+        if !buf.is_empty() {
+            let _ = stdout.write_all(&buf);
+            let _ = stdout.flush();
+        }
         self.overlay_render_generation = self.overlay_render_generation.wrapping_add(1);
         self.pending_overlay_cleanup = None;
         self.pending_overlay_render = Some(PendingOverlayRender {
@@ -7263,6 +7283,96 @@ mod tests {
         assert!(
             handler.last_detail_layout.is_none(),
             "detail layout must be released after the cleanup write is acknowledged",
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // Task 4: one DECSET 2026 frame per overlay update
+    // ------------------------------------------------------------------
+
+    /// Returns the byte position of a known detail-box content marker within
+    /// `buf`, or panics with a message if not found.
+    fn find_detail_marker(buf: &[u8], marker: &[u8]) -> usize {
+        buf.windows(marker.len())
+            .position(|w| w == marker)
+            .unwrap_or_else(|| {
+                panic!(
+                    "detail marker {:?} not found in buf (len={})",
+                    String::from_utf8_lossy(marker),
+                    buf.len()
+                )
+            })
+    }
+
+    #[test]
+    fn render_at_emits_exactly_one_sync_frame_on_synchronized_profile() {
+        // Ghostty → Synchronized → DECSET 2026 frames expected.
+        // Long description so the detail box is actually rendered.
+        let description =
+            "DETAIL_MARKER alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu";
+        let mut handler = make_selected_handler(command_suggestion("checkout", Some(description)))
+            .with_popup_widths(20, 40)
+            .with_description_box(DescriptionBoxMode::Side, 60, 5, 0);
+        // make_handler() already uses for_ghostty() (Synchronized), but be explicit.
+        handler.terminal_profile = TerminalProfile::for_ghostty();
+        let mut stdout = Vec::<u8>::new();
+
+        handler.render_at(&mut stdout, 10, 0, 24, 120);
+
+        let begin_count = stdout.windows(8).filter(|w| *w == b"\x1b[?2026h").count();
+        let end_count = stdout.windows(8).filter(|w| *w == b"\x1b[?2026l").count();
+        assert_eq!(
+            begin_count, 1,
+            "expected exactly one begin_sync; got {begin_count}"
+        );
+        assert_eq!(
+            end_count, 1,
+            "expected exactly one end_sync; got {end_count}"
+        );
+
+        // The detail-box bytes must be INSIDE the sync window.
+        let begin_pos = stdout.windows(8).position(|w| w == b"\x1b[?2026h").unwrap();
+        let end_pos = stdout.windows(8).position(|w| w == b"\x1b[?2026l").unwrap();
+        let detail_pos = find_detail_marker(&stdout, b"DETAIL_MARKER");
+        assert!(
+            detail_pos > begin_pos && detail_pos < end_pos,
+            "detail bytes must be inside the sync window \
+             (begin={begin_pos}, detail={detail_pos}, end={end_pos})"
+        );
+    }
+
+    #[test]
+    fn render_at_pre_render_buffer_emits_no_sync_markers() {
+        // iTerm2 → PreRenderBuffer → no DECSET 2026 markers.
+        let mut handler = make_visible_handler(numbered_suggestions(5));
+        handler.terminal_profile = TerminalProfile::for_iterm2();
+        let mut stdout = Vec::<u8>::new();
+
+        handler.render_at(&mut stdout, 10, 0, 24, 80);
+
+        assert!(
+            !stdout.windows(8).any(|w| w == b"\x1b[?2026h"),
+            "PreRenderBuffer profile must not emit begin_sync"
+        );
+        assert!(
+            !stdout.windows(8).any(|w| w == b"\x1b[?2026l"),
+            "PreRenderBuffer profile must not emit end_sync"
+        );
+    }
+
+    #[test]
+    fn render_at_noop_renders_emit_no_bytes() {
+        // Empty suggestions + no feedback → no-op render → zero bytes.
+        let mut handler = make_handler();
+        // make_handler() uses Ghostty (Synchronized) — sync markers would appear if not no-op.
+        let mut stdout = Vec::<u8>::new();
+
+        handler.render_at(&mut stdout, 10, 0, 24, 80);
+
+        assert!(
+            stdout.is_empty(),
+            "no-op render must emit zero bytes; got {} bytes",
+            stdout.len()
         );
     }
 }
