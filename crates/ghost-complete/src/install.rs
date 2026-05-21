@@ -1572,4 +1572,12 @@ mod tests {
             "raw ESC sequence from hostile path leaked: {summary:?}"
         );
     }
+
+    #[test]
+    fn zle_install_hook_emits_diagnostic_on_non_user_widget() {
+        assert!(
+            ZSH_INTEGRATION.contains("7774;zle_hook_disabled"),
+            "_gc_install_zle_hook must emit OSC 7774 zle_hook_disabled when bailing on a non-user widget"
+        );
+    }
 }

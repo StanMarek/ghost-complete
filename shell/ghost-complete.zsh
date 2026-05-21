@@ -236,9 +236,16 @@ _gc_install_zle_hook() {
             zle _gc_orig_zle_line_pre_redraw -- "$@"
         }
         zle -N zle-line-pre-redraw _gc_zle_line_pre_redraw
+    else
+        # Non-user widget: chaining is unsafe. Don't clobber, but record a
+        # diagnostic so the proxy can surface a clear warning.
+        local descriptor="${widgets[zle-line-pre-redraw]}"
+        local encoded_desc
+        encoded_desc="$(_gc_urlencode_buffer "$descriptor")"
+        if [[ -n "$GHOST_COMPLETE_ACTIVE" ]]; then
+            printf '\e]7774;zle_hook_disabled;%s\a' "$encoded_desc"
+        fi
     fi
-    # Non-user widget: intentionally no-op. Ghost Complete loses its buffer
-    # hook in this case; that's acceptable degradation.
 }
 
 _gc_install_zle_hook
