@@ -6,9 +6,41 @@ mod status;
 mod tui;
 mod validate;
 
+use std::ffi::OsString;
+use std::path::{Path, PathBuf};
+
 use anyhow::{Context, Result};
-use clap::Parser;
+use clap::{Parser, Subcommand, ValueEnum};
 use tracing_subscriber::EnvFilter;
+
+/// Closed set of `--log-level` values, validated by clap at parse time.
+///
+/// Before this enum existed, `--log-level deubg` would silently fall back
+/// to `warn` inside `init_tracing`. Modeling the flag as a `ValueEnum`
+/// lets clap reject typos at the parse boundary so the fallback path is
+/// unreachable for `--log-level`; the `RUST_LOG` env-var path stays
+/// free-form because `EnvFilter` syntax is richer than a single level.
+#[derive(Debug, Clone, Copy, ValueEnum)]
+#[value(rename_all = "lower")]
+enum LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
+impl LogLevel {
+    fn as_filter_str(self) -> &'static str {
+        match self {
+            LogLevel::Trace => "trace",
+            LogLevel::Debug => "debug",
+            LogLevel::Info => "info",
+            LogLevel::Warn => "warn",
+            LogLevel::Error => "error",
+        }
+    }
+}
 
 #[derive(Parser)]
 #[command(
@@ -22,27 +54,83 @@ use tracing_subscriber::EnvFilter;
         ")"
     ),
     about = "Terminal-native autocomplete engine",
-    after_help = "COMMANDS:\n  install          Install shell integration (zsh)\n  uninstall        Remove shell integration\n  validate-specs   Validate completion spec files\n  status           Show loaded specs and JS compatibility\n  config           Show resolved configuration\n  config edit      Open interactive config editor\n  doctor           Run health checks\n\nSHELL SUPPORT:\n  zsh   Full support (auto-installed into ~/.zshrc)"
+    after_help = "SHELL SUPPORT:\n  zsh   Full support (auto-installed into ~/.zshrc)\n\nWith no subcommand, ghost-complete starts in proxy mode wrapping $SHELL.\nTo wrap a specific shell, run e.g. `ghost-complete /bin/zsh -l`.\nIf your shell binary is named like a subcommand, prefix with `--`:\n  ghost-complete -- install --some-flag"
 )]
 struct Cli {
     /// Path to config file
-    #[arg(long)]
-    config: Option<String>,
+    #[arg(long, global = true)]
+    config: Option<PathBuf>,
 
     /// Log level (trace, debug, info, warn, error)
-    #[arg(long, default_value = "warn")]
-    log_level: String,
+    #[arg(long, global = true, value_enum, default_value_t = LogLevel::Warn)]
+    log_level: LogLevel,
 
     /// Log to file instead of stderr
-    #[arg(long)]
-    log_file: Option<String>,
+    #[arg(long, global = true)]
+    log_file: Option<PathBuf>,
 
-    /// Shell command and arguments (default: $SHELL or /bin/zsh)
-    #[arg(trailing_var_arg = true)]
-    shell_args: Vec<String>,
+    #[command(subcommand)]
+    command: Option<Command>,
 }
 
-fn default_log_file() -> Option<String> {
+#[derive(Subcommand)]
+enum Command {
+    /// Install shell integration (zsh)
+    Install {
+        /// Print what would be installed without writing files
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Remove shell integration
+    Uninstall,
+    /// Validate completion spec files
+    #[command(name = "validate-specs")]
+    ValidateSpecs {
+        /// Treat warnings as failures
+        #[arg(long)]
+        strict: bool,
+        /// Emit JSON output
+        #[arg(long)]
+        json: bool,
+    },
+    /// Show loaded specs and JS compatibility
+    Status {
+        /// Exit nonzero if any spec failed to parse or no runtime specs are available
+        #[arg(long)]
+        strict: bool,
+        /// Emit JSON output
+        #[arg(long)]
+        json: bool,
+        /// Override the embedded coverage baseline
+        #[arg(long, value_name = "PATH")]
+        baseline: Option<PathBuf>,
+    },
+    /// Show or edit resolved configuration
+    Config {
+        /// `None` means "print resolved config to stdout"; `Some(Edit)` launches the interactive editor.
+        #[command(subcommand)]
+        subcommand: Option<ConfigCommand>,
+    },
+    /// Run health checks
+    Doctor,
+    // Catch-all for argv that doesn't match a named subcommand — clap routes
+    // it here so we can dispatch to proxy mode without emitting an "unknown
+    // subcommand" error. clap suppresses `///` docs on `external_subcommand`
+    // variants from `--help`, so the user-facing description lives in the
+    // top-level `after_help` block. `Vec<OsString>` preserves non-UTF-8 argv
+    // (e.g. file-system names) the shell-wrapper invocations may carry; clap
+    // derives the right parser automatically under `external_subcommand`.
+    #[command(external_subcommand)]
+    External(Vec<OsString>),
+}
+
+#[derive(Subcommand)]
+enum ConfigCommand {
+    /// Open the interactive config editor
+    Edit,
+}
+
+fn default_log_file() -> Option<PathBuf> {
     let state_dir = dirs::state_dir()
         .or_else(|| dirs::home_dir().map(|h| h.join(".local/state")))
         .map(|d| d.join("ghost-complete"));
@@ -59,11 +147,7 @@ fn default_log_file() -> Option<String> {
         );
         return None;
     }
-    Some(
-        dir.join("ghost-complete.log")
-            .to_string_lossy()
-            .into_owned(),
-    )
+    Some(dir.join("ghost-complete.log"))
 }
 
 /// Default fallback shell when `$SHELL` is unset, empty, or unreadable.
@@ -71,72 +155,47 @@ const DEFAULT_FALLBACK_SHELL: &str = "/bin/zsh";
 
 /// Resolve the default shell from `$SHELL`, falling back to [`DEFAULT_FALLBACK_SHELL`].
 ///
-/// `env::var("SHELL")` returns `Ok("")` when the variable is set but empty —
-/// passing that straight to the PTY spawn produces an opaque `ENOENT` and a
-/// confused user. Treat empty as missing so the fallback applies.
-fn resolve_default_shell() -> String {
-    resolve_default_shell_from(|name| std::env::var(name).ok())
+/// `env::var_os("SHELL")` returns `Some("")` when the variable is set but
+/// empty — passing that straight to the PTY spawn produces an opaque
+/// `ENOENT` and a confused user. Treat empty as missing so the fallback
+/// applies. Returns `OsString` so a hypothetically non-UTF-8 `$SHELL`
+/// survives end-to-end into the spawn.
+fn resolve_default_shell() -> OsString {
+    resolve_default_shell_from(|name| std::env::var_os(name))
 }
 
 /// Pure helper used by [`resolve_default_shell`]; takes an env-lookup closure
 /// so the resolution rules can be unit-tested without touching process state.
-fn resolve_default_shell_from<F>(lookup: F) -> String
+fn resolve_default_shell_from<F>(lookup: F) -> OsString
 where
-    F: Fn(&str) -> Option<String>,
+    F: Fn(&str) -> Option<OsString>,
 {
     lookup("SHELL")
         .filter(|s| !s.is_empty())
-        .unwrap_or_else(|| DEFAULT_FALLBACK_SHELL.to_string())
+        .unwrap_or_else(|| OsString::from(DEFAULT_FALLBACK_SHELL))
 }
 
-/// Parse `--baseline <path>` (or `--baseline=PATH`) out of the trailing
-/// arg list `shell_args`. Accepts the GNU-style `--baseline=` form as a
-/// convenience alias.
-///
-/// A bare `--baseline` with no following value — or a `--baseline` whose
-/// next token starts with `-` (another flag) — is a user error, not a
-/// silent fallback to the embedded baseline. The latter behaviour would
-/// mask typos like `ghost-complete status --baseline --json`.
-fn parse_baseline_flag(shell_args: &[String]) -> Result<Option<std::path::PathBuf>> {
-    let mut out: Option<std::path::PathBuf> = None;
-    let mut i = 0;
-    while i < shell_args.len() {
-        let a = &shell_args[i];
-        if a == "--baseline" {
-            let next = shell_args.get(i + 1);
-            match next {
-                Some(v) if !v.starts_with('-') => {
-                    out = Some(std::path::PathBuf::from(v));
-                    i += 2;
-                    continue;
-                }
-                _ => anyhow::bail!("--baseline requires a path argument"),
-            }
-        } else if let Some(rest) = a.strip_prefix("--baseline=") {
-            if rest.is_empty() {
-                anyhow::bail!("--baseline requires a path argument");
-            }
-            out = Some(std::path::PathBuf::from(rest));
-        }
-        i += 1;
-    }
-    Ok(out)
-}
-
-fn init_tracing(level: &str, log_file: Option<&str>) -> Result<()> {
+fn init_tracing(level: LogLevel, log_file: Option<&Path>) -> Result<()> {
     // Prefer `RUST_LOG` (standard ecosystem env var) when set; fall back to
     // the `--log-level` flag value otherwise. This matches how every other
     // tracing/log-based Rust binary behaves and keeps `--log-level` as a
     // convenient default for users who don't want to export an env var.
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::try_new(level).unwrap_or_else(|_| EnvFilter::new("warn")));
+    // `level.as_filter_str()` returns one of the five fixed level directives
+    // (`trace`/`debug`/`info`/`warn`/`error`), all of which are valid
+    // `EnvFilter` syntax, so `try_new` cannot fail here — `expect` documents
+    // the invariant and makes any future regression in `as_filter_str` loud
+    // rather than silent.
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+        EnvFilter::try_new(level.as_filter_str())
+            .expect("LogLevel ValueEnum variant maps to a valid EnvFilter directive")
+    });
 
     if let Some(path) = log_file {
         let file = std::fs::OpenOptions::new()
             .create(true)
             .append(true)
             .open(path)
-            .with_context(|| format!("failed to open log file: {}", path))?;
+            .with_context(|| format!("failed to open log file: {}", path.display()))?;
 
         tracing_subscriber::fmt()
             .with_env_filter(filter)
@@ -211,67 +270,75 @@ fn auto_refresh_install_mirror_if_stale(config: &gc_config::GhostConfig) {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+    let config_path = cli.config;
+    let log_level = cli.log_level;
+    let log_file = cli.log_file;
 
-    match cli.shell_args.first().map(|s| s.as_str()) {
-        Some("install") => {
-            init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-            let dry_run = cli.shell_args.iter().any(|s| s == "--dry-run");
-            return install::run_install(dry_run);
+    match cli.command {
+        Some(Command::Install { dry_run }) => {
+            init_tracing(log_level, log_file.as_deref())?;
+            install::run_install(dry_run)
         }
-        Some("uninstall") => {
-            init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-            return install::run_uninstall();
+        Some(Command::Uninstall) => {
+            init_tracing(log_level, log_file.as_deref())?;
+            install::run_uninstall()
         }
-        Some("validate-specs") => {
-            init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-            return validate::run_validate_specs(cli.config.as_deref());
+        Some(Command::ValidateSpecs { strict, json }) => {
+            init_tracing(log_level, log_file.as_deref())?;
+            validate::run_validate_specs_with_opts(config_path.as_deref(), strict, json)
         }
-        Some("status") => {
-            init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-            // Mirror `validate-specs --strict` / `install --dry-run`: the
-            // top-level clap parser just collects a trailing arg list, so we
-            // scan it ourselves for the status-specific flags.
-            let strict = cli.shell_args.iter().any(|s| s == "--strict");
-            let json = cli.shell_args.iter().any(|s| s == "--json");
-            let baseline_path = parse_baseline_flag(&cli.shell_args)?;
-            return status::run_status_with_opts(
-                cli.config.as_deref(),
-                strict,
-                json,
-                baseline_path.as_deref(),
-            );
+        Some(Command::Status {
+            strict,
+            json,
+            baseline,
+        }) => {
+            init_tracing(log_level, log_file.as_deref())?;
+            status::run_status_with_opts(config_path.as_deref(), strict, json, baseline.as_deref())
         }
-        Some("config") => {
-            if cli.shell_args.get(1).map(|s| s.as_str()) == Some("edit") {
-                init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-                tui::run_config_editor(cli.config.as_deref())?;
-                std::process::exit(0);
-            }
-            init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-            return config_cmd::run_config(cli.config.as_deref());
+        Some(Command::Config {
+            subcommand: Some(ConfigCommand::Edit),
+        }) => {
+            init_tracing(log_level, log_file.as_deref())?;
+            tui::run_config_editor(config_path.as_deref())
         }
-        Some("doctor") => {
-            init_tracing(&cli.log_level, cli.log_file.as_deref())?;
-            return doctor::run_doctor(cli.config.as_deref());
+        Some(Command::Config { subcommand: None }) => {
+            init_tracing(log_level, log_file.as_deref())?;
+            config_cmd::run_config(config_path.as_deref())
         }
-        _ => {}
+        Some(Command::Doctor) => {
+            init_tracing(log_level, log_file.as_deref())?;
+            doctor::run_doctor(config_path.as_deref())
+        }
+        Some(Command::External(argv)) => {
+            run_proxy(log_level, log_file, config_path.as_deref(), argv)
+        }
+        None => run_proxy(log_level, log_file, config_path.as_deref(), Vec::new()),
     }
+}
 
+// `cli_log_file` is taken by value because the body consumes it for the
+// `.or_else(default_log_file)` chain below; `config_path` is borrowed
+// because no caller hands ownership down beyond this stack frame.
+fn run_proxy(
+    log_level: LogLevel,
+    cli_log_file: Option<PathBuf>,
+    config_path: Option<&Path>,
+    argv: Vec<OsString>,
+) -> Result<()> {
     // Proxy mode — default to log file, never stderr
-    let log_file = cli.log_file.or_else(default_log_file);
-    init_tracing(&cli.log_level, log_file.as_deref())?;
+    let log_file = cli_log_file.or_else(default_log_file);
+    init_tracing(log_level, log_file.as_deref())?;
 
-    let (shell, args) = if cli.shell_args.is_empty() {
+    let (shell, args) = if argv.is_empty() {
         (resolve_default_shell(), vec![])
     } else {
-        let mut iter = cli.shell_args.into_iter();
-        let shell = iter.next().unwrap();
-        let args: Vec<String> = iter.collect();
+        let mut iter = argv.into_iter();
+        let shell = iter.next().expect("argv non-empty branch already checked");
+        let args: Vec<OsString> = iter.collect();
         (shell, args)
     };
 
-    let config =
-        gc_config::GhostConfig::load(cli.config.as_deref()).context("failed to load config")?;
+    let config = gc_config::GhostConfig::load(config_path).context("failed to load config")?;
 
     // Auto-refresh the install mirror (`~/.config/ghost-complete/specs/`)
     // if a previous binary version installed it. The mirror takes
@@ -284,13 +351,14 @@ fn main() -> Result<()> {
     // for the full rationale.
     auto_refresh_install_mirror_if_stale(&config);
 
-    tracing::info!(shell = %shell, "starting ghost-complete proxy");
+    tracing::info!(shell = %Path::new(&shell).display(), "starting ghost-complete proxy");
 
     // SAFETY: must run while the process is still single-threaded.
-    // We're in `fn main` before any `std::thread::spawn` or tokio
-    // runtime construction; the AWS SDK reads this env var later from
-    // many threads but never writes it, and nothing else in our
-    // process mutates the environment after this point. See the
+    // We're in `fn run_proxy`, called synchronously from `fn main`
+    // before any `std::thread::spawn` or tokio runtime construction;
+    // the AWS SDK reads this env var later from many threads but never
+    // writes it, and nothing else in our process mutates the
+    // environment after this point. See the
     // `gc_suggest::aws::set_imds_disabled_env` SAFETY doc.
     unsafe {
         gc_suggest::aws::set_imds_disabled_env();
@@ -304,78 +372,30 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_baseline_flag, resolve_default_shell_from, DEFAULT_FALLBACK_SHELL};
-
-    fn argv(parts: &[&str]) -> Vec<String> {
-        parts.iter().map(|s| s.to_string()).collect()
-    }
+    use super::{resolve_default_shell_from, DEFAULT_FALLBACK_SHELL};
+    use std::ffi::OsString;
 
     #[test]
     fn resolve_default_shell_uses_env_when_set() {
         let shell = resolve_default_shell_from(|name| {
             assert_eq!(name, "SHELL");
-            Some("/usr/local/bin/fish".to_string())
+            Some(OsString::from("/usr/local/bin/fish"))
         });
-        assert_eq!(shell, "/usr/local/bin/fish");
+        assert_eq!(shell, OsString::from("/usr/local/bin/fish"));
     }
 
     #[test]
     fn resolve_default_shell_falls_back_when_unset() {
         let shell = resolve_default_shell_from(|_| None);
-        assert_eq!(shell, DEFAULT_FALLBACK_SHELL);
+        assert_eq!(shell, OsString::from(DEFAULT_FALLBACK_SHELL));
     }
 
     #[test]
     fn resolve_default_shell_falls_back_when_empty() {
-        // Regression: `env::var("SHELL")` returns `Ok("")` when SHELL is set
-        // but empty. Without the empty filter, the PTY spawn fails with a
+        // Regression: `env::var_os("SHELL")` returns `Some("")` when SHELL is
+        // set but empty. Without the empty filter, the PTY spawn fails with a
         // cryptic ENOENT instead of using the fallback.
-        let shell = resolve_default_shell_from(|_| Some(String::new()));
-        assert_eq!(shell, DEFAULT_FALLBACK_SHELL);
-    }
-
-    #[test]
-    fn status_baseline_flag_with_value_parses() {
-        let args = argv(&["status", "--baseline", "/tmp/b.json"]);
-        let parsed = parse_baseline_flag(&args).unwrap();
-        assert_eq!(parsed, Some(std::path::PathBuf::from("/tmp/b.json")));
-    }
-
-    #[test]
-    fn status_baseline_equals_form_parses() {
-        let args = argv(&["status", "--baseline=/tmp/b.json"]);
-        let parsed = parse_baseline_flag(&args).unwrap();
-        assert_eq!(parsed, Some(std::path::PathBuf::from("/tmp/b.json")));
-    }
-
-    #[test]
-    fn status_baseline_flag_without_value_errors() {
-        // Bare `--baseline` (no trailing value) — must produce a clear
-        // error rather than silently falling back to the embedded
-        // baseline, so typos like `ghost-complete status --baseline
-        // --json` are caught at the flag boundary.
-        let args = argv(&["status", "--baseline"]);
-        let err = parse_baseline_flag(&args).unwrap_err();
-        assert!(
-            err.to_string()
-                .contains("--baseline requires a path argument"),
-            "expected clear error message, got: {err}"
-        );
-
-        // `--baseline` followed by another flag is equivalently bad:
-        // the next token is consumed as a value today, which eats the
-        // real flag. Forbid it.
-        let args = argv(&["status", "--baseline", "--json"]);
-        let err = parse_baseline_flag(&args).unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("--baseline requires a path argument"));
-
-        // Empty `--baseline=` form — same contract.
-        let args = argv(&["status", "--baseline="]);
-        let err = parse_baseline_flag(&args).unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("--baseline requires a path argument"));
+        let shell = resolve_default_shell_from(|_| Some(OsString::new()));
+        assert_eq!(shell, OsString::from(DEFAULT_FALLBACK_SHELL));
     }
 }

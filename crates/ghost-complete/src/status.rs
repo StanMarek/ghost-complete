@@ -467,7 +467,7 @@ fn include_embedded_for_configured_dirs(configured: &[String]) -> bool {
 
 /// Scan resolved runtime specs and collect the numbers the status report
 /// needs. Does NOT produce any output.
-fn scan_specs(config_path: Option<&str>) -> Result<StatusOutcome> {
+fn scan_specs(config_path: Option<&Path>) -> Result<StatusOutcome> {
     let config = gc_config::GhostConfig::load(config_path).context("failed to load config")?;
     let dirs = resolve_spec_dirs(&config.paths.spec_dirs);
     let include_embedded = include_embedded_for_configured_dirs(&config.paths.spec_dirs);
@@ -865,7 +865,7 @@ fn has_non_empty_raw_script_or_template(map: &serde_json::Map<String, serde_json
 /// Inner implementation that writes its report to `out` instead of stdout,
 /// so the sanitisation path can be tested without a real terminal.
 fn run_status_inner(
-    config_path: Option<&str>,
+    config_path: Option<&Path>,
     out: &mut dyn std::io::Write,
 ) -> Result<StatusOutcome> {
     let outcome = scan_specs(config_path)?;
@@ -1026,7 +1026,7 @@ fn run_status_inner(
 /// Callers that want a minimal report (e.g. tests that don't care about
 /// the trend block) can still call the inner form directly.
 fn run_status_inner_with_trend(
-    config_path: Option<&str>,
+    config_path: Option<&Path>,
     baseline_path: Option<&Path>,
     out: &mut dyn Write,
 ) -> Result<StatusOutcome> {
@@ -1304,7 +1304,7 @@ struct CoverageDelta {
 
 /// Emit the JSON status report to `out`.
 fn run_status_json(
-    config_path: Option<&str>,
+    config_path: Option<&Path>,
     baseline_path: Option<&Path>,
     out: &mut dyn Write,
 ) -> Result<StatusOutcome> {
@@ -1421,7 +1421,7 @@ fn run_status_json(
 /// Non-strict, non-JSON mode preserves the prior behaviour: always returns
 /// `Ok(())` regardless of spec health.
 pub fn run_status_with_opts(
-    config_path: Option<&str>,
+    config_path: Option<&Path>,
     strict: bool,
     json: bool,
     baseline_path: Option<&Path>,
@@ -1445,7 +1445,7 @@ enum StatusExit {
 }
 
 fn run_status_with_opts_to_writer(
-    config_path: Option<&str>,
+    config_path: Option<&Path>,
     strict: bool,
     json: bool,
     baseline_path: Option<&Path>,
@@ -1546,7 +1546,7 @@ mod tests {
         unsupported: u64,
     ) {
         let mut out = Vec::new();
-        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        run_status_json(Some(cfg), None, &mut out).unwrap();
         let parsed: serde_json::Value = serde_json::from_slice(&out).unwrap();
         let spec_counts = &parsed["spec_counts"];
         assert_eq!(
@@ -1604,7 +1604,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        run_status_json(Some(&cfg), None, &mut out).unwrap();
         let parsed: serde_json::Value = serde_json::from_slice(&out).unwrap();
 
         assert_eq!(parsed["schema_version"], "1.10");
@@ -1717,7 +1717,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_status_inner(Some(cfg.to_str().unwrap()), &mut out).unwrap();
+        run_status_inner(Some(&cfg), &mut out).unwrap();
         let txt = String::from_utf8_lossy(&out);
 
         // The "failed to load" line is the only place user-supplied bytes
@@ -1783,7 +1783,7 @@ mod tests {
         .unwrap();
 
         let cfg = write_config_for_dirs(&[&primary_dir, &fallback_dir], &tmp);
-        let outcome = scan_specs(Some(cfg.to_str().unwrap())).unwrap();
+        let outcome = scan_specs(Some(&cfg)).unwrap();
 
         assert_eq!(outcome.fs_specs, 2);
         assert_eq!(outcome.fully_functional, 1);
@@ -1814,7 +1814,7 @@ mod tests {
         std::fs::write(fallback_dir.join("git.json"), fallback_git).unwrap();
 
         let cfg = write_config_for_dirs(&[&primary_dir, &fallback_dir], &tmp);
-        let outcome = scan_specs(Some(cfg.to_str().unwrap())).unwrap();
+        let outcome = scan_specs(Some(&cfg)).unwrap();
 
         // SpecStore keeps fallback candidates, but only the primary entry
         // resolves while it parses successfully.
@@ -1857,7 +1857,7 @@ mod tests {
         .unwrap();
 
         let cfg = write_config_for_dirs(&[&primary_dir, &fallback_dir], &tmp);
-        let outcome = scan_specs(Some(cfg.to_str().unwrap())).unwrap();
+        let outcome = scan_specs(Some(&cfg)).unwrap();
 
         assert_eq!(
             outcome.total_parse_errors, 1,
@@ -2011,14 +2011,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let exit = run_status_with_opts_to_writer(
-            Some(cfg.to_str().unwrap()),
-            true,
-            false,
-            None,
-            &mut out,
-        )
-        .unwrap();
+        let exit = run_status_with_opts_to_writer(Some(&cfg), true, false, None, &mut out).unwrap();
         let txt = String::from_utf8_lossy(&out);
 
         assert_eq!(exit, StatusExit::Failure);
@@ -2041,7 +2034,7 @@ mod tests {
         std::fs::write(&broken_path, "{not valid json").unwrap();
         let cfg = write_config_for(&spec_dir, &tmp);
 
-        let outcome = scan_specs(Some(cfg.to_str().unwrap())).unwrap();
+        let outcome = scan_specs(Some(&cfg)).unwrap();
 
         assert_eq!(outcome.total_parse_errors, 1);
         let detail = outcome.parse_error_lines.first().unwrap();
@@ -2060,14 +2053,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let exit = run_status_with_opts_to_writer(
-            Some(cfg.to_str().unwrap()),
-            true,
-            false,
-            None,
-            &mut out,
-        )
-        .unwrap();
+        let exit = run_status_with_opts_to_writer(Some(&cfg), true, false, None, &mut out).unwrap();
 
         assert_eq!(exit, StatusExit::Success);
     }
@@ -2084,7 +2070,7 @@ mod tests {
 
         let cfg = write_config_for_dirs(&[&primary_dir, &fallback_dir], &tmp);
         let mut out = Vec::new();
-        run_status_inner(Some(cfg.to_str().unwrap()), &mut out).unwrap();
+        run_status_inner(Some(&cfg), &mut out).unwrap();
         let txt = String::from_utf8_lossy(&out);
 
         assert!(
@@ -2409,7 +2395,7 @@ mod tests {
         let baseline_path = write_baseline(&tmp, body);
 
         let mut out = Vec::new();
-        run_status_json(Some(cfg.to_str().unwrap()), Some(&baseline_path), &mut out).unwrap();
+        run_status_json(Some(&cfg), Some(&baseline_path), &mut out).unwrap();
         let txt = String::from_utf8_lossy(&out);
 
         assert!(
@@ -2460,7 +2446,7 @@ mod tests {
         let baseline_path = write_baseline(&tmp, body);
 
         let mut out = Vec::new();
-        run_status_json(Some(cfg.to_str().unwrap()), Some(&baseline_path), &mut out).unwrap();
+        run_status_json(Some(&cfg), Some(&baseline_path), &mut out).unwrap();
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
@@ -2596,7 +2582,7 @@ mod tests {
         let baseline_path = write_baseline(&tmp, body);
 
         let mut out = Vec::new();
-        run_status_json(Some(cfg.to_str().unwrap()), Some(&baseline_path), &mut out).unwrap();
+        run_status_json(Some(&cfg), Some(&baseline_path), &mut out).unwrap();
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
         assert!(
@@ -2653,7 +2639,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        run_status_json(Some(&cfg), None, &mut out).unwrap();
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
@@ -2770,7 +2756,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        run_status_json(Some(&cfg), None, &mut out).unwrap();
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
@@ -2858,7 +2844,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        run_status_json(Some(&cfg), None, &mut out).unwrap();
         let parsed: serde_json::Value =
             serde_json::from_str(&String::from_utf8_lossy(&out)).unwrap();
 
@@ -2915,7 +2901,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        run_status_json(Some(&cfg), None, &mut out).unwrap();
         let parsed: serde_json::Value =
             serde_json::from_str(&String::from_utf8_lossy(&out)).unwrap();
 
@@ -2976,7 +2962,7 @@ mod tests {
         );
 
         let mut out = Vec::new();
-        run_status_json(Some(cfg.to_str().unwrap()), Some(&baseline), &mut out).unwrap();
+        run_status_json(Some(&cfg), Some(&baseline), &mut out).unwrap();
         let status_path = tmp.path().join("status.json");
         std::fs::write(&status_path, &out).unwrap();
 
@@ -3047,7 +3033,7 @@ mod tests {
         .unwrap();
         let cfg = write_config_for(&spec_dir, &tmp);
 
-        let outcome = scan_specs(Some(cfg.to_str().unwrap())).unwrap();
+        let outcome = scan_specs(Some(&cfg)).unwrap();
         assert_eq!(outcome.fs_specs, 2);
         assert_eq!(outcome.fully_functional, 1);
         assert_eq!(outcome.partially_functional, 1);
@@ -3089,7 +3075,7 @@ mod tests {
         }
 
         let cfg = write_config_for(&spec_dir, &tmp);
-        let outcome = scan_specs(Some(cfg.to_str().unwrap())).unwrap();
+        let outcome = scan_specs(Some(&cfg)).unwrap();
 
         // The active fixture set:
         //   static_only.json                    → stem `static_only`, name `static-only`,
@@ -3398,7 +3384,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_status_inner(Some(cfg.to_str().unwrap()), &mut out).unwrap();
+        run_status_inner(Some(&cfg), &mut out).unwrap();
         let txt = String::from_utf8_lossy(&out);
 
         // Coverage section
@@ -3473,7 +3459,7 @@ mod tests {
         std::fs::write(&cfg_path, body).unwrap();
 
         let mut out = Vec::new();
-        run_status_inner(Some(cfg_path.to_str().unwrap()), &mut out).unwrap();
+        run_status_inner(Some(&cfg_path), &mut out).unwrap();
         let txt = String::from_utf8_lossy(&out);
 
         assert!(
@@ -3501,7 +3487,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        run_status_json(Some(&cfg), None, &mut out).unwrap();
         let txt = String::from_utf8_lossy(&out);
         let parsed: serde_json::Value = serde_json::from_str(&txt).unwrap();
 
@@ -3590,7 +3576,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        run_status_json(Some(&cfg), None, &mut out).unwrap();
         let parsed: serde_json::Value =
             serde_json::from_str(&String::from_utf8_lossy(&out)).unwrap();
 
@@ -3646,7 +3632,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_status_json(Some(cfg.to_str().unwrap()), None, &mut out).unwrap();
+        run_status_json(Some(&cfg), None, &mut out).unwrap();
         let parsed: serde_json::Value =
             serde_json::from_str(&String::from_utf8_lossy(&out)).unwrap();
 

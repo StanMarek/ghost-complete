@@ -120,19 +120,7 @@ pub fn spawn_config_watcher(
 
             tracing::info!("config.toml changed, reloading...");
 
-            // If the config path contains non-UTF-8 bytes, we can't pass
-            // it through the str-based GhostConfig::load API. Skipping the
-            // reload is strictly better than silently substituting an
-            // empty string (which would dispatch load() to its "no path"
-            // fallback and reload the wrong file).
-            let Some(config_path_str) = config_path.to_str() else {
-                tracing::warn!(
-                    "config reload skipped: path is not valid UTF-8: {}",
-                    config_path.display()
-                );
-                continue;
-            };
-            let config = match GhostConfig::load(Some(config_path_str)) {
+            let config = match GhostConfig::load(Some(config_path.as_path())) {
                 Ok(c) => c,
                 Err(e) => {
                     tracing::warn!("config reload failed (parse): {e}");

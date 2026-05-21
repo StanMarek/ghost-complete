@@ -1,5 +1,5 @@
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use toml_edit::DocumentMut;
@@ -14,9 +14,9 @@ use crate::sanitize::sanitize_preserving_whitespace;
 /// `gc_config::config_dir()` couldn't resolve (e.g. `$HOME` unset). In that
 /// case there's nothing on disk to read, so we fall through to the
 /// defaults-with-banner branch.
-fn resolve_config_file_path(config_path: Option<&str>) -> Option<PathBuf> {
+fn resolve_config_file_path(config_path: Option<&Path>) -> Option<PathBuf> {
     match config_path {
-        Some(p) => Some(PathBuf::from(p)),
+        Some(p) => Some(p.to_path_buf()),
         None => gc_config::config_dir().map(|d| d.join("config.toml")),
     }
 }
@@ -33,13 +33,13 @@ fn resolve_config_file_path(config_path: Option<&str>) -> Option<PathBuf> {
 /// `GhostConfig` (which is already what `load()` returned, so this reflects
 /// the defaults the proxy would actually use) and prepend a banner comment
 /// explaining that this is synthesized output rather than the user's file.
-pub fn run_config(config_path: Option<&str>) -> Result<()> {
+pub fn run_config(config_path: Option<&Path>) -> Result<()> {
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
     run_config_inner(config_path, &mut handle)
 }
 
-pub(crate) fn run_config_inner<W: Write>(config_path: Option<&str>, out: &mut W) -> Result<()> {
+pub(crate) fn run_config_inner<W: Write>(config_path: Option<&Path>, out: &mut W) -> Result<()> {
     // Load so that bad configs (invalid theme, malformed TOML) still
     // surface an anyhow error consistent with the rest of the CLI —
     // even though the "happy path" output below bypasses the typed
@@ -104,7 +104,7 @@ mod tests {
         std::fs::write(&cfg_path, body).unwrap();
 
         let mut out = Vec::new();
-        run_config_inner(Some(cfg_path.to_str().unwrap()), &mut out).unwrap();
+        run_config_inner(Some(&cfg_path), &mut out).unwrap();
         let emitted = String::from_utf8(out).expect("output must be valid UTF-8");
 
         assert!(
@@ -130,7 +130,7 @@ mod tests {
         let missing = tmp.path().join("does-not-exist.toml");
 
         let mut out = Vec::new();
-        run_config_inner(Some(missing.to_str().unwrap()), &mut out).unwrap();
+        run_config_inner(Some(&missing), &mut out).unwrap();
         let emitted = String::from_utf8(out).expect("output must be valid UTF-8");
 
         assert!(

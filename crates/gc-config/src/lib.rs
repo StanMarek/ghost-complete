@@ -3,7 +3,7 @@
 //! Reads from `~/.config/ghost-complete/config.toml` with serde deserialization
 //! and sensible defaults for all fields.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 use serde::{de, Deserialize, Deserializer, Serialize};
@@ -760,9 +760,9 @@ impl GhostConfig {
         }
     }
 
-    pub fn load(path: Option<&str>) -> Result<Self> {
+    pub fn load(path: Option<&Path>) -> Result<Self> {
         let config_path = match path {
-            Some(p) => PathBuf::from(p),
+            Some(p) => p.to_path_buf(),
             None => {
                 let Some(dir) = config_dir() else {
                     // HOME unset — refuse to load from CWD (could be attacker-controlled).
@@ -1003,7 +1003,7 @@ max_resident_mb = 100
 
     #[test]
     fn test_missing_file_returns_default() {
-        let config = GhostConfig::load(Some("/nonexistent/path/config.toml")).unwrap();
+        let config = GhostConfig::load(Some(Path::new("/nonexistent/path/config.toml"))).unwrap();
         assert_eq!(config.popup.max_visible, 10);
     }
 
@@ -1011,7 +1011,7 @@ max_resident_mb = 100
     fn test_malformed_toml_returns_error() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "this is not [valid toml = {{}}").unwrap();
-        let result = GhostConfig::load(Some(tmp.path().to_str().unwrap()));
+        let result = GhostConfig::load(Some(tmp.path()));
         assert!(result.is_err());
     }
 
@@ -1348,7 +1348,7 @@ max_width = 80
     fn test_popup_max_width_clamps_ceiling() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\nmax_width = 1000").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.max_width, 500);
     }
 
@@ -1356,7 +1356,7 @@ max_width = 80
     fn test_popup_max_width_above_u16_still_clamps_ceiling() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\nmax_width = 100000").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.max_width, 500);
     }
 
@@ -1364,7 +1364,7 @@ max_width = 80
     fn test_popup_min_width_clamps_floor() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\nmin_width = 1").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.min_width, 10);
     }
 
@@ -1372,7 +1372,7 @@ max_width = 80
     fn test_popup_min_width_clamps_ceiling() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\nmin_width = 600").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.min_width, 500);
         assert_eq!(config.popup.max_width, 500);
     }
@@ -1381,7 +1381,7 @@ max_width = 80
     fn test_popup_min_width_above_u16_still_clamps_ceiling() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\nmin_width = 100000").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.min_width, 500);
         assert_eq!(config.popup.max_width, 500);
     }
@@ -1390,7 +1390,7 @@ max_width = 80
     fn test_popup_max_below_min_raised_to_min() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\nmin_width = 50\nmax_width = 30").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.min_width, 50);
         assert_eq!(config.popup.max_width, 50);
     }
@@ -1418,7 +1418,7 @@ description_box = "side"
     fn test_description_box_lines_zero_clamps_to_default() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\ndescription_box_lines = 0").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.description_box_lines, 5);
     }
 
@@ -1426,7 +1426,7 @@ description_box = "side"
     fn test_description_box_lines_clamps_ceiling() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\ndescription_box_lines = 999").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.description_box_lines, 20);
     }
 
@@ -1434,7 +1434,7 @@ description_box = "side"
     fn test_description_box_lines_above_u16_still_clamps_ceiling() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\ndescription_box_lines = 100000").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.description_box_lines, 20);
     }
 
@@ -1442,7 +1442,7 @@ description_box = "side"
     fn test_description_box_max_width_clamps_floor() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\ndescription_box_max_width = 5").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.description_box_max_width, 20);
     }
 
@@ -1453,7 +1453,7 @@ description_box = "side"
         // `> 0 && <`, which would let zero leak through and render a degenerate box.
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\ndescription_box_max_width = 0").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.description_box_max_width, 20);
     }
 
@@ -1461,7 +1461,7 @@ description_box = "side"
     fn test_description_box_max_width_clamps_ceiling() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\ndescription_box_max_width = 9999").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.description_box_max_width, 200);
     }
 
@@ -1469,7 +1469,7 @@ description_box = "side"
     fn test_description_box_max_width_above_u16_still_clamps_ceiling() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\ndescription_box_max_width = 100000").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.description_box_max_width, 200);
     }
 
@@ -1477,7 +1477,7 @@ description_box = "side"
     fn test_description_box_debounce_ms_clamps_ceiling() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\ndescription_box_debounce_ms = 9999").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.description_box_debounce_ms, 500);
     }
 
@@ -1485,7 +1485,7 @@ description_box = "side"
     fn test_description_box_debounce_ms_above_u16_still_clamps_ceiling() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\ndescription_box_debounce_ms = 100000").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.description_box_debounce_ms, 500);
     }
 
@@ -1493,7 +1493,7 @@ description_box = "side"
     fn test_popup_negative_min_width_rejected() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\nmin_width = -10").unwrap();
-        let result = GhostConfig::load(Some(tmp.path().to_str().unwrap()));
+        let result = GhostConfig::load(Some(tmp.path()));
         let err = result.expect_err("negative min_width must be rejected");
         let msg = format!("{err:#}");
         assert!(
@@ -1506,7 +1506,7 @@ description_box = "side"
     fn test_popup_negative_description_box_lines_rejected() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\ndescription_box_lines = -1").unwrap();
-        let result = GhostConfig::load(Some(tmp.path().to_str().unwrap()));
+        let result = GhostConfig::load(Some(tmp.path()));
         let err = result.expect_err("negative description_box_lines must be rejected");
         let msg = format!("{err:#}");
         assert!(
@@ -1619,7 +1619,7 @@ max_visible = 5
     fn test_clamp_max_visible_over_limit() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\nmax_visible = 100000").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.max_visible, MAX_VISIBLE_UPPER);
     }
 
@@ -1627,7 +1627,7 @@ max_visible = 5
     fn test_clamp_max_results_over_limit() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[suggest]\nmax_results = 999999").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.suggest.max_results, MAX_RESULTS_UPPER);
     }
 
@@ -1639,7 +1639,7 @@ max_visible = 5
             "[popup]\nmax_visible = 25\n[suggest]\nmax_results = 500"
         )
         .unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.max_visible, 25);
         assert_eq!(config.suggest.max_results, 500);
     }
@@ -1652,7 +1652,7 @@ max_visible = 5
             "[popup]\nmax_visible = 50\n[suggest]\nmax_results = 10000"
         )
         .unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.max_visible, 50);
         assert_eq!(config.suggest.max_results, 10000);
     }
@@ -1664,7 +1664,7 @@ max_visible = 5
         // permanently blank popup.
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[suggest]\nmax_results = 0").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.suggest.max_results, MAX_RESULTS_DEFAULT);
     }
 
@@ -1672,7 +1672,7 @@ max_visible = 5
     fn test_clamp_max_visible_zero_to_default() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\nmax_visible = 0").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.max_visible, 10);
     }
 
@@ -1684,7 +1684,7 @@ max_visible = 5
             "[popup]\nfeedback_dismiss_ms = 20000\nspinner = false\nshow_provider_errors = true"
         )
         .unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.feedback_dismiss_ms, 10000);
         assert!(!config.popup.spinner);
         assert!(config.popup.show_provider_errors);
@@ -1696,7 +1696,7 @@ max_visible = 5
         // choice, so it must pass through untouched.
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[trigger]\ndelay_ms = 0").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.trigger.delay_ms, 0);
     }
 
@@ -1704,7 +1704,7 @@ max_visible = 5
     fn test_feedback_dismiss_ms_zero_is_allowed() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[popup]\nfeedback_dismiss_ms = 0").unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.popup.feedback_dismiss_ms, 0);
     }
 
@@ -1871,7 +1871,7 @@ max_history_results = 10
     fn test_load_rejects_invalid_theme_style() {
         let mut tmp = tempfile::NamedTempFile::new().unwrap();
         writeln!(tmp, "[theme]\nselected = \"blod\"").unwrap();
-        let result = GhostConfig::load(Some(tmp.path().to_str().unwrap()));
+        let result = GhostConfig::load(Some(tmp.path()));
         assert!(result.is_err());
         let err = result.unwrap_err().to_string();
         assert!(err.contains("invalid theme"));
@@ -1885,7 +1885,7 @@ max_history_results = 10
             "[theme]\nselected = \"bold fg:196\"\nborder = \"fg:#00FF00\""
         )
         .unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         assert_eq!(config.theme.selected.as_deref(), Some("bold fg:196"));
         assert_eq!(config.theme.border.as_deref(), Some("fg:#00FF00"));
     }
@@ -1900,7 +1900,7 @@ max_history_results = 10
             "[trigger]\ndelay_ms = 200\ndelay_ms_typo = 999\n\n[suggest]\nmax_results = 75"
         )
         .unwrap();
-        let config = GhostConfig::load(Some(tmp.path().to_str().unwrap())).unwrap();
+        let config = GhostConfig::load(Some(tmp.path())).unwrap();
         // Known fields still applied correctly.
         assert_eq!(config.trigger.delay_ms, 200);
         assert_eq!(config.suggest.max_results, 75);
@@ -1909,7 +1909,9 @@ max_history_results = 10
     #[test]
     fn test_missing_file_returns_default_via_notfound() {
         // Verifies the TOCTOU-safe path: read_to_string NotFound → default
-        let config = GhostConfig::load(Some("/tmp/definitely_not_a_real_config_42.toml")).unwrap();
+        let config =
+            GhostConfig::load(Some(Path::new("/tmp/definitely_not_a_real_config_42.toml")))
+                .unwrap();
         assert_eq!(config.popup.max_visible, 10);
         assert_eq!(config.suggest.max_results, 50);
     }

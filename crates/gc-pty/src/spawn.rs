@@ -1,3 +1,5 @@
+use std::ffi::{OsStr, OsString};
+
 use anyhow::{Context, Result};
 use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtyPair};
 
@@ -8,7 +10,7 @@ pub struct SpawnedShell {
     pub child: Box<dyn Child + Send + Sync>,
 }
 
-pub fn spawn_shell(shell: &str, args: &[String]) -> Result<SpawnedShell> {
+pub fn spawn_shell(shell: &OsStr, args: &[OsString]) -> Result<SpawnedShell> {
     let size = get_terminal_size().context("failed to query terminal size")?;
 
     let pty_system = native_pty_system();

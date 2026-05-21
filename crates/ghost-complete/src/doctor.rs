@@ -95,9 +95,9 @@ fn print_results(results: &[CheckResult]) {
 }
 
 /// Check 1: Config file valid
-fn check_config(config_path: Option<&str>) -> (CheckResult, Option<gc_config::GhostConfig>) {
+fn check_config(config_path: Option<&Path>) -> (CheckResult, Option<gc_config::GhostConfig>) {
     let path = match config_path {
-        Some(p) => PathBuf::from(p),
+        Some(p) => p.to_path_buf(),
         None => {
             let Some(dir) = gc_config::config_dir() else {
                 // HOME unset — refuse to probe CWD for config.
@@ -1202,7 +1202,7 @@ fn check_terminal_profile(
     CheckResult::ok(msg)
 }
 
-pub fn run_doctor(config_path: Option<&str>) -> Result<()> {
+pub fn run_doctor(config_path: Option<&Path>) -> Result<()> {
     let mut results = Vec::new();
 
     // Check 1: Config file

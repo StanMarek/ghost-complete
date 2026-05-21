@@ -14,7 +14,7 @@ use crossterm::{
 };
 use ratatui::{backend::CrosstermBackend, Terminal};
 use std::io::{self, Write};
-use std::path::PathBuf;
+use std::path::Path;
 use std::sync::Once;
 
 /// RAII guard that restores terminal state on Drop — including during a panic
@@ -65,9 +65,9 @@ impl Drop for TerminalSession {
     }
 }
 
-pub fn run_config_editor(config_path: Option<&str>) -> Result<()> {
+pub fn run_config_editor(config_path: Option<&Path>) -> Result<()> {
     let path = match config_path {
-        Some(p) => PathBuf::from(p),
+        Some(p) => p.to_path_buf(),
         None => {
             let dir = gc_config::config_dir().context("cannot determine config directory")?;
             dir.join("config.toml")

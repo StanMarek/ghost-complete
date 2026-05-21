@@ -1,3 +1,4 @@
+use std::ffi::{OsStr, OsString};
 use std::io::{Read, Write};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -71,7 +72,7 @@ fn input_handler_for_resolution(
 /// through the InputHandler for suggestion popup interception.
 ///
 /// Returns the shell's exit code.
-pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Result<i32> {
+pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -> Result<i32> {
     // Detect terminal capabilities
     let terminal_profile = gc_terminal::TerminalProfile::detect();
     if matches!(
