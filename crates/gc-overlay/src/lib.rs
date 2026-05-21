@@ -19,8 +19,8 @@ pub use detail::{
 };
 pub use frame::{ContentRow, PopupFrame, PopupRow, ScrollbarCell, SpanStyle, StyledSpan};
 pub use render::{
-    clear_popup, parse_style, popup_additional_scroll_deficit, render_indicator_row, render_popup,
-    FeedbackKind, PopupTheme,
+    clear_popup, clear_popup_unframed, parse_style, popup_additional_scroll_deficit,
+    render_indicator_row, render_popup, render_popup_unframed, FeedbackKind, PopupTheme,
 };
 pub use sync_frame::with_overlay_update_frame;
 pub use types::{
