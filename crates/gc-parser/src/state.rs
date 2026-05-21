@@ -75,6 +75,10 @@ pub struct TerminalState {
     /// currently constructs a single parser per proxy session, so this is
     /// effectively per-process. See ADR 0003.
     legacy_osc7770_warned: bool,
+    /// Last GC-private diagnostic frame (OSC 7774). Used by the proxy to
+    /// surface shell-side warnings such as `env_truncated:<bytes>` or
+    /// `zle_hook_disabled:<widget_descriptor>`. Reset on next diagnostic.
+    pub last_diagnostic: Option<String>,
     /// FIFO queue of pending CPR requests in send-order.
     ///
     /// Terminals respond to `CSI 6n` requests in the same order they
@@ -114,6 +118,7 @@ impl TerminalState {
             cursor_sync_requested: false,
             cpr_synced: false,
             legacy_osc7770_warned: false,
+            last_diagnostic: None,
             cpr_queue: VecDeque::new(),
             next_cpr_id: 0,
         }

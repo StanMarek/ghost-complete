@@ -378,6 +378,30 @@ impl Perform for TerminalState {
                     tracing::warn!("OSC 7773 — malformed shell env snapshot, skipping");
                 }
             },
+            // OSC 7774 — Ghost Complete runtime diagnostic.
+            //
+            // Shell side emits e.g. `\e]7774;env_truncated;65536\a` when it
+            // cannot fit the env snapshot within budget, or
+            // `\e]7774;zle_hook_disabled;<encoded_descriptor>\a` when
+            // `_gc_install_zle_hook` bails on a non-user widget. Filtered
+            // by `PrivateOscFilter` so the terminal never sees these frames.
+            // Recorded into `last_diagnostic` and surfaced via `tracing::warn!`.
+            b"7774" => {
+                let payload = std::str::from_utf8(params.get(1).copied().unwrap_or(b""))
+                    .ok()
+                    .unwrap_or("");
+                let detail = params
+                    .get(2)
+                    .map(|b| std::str::from_utf8(b).unwrap_or(""))
+                    .unwrap_or("");
+                let msg = if detail.is_empty() {
+                    payload.to_string()
+                } else {
+                    format!("{payload}:{detail}")
+                };
+                tracing::warn!(diagnostic = %msg, "shell-side runtime diagnostic");
+                self.last_diagnostic = Some(msg);
+            }
             _ => {}
         }
     }
@@ -1793,5 +1817,17 @@ mod tests {
         p.process_bytes(b"\x1b]7770;6;abcdef\x07");
         assert_eq!(p.state().command_buffer(), Some("abcdef"));
         assert_eq!(p.state().buffer_cursor(), 6);
+    }
+
+    #[test]
+    fn osc7774_env_truncated_diagnostic_is_logged() {
+        let mut p = TerminalParser::new(24, 80);
+        p.process_bytes(b"\x1b]7774;env_truncated;65536\x07");
+        let state = p.state();
+        assert!(
+            state.last_diagnostic.as_deref() == Some("env_truncated:65536"),
+            "OSC 7774 should record a diagnostic; got {:?}",
+            state.last_diagnostic,
+        );
     }
 }
