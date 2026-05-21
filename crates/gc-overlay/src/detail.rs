@@ -6,12 +6,11 @@
 //! cascade.
 //!
 //! Detail bytes are appended to the same render buffer as the main popup, so
-//! pre-render-buffer terminals receive one coalesced flush. On terminals using
-//! DECSET 2026 synchronized rendering, `clear_popup`/`render_popup` currently
-//! own their sync frames; `clear_detail_box`/`render_detail_box` emit no sync
-//! markers of their own. Callers should keep detail clear/render calls in the
-//! same buffer flush as popup updates, or add an explicit outer sync frame if
-//! both surfaces need to share one synchronized-rendering window.
+//! pre-render-buffer terminals receive one coalesced flush. Detail-box
+//! functions emit raw bytes only. The CALLER owns the synchronized-output
+//! frame via `gc_overlay::with_overlay_update_frame`, so the entire overlay
+//! update (popup + detail) lands inside one balanced DECSET 2026 pair on
+//! Synchronized terminals.
 
 use std::io::Write;
 
