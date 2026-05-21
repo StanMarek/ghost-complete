@@ -9,6 +9,7 @@ pub mod detail;
 pub mod frame;
 pub(crate) mod layout;
 mod render;
+pub mod sync_frame;
 pub mod types;
 pub(crate) mod util;
 
@@ -21,6 +22,7 @@ pub use render::{
     clear_popup, parse_style, popup_additional_scroll_deficit, render_indicator_row, render_popup,
     FeedbackKind, PopupTheme,
 };
+pub use sync_frame::with_overlay_update_frame;
 pub use types::{
     OverlayState, PopupLayout, DEFAULT_MAX_POPUP_WIDTH, DEFAULT_MAX_VISIBLE,
     DEFAULT_MIN_POPUP_WIDTH,
