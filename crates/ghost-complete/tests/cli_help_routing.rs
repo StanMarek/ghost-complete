@@ -666,28 +666,38 @@ fn config_edit_attempts_tui_not_dump() {
     );
 }
 
-/// Verifies the documented `--` escape hatch in `after_help` (a user whose
-/// shell binary is named like a subcommand can prefix with `--`). The
-/// invocation must route through the `External(Vec<String>)` arm and try to
-/// spawn the binary — failing with a spawn-error message — rather than
-/// produce a clap-level "unrecognized subcommand" / "unknown argument"
-/// error. If clap stopped honouring `--` for `external_subcommand` (or the
-/// arm was deleted), this test fails and signals that the after_help advice
-/// is misleading.
+/// Verifies the documented `--` escape hatch from `after_help`: argv after
+/// `--` must route through the `External(Vec<OsString>)` arm into proxy
+/// mode rather than trip a clap-level "unrecognized subcommand" / "unknown
+/// argument" error. If clap stopped honouring `--` for `external_subcommand`
+/// (or the arm was deleted), this test fails and signals that the
+/// `after_help` advice is misleading.
+///
+/// The positive signal is the `--log-file` log, not the process's
+/// stdout/stderr: `run_proxy` records `starting ghost-complete proxy` with
+/// `shell=<argv[0]>` before handing off to `gc_pty::run_proxy`, so it is
+/// captured no matter where the proxy later bails. Asserting on the
+/// spawn-failure *message* instead would be environment dependent —
+/// `gc_pty`'s `spawn_shell` queries the terminal size before spawning, and
+/// `crossterm`'s size query fails on a headless CI runner (`ioctl` has no
+/// tty, `tput` has no `$TERM`), so the proxy bails with `failed to query
+/// terminal size` long before it reaches the spawn. Mirrors the log-based
+/// signal in `proxy_with_no_args_uses_default_shell_from_env`.
 #[test]
 fn dash_dash_escape_routes_subcommand_named_shell_to_external() {
     let tmp = isolated_home();
-    // Pin a supported terminal. CI runners leave `TERM_PROGRAM` unset, so
-    // `TerminalProfile::detect()` yields `Terminal::Unknown`, which routes
-    // `run_proxy` into the `multi_terminal`-gated exec-fallback (`execvp`,
-    // surfacing a bare `failed to exec shell: ... (os error 2)`) instead of
-    // the PTY proxy spawn path whose `failed to spawn shell process` signature
-    // this test fingerprints. Mirrors the `TERM_PROGRAM` pin in
-    // `tests/harness/mod.rs`.
+    let log_file = tmp.path().join("escape.log");
+    // A path that cannot exist on the filesystem; its final component
+    // (`install`) echoes the `after_help` example `ghost-complete -- install`.
+    let bogus_shell = "/tmp/ghost-complete-bogus-shell-does-not-exist/install";
+
     let output = cmd_with_isolated_home(tmp.path())
-        .env("TERM_PROGRAM", "ghostty")
+        .arg("--log-level")
+        .arg("info")
+        .arg("--log-file")
+        .arg(&log_file)
         .arg("--")
-        .arg("/tmp/ghost-complete-bogus-shell-does-not-exist/install")
+        .arg(bogus_shell)
         .arg("--some-flag")
         .output()
         .unwrap();
@@ -700,11 +710,11 @@ fn dash_dash_escape_routes_subcommand_named_shell_to_external() {
         String::from_utf8_lossy(&output.stderr),
     );
 
-    let stderr = String::from_utf8_lossy(&output.stderr);
     // clap's "unrecognized subcommand" / "unknown argument" / "for more
-    // information, try '--help'" wording must NOT appear — those signal
-    // the `External` arm did not catch the routing and clap rejected the
-    // input at parse time.
+    // information, try '--help'" wording must NOT appear — those signal the
+    // `External` arm did not catch the routing and clap rejected the input
+    // at parse time.
+    let stderr = String::from_utf8_lossy(&output.stderr);
     let clap_signatures = [
         "unrecognized subcommand",
         "error: unrecognized",
@@ -718,17 +728,24 @@ fn dash_dash_escape_routes_subcommand_named_shell_to_external() {
              stderr:\n{stderr}"
         );
     }
-    // Positive signal: the spawn-failure path (the External arm running
-    // run_proxy) mentions the bogus path somewhere in the error chain.
-    // We accept either stderr or stdout because the proxy may surface the
-    // error on either depending on logging config.
-    let combined = format!("{}\n{}", String::from_utf8_lossy(&output.stdout), stderr);
+
+    // Positive signal: the `External` arm reached `run_proxy`, which logs
+    // `starting ghost-complete proxy` with `shell=<argv[0]>`. Both strings
+    // present proves the `--`-escaped argv was forwarded into proxy mode as
+    // the shell rather than being rejected by clap at parse time. Reading
+    // the log keeps the assertion independent of the headless-CI
+    // terminal-size failure described above.
+    let log = std::fs::read_to_string(&log_file)
+        .unwrap_or_else(|e| panic!("log file at {} unreadable: {e}", log_file.display()));
     assert!(
-        combined.contains("ghost-complete-bogus-shell-does-not-exist")
-            || combined.to_lowercase().contains("spawn")
-            || combined.to_lowercase().contains("doesn't exist"),
-        "expected spawn-failure signature mentioning the bogus binary path; \
-         instead got:\n{combined}"
+        log.contains("starting ghost-complete proxy"),
+        "log must record the proxy startup line — proves the `--` escape \
+         routed into the External arm and reached run_proxy.\nlog:\n{log}"
+    );
+    assert!(
+        log.contains(bogus_shell),
+        "log must record `shell={bogus_shell}` — proves the `--`-escaped \
+         argv[0] became the proxy's shell.\nlog:\n{log}"
     );
 }
 
