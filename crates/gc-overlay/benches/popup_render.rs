@@ -51,8 +51,16 @@ fn bench_popup_render(c: &mut Criterion) {
     let ghostty = TerminalProfile::for_ghostty();
     let iterm2 = TerminalProfile::for_iterm2();
     let state = OverlayState::new();
+    // Themes are hoisted out of every `b.iter` closure: `PopupTheme::default()`
+    // allocates ~8 `Vec<u8>` fields, and charging that to the timed region
+    // would skew the measurement toward theme construction over render work.
+    let default_theme = PopupTheme::default();
+    let bordered = bordered_theme();
 
     let profiles: &[(&str, &TerminalProfile)] = &[("ghostty", &ghostty), ("iterm2", &iterm2)];
+    // 10 exercises the sub-max_visible fast path; 100/500 confirm render
+    // cost is O(max_visible), not O(n), once the list exceeds the visible
+    // window (compute_layout only measures the visible slice).
     let counts = [10usize, 100, 500];
 
     let mut group = c.benchmark_group("bench_popup_render");
@@ -79,7 +87,7 @@ fn bench_popup_render(c: &mut Criterion) {
                             black_box(10usize),
                             black_box(20u16),
                             black_box(60u16),
-                            black_box(&PopupTheme::default()),
+                            black_box(&default_theme),
                             black_box(0u16),
                             black_box(FeedbackKind::None),
                             black_box(profile),
@@ -95,7 +103,6 @@ fn bench_popup_render(c: &mut Criterion) {
                 BenchmarkId::new(format!("{profile_name}/bordered"), count),
                 &suggestions,
                 |b, sugs| {
-                    let theme = bordered_theme();
                     b.iter(|| {
                         let mut buf = Vec::with_capacity(4096);
                         let layout = render_popup(
@@ -109,7 +116,7 @@ fn bench_popup_render(c: &mut Criterion) {
                             black_box(10usize),
                             black_box(20u16),
                             black_box(60u16),
-                            black_box(&theme),
+                            black_box(&bordered),
                             black_box(0u16),
                             black_box(FeedbackKind::None),
                             black_box(profile),
@@ -138,7 +145,7 @@ fn bench_popup_render(c: &mut Criterion) {
                     black_box(10usize),
                     black_box(20u16),
                     black_box(60u16),
-                    black_box(&PopupTheme::default()),
+                    black_box(&default_theme),
                     black_box(0u16),
                     black_box(FeedbackKind::Loading { frame: 3 }),
                     black_box(profile),
@@ -175,7 +182,10 @@ fn bench_detail_render(c: &mut Criterion) {
         very long description that will need to be word-wrapped across multiple \
         lines in the detail box. It exercises the wrap_description path.";
     let cjk_desc = "日本語の説明文です。これはテストです。Unicode幅の計算が正しく動作するかを確認するための文字列。";
-    let ansi_desc = "\x1b[2JThis description contains ANSI escape sequences \
+    // Benign SGR sequences only (bold/red/reset) — exercises the same
+    // `sanitize_display_text` strip path without a screen-clearing escape
+    // (e.g. CSI 2J) sitting in the source fixture.
+    let ansi_desc = "\x1b[1mThis description contains ANSI escape sequences \
         like \x1b[31mred text\x1b[0m that must be sanitized before rendering.";
 
     let mut group = c.benchmark_group("bench_detail_render");
