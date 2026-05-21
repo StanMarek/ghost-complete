@@ -1,8 +1,31 @@
 mod harness;
 
+use gc_parser::test_utils::build_osc7772_envelope;
 use harness::GhostProcess;
 use std::thread;
 use std::time::Duration;
+
+/// Convert an OSC 7772 envelope (raw bytes) into a `printf`-compatible shell
+/// command string. Each byte that is not a printable ASCII non-quote character
+/// is emitted as a `\xHH` octal-style escape that `/bin/sh`'s `printf`
+/// interprets via `%b` format or just passed as octal `\OOO`. We use `\NNN`
+/// octal escapes since POSIX `printf` with `%b` and `\xHH` is not universal;
+/// octal `\NNN` (3-digit, leading zero) is universally supported.
+///
+/// The envelope is wrapped in `printf '...'` so the shell emits the bytes to
+/// its stdout (which gc-parser sees as PTY output), and a `; read <gate>`
+/// suffix keeps the shell parked so it cannot race the popup render.
+fn osc_printf_cmd(envelope: &[u8], gate: &str) -> String {
+    let mut escaped = String::new();
+    for &b in envelope {
+        match b {
+            b'\'' => escaped.push_str("\\'"),
+            0x20..=0x7e => escaped.push(b as char), // printable ASCII (not quote)
+            _ => escaped.push_str(&format!("\\{:03o}", b)),
+        }
+    }
+    format!("printf '{}'; read {}", escaped, gate)
+}
 
 /// DECSC. Emitted by both `render_popup` and `clear_popup`; presence after a
 /// clean baseline indicates popup activity (not uniquely a fresh render).
@@ -192,24 +215,24 @@ fn test_multiple_commands() {
 
 /// End-to-end popup smoke test.
 ///
-/// Verifies the entire UX pipeline: OSC 7770 buffer-report (from simulated
+/// Verifies the entire UX pipeline: OSC 7772 buffer-report (from simulated
 /// shell integration) -> auto-trigger -> popup renders with git-spec
 /// subcommand text -> ESC dismisses the popup.
 ///
 /// Architecture notes:
 /// - The harness wraps `/bin/sh` (no shell integration). Without shell
-///   integration, the shell will NOT emit OSC 7770 buffer-report sequences,
+///   integration, the shell will NOT emit OSC 7772 buffer-report sequences,
 ///   so the parser's `command_buffer` stays empty, and `handler.trigger()`
 ///   would dismiss immediately (see gc-pty/src/handler.rs: `if
 ///   buffer.is_empty() { return; }`).
 /// - To simulate shell integration without installing it, we have the
-///   inner shell print OSC 7770 itself: `printf '\033]7770;4;git \007'`.
-///   The shell executes printf, emits the raw ANSI bytes to its stdout,
-///   which flow through gc-parser's VT state machine and set
-///   `command_buffer = "git "` with cursor = 4. This also sets
-///   `buffer_dirty = true`, which Task B (stdout -> terminal loop) notices
-///   and uses to fire `trigger()` automatically.
-/// - No manual Ctrl+/ is needed — the auto-trigger path from OSC 7770 is
+///   inner shell print OSC 7772 itself via `printf`. The shell executes
+///   printf, emits the raw ANSI bytes to its stdout, which flow through
+///   gc-parser's VT state machine and set `command_buffer = "git "` with
+///   cursor = 4. This also sets `buffer_dirty = true`, which Task B
+///   (stdout -> terminal loop) notices and uses to fire `trigger()`
+///   automatically.
+/// - No manual Ctrl+/ is needed — the auto-trigger path from OSC 7772 is
 ///   exactly what real shell integration does on every keystroke.
 ///
 /// Assumptions:
@@ -235,9 +258,12 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
     // Mark the pre-trigger offset — popup render bytes must appear after.
     let mark_before_trigger = proc.output_len();
 
-    // OSC ]7770;<cursor>;<buffer>BEL — the `read` keeps the shell from
-    // emitting a new prompt that would tear down the popup mid-test.
-    proc.send_line(r"printf '\033]7770;4;git \007'; read _ghost_popup_hold");
+    // OSC 7772 envelope — the `read` keeps the shell from emitting a new
+    // prompt that would tear down the popup mid-test.
+    proc.send_line(&osc_printf_cmd(
+        &build_osc7772_envelope("git ", 4),
+        "_ghost_popup_hold",
+    ));
 
     assert_no_popup_render_after(&proc, mark_before_trigger, "git OSC injection");
 
@@ -253,7 +279,7 @@ fn test_popup_renders_and_dismisses_on_git_trigger() {
         let snapshot = proc.output_snapshot();
         let since_redraw = &snapshot[mark_before_redraw..];
         panic!(
-            "Popup did not render within 5s after display advanced post-OSC 7770.\n\
+            "Popup did not render within 5s after display advanced post-OSC 7772.\n\
              Bytes since redraw mark ({} bytes, lossy UTF-8):\n{:?}",
             since_redraw.len(),
             String::from_utf8_lossy(since_redraw),
@@ -325,7 +351,10 @@ fn test_popup_is_cleared_before_later_shell_output() {
     proc.expect_output("smoke_prompt_repaint_marker");
 
     let mark_before_trigger = proc.output_len();
-    proc.send_line(r"printf '\033]7770;4;git \007'; read _gc_smoke_gate");
+    proc.send_line(&osc_printf_cmd(
+        &build_osc7772_envelope("git ", 4),
+        "_gc_smoke_gate",
+    ));
 
     assert_no_popup_render_after(&proc, mark_before_trigger, "prompt-repaint cleanup setup");
     let mark_before_redraw = advance_display(&mut proc);
@@ -394,11 +423,13 @@ fn test_popup_defers_until_display_after_osc_only_pty_read() {
 
     let mark_before_osc = proc.output_len();
 
-    // `printf` interprets the `\033`/`\007` backslash escapes into ESC/BEL,
-    // which is what frames the OSC sequence; `read` then parks the shell so
-    // it cannot emit follow-up display bytes that would resolve the defer on
-    // their own.
-    proc.send_line(r"printf '\033]7770;4;git \007'; read _gc_defer_gate");
+    // `printf` interprets the octal escapes into ESC/BEL, which is what
+    // frames the OSC 7772 sequence; `read` then parks the shell so it cannot
+    // emit follow-up display bytes that would resolve the defer on their own.
+    proc.send_line(&osc_printf_cmd(
+        &build_osc7772_envelope("git ", 4),
+        "_gc_defer_gate",
+    ));
 
     assert_no_popup_render_after(&proc, mark_before_osc, "OSC-only PTY read defer");
 
@@ -436,12 +467,15 @@ fn test_popup_renders_for_osc_with_inline_display_byte() {
 
     let mark_before_trigger = proc.output_len();
 
-    // OSC + printable byte in a single `printf` payload. The shell emits both
-    // before parking on `read`, so the popup must eventually render without
-    // any external `advance_display` nudge. Same-batch coalescing into one
-    // PTY read is not asserted here — kernel chunking can split the bytes
-    // across reads and the proxy's deferred path is allowed to resolve it.
-    proc.send_line(r"printf '\033]7770;4;git \007X'; read _gc_inline_gate");
+    // OSC 7772 envelope + printable byte in a single `printf` payload. The
+    // shell emits both before parking on `read`, so the popup must eventually
+    // render without any external `advance_display` nudge. Same-batch
+    // coalescing into one PTY read is not asserted here — kernel chunking can
+    // split the bytes across reads and the proxy's deferred path is allowed
+    // to resolve it.
+    let mut envelope_with_display = build_osc7772_envelope("git ", 4);
+    envelope_with_display.push(b'X');
+    proc.send_line(&osc_printf_cmd(&envelope_with_display, "_gc_inline_gate"));
 
     let popup_rendered = proc.wait_for_bytes_after(
         POPUP_RENDER_MARKER,
