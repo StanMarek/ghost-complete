@@ -791,6 +791,17 @@ mod tests {
             "non-tmux branch must honor the guard on both 'descendant' and \
              'ps uncertain' outcomes"
         );
+
+        // Ensure the OSC 7 encoder cannot pass ';' through unencoded — vte would
+        // split the OSC param list and silently truncate the CWD.
+        assert!(
+            !ZSH_INTEGRATION.contains(";=/-"),
+            "_gc_urlencode_path allow-list must not include URI sub-delimiters; see ADR 0003"
+        );
+        assert!(
+            ZSH_INTEGRATION.contains("[a-zA-Z0-9._~/-])"),
+            "_gc_urlencode_path must use the strict allow-list"
+        );
     }
 
     #[test]
