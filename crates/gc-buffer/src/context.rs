@@ -50,7 +50,7 @@ pub fn parse_command_context(buffer: &str, cursor: usize) -> CommandContext {
                 segment_start = i + 1;
                 found_pipe = true;
             }
-            Token::And | Token::Or | Token::Semicolon => {
+            Token::And | Token::Or | Token::Semicolon | Token::Background => {
                 segment_start = i + 1;
                 found_pipe = false;
             }
@@ -386,5 +386,32 @@ mod tests {
         assert_eq!(ctx.command, Some("echo".into()));
         assert!(!ctx.in_pipe);
         assert!(ctx.is_first_segment);
+    }
+
+    #[test]
+    fn background_starts_new_segment_in_command_position() {
+        let ctx = parse_command_context("sleep 1 & git ", 14);
+        assert_eq!(ctx.command, Some("git".to_string()));
+        assert_eq!(ctx.word_index, 1, "git should be in command position");
+    }
+
+    #[test]
+    fn background_alone_puts_cursor_in_command_position() {
+        let ctx = parse_command_context("sleep 1 & ", 10);
+        assert_eq!(ctx.command, None, "no command yet after &");
+        assert!(!ctx.is_first_segment, "this is not the first segment");
+    }
+
+    #[test]
+    fn fd_redirect_2_ampersand_1_does_not_split() {
+        let ctx = parse_command_context("cmd 2>&1 arg ", 13);
+        assert_eq!(ctx.command, Some("cmd".to_string()));
+        assert_eq!(ctx.word_index, 2);
+    }
+
+    #[test]
+    fn ampersand_redirect_does_not_split() {
+        let ctx = parse_command_context("cmd &>file ", 11);
+        assert_eq!(ctx.command, Some("cmd".to_string()));
     }
 }
