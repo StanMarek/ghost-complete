@@ -128,80 +128,79 @@ pub fn spawn_config_watcher(
                 }
             };
 
-            // Resolve theme
-            let resolved_theme = match config.theme.resolve() {
-                Ok(t) => t,
-                Err(e) => {
-                    tracing::warn!("config reload failed (theme preset): {e}");
-                    continue;
+            match apply_config_reload(&handler, &config) {
+                Ok(()) => {
+                    tracing::info!("config reloaded successfully");
+                    tracing::debug!(
+                        "note: changes to delay_ms, max_results, providers, spec_dirs, \
+                         and [experimental] require a restart to take effect"
+                    );
                 }
-            };
-
-            let theme = match build_popup_theme(
-                &resolved_theme,
-                config.popup.borders,
-                config.popup.spinner,
-                config.popup.show_provider_errors,
-            ) {
-                Ok(t) => t,
                 Err(e) => {
-                    tracing::warn!("config reload failed (theme styles): {e}");
-                    continue;
-                }
-            };
-
-            // Resolve keybindings
-            let keybindings = match Keybindings::from_config(&config.keybindings) {
-                Ok(kb) => kb,
-                Err(e) => {
-                    tracing::warn!("config reload failed (keybindings): {e}");
-                    continue;
-                }
-            };
-
-            // Apply to handler
-            let (cleanup, cleanup_ticket) = {
-                let mut h = match handler.lock() {
-                    Ok(h) => h,
-                    Err(e) => {
-                        tracing::warn!("config reload skipped (handler lock poisoned): {e}");
-                        continue;
-                    }
-                };
-                let cleanup = h.update_config(
-                    theme,
-                    keybindings,
-                    &config.trigger.auto_chars,
-                    config.popup.max_visible,
-                    config.popup.feedback_dismiss_ms,
-                    config.trigger.auto_trigger,
-                    config.popup.min_width,
-                    config.popup.max_width,
-                    config.popup.description_box,
-                    config.popup.description_box_max_width,
-                    config.popup.description_box_lines,
-                    config.popup.description_box_debounce_ms,
-                    config.popup.render_block_ms as u64,
-                );
-                (cleanup, h.overlay_write_ticket())
-            };
-            if !cleanup.is_empty() {
-                if let Err(e) =
-                    crate::proxy::write_overlay_if_current(&handler, cleanup_ticket, &cleanup)
-                {
-                    tracing::debug!("config reload cleanup write/flush failed: {e}");
+                    tracing::warn!("config reload failed: {e}");
                 }
             }
-
-            tracing::info!("config reloaded successfully");
-            tracing::debug!(
-                "note: changes to delay_ms, max_results, providers, spec_dirs, \
-                 and [experimental] require a restart to take effect"
-            );
         }
     });
 
     Ok(ConfigWatcherHandle { shutdown, join })
+}
+
+/// Apply a freshly-loaded [`GhostConfig`] to the live handler.
+///
+/// This is the seam exercised by an actual hot-reload: it resolves the theme
+/// and keybindings, forwards every runtime-configurable field through
+/// [`InputHandler::update_config`], and writes any cleanup bytes the handler
+/// staged. Extracted from the file-watcher loop so it is callable (and
+/// testable) without driving `notify` events.
+///
+/// Returns `Err` on theme/keybinding resolution failure or a poisoned handler
+/// lock; the caller keeps the previous config and never crashes.
+fn apply_config_reload(handler: &Arc<Mutex<InputHandler>>, config: &GhostConfig) -> Result<()> {
+    let resolved_theme = config
+        .theme
+        .resolve()
+        .map_err(|e| anyhow::anyhow!("theme preset: {e}"))?;
+
+    let theme = build_popup_theme(
+        &resolved_theme,
+        config.popup.borders,
+        config.popup.spinner,
+        config.popup.show_provider_errors,
+    )
+    .map_err(|e| anyhow::anyhow!("theme styles: {e}"))?;
+
+    let keybindings = Keybindings::from_config(&config.keybindings)
+        .map_err(|e| anyhow::anyhow!("keybindings: {e}"))?;
+
+    let (cleanup, cleanup_ticket) = {
+        let mut h = handler
+            .lock()
+            .map_err(|e| anyhow::anyhow!("handler lock poisoned: {e}"))?;
+        let cleanup = h.update_config(
+            theme,
+            keybindings,
+            &config.trigger.auto_chars,
+            config.popup.max_visible,
+            config.popup.feedback_dismiss_ms,
+            config.trigger.auto_trigger,
+            config.popup.min_width,
+            config.popup.max_width,
+            config.popup.description_box,
+            config.popup.description_box_max_width,
+            config.popup.description_box_lines,
+            config.popup.description_box_debounce_ms,
+            config.popup.render_block_ms as u64,
+        );
+        (cleanup, h.overlay_write_ticket())
+    };
+    if !cleanup.is_empty() {
+        if let Err(e) = crate::proxy::write_overlay_if_current(handler, cleanup_ticket, &cleanup) {
+            tracing::debug!("config reload cleanup write/flush failed: {e}");
+        }
+    }
+
+    Ok(())
 }
 
 /// Build a `PopupTheme` from a [`gc_config::ResolvedTheme`] (preset merged
@@ -257,5 +256,34 @@ mod tests {
         let result = build_popup_theme(&resolved, true, true, false);
         assert!(result.is_ok());
         assert!(result.unwrap().borders);
+    }
+
+    /// A live config reload must carry `popup.render_block_ms` all the way
+    /// through `apply_config_reload` into the handler. Exercises the real
+    /// `GhostConfig -> config_watch -> InputHandler` seam — not a direct
+    /// `update_config` call — so the test fails if `apply_config_reload`
+    /// ever stops forwarding the field.
+    #[test]
+    fn render_block_ms_propagates_on_config_reload() {
+        let handler = Arc::new(Mutex::new(
+            InputHandler::new_with_embedded(
+                &[],
+                gc_terminal::TerminalProfile::for_ghostty(),
+                false,
+            )
+            .expect("handler builds"),
+        ));
+        assert_eq!(
+            handler.lock().unwrap().render_block_ms(),
+            80,
+            "default render_block_ms should be 80"
+        );
+
+        let mut config = GhostConfig::default();
+        config.popup.render_block_ms = 150;
+
+        apply_config_reload(&handler, &config).expect("config reload applies");
+
+        assert_eq!(handler.lock().unwrap().render_block_ms(), 150);
     }
 }

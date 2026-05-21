@@ -4916,27 +4916,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn render_block_ms_propagates_on_config_reload() {
-        let mut handler = make_handler().with_render_block_ms(80);
-        handler.update_config(
-            PopupTheme::default(),
-            Keybindings::default(),
-            &[' ', '/'],
-            10,
-            1200,
-            true,
-            DEFAULT_MIN_POPUP_WIDTH,
-            DEFAULT_MAX_POPUP_WIDTH,
-            DescriptionBoxMode::Off,
-            60,
-            5,
-            80,
-            150,
-        );
-        assert_eq!(handler.render_block_ms(), 150);
-    }
-
     // --- auto_trigger tests ---
 
     #[test]
