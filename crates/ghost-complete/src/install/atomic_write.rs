@@ -15,11 +15,6 @@ use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
-// Task 9 will wire this into the install/uninstall call sites. The
-// helper lands one commit ahead so the test suite can exercise the
-// mode-preservation contract in isolation; suppress the dead-code lint
-// until the callers arrive.
-#[allow(dead_code)]
 pub fn atomic_write_preserving_mode(path: &Path, bytes: &[u8]) -> anyhow::Result<()> {
     let parent = path
         .parent()

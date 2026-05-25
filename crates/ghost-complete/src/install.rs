@@ -404,11 +404,11 @@ fn install_to_with_cache_hooks(
     fs::create_dir_all(&shell_dir)
         .with_context(|| format!("failed to create {}", shell_dir.display()))?;
 
-    fs::write(&init_path, ZSH_INIT)
+    atomic_write::atomic_write_preserving_mode(&init_path, ZSH_INIT.as_bytes())
         .with_context(|| format!("failed to write {}", init_path.display()))?;
     println!("  Wrote init script to {}", sanitize_path(&init_path));
 
-    fs::write(&script_path, ZSH_INTEGRATION)
+    atomic_write::atomic_write_preserving_mode(&script_path, ZSH_INTEGRATION.as_bytes())
         .with_context(|| format!("failed to write {}", script_path.display()))?;
     println!("  Wrote zsh integration to {}", sanitize_path(&script_path));
 
@@ -515,13 +515,24 @@ fn install_to_with_cache_hooks(
     new_zshrc.push_str(&shell_integration_block(&script_path));
     new_zshrc.push('\n');
 
-    // 6. Write .zshrc — graceful fallback if permission denied (e.g. nix-managed)
-    match fs::write(zshrc_path, &new_zshrc) {
+    // 6. Write .zshrc — graceful fallback if permission denied (e.g. nix-managed).
+    //
+    // The atomic helper wraps the underlying `io::Error` via
+    // `anyhow::Error::new(e.error).context(...)`, so the `io::Error` lives
+    // inside the source chain rather than at the top. Walk the chain with
+    // `e.chain().find_map(...)` to surface the original kind and preserve
+    // the existing PermissionDenied fallback path.
+    match atomic_write::atomic_write_preserving_mode(zshrc_path, new_zshrc.as_bytes()) {
         Ok(()) => {
             println!("  Updated {}", sanitize_path(zshrc_path));
             print!("\n{}", post_install_summary(config_dir, true));
         }
-        Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+        Err(e)
+            if e.chain()
+                .find_map(|src| src.downcast_ref::<std::io::Error>())
+                .map(|ioe| ioe.kind())
+                == Some(std::io::ErrorKind::PermissionDenied) =>
+        {
             println!(
                 "\n  \x1b[33m\u{26a0}  Could not write to {} (permission denied)\x1b[0m\n",
                 sanitize_path(zshrc_path)
@@ -530,11 +541,7 @@ fn install_to_with_cache_hooks(
             print!("\n{}", post_install_summary(config_dir, false));
         }
         Err(e) => {
-            return Err(anyhow::anyhow!(
-                "failed to write {}: {}",
-                zshrc_path.display(),
-                e
-            ));
+            return Err(e.context(format!("failed to write {}", zshrc_path.display())));
         }
     }
     Ok(())
@@ -564,7 +571,7 @@ fn uninstall_from_with_cache_purge(
         let (content, found_shell) = remove_block(&content, SHELL_BEGIN, SHELL_END);
 
         if found_init || found_shell {
-            fs::write(zshrc_path, &content)
+            atomic_write::atomic_write_preserving_mode(zshrc_path, content.as_bytes())
                 .with_context(|| format!("failed to write {}", zshrc_path.display()))?;
             println!(
                 "  Removed managed blocks from {}",
@@ -1605,5 +1612,18 @@ mod tests {
             ZSH_INTEGRATION.contains("7774;zle_hook_disabled"),
             "_gc_install_zle_hook must emit OSC 7774 zle_hook_disabled when bailing on a non-user widget"
         );
+    }
+
+    #[test]
+    fn install_zshrc_write_is_atomic_visible_state() {
+        use tempfile::TempDir;
+        let tmp = TempDir::new().unwrap();
+        let target = tmp.path().join(".zshrc");
+        std::fs::write(&target, b"original\n").unwrap();
+        atomic_write::atomic_write_preserving_mode(&target, b"new\n").unwrap();
+        let content = std::fs::read_to_string(&target).unwrap();
+        assert_eq!(content, "new\n");
+        let entries: Vec<_> = std::fs::read_dir(tmp.path()).unwrap().collect();
+        assert_eq!(entries.len(), 1);
     }
 }
