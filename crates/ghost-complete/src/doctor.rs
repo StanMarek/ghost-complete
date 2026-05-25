@@ -7,7 +7,7 @@ use gc_suggest::specs::{
     GeneratorSpec, JsRuntimeKind, OptionSpec, SubcommandSpec,
 };
 
-use crate::install::{INIT_BEGIN, SHELL_BEGIN, ZSH_INIT, ZSH_INTEGRATION};
+use crate::install::{INIT_BEGIN, INIT_END, SHELL_BEGIN, SHELL_END, ZSH_INIT, ZSH_INTEGRATION};
 use crate::sanitize::sanitize_for_terminal;
 
 enum Severity {
@@ -188,19 +188,66 @@ fn check_theme(config: &gc_config::GhostConfig) -> CheckResult {
     }
 }
 
+/// Extract the file path that the given managed block sources, by parsing
+/// the `[builtin ]source '<path>'` line. Returns `None` if the block isn't
+/// found or has no parseable source line.
+///
+/// `install.rs::shell_safe_path` always single-quotes the path and escapes
+/// embedded `'` with the `'\''` close-quote/escaped-quote/open-quote idiom,
+/// so we only accept single-quoted paths and undo the escape.
+fn extract_block_source_path(content: &str, begin: &str, end: &str) -> Option<PathBuf> {
+    let block_start = content.find(begin)?;
+    let after_begin = &content[block_start..];
+    let block_end_offset = after_begin.find(end)?;
+    let block = &after_begin[..block_end_offset];
+
+    for line in block.lines() {
+        let trimmed = line.trim();
+        // Skip the `if [[ -f '<path>' ]]; then` guard line that init_block
+        // wraps around the source call. Only the bare `[builtin ]source ...`
+        // line should match.
+        let after_kw = match trimmed.strip_prefix("builtin source ") {
+            Some(s) => s,
+            None => match trimmed.strip_prefix("source ") {
+                Some(s) => s,
+                None => continue,
+            },
+        };
+        let quoted = after_kw.trim();
+        let Some(inner) = quoted.strip_prefix('\'').and_then(|s| s.strip_suffix('\'')) else {
+            continue;
+        };
+        let unescaped = inner.replace("'\\''", "'");
+        return Some(PathBuf::from(unescaped));
+    }
+    None
+}
+
 /// Check 4: Shell integration installed in ~/.zshrc.
 ///
 /// Beyond verifying the init marker is present, this also surfaces:
 ///
 /// * a stray init block with no shell-integration block (half-installed),
 /// * duplicate init blocks (a botched manual edit),
-/// * `~/.config/ghost-complete/shell/init.zsh` / `ghost-complete.zsh` missing or
-///   unreadable while the managed block still tries to `source` them,
+/// * a managed block whose `source` line cannot be parsed (hand-edited
+///   beyond recognition),
+/// * the file the managed block actually `source`s missing or unreadable
+///   (so a stale .zshrc pointing at a long-gone install path Fails loudly,
+///   even when the canonical install dir happens to have files),
 /// * installed snippet contents that drift from the embedded copy
 ///   (`ghost-complete install` re-runs the embedded version onto disk),
 /// * the legacy OSC 7770 reporter in `ghost-complete.zsh` (pre-OSC 7772
-///   migration). All paths use `Skip` for "no install yet" so the doctor
-///   still exits 0 on a clean system that has never run `install`.
+///   migration),
+/// * the `.zshrc` sourcing from a non-canonical location, so the next
+///   `ghost-complete install` won't silently swap the user's edits out.
+///
+/// Order: existence/readability Fails first (the user's shell really is
+/// broken), then content drift Warn, then legacy reporter Warn, then
+/// non-canonical path Warn. Each check returns on its first finding —
+/// surfacing the most pressing issue keeps the doctor output focused.
+///
+/// All "no install yet" paths use `Skip` so the doctor still exits 0 on
+/// a clean system that has never run `install`.
 fn check_shell_integration() -> CheckResult {
     let Some(home) = dirs::home_dir() else {
         return CheckResult::skip("no $HOME — cannot check shell integration");
@@ -231,10 +278,25 @@ fn check_shell_integration() -> CheckResult {
     }
 
     // 3. Referenced script files exist + readable?
-    let cfg_dir = home.join(".config/ghost-complete");
-    let shell_dir = cfg_dir.join("shell");
-    let init_path = shell_dir.join("init.zsh");
-    let script_path = shell_dir.join("ghost-complete.zsh");
+    // Parse the actual source paths from each managed block; the
+    // canonical install dir is a separate check below. This catches
+    // stale .zshrc managed blocks pointing at long-gone install paths
+    // (e.g. a previous XDG_CONFIG_HOME) — the previous canonical-only
+    // probe would silently pass if files happened to exist at the
+    // canonical location.
+    let Some(init_path) = extract_block_source_path(&content, INIT_BEGIN, INIT_END) else {
+        return CheckResult::fail(
+            "ghost-complete init block in .zshrc has no parseable `source` line — \
+             run `ghost-complete uninstall` then reinstall",
+        );
+    };
+    let Some(script_path) = extract_block_source_path(&content, SHELL_BEGIN, SHELL_END) else {
+        return CheckResult::fail(
+            "ghost-complete shell-integration block in .zshrc has no parseable `source` line — \
+             run `ghost-complete uninstall` then reinstall",
+        );
+    };
+
     let installed_init = match std::fs::read_to_string(&init_path) {
         Ok(s) => s,
         Err(_) => {
@@ -257,8 +319,9 @@ fn check_shell_integration() -> CheckResult {
     // 4. Installed snippets match embedded versions?
     if installed_init != ZSH_INIT || installed_script != ZSH_INTEGRATION {
         return CheckResult::warn(format!(
-            "shell integration files at {} drifted from embedded version — run `ghost-complete install` to refresh",
-            shell_dir.display(),
+            "shell integration files at {} / {} drifted from embedded version — run `ghost-complete install` to refresh",
+            init_path.display(),
+            script_path.display(),
         ));
     }
 
@@ -267,6 +330,24 @@ fn check_shell_integration() -> CheckResult {
         return CheckResult::warn(
             "shell integration uses legacy OSC 7770 — run `ghost-complete install` to migrate to OSC 7772",
         );
+    }
+
+    // 6. Source paths point at the canonical install location?
+    // Drift here is non-fatal (the user may deliberately ship their own
+    // copy), but flag it so the next `ghost-complete install` doesn't
+    // appear to swap their edits out from under them.
+    let canonical_shell_dir = home.join(".config/ghost-complete/shell");
+    let canonical_init = canonical_shell_dir.join("init.zsh");
+    let canonical_script = canonical_shell_dir.join("ghost-complete.zsh");
+    if init_path != canonical_init || script_path != canonical_script {
+        return CheckResult::warn(format!(
+            ".zshrc managed block sources non-canonical paths ({}, {}) — expected ({}, {}); \
+             run `ghost-complete install` to refresh",
+            init_path.display(),
+            script_path.display(),
+            canonical_init.display(),
+            canonical_script.display(),
+        ));
     }
 
     CheckResult::ok("ghost-complete shell integration looks healthy")

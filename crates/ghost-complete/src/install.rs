@@ -92,9 +92,9 @@ const DEFAULT_CONFIG_TOML: &str = "\
 ";
 
 pub const INIT_BEGIN: &str = "# >>> ghost-complete initialize >>>";
-const INIT_END: &str = "# <<< ghost-complete initialize <<<";
+pub const INIT_END: &str = "# <<< ghost-complete initialize <<<";
 pub const SHELL_BEGIN: &str = "# >>> ghost-complete shell integration >>>";
-const SHELL_END: &str = "# <<< ghost-complete shell integration <<<";
+pub const SHELL_END: &str = "# <<< ghost-complete shell integration <<<";
 const MANAGED_WARNING: &str =
     "# !! Contents within this block are managed by 'ghost-complete install' !!";
 
