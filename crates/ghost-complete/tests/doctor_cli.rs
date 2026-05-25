@@ -113,10 +113,15 @@ fn doctor_warns_on_stale_init_block() {
     let stderr = String::from_utf8_lossy(&output.stderr);
     let stdout = String::from_utf8_lossy(&output.stdout);
     let combined = format!("{stderr}{stdout}");
+    // Assert the specific new check fires: it names the missing init.zsh path
+    // or the shell-integration managed block. The pre-Task-10 implementation
+    // would only emit a generic "managed block present" Ok and never reference
+    // init.zsh by name from the shell-integration check.
+    let lower = combined.to_lowercase();
     assert!(
-        combined.to_lowercase().contains("missing")
-            || combined.to_lowercase().contains("not found")
-            || combined.to_lowercase().contains("stale"),
-        "doctor must warn about missing source target; got:\n{combined}",
+        lower.contains("init.zsh")
+            || lower.contains("shell-integration managed block")
+            || lower.contains("ghost-complete.zsh"),
+        "doctor must reference the missing managed-file path or block by name; got:\n{combined}",
     );
 }
