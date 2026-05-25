@@ -77,20 +77,32 @@ struct TokenOnlyDemotionState {
 
 impl TokenOnlyDemotionState {
     fn is_demoted(&self, generator_id: &str) -> bool {
-        self.consecutive_failures
-            .lock()
-            .expect("token_only demotion state poisoned")
-            .get(generator_id)
-            .copied()
-            .unwrap_or(0)
-            >= TOKEN_ONLY_DEMOTE_AFTER_FAILURES
+        let failures = match self.consecutive_failures.lock() {
+            Ok(g) => g,
+            Err(poisoned) => {
+                tracing::warn!(
+                    "token_only demotion mutex was poisoned; clearing state and continuing"
+                );
+                let mut g = poisoned.into_inner();
+                *g = Default::default();
+                g
+            }
+        };
+        failures.get(generator_id).copied().unwrap_or(0) >= TOKEN_ONLY_DEMOTE_AFTER_FAILURES
     }
 
     fn record_timeout(&self, generator_id: &str) -> u8 {
-        let mut failures = self
-            .consecutive_failures
-            .lock()
-            .expect("token_only demotion state poisoned");
+        let mut failures = match self.consecutive_failures.lock() {
+            Ok(g) => g,
+            Err(poisoned) => {
+                tracing::warn!(
+                    "token_only demotion mutex was poisoned; clearing state and continuing"
+                );
+                let mut g = poisoned.into_inner();
+                *g = Default::default();
+                g
+            }
+        };
         let count = failures.entry(generator_id.to_string()).or_insert(0);
         *count = count.saturating_add(1);
         *count
@@ -121,10 +133,18 @@ impl TokenOnlyDemotionState {
     /// design — token_only sources that touch a host API surface that
     /// diagnostic and we deliberately do not treat that as a failure.
     fn record_success(&self, generator_id: &str) {
-        self.consecutive_failures
-            .lock()
-            .expect("token_only demotion state poisoned")
-            .remove(generator_id);
+        let mut failures = match self.consecutive_failures.lock() {
+            Ok(g) => g,
+            Err(poisoned) => {
+                tracing::warn!(
+                    "token_only demotion mutex was poisoned; clearing state and continuing"
+                );
+                let mut g = poisoned.into_inner();
+                *g = Default::default();
+                g
+            }
+        };
+        failures.remove(generator_id);
     }
 }
 
