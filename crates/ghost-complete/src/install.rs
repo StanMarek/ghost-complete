@@ -796,7 +796,9 @@ mod tests {
         // split the OSC param list and silently truncate the CWD.
         assert!(
             !ZSH_INTEGRATION.contains(";=/-"),
-            "_gc_urlencode_path allow-list must not include URI sub-delimiters; see ADR 0003"
+            "_gc_urlencode_path allow-list must not include URI sub-delimiters; \
+             see ghost-complete.zsh _gc_urlencode_path doc and \
+             osc7_roundtrip_with_semicolon_in_path test"
         );
         assert!(
             ZSH_INTEGRATION.contains("[a-zA-Z0-9._~/-])"),

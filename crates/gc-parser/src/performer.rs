@@ -422,7 +422,7 @@ impl Perform for TerminalState {
                         detail: detail.unwrap_or("").to_string(),
                     },
                 };
-                tracing::warn!(?diagnostic, "shell-side runtime diagnostic");
+                tracing::warn!("shell-side runtime diagnostic: {diagnostic}");
                 self.record_diagnostic(diagnostic);
             }
             _ => {}
@@ -1883,6 +1883,25 @@ mod tests {
     fn osc7774_empty_frame_does_not_panic() {
         let mut p = TerminalParser::new(24, 80);
         p.process_bytes(b"\x1b]7774\x07");
+        assert_eq!(p.state_mut().take_diagnostic(), None);
+    }
+
+    #[test]
+    fn osc7774_env_truncated_malformed_byte_count_is_dropped() {
+        // Non-numeric detail for env_truncated must hit the drop branch —
+        // a regression that silently substitutes 0 (e.g. `.unwrap_or(0)`)
+        // would record `EnvTruncated { bytes_emitted: 0 }` instead.
+        let mut p = TerminalParser::new(24, 80);
+        p.process_bytes(b"\x1b]7774;env_truncated;not-a-number\x07");
+        assert_eq!(p.state_mut().take_diagnostic(), None);
+    }
+
+    #[test]
+    fn osc7774_empty_reason_is_dropped() {
+        // Empty reason code (the param between the two semicolons) must hit
+        // the drop branch — never recorded as an `Unknown` with empty code.
+        let mut p = TerminalParser::new(24, 80);
+        p.process_bytes(b"\x1b]7774;;detail\x07");
         assert_eq!(p.state_mut().take_diagnostic(), None);
     }
 }

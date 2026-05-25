@@ -1,4 +1,5 @@
 use std::collections::{HashMap, VecDeque};
+use std::fmt;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
@@ -29,6 +30,31 @@ pub enum Diagnostic {
     EnvTruncated { bytes_emitted: u64 },
     ZleHookDisabled { widget_descriptor: String },
     Unknown { code: String, detail: String },
+}
+
+/// Operator-friendly colon-separated rendering, matched against the trace
+/// shape promised by ADR 0007 (`<reason_code>:<detail>`). Used by the
+/// `tracing::warn!` emission in `performer.rs` so the operator sees
+/// `shell-side runtime diagnostic: env_truncated:65536` rather than the
+/// derived `Debug` output.
+impl fmt::Display for Diagnostic {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Diagnostic::EnvTruncated { bytes_emitted } => {
+                write!(f, "env_truncated:{bytes_emitted}")
+            }
+            Diagnostic::ZleHookDisabled { widget_descriptor } => {
+                write!(f, "zle_hook_disabled:{widget_descriptor}")
+            }
+            Diagnostic::Unknown { code, detail } => {
+                if detail.is_empty() {
+                    write!(f, "{code}")
+                } else {
+                    write!(f, "{code}:{detail}")
+                }
+            }
+        }
+    }
 }
 
 #[derive(Debug)]

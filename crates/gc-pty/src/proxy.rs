@@ -1058,9 +1058,12 @@ impl PrivateOscFilter {
     /// never sees them.
     ///
     /// Per ADR 0003: 7770 is the legacy raw buffer (deprecated; parser still
-    /// accepts it with a one-shot warning); 7771 is the prompt-boundary
-    /// fallback; 7772 is the percent-encoded buffer report; 7773 is the
-    /// env snapshot; 7774 is the runtime diagnostic frame.
+    /// accepts it with a one-shot warning) and 7772 is the percent-encoded
+    /// buffer report. 7771 is the prompt-boundary fallback (defined inline in
+    /// `gc-parser`'s performer and emitted by `shell/ghost-complete.zsh`; see
+    /// `docs/ARCHITECTURE.md`). 7773 is the env snapshot (see
+    /// `docs/ARCHITECTURE.md`). Per ADR 0007: 7774 is the runtime diagnostic
+    /// frame.
     const PRIVATE_CODES: &'static [&'static [u8]] = &[b"7770", b"7771", b"7772", b"7773", b"7774"];
 
     fn filter(&mut self, input: &[u8]) -> Vec<u8> {

@@ -80,10 +80,13 @@ fn init_zsh_tmux_branch_recognises_required_env_vars() {
 }
 
 #[test]
-fn rust_detection_recognises_wezterm_in_direct_branch() {
-    // Sanity: Rust matrix MUST detect WezTerm via socket in direct mode;
-    // shell side must keep parity. If this ever changes on the Rust side,
-    // update SHELL_DIRECT_ENV_VARS above.
+fn rust_terminal_enum_has_wezterm_variant() {
+    // Sanity: the WezTerm variant exists in the Rust matrix so the shell
+    // side has a counterpart to keep parity with. Env-based detection of
+    // WezTerm via socket is exercised by gc-terminal's own unit tests
+    // (test_detect_wezterm_direct_via_socket); we can't drive that path
+    // from an integration test without mutating process-global env vars,
+    // which is unsafe under cargo test's parallel runner.
     let profile = TerminalProfile::for_wezterm();
     assert!(matches!(profile.terminal(), gc_terminal::Terminal::WezTerm));
 }

@@ -143,8 +143,9 @@ _gc_report_env() {
 # OSC 633). In those terminals our OSC 7771 fallback is redundant — the
 # terminal already understands the OSC 133 we emit below, and OSC 7771
 # only exists for terminals that mangle OSC 133. Currently covers
-# Ghostty, Zed, and VSCode (the latter only once its shell integration
-# is active, signalled by VSCODE_INJECTION being set).
+# Ghostty, Kitty, WezTerm, Rio, Zed, and VSCode (the latter only once
+# its shell integration is active, signalled by VSCODE_INJECTION being
+# set).
 _gc_native_osc133() {
     [[ "$TERM_PROGRAM" == "ghostty" || -n "$GHOSTTY_RESOURCES_DIR" ]] && return 0
     [[ -n "$KITTY_WINDOW_ID" ]] && return 0
@@ -226,9 +227,11 @@ _gc_install_zle_hook() {
     #   2. Existing plain user widget   → chain over it so $WIDGET is preserved.
     #   3. Existing non-user widget
     #      (completion:/builtin:/…)     → don't clobber it; emit OSC 7774
-    #      zle_hook_disabled so the proxy can warn. We can't chain a non-user
-    #      widget safely, and silently clobbering someone else's registration
-    #      is worse than losing our buffer hook.
+    #      zle_hook_disabled (only when $GHOST_COMPLETE_ACTIVE is set, so
+    #      we don't leak the frame to a bare terminal) so the proxy can
+    #      warn. We can't chain a non-user widget safely, and silently
+    #      clobbering someone else's registration is worse than losing
+    #      our buffer hook.
     if (( ! ${+widgets[zle-line-pre-redraw]} )); then
         zle -N zle-line-pre-redraw _gc_report_buffer
     elif [[ "${widgets[zle-line-pre-redraw]}" == user:* ]]; then
@@ -241,7 +244,9 @@ _gc_install_zle_hook() {
         zle -N zle-line-pre-redraw _gc_zle_line_pre_redraw
     else
         # Non-user widget: chaining is unsafe. Don't clobber, but record a
-        # diagnostic so the proxy can surface a clear warning.
+        # diagnostic so the proxy can surface a clear warning. The 7774
+        # emission is gated on $GHOST_COMPLETE_ACTIVE so we don't leak the
+        # frame to a bare terminal when the proxy isn't watching.
         local descriptor="${widgets[zle-line-pre-redraw]}"
         local encoded_desc
         encoded_desc="$(_gc_urlencode_buffer "$descriptor")"

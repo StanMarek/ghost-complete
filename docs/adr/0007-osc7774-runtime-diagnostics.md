@@ -180,6 +180,8 @@ machine is in place, supporting OSC 7774 is just an entry in the slice
   and `_GC_ENV_TRUNCATED_REPORTED` latch), `_gc_install_zle_hook`
   (`zle_hook_disabled` emission)
 - `crates/gc-pty/src/proxy.rs` — `PrivateOscFilter::PRIVATE_CODES`
-- [ADR-0003](0003-osc7772-buffer-framing.md) — establishes the 777x
-  GC-private OSC namespace, percent-encoding alphabet, and
-  `PrivateOscFilter` stripping mechanism that OSC 7774 extends
+- [ADR-0003](0003-osc7772-buffer-framing.md) — establishes the
+  percent-encoding alphabet that OSC 7774 reuses. The
+  `PrivateOscFilter` stripping mechanism itself was introduced alongside
+  OSC 7773 and is refactored here to handle the multi-code
+  `PRIVATE_CODES` set.

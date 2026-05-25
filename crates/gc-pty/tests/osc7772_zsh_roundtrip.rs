@@ -361,6 +361,59 @@ fn osc7773_total_budget_drops_late_entries_keeps_essentials() {
 }
 
 #[test]
+fn osc7773_auth_prefix_vars_survive_budget_pressure() {
+    if !zsh_available() {
+        if std::env::var_os("CI").is_some() {
+            panic!(
+                "zsh not on PATH but running under CI — install zsh or mark this test #[ignore] explicitly"
+            );
+        }
+        eprintln!(
+            "skipping osc7773_auth_prefix_vars_survive_budget_pressure: zsh not on PATH (local dev)"
+        );
+        return;
+    }
+
+    // 200 filler vars alphabetized BEFORE `AWS_` (`AAA_*` < `AWS_*`),
+    // each ~4 KiB, exhaust the catch-all `(ok)parameters` sweep long
+    // before it reaches the AWS_/GITHUB_ entries. Without the
+    // auth_prefixes priority loop in _gc_report_env, AWS_PROFILE and
+    // GITHUB_TOKEN would be dropped silently. Pin the priority intent.
+    let stdout = emit_env_via_real_zsh(
+        "export GHOST_COMPLETE_ACTIVE=1; \
+         export AWS_PROFILE=dev; \
+         export GITHUB_TOKEN=tok; \
+         local i; for i in {1..200}; do export AAA_FILLER_${i}=${(l:4096::x:)}; done",
+    );
+
+    let mut p = TerminalParser::new(24, 80);
+    p.process_bytes(&stdout);
+    let env = p.state().shell_env().expect("OSC 7773 env report expected");
+
+    assert_eq!(
+        env.get("AWS_PROFILE").map(String::as_str),
+        Some("dev"),
+        "auth-prefixed AWS_PROFILE must survive budget pressure via the auth_prefixes priority loop"
+    );
+    assert_eq!(
+        env.get("GITHUB_TOKEN").map(String::as_str),
+        Some("tok"),
+        "auth-prefixed GITHUB_TOKEN must survive budget pressure via the auth_prefixes priority loop"
+    );
+
+    // Sanity: the filler set must actually have pushed the catch-all
+    // past the budget — otherwise the assertion above is vacuous.
+    let kept_fillers: usize = (1..=200)
+        .filter(|i| env.contains_key(&format!("AAA_FILLER_{i}")))
+        .count();
+    assert!(
+        kept_fillers < 200,
+        "expected catch-all sweep to exhaust budget on AAA_FILLER_* (kept {kept_fillers}/200); \
+         without budget pressure this test does not exercise the priority loop"
+    );
+}
+
+#[test]
 fn osc7773_emits_env_truncated_diagnostic_when_dropping() {
     if !zsh_available() {
         if std::env::var_os("CI").is_some() {
