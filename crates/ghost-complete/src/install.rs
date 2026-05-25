@@ -4,6 +4,8 @@ use std::io::Write as _;
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
 
+pub mod atomic_write;
+
 use crate::sanitize::{sanitize_for_terminal, sanitize_path};
 
 // The embedded spec archive lives in `gc-suggest` because the spec loader
