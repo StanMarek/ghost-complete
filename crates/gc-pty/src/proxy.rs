@@ -1042,16 +1042,31 @@ enum PrivateOscFilterState {
     #[default]
     Normal,
     Esc,
-    OscPrefix {
-        matched: usize,
+    CodeAcc {
+        acc: Vec<u8>,
     },
     Strip,
     StripEsc,
 }
 
 impl PrivateOscFilter {
+    /// OSC codes considered Ghost-Complete-private. These are produced by
+    /// `shell/ghost-complete.zsh` for the proxy's consumption only and MUST
+    /// NOT reach the terminal. The proxy's `gc-parser` dispatches these
+    /// frames for state updates before this filter runs; the bytes themselves
+    /// remain in the stream until this filter strips them so the terminal
+    /// never sees them.
+    ///
+    /// Per ADR 0003: 7770 is the legacy raw buffer (deprecated; parser still
+    /// accepts it with a one-shot warning) and 7772 is the percent-encoded
+    /// buffer report. 7771 is the prompt-boundary fallback (defined inline in
+    /// `gc-parser`'s performer and emitted by `shell/ghost-complete.zsh`; see
+    /// `docs/ARCHITECTURE.md`). 7773 is the env snapshot (see
+    /// `docs/ARCHITECTURE.md`). Per ADR 0007: 7774 is the runtime diagnostic
+    /// frame.
+    const PRIVATE_CODES: &'static [&'static [u8]] = &[b"7770", b"7771", b"7772", b"7773", b"7774"];
+
     fn filter(&mut self, input: &[u8]) -> Vec<u8> {
-        const CODE: &[u8; 4] = b"7773";
         let mut out = Vec::with_capacity(input.len());
 
         for &byte in input {
@@ -1065,29 +1080,57 @@ impl PrivateOscFilter {
                 }
                 PrivateOscFilterState::Esc => {
                     if byte == b']' {
-                        self.state = PrivateOscFilterState::OscPrefix { matched: 0 };
+                        self.state = PrivateOscFilterState::CodeAcc { acc: Vec::new() };
                     } else {
                         out.push(0x1b);
                         out.push(byte);
                         self.state = PrivateOscFilterState::Normal;
                     }
                 }
-                PrivateOscFilterState::OscPrefix { matched } => {
-                    if matched < CODE.len() && byte == CODE[matched] {
-                        self.state = PrivateOscFilterState::OscPrefix {
-                            matched: matched + 1,
-                        };
-                    } else if matched == CODE.len() && (byte == b';' || byte == 0x07) {
-                        self.state = if byte == 0x07 {
-                            PrivateOscFilterState::Normal
+                PrivateOscFilterState::CodeAcc { ref mut acc } => {
+                    if byte.is_ascii_digit() {
+                        if acc.len() >= 5 {
+                            // Too long to be one of our codes; flush as non-private.
+                            out.extend_from_slice(b"\x1b]");
+                            out.extend_from_slice(acc);
+                            out.push(byte);
+                            self.state = PrivateOscFilterState::Normal;
                         } else {
-                            PrivateOscFilterState::Strip
-                        };
-                    } else if matched == CODE.len() && byte == 0x1b {
-                        self.state = PrivateOscFilterState::StripEsc;
+                            acc.push(byte);
+                        }
+                    } else if byte == b';' || byte == 0x07 {
+                        let is_private = Self::PRIVATE_CODES.contains(&acc.as_slice());
+                        if is_private {
+                            self.state = if byte == 0x07 {
+                                PrivateOscFilterState::Normal
+                            } else {
+                                PrivateOscFilterState::Strip
+                            };
+                        } else {
+                            // Non-private OSC: flush prefix and byte unchanged.
+                            out.extend_from_slice(b"\x1b]");
+                            out.extend_from_slice(acc);
+                            out.push(byte);
+                            self.state = PrivateOscFilterState::Normal;
+                        }
+                    } else if byte == 0x1b {
+                        // ESC inside an OSC. If `acc` is a private code, this
+                        // ESC begins an ST terminator (`ESC \`) for a private
+                        // frame with no `;` payload (e.g. `\x1b]7773\x1b\\`):
+                        // drop everything and let StripEsc consume the `\`.
+                        // Otherwise it's a bare ESC in a non-private OSC —
+                        // flush the prefix and re-enter Esc for the next byte.
+                        if Self::PRIVATE_CODES.contains(&acc.as_slice()) {
+                            self.state = PrivateOscFilterState::StripEsc;
+                        } else {
+                            out.extend_from_slice(b"\x1b]");
+                            out.extend_from_slice(acc);
+                            self.state = PrivateOscFilterState::Esc;
+                        }
                     } else {
+                        // Anything else: not a GC-private OSC.
                         out.extend_from_slice(b"\x1b]");
-                        out.extend_from_slice(&CODE[..matched]);
+                        out.extend_from_slice(acc);
                         out.push(byte);
                         self.state = PrivateOscFilterState::Normal;
                     }
@@ -1689,7 +1732,8 @@ mod tests {
     fn private_osc_filter_preserves_other_osc_frames() {
         let mut filter = PrivateOscFilter::default();
 
-        let input = b"before\x1b]7772;0;echo\x07after";
+        // OSC 7 (CWD) is non-private and must pass through unchanged.
+        let input = b"before\x1b]7;file:///tmp/work\x07after";
         let out = filter.filter(input);
 
         assert_eq!(out, input);
@@ -1706,6 +1750,127 @@ mod tests {
         assert_eq!(first, b"before");
         assert!(second.is_empty());
         assert_eq!(third, b"after");
+    }
+
+    #[test]
+    fn private_osc_filter_strips_osc_7770() {
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]7770;git checkout\x07hello";
+        assert_eq!(f.filter(input), b"hello");
+    }
+
+    #[test]
+    fn private_osc_filter_strips_osc_7771() {
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]7771;A\x07prompt";
+        assert_eq!(f.filter(input), b"prompt");
+    }
+
+    #[test]
+    fn private_osc_filter_strips_osc_7772() {
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]7772;0;buffer\x07tail";
+        assert_eq!(f.filter(input), b"tail");
+    }
+
+    #[test]
+    fn private_osc_filter_still_strips_osc_7773() {
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]7773;PATH%3D%2Fbin%00\x07rest";
+        assert_eq!(f.filter(input), b"rest");
+    }
+
+    #[test]
+    fn private_osc_filter_strips_osc_7774_env_truncated() {
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]7774;env_truncated;65536\x07tail";
+        assert_eq!(f.filter(input), b"tail");
+    }
+
+    #[test]
+    fn private_osc_filter_strips_osc_7774_zle_hook_disabled() {
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]7774;zle_hook_disabled;completion%3Afoo\x07tail";
+        assert_eq!(f.filter(input), b"tail");
+    }
+
+    #[test]
+    fn private_osc_filter_preserves_osc_7_cwd() {
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]7;file:///tmp\x07tail";
+        // Non-GC-private OSC must pass through.
+        assert_eq!(f.filter(input), &input[..]);
+    }
+
+    #[test]
+    fn private_osc_filter_preserves_osc_133() {
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]133;A\x07tail";
+        assert_eq!(f.filter(input), &input[..]);
+    }
+
+    #[test]
+    fn private_osc_filter_preserves_osc_633_vscode() {
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]633;A\x07tail";
+        assert_eq!(f.filter(input), &input[..]);
+    }
+
+    #[test]
+    fn private_osc_filter_strips_st_terminated_private_frame_without_semicolon() {
+        // Regression: vte parses `\x1b]7773\x1b\\` as a complete OSC 7773
+        // terminated by ST with no `;`. The filter must strip it entirely
+        // rather than leaking the `\x1b]7773` prefix to the terminal.
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]7773\x1b\\rest";
+        assert_eq!(f.filter(input), b"rest");
+    }
+
+    #[test]
+    fn private_osc_filter_strips_st_terminated_private_frame_across_chunks() {
+        let mut f = PrivateOscFilter::default();
+        let first = f.filter(b"\x1b]7773;da");
+        let second = f.filter(b"ta\x1b\\rest");
+        assert!(first.is_empty());
+        assert_eq!(second, b"rest");
+    }
+
+    #[test]
+    fn private_osc_filter_preserves_osc8_hyperlink_with_multiple_semicolons() {
+        // OSC 8 hyperlinks carry multiple `;` in the payload; a non-private
+        // code must pass through unchanged regardless of payload structure.
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]8;;https://example.com\x07tail";
+        assert_eq!(f.filter(input), &input[..]);
+    }
+
+    #[test]
+    fn private_osc_filter_preserves_osc_code_that_is_prefix_of_private_code() {
+        // `777` is a prefix of `7770`-`7774` but is not itself private.
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]777;x\x07tail";
+        assert_eq!(f.filter(input), &input[..]);
+    }
+
+    #[test]
+    fn private_osc_filter_preserves_st_terminated_non_private_frame() {
+        // Regression: the `byte == 0x1b` branch in `CodeAcc` must flush the
+        // prefix and re-enter `Esc` (not `StripEsc`) when `acc` is not a
+        // private code. A regression that always entered `StripEsc` here
+        // would silently swallow legitimate OSC 133 ST-terminated frames.
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]133\x1b\\tail";
+        assert_eq!(f.filter(input), &input[..]);
+    }
+
+    #[test]
+    fn private_osc_filter_passes_long_six_digit_osc_through_unchanged() {
+        // Pin that long OSC codes pass through unchanged so a 6+ digit input
+        // is never silently consumed — the filter must only intercept the
+        // known private 4-digit `777x` band.
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]123456;x\x07tail";
+        assert_eq!(f.filter(input), &input[..]);
     }
 
     #[test]

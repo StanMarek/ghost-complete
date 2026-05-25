@@ -6,7 +6,7 @@
 mod performer;
 mod state;
 
-pub use state::{CprOwner, CprToken, TerminalState};
+pub use state::{CprOwner, CprToken, Diagnostic, TerminalState};
 
 /// Wraps `vte::Parser` and `TerminalState` into a single unit.
 ///

@@ -1,4 +1,5 @@
 use std::collections::{HashMap, VecDeque};
+use std::fmt;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
@@ -17,6 +18,44 @@ pub enum CprOwner {
 /// the queued entry is removed without corrupting dispatch alignment.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CprToken(u64);
+
+/// Structured shell-side runtime diagnostic carried by OSC 7774.
+///
+/// The reason-code set is documented in ADR 0007. `Unknown` exists so a
+/// stale parser observing a new reason code from a newer shell integration
+/// does not silently drop the frame — downstream consumers can still log
+/// the raw code and detail.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Diagnostic {
+    EnvTruncated { bytes_emitted: u64 },
+    ZleHookDisabled { widget_descriptor: String },
+    Unknown { code: String, detail: String },
+}
+
+/// Operator-friendly colon-separated rendering, matched against the trace
+/// shape promised by ADR 0007 (`<reason_code>:<detail>`). Used by the
+/// `tracing::warn!` emission in `performer.rs` so the operator sees
+/// `shell-side runtime diagnostic: env_truncated:65536` rather than the
+/// derived `Debug` output.
+impl fmt::Display for Diagnostic {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Diagnostic::EnvTruncated { bytes_emitted } => {
+                write!(f, "env_truncated:{bytes_emitted}")
+            }
+            Diagnostic::ZleHookDisabled { widget_descriptor } => {
+                write!(f, "zle_hook_disabled:{widget_descriptor}")
+            }
+            Diagnostic::Unknown { code, detail } => {
+                if detail.is_empty() {
+                    write!(f, "{code}")
+                } else {
+                    write!(f, "{code}:{detail}")
+                }
+            }
+        }
+    }
+}
 
 #[derive(Debug)]
 struct CprEntry {
@@ -75,6 +114,12 @@ pub struct TerminalState {
     /// currently constructs a single parser per proxy session, so this is
     /// effectively per-process. See ADR 0003.
     legacy_osc7770_warned: bool,
+    /// Last OSC 7774 diagnostic frame; consumers drain via
+    /// [`Self::take_diagnostic`]. Currently observation-only (parser tests
+    /// and the `tracing::warn!` emitted inline by `osc_dispatch`); reserved
+    /// for future proxy consumers. Overwritten by each new diagnostic until
+    /// drained.
+    last_diagnostic: Option<Diagnostic>,
     /// FIFO queue of pending CPR requests in send-order.
     ///
     /// Terminals respond to `CSI 6n` requests in the same order they
@@ -114,6 +159,7 @@ impl TerminalState {
             cursor_sync_requested: false,
             cpr_synced: false,
             legacy_osc7770_warned: false,
+            last_diagnostic: None,
             cpr_queue: VecDeque::new(),
             next_cpr_id: 0,
         }
@@ -211,6 +257,17 @@ impl TerminalState {
         let dirty = self.display_dirty;
         self.display_dirty = false;
         dirty
+    }
+
+    /// Drains and returns the most recent OSC 7774 diagnostic, if any.
+    /// One-shot per ADR 0007 — repeated polls without an intervening
+    /// dispatch yield `None`.
+    pub fn take_diagnostic(&mut self) -> Option<Diagnostic> {
+        self.last_diagnostic.take()
+    }
+
+    pub(crate) fn record_diagnostic(&mut self, diagnostic: Diagnostic) {
+        self.last_diagnostic = Some(diagnostic);
     }
 
     pub fn take_viewport_scroll_count(&mut self) -> u16 {
@@ -624,6 +681,46 @@ impl TerminalState {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn diagnostic_display_renders_adr_format() {
+        // ADR 0007 commits to a colon-separated operator-visible shape so
+        // shell-side diagnostics (`tracing::warn!("shell-side runtime
+        // diagnostic: {diagnostic}")`) read cleanly in proxy logs. Pin each
+        // arm against accidental `Debug`-vs-`Display` swaps or `:`→`=`
+        // separator regressions. The Unknown arm has two sub-shapes
+        // (empty-detail and present-detail) — both are covered.
+        assert_eq!(
+            Diagnostic::EnvTruncated {
+                bytes_emitted: 65536
+            }
+            .to_string(),
+            "env_truncated:65536"
+        );
+        assert_eq!(
+            Diagnostic::ZleHookDisabled {
+                widget_descriptor: "completion%3Afoo".into(),
+            }
+            .to_string(),
+            "zle_hook_disabled:completion%3Afoo"
+        );
+        assert_eq!(
+            Diagnostic::Unknown {
+                code: "x".into(),
+                detail: "".into(),
+            }
+            .to_string(),
+            "x"
+        );
+        assert_eq!(
+            Diagnostic::Unknown {
+                code: "x".into(),
+                detail: "y".into(),
+            }
+            .to_string(),
+            "x:y"
+        );
+    }
 
     #[test]
     fn validate_cpr_accepts_valid_coordinates() {

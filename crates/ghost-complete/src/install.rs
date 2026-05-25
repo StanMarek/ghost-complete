@@ -791,6 +791,19 @@ mod tests {
             "non-tmux branch must honor the guard on both 'descendant' and \
              'ps uncertain' outcomes"
         );
+
+        // Ensure the OSC 7 encoder cannot pass ';' through unencoded — vte would
+        // split the OSC param list and silently truncate the CWD.
+        assert!(
+            !ZSH_INTEGRATION.contains(";=/-"),
+            "_gc_urlencode_path allow-list must not include URI sub-delimiters; \
+             see ghost-complete.zsh _gc_urlencode_path doc and \
+             osc7_roundtrip_with_semicolon_in_path test"
+        );
+        assert!(
+            ZSH_INTEGRATION.contains("[a-zA-Z0-9._~/-])"),
+            "_gc_urlencode_path must use the strict allow-list"
+        );
     }
 
     #[test]
@@ -813,6 +826,57 @@ mod tests {
         assert!(
             ZSH_INTEGRATION.contains("_gc_native_osc133 || printf '\\e]7771;C"),
             "_gc_preexec must suppress OSC 7771 when terminal parses OSC 133 natively"
+        );
+        // New native-OSC-133 terminals — match PromptDetection::Osc133 in gc-terminal.
+        assert!(
+            ZSH_INTEGRATION.contains("KITTY_WINDOW_ID") || ZSH_INTEGRATION.contains("kitty"),
+            "_gc_native_osc133 must recognise Kitty"
+        );
+        assert!(
+            ZSH_INTEGRATION.contains("WEZTERM_UNIX_SOCKET") || ZSH_INTEGRATION.contains("WezTerm"),
+            "_gc_native_osc133 must recognise WezTerm"
+        );
+        assert!(
+            ZSH_INTEGRATION.contains("\"rio\""),
+            "_gc_native_osc133 must recognise Rio"
+        );
+    }
+
+    #[test]
+    fn report_buffer_is_gated_on_active() {
+        // GC-private frames must not leak to terminals when the proxy is absent.
+        let body = ZSH_INTEGRATION
+            .split("_gc_report_buffer()")
+            .nth(1)
+            .expect("found _gc_report_buffer")
+            .split("\n}\n")
+            .next()
+            .expect("found end brace");
+        assert!(
+            body.contains("GHOST_COMPLETE_ACTIVE"),
+            "_gc_report_buffer must check $GHOST_COMPLETE_ACTIVE before emitting OSC 7772"
+        );
+    }
+
+    #[test]
+    fn report_env_is_gated_on_active() {
+        // OSC 7773 carries an env snapshot (PATH, AWS_PROFILE, GITHUB_TOKEN, …).
+        // A regression that dropped or inverted the gate would leak the frame
+        // to a bare terminal — and unlike OSC 7772 (line buffer), an env frame
+        // contains values the user reasonably expects never to be rendered
+        // verbatim. Pin the gate the same way `report_buffer_is_gated_on_active`
+        // pins the OSC 7772 gate, so a `[[ -z … ]] || return` typo or an
+        // accidental gate removal fails this test loudly.
+        let body = ZSH_INTEGRATION
+            .split("_gc_report_env()")
+            .nth(1)
+            .expect("found _gc_report_env")
+            .split("\n}\n")
+            .next()
+            .expect("found end brace");
+        assert!(
+            body.contains("GHOST_COMPLETE_ACTIVE"),
+            "_gc_report_env must check $GHOST_COMPLETE_ACTIVE before emitting OSC 7773"
         );
     }
 
@@ -1503,6 +1567,18 @@ mod tests {
     }
 
     #[test]
+    fn report_env_respects_per_value_and_total_budgets() {
+        assert!(
+            ZSH_INTEGRATION.contains("_GC_ENV_TOTAL_BUDGET"),
+            "_gc_report_env must declare a total byte budget"
+        );
+        assert!(
+            ZSH_INTEGRATION.contains("_GC_ENV_PER_VALUE_CAP"),
+            "_gc_report_env must declare a per-value cap"
+        );
+    }
+
+    #[test]
     fn test_post_install_summary_uses_sanitized_paths() {
         // Pin the sanitization invariant. We can't blanket-assert
         // `!contains('\x1b')` because the helper intentionally emits ANSI
@@ -1518,6 +1594,14 @@ mod tests {
         assert!(
             !summary.contains("\x1b[31m"),
             "raw ESC sequence from hostile path leaked: {summary:?}"
+        );
+    }
+
+    #[test]
+    fn zle_install_hook_emits_diagnostic_on_non_user_widget() {
+        assert!(
+            ZSH_INTEGRATION.contains("7774;zle_hook_disabled"),
+            "_gc_install_zle_hook must emit OSC 7774 zle_hook_disabled when bailing on a non-user widget"
         );
     }
 }

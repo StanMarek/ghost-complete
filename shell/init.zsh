@@ -78,6 +78,7 @@ __ghost_complete_init() {
     fi
     local supported=0
     if [[ -n "$KITTY_WINDOW_ID" ]] \
+      || [[ -n "$WEZTERM_UNIX_SOCKET" ]] \
       || [[ -n "$ALACRITTY_SOCKET" ]] \
       || [[ -n "$ZED_TERM" ]] \
       || [[ -n "$VSCODE_IPC_HOOK_CLI" ]]; then

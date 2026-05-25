@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use unicode_width::UnicodeWidthChar;
 use vte::Perform;
 
-use crate::state::{CprOwner, TerminalState};
+use crate::state::{CprOwner, Diagnostic, TerminalState};
 
 const OSC7773_MAX_ENCODED_ENV_BYTES: usize = 1024 * 1024;
 
@@ -378,6 +378,53 @@ impl Perform for TerminalState {
                     tracing::warn!("OSC 7773 — malformed shell env snapshot, skipping");
                 }
             },
+            // OSC 7774 — Ghost Complete runtime diagnostic.
+            //
+            // Shell side emits e.g. `\e]7774;env_truncated;65536\a` when it
+            // cannot fit the env snapshot within budget, or
+            // `\e]7774;zle_hook_disabled;<encoded_descriptor>\a` when
+            // `_gc_install_zle_hook` bails on a non-user widget. Filtered
+            // by `PrivateOscFilter` so the terminal never sees these frames.
+            // Recorded into `last_diagnostic` and surfaced via `tracing::warn!`.
+            b"7774" => {
+                if params.len() < 2 {
+                    tracing::warn!("OSC 7774 — missing reason code, dropping");
+                    return;
+                }
+                let reason = match std::str::from_utf8(params[1]) {
+                    Ok(s) if !s.is_empty() => s,
+                    _ => {
+                        tracing::warn!(
+                            raw = ?params[1],
+                            "OSC 7774 — invalid reason code, dropping"
+                        );
+                        return;
+                    }
+                };
+                let detail_bytes = params.get(2).copied().unwrap_or(b"");
+                let detail = std::str::from_utf8(detail_bytes).ok();
+                let diagnostic = match reason {
+                    "env_truncated" => match detail.and_then(|s| s.parse::<u64>().ok()) {
+                        Some(bytes_emitted) => Diagnostic::EnvTruncated { bytes_emitted },
+                        None => {
+                            tracing::warn!(
+                                detail = ?detail_bytes,
+                                "OSC 7774 env_truncated — invalid byte count, dropping"
+                            );
+                            return;
+                        }
+                    },
+                    "zle_hook_disabled" => Diagnostic::ZleHookDisabled {
+                        widget_descriptor: detail.unwrap_or("").to_string(),
+                    },
+                    other => Diagnostic::Unknown {
+                        code: other.to_string(),
+                        detail: detail.unwrap_or("").to_string(),
+                    },
+                };
+                tracing::warn!("shell-side runtime diagnostic: {diagnostic}");
+                self.record_diagnostic(diagnostic);
+            }
             _ => {}
         }
     }
@@ -1793,5 +1840,68 @@ mod tests {
         p.process_bytes(b"\x1b]7770;6;abcdef\x07");
         assert_eq!(p.state().command_buffer(), Some("abcdef"));
         assert_eq!(p.state().buffer_cursor(), 6);
+    }
+
+    #[test]
+    fn osc7774_env_truncated_diagnostic_is_logged() {
+        let mut p = TerminalParser::new(24, 80);
+        p.process_bytes(b"\x1b]7774;env_truncated;65536\x07");
+        assert_eq!(
+            p.state_mut().take_diagnostic(),
+            Some(Diagnostic::EnvTruncated {
+                bytes_emitted: 65536
+            }),
+        );
+    }
+
+    #[test]
+    fn osc7774_zle_hook_disabled_records_percent_encoded_detail() {
+        let mut p = TerminalParser::new(24, 80);
+        p.process_bytes(b"\x1b]7774;zle_hook_disabled;completion%3Afoo\x07");
+        assert_eq!(
+            p.state_mut().take_diagnostic(),
+            Some(Diagnostic::ZleHookDisabled {
+                widget_descriptor: "completion%3Afoo".to_string()
+            }),
+        );
+    }
+
+    #[test]
+    fn osc7774_payload_only_no_detail_records_payload_alone() {
+        let mut p = TerminalParser::new(24, 80);
+        p.process_bytes(b"\x1b]7774;some_reason\x07");
+        assert_eq!(
+            p.state_mut().take_diagnostic(),
+            Some(Diagnostic::Unknown {
+                code: "some_reason".to_string(),
+                detail: String::new(),
+            }),
+        );
+    }
+
+    #[test]
+    fn osc7774_empty_frame_does_not_panic() {
+        let mut p = TerminalParser::new(24, 80);
+        p.process_bytes(b"\x1b]7774\x07");
+        assert_eq!(p.state_mut().take_diagnostic(), None);
+    }
+
+    #[test]
+    fn osc7774_env_truncated_malformed_byte_count_is_dropped() {
+        // Non-numeric detail for env_truncated must hit the drop branch —
+        // a regression that silently substitutes 0 (e.g. `.unwrap_or(0)`)
+        // would record `EnvTruncated { bytes_emitted: 0 }` instead.
+        let mut p = TerminalParser::new(24, 80);
+        p.process_bytes(b"\x1b]7774;env_truncated;not-a-number\x07");
+        assert_eq!(p.state_mut().take_diagnostic(), None);
+    }
+
+    #[test]
+    fn osc7774_empty_reason_is_dropped() {
+        // Empty reason code (the param between the two semicolons) must hit
+        // the drop branch — never recorded as an `Unknown` with empty code.
+        let mut p = TerminalParser::new(24, 80);
+        p.process_bytes(b"\x1b]7774;;detail\x07");
+        assert_eq!(p.state_mut().take_diagnostic(), None);
     }
 }
