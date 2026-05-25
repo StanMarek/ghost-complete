@@ -1781,6 +1781,20 @@ mod tests {
     }
 
     #[test]
+    fn private_osc_filter_strips_osc_7774_env_truncated() {
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]7774;env_truncated;65536\x07tail";
+        assert_eq!(f.filter(input), b"tail");
+    }
+
+    #[test]
+    fn private_osc_filter_strips_osc_7774_zle_hook_disabled() {
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]7774;zle_hook_disabled;completion%3Afoo\x07tail";
+        assert_eq!(f.filter(input), b"tail");
+    }
+
+    #[test]
     fn private_osc_filter_preserves_osc_7_cwd() {
         let mut f = PrivateOscFilter::default();
         let input = b"\x1b]7;file:///tmp\x07tail";
