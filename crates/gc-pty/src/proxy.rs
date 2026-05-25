@@ -1851,9 +1851,9 @@ mod tests {
 
     #[test]
     fn private_osc_filter_passes_long_six_digit_osc_through_unchanged() {
-        // Regression: the `acc.len() >= 5` overflow branch must flush 6+ digit
-        // OSC codes as non-private. A regression that flipped `>= 5` to `> 5`
-        // would let a 6-digit code accumulate forever and produce wrong output.
+        // Pin that long OSC codes pass through unchanged so a 6+ digit input
+        // is never silently consumed — the filter must only intercept the
+        // known private 4-digit `777x` band.
         let mut f = PrivateOscFilter::default();
         let input = b"\x1b]123456;x\x07tail";
         assert_eq!(f.filter(input), &input[..]);

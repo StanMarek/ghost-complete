@@ -57,8 +57,8 @@ fn emit_via_real_zsh(buffer: &[u8], cursor: usize) -> Vec<u8> {
     // CURSOR, invoke the reporter. `$'…'` escapes through every byte
     // literally — no quoting hazards.
     // GHOST_COMPLETE_ACTIVE=1 must be set so _gc_report_buffer does not
-    // early-return (the gate added in Task 7 guards against leaking
-    // OSC 7772 to terminals when the proxy is absent).
+    // early-return (the gate guards against leaking OSC 7772 to terminals
+    // when the proxy is absent).
     let script = format!(
         "GHOST_COMPLETE_ACTIVE=1; source {init_q}; BUFFER={buf_lit}; CURSOR={cursor}; _gc_report_buffer",
         init_q = shell_quote(zsh_init.to_str().expect("path is utf-8")),
@@ -587,6 +587,41 @@ fn osc7774_zle_hook_disabled_silent_when_inactive() {
         count_subslices(&stdout, b"\x1b]7774;"),
         0,
         "no 7774 frame should be emitted when GHOST_COMPLETE_ACTIVE is unset; stdout = {stdout:02X?}"
+    );
+}
+
+#[test]
+fn osc7772_silent_when_inactive() {
+    if !zsh_available() {
+        if std::env::var_os("CI").is_some() {
+            panic!(
+                "zsh not on PATH but running under CI — install zsh or mark this test #[ignore] explicitly"
+            );
+        }
+        eprintln!("skipping osc7772_silent_when_inactive: zsh not on PATH (local dev)");
+        return;
+    }
+
+    // OSC 7772 carries the live command-line buffer (cursor + percent-encoded
+    // bytes). With GHOST_COMPLETE_ACTIVE unset the proxy is not watching, and
+    // the raw OSC frame would otherwise render into the terminal's scrollback
+    // on every keystroke. Static `report_buffer_is_gated_on_active` pins the
+    // source-level gate; this runtime negative test guards against the gate
+    // being present but wired incorrectly (e.g. an inverted predicate or
+    // wrong-action variant that would pass the source-level grep).
+    //
+    // The gate uses `|| return`, so `_gc_report_buffer` returns 1 when
+    // inactive. `run_zsh_after_source` asserts the script exits zero, so we
+    // discard the reporter's exit status — we care about its stdout, not its
+    // rc.
+    let stdout = run_zsh_after_source(
+        "unset GHOST_COMPLETE_ACTIVE; BUFFER=hello; CURSOR=5; _gc_report_buffer || true",
+    );
+
+    assert_eq!(
+        count_subslices(&stdout, b"\x1b]7772;"),
+        0,
+        "no 7772 frame should be emitted when GHOST_COMPLETE_ACTIVE is unset; stdout = {stdout:02X?}"
     );
 }
 
