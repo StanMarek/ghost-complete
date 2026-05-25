@@ -263,13 +263,11 @@ jobs:
     name: Coverage regression
     # Coverage regression gate: fails when the unsupported requires_js
     # generator count rises above the baseline by more than the configured
-    # tolerance, OR when any command becomes nonfunctional. Wired as
-    # `continue-on-error: true` during the initial rollout so a
-    # baseline-refresh oversight does not block unrelated work; promotion
-    # to a hard gate is a separate follow-up.
+    # tolerance, OR when any command becomes nonfunctional. Promoted to a
+    # blocking gate in the 0.17 hardening sweep after a stable rollout
+    # window under `continue-on-error: true`.
     needs: [check]
     runs-on: macos-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable

@@ -154,7 +154,7 @@ To refresh the baseline: run `ghost-complete status --json` and follow the proce
 
 **Job name in CI:** `Coverage regression`
 **YAML key:** `coverage-regression`
-**Trigger:** `needs: [check]` — runs after the `check` job succeeds. Wired with `continue-on-error: true` pending promotion to a hard gate.
+**Trigger:** `needs: [check]` — runs after the `check` job succeeds. Blocking gate.
 
 **Purpose:** fails when the live `requires_js_generators_unsupported` count from `ghost-complete status --json` rises above the latest `docs/coverage-baseline.json` row by more than the configured tolerance (default: 0), or when any command is reported `commands_nonfunctional > 0`. Catches regressions where:
 
@@ -168,7 +168,7 @@ To refresh the baseline: run `ghost-complete status --json` and follow the proce
 - Hard fail (exit 1): `commands_nonfunctional > 0`. Always a defect — independent of baseline.
 - Soft warning (`::warning::` annotation, exit 0): the unsupported count rose by 1..=tolerance. Surfaces in the PR checks panel without blocking the merge.
 
-**Status today:** wired into CI as **non-blocking** (`continue-on-error: true`). The gate runs and reports results, but a failing run does not fail the workflow. Promotion to a blocking status check is a separate follow-up; the maintainer who promotes it is responsible for first refreshing the baseline if the live numbers have drifted.
+**Status today:** wired into CI as **blocking**. A failing run fails the workflow. The baseline was refreshed for `0.17-rc` when the gate was promoted from `continue-on-error: true`. Ready to add to branch protection.
 
 **How to debug locally:**
 
@@ -229,7 +229,7 @@ These checks are added **alongside** any existing required checks (e.g. `Check`,
 | `Corpus hash determinism (fig-converter)` | Ready to add. This is the PR corpus-hash check. |
 | `Corpus hash determinism (full corpus)` | Push-to-trunk safety net only. Do not add as a PR branch-protection check. |
 | `Coverage baseline drift` | Informational only (non-blocking warning). Do not add to branch protection. |
-| `Coverage regression` | Wired as `continue-on-error: true` during the initial rollout. Promotion to a hard gate is a separate follow-up; the maintainer who promotes it is responsible for refreshing the baseline first. |
+| `Coverage regression` | Ready to add. Blocking gate as of `0.17-rc` (baseline refreshed at promotion). |
 
 > **Note on job names vs. YAML keys:** GitHub branch protection displays the `name:` field of each job, not the YAML key. `Binary size gate` (the name) corresponds to `binary-size-gate` (the key). Using the YAML key in the search box will not match.
 
