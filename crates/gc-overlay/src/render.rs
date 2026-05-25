@@ -99,8 +99,8 @@ pub fn popup_additional_scroll_deficit(
     // render the popup at row 1 over prior scrollback. Discard it instead
     // and treat this render as fresh — anchored to cursor_row, scrolling
     // only the room actually needed below. Same guard mirrored in
-    // `render_popup` and `render_feedback_only_popup`; keep all three in
-    // sync.
+    // `render_popup_unframed` and `render_feedback_only_popup_unframed`;
+    // keep all three in sync.
     let effective_prior = if prior_deficit >= cursor_row {
         0
     } else {
@@ -196,6 +196,10 @@ pub fn parse_style(style_str: &str) -> Result<Vec<u8>> {
 /// renders, possibly across dismiss/re-trigger cycles until a CPR sync or
 /// resize invalidates it. It prevents re-scrolling by accounting for viewport
 /// shifts that the parser doesn't know about.
+///
+/// This is the framed public wrapper: it wraps `render_popup_unframed` in a
+/// single `with_overlay_update_frame` call so the whole update is one atomic
+/// synchronized frame on `RenderStrategy::Synchronized` terminals.
 #[allow(clippy::too_many_arguments)]
 pub fn render_popup(
     buf: &mut Vec<u8>,
@@ -213,6 +217,61 @@ pub fn render_popup(
     feedback: FeedbackKind,
     profile: &TerminalProfile,
 ) -> PopupLayout {
+    // Pure wrapper: all early-exit logic lives in `render_popup_unframed`.
+    // `with_overlay_update_frame` already short-circuits a no-op body to
+    // zero bytes, so an early-exit unframed render emits nothing here too.
+    let mut layout = None;
+    crate::sync_frame::with_overlay_update_frame(buf, profile, |buf| {
+        layout = Some(render_popup_unframed(
+            buf,
+            suggestions,
+            state,
+            cursor_row,
+            cursor_col,
+            screen_rows,
+            screen_cols,
+            max_visible,
+            min_width,
+            max_width,
+            theme,
+            prior_deficit,
+            feedback,
+        ));
+    });
+    layout.expect("with_overlay_update_frame body always runs exactly once")
+}
+
+/// Byte-staging body of `render_popup` without sync-frame markers.
+///
+/// Callers that own a surrounding `with_overlay_update_frame` can call this
+/// directly to fold multiple overlay operations into a single atomic frame.
+/// The public `render_popup` is the framed convenience wrapper.
+///
+/// # Atomicity contract
+///
+/// This function emits NO DECSET 2026 markers. On
+/// `RenderStrategy::Synchronized` terminals, calling it without a surrounding
+/// `with_overlay_update_frame` silently loses atomicity and may flicker as
+/// partial paints reach the screen. Callers MUST either (a) call the framed
+/// wrapper `render_popup` instead, or (b) invoke this from inside a
+/// `with_overlay_update_frame` body. The `_unframed` suffix marks the
+/// type-by-convention contract; there is no compile-time enforcement.
+#[allow(clippy::too_many_arguments)]
+pub fn render_popup_unframed(
+    buf: &mut Vec<u8>,
+    suggestions: &[Suggestion],
+    state: &OverlayState,
+    cursor_row: u16,
+    cursor_col: u16,
+    screen_rows: u16,
+    screen_cols: u16,
+    max_visible: usize,
+    min_width: u16,
+    max_width: u16,
+    theme: &PopupTheme,
+    prior_deficit: u16,
+    feedback: FeedbackKind,
+) -> PopupLayout {
     if suggestions.is_empty() && !feedback.reserves_row() {
         return PopupLayout {
             start_row: 0,
@@ -224,7 +283,10 @@ pub fn render_popup(
     }
 
     // Suppress rendering when terminal is too narrow — must check BEFORE any
-    // terminal state mutation (sync, scrolling, cursor save) to avoid corruption.
+    // terminal state mutation (scrolling, cursor save) to avoid corruption.
+    // Sync markers, if any, are emitted by the caller
+    // (`with_overlay_update_frame`), which rolls back the speculative
+    // `begin_sync` when this early return leaves the body buffer untouched.
     if screen_cols < min_width {
         return PopupLayout {
             start_row: 0,
@@ -236,7 +298,7 @@ pub fn render_popup(
     }
 
     if suggestions.is_empty() {
-        return render_feedback_only_popup(
+        return render_feedback_only_popup_unframed(
             buf,
             cursor_row,
             cursor_col,
@@ -247,7 +309,6 @@ pub fn render_popup(
             theme,
             prior_deficit,
             feedback,
-            profile,
         );
     }
 
@@ -296,14 +357,6 @@ pub fn render_popup(
     let total_deficit = effective_prior.saturating_add(new_deficit);
     let final_cursor_row = cursor_row.saturating_sub(total_deficit);
 
-    let use_sync = matches!(
-        profile.render_strategy(),
-        gc_terminal::RenderStrategy::Synchronized
-    );
-    if use_sync {
-        ansi::begin_sync(buf);
-    }
-
     // Scroll viewport if we need more room
     if new_deficit > 0 {
         // Move to last viewport row so newlines cause actual scrolls
@@ -333,9 +386,6 @@ pub fn render_popup(
 
     if layout.height == 0 {
         ansi::restore_cursor(buf);
-        if use_sync {
-            ansi::end_sync(buf);
-        }
         return PopupLayout {
             scroll_deficit: total_deficit,
             ..layout
@@ -529,9 +579,6 @@ pub fn render_popup(
     }
 
     ansi::restore_cursor(buf);
-    if use_sync {
-        ansi::end_sync(buf);
-    }
 
     PopupLayout {
         height: layout.height + loading_extra,
@@ -541,7 +588,7 @@ pub fn render_popup(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn render_feedback_only_popup(
+fn render_feedback_only_popup_unframed(
     buf: &mut Vec<u8>,
     cursor_row: u16,
     cursor_col: u16,
@@ -552,13 +599,12 @@ fn render_feedback_only_popup(
     theme: &PopupTheme,
     prior_deficit: u16,
     feedback: FeedbackKind,
-    profile: &TerminalProfile,
 ) -> PopupLayout {
     let border_pad: u16 = if theme.borders { 2 } else { 0 };
     let effective_max_w = max_width.min(screen_cols).max(min_width);
     let width = min_width.min(effective_max_w);
     let base_height = 1 + border_pad;
-    // Mirror the discard logic in `render_popup`: when prior_deficit >=
+    // Mirror the discard logic in `render_popup_unframed`: when prior_deficit >=
     // cursor_row the cached value is stale and would pin the indicator at
     // row 1 even after clamping. Drop it and recompute fresh.
     let effective_prior = if prior_deficit >= cursor_row {
@@ -578,14 +624,7 @@ fn render_feedback_only_popup(
         cursor_col
     };
     let content_width = width.saturating_sub(border_pad);
-    let use_sync = matches!(
-        profile.render_strategy(),
-        gc_terminal::RenderStrategy::Synchronized
-    );
 
-    if use_sync {
-        ansi::begin_sync(buf);
-    }
     if new_deficit > 0 {
         ansi::move_to(buf, screen_rows - 1, 0);
         for _ in 0..new_deficit {
@@ -639,9 +678,6 @@ fn render_feedback_only_popup(
     }
 
     ansi::restore_cursor(buf);
-    if use_sync {
-        ansi::end_sync(buf);
-    }
 
     PopupLayout {
         start_row,
@@ -762,17 +798,36 @@ fn truncate_to_display_cols(text: &str, max_cols: usize) -> (String, usize) {
 }
 
 /// Clear the popup area by overwriting with spaces.
+///
+/// This is the framed public wrapper: it wraps `clear_popup_unframed` in a
+/// single `with_overlay_update_frame` call so the whole clear is one atomic
+/// synchronized frame on `RenderStrategy::Synchronized` terminals.
 pub fn clear_popup(buf: &mut Vec<u8>, layout: &PopupLayout, profile: &TerminalProfile) {
+    // Pure wrapper: the zero-size guard lives in `clear_popup_unframed`.
+    // `with_overlay_update_frame` short-circuits a no-op body to zero bytes.
+    crate::sync_frame::with_overlay_update_frame(buf, profile, |buf| {
+        clear_popup_unframed(buf, layout);
+    });
+}
+
+/// Byte-staging body of `clear_popup` without sync-frame markers.
+///
+/// Callers that own a surrounding `with_overlay_update_frame` can call this
+/// directly to fold multiple overlay operations into a single atomic frame.
+/// The public `clear_popup` is the framed convenience wrapper.
+///
+/// # Atomicity contract
+///
+/// This function emits NO DECSET 2026 markers. On
+/// `RenderStrategy::Synchronized` terminals, calling it without a surrounding
+/// `with_overlay_update_frame` silently loses atomicity and may flicker as
+/// partial paints reach the screen. Callers MUST either (a) call the framed
+/// wrapper `clear_popup` instead, or (b) invoke this from inside a
+/// `with_overlay_update_frame` body. The `_unframed` suffix marks the
+/// type-by-convention contract; there is no compile-time enforcement.
+pub fn clear_popup_unframed(buf: &mut Vec<u8>, layout: &PopupLayout) {
     if layout.height == 0 || layout.width == 0 {
         return;
-    }
-
-    let use_sync = matches!(
-        profile.render_strategy(),
-        gc_terminal::RenderStrategy::Synchronized
-    );
-    if use_sync {
-        ansi::begin_sync(buf);
     }
     ansi::save_cursor(buf);
 
@@ -785,9 +840,6 @@ pub fn clear_popup(buf: &mut Vec<u8>, layout: &PopupLayout, profile: &TerminalPr
     }
 
     ansi::restore_cursor(buf);
-    if use_sync {
-        ansi::end_sync(buf);
-    }
 }
 
 /// Strip control characters (including ESC) from text to prevent ANSI injection
