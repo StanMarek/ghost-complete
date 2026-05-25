@@ -28,6 +28,15 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo test
 
+  zsh-zle-smoke:
+    name: zsh/ZLE shell smoke
+    runs-on: macos-latest
+    needs: [check]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run zsh/ZLE smoke
+        run: ./scripts/check-zsh-zle-smoke.sh
+
   clippy:
     name: Clippy
     runs-on: macos-latest
