@@ -33,3 +33,10 @@ jobs:
       - uses: rustsec/audit-check@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run cargo-deny
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
+          # Match deny.toml policy. log + warn for transient duplicates
+          # while we ladder up to multiple-versions = "deny".
+          arguments: --all-features
