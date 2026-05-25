@@ -859,6 +859,28 @@ mod tests {
     }
 
     #[test]
+    fn report_env_is_gated_on_active() {
+        // OSC 7773 carries an env snapshot (PATH, AWS_PROFILE, GITHUB_TOKEN, …).
+        // A regression that dropped or inverted the gate would leak the frame
+        // to a bare terminal — and unlike OSC 7772 (line buffer), an env frame
+        // contains values the user reasonably expects never to be rendered
+        // verbatim. Pin the gate the same way `report_buffer_is_gated_on_active`
+        // pins the OSC 7772 gate, so a `[[ -z … ]] || return` typo or an
+        // accidental gate removal fails this test loudly.
+        let body = ZSH_INTEGRATION
+            .split("_gc_report_env()")
+            .nth(1)
+            .expect("found _gc_report_env")
+            .split("\n}\n")
+            .next()
+            .expect("found end brace");
+        assert!(
+            body.contains("GHOST_COMPLETE_ACTIVE"),
+            "_gc_report_env must check $GHOST_COMPLETE_ACTIVE before emitting OSC 7773"
+        );
+    }
+
+    #[test]
     fn test_zsh_integration_vscode_injection_not_ipc_hook() {
         // Extract just the _gc_native_osc133 helper body to avoid matching
         // the unrelated __ghost_complete_init block (which does check

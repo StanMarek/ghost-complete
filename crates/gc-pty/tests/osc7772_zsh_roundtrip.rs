@@ -589,3 +589,35 @@ fn osc7774_zle_hook_disabled_silent_when_inactive() {
         "no 7774 frame should be emitted when GHOST_COMPLETE_ACTIVE is unset; stdout = {stdout:02X?}"
     );
 }
+
+#[test]
+fn osc7773_silent_when_inactive() {
+    if !zsh_available() {
+        if std::env::var_os("CI").is_some() {
+            panic!(
+                "zsh not on PATH but running under CI — install zsh or mark this test #[ignore] explicitly"
+            );
+        }
+        eprintln!("skipping osc7773_silent_when_inactive: zsh not on PATH (local dev)");
+        return;
+    }
+
+    // OSC 7773 carries an env snapshot (PATH, AWS_PROFILE, GITHUB_TOKEN, …).
+    // With GHOST_COMPLETE_ACTIVE unset the proxy is not watching, and the
+    // raw OSC frame would otherwise render into the terminal's scrollback.
+    // Static `report_env_is_gated_on_active` pins the source-level gate;
+    // this runtime negative test guards against the gate being present but
+    // wired incorrectly (e.g. `[[ -z … ]] || return`).
+    //
+    // The gate uses `|| return`, so `_gc_report_env` returns 1 when inactive.
+    // `run_zsh_after_source` asserts the script exits zero, so we discard
+    // the reporter's exit status — we care about its stdout, not its rc.
+    let stdout =
+        run_zsh_after_source("unset GHOST_COMPLETE_ACTIVE; export FOO=x; _gc_report_env || true");
+
+    assert_eq!(
+        count_subslices(&stdout, b"\x1b]7773;"),
+        0,
+        "no 7773 frame should be emitted when GHOST_COMPLETE_ACTIVE is unset; stdout = {stdout:02X?}"
+    );
+}

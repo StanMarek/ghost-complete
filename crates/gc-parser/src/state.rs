@@ -683,6 +683,46 @@ mod tests {
     use super::*;
 
     #[test]
+    fn diagnostic_display_renders_adr_format() {
+        // ADR 0007 commits to a colon-separated operator-visible shape so
+        // shell-side diagnostics (`tracing::warn!("shell-side runtime
+        // diagnostic: {diagnostic}")`) read cleanly in proxy logs. Pin each
+        // arm against accidental `Debug`-vs-`Display` swaps or `:`→`=`
+        // separator regressions. The Unknown arm has two sub-shapes
+        // (empty-detail and present-detail) — both are covered.
+        assert_eq!(
+            Diagnostic::EnvTruncated {
+                bytes_emitted: 65536
+            }
+            .to_string(),
+            "env_truncated:65536"
+        );
+        assert_eq!(
+            Diagnostic::ZleHookDisabled {
+                widget_descriptor: "completion%3Afoo".into(),
+            }
+            .to_string(),
+            "zle_hook_disabled:completion%3Afoo"
+        );
+        assert_eq!(
+            Diagnostic::Unknown {
+                code: "x".into(),
+                detail: "".into(),
+            }
+            .to_string(),
+            "x"
+        );
+        assert_eq!(
+            Diagnostic::Unknown {
+                code: "x".into(),
+                detail: "y".into(),
+            }
+            .to_string(),
+            "x:y"
+        );
+    }
+
+    #[test]
     fn validate_cpr_accepts_valid_coordinates() {
         let state = TerminalState::new(24, 80);
         assert!(state.validate_cpr_coordinates(1, 1));
