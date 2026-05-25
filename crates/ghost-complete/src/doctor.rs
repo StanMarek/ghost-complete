@@ -7,6 +7,7 @@ use gc_suggest::specs::{
     GeneratorSpec, JsRuntimeKind, OptionSpec, SubcommandSpec,
 };
 
+use crate::install::{INIT_BEGIN, SHELL_BEGIN, ZSH_INIT, ZSH_INTEGRATION};
 use crate::sanitize::sanitize_for_terminal;
 
 enum Severity {
@@ -187,26 +188,87 @@ fn check_theme(config: &gc_config::GhostConfig) -> CheckResult {
     }
 }
 
-/// Check 4: Shell integration installed in ~/.zshrc
+/// Check 4: Shell integration installed in ~/.zshrc.
+///
+/// Beyond verifying the init marker is present, this also surfaces:
+///
+/// * a stray init block with no shell-integration block (half-installed),
+/// * duplicate init blocks (a botched manual edit),
+/// * `~/.config/ghost-complete/init.zsh` / `ghost-complete.zsh` missing or
+///   unreadable while the managed block still tries to `source` them,
+/// * installed snippet contents that drift from the embedded copy
+///   (`ghost-complete install` re-runs the embedded version onto disk),
+/// * the legacy OSC 7770 reporter in `ghost-complete.zsh` (pre-OSC 7772
+///   migration). All paths use `Skip` for "no install yet" so the doctor
+///   still exits 0 on a clean system that has never run `install`.
 fn check_shell_integration() -> CheckResult {
-    let zshrc = dirs::home_dir().map(|h| h.join(".zshrc"));
-
-    let Some(path) = zshrc else {
-        return CheckResult::warn("Cannot determine home directory");
+    let Some(home) = dirs::home_dir() else {
+        return CheckResult::skip("no $HOME — cannot check shell integration");
+    };
+    let zshrc = home.join(".zshrc");
+    let Ok(content) = std::fs::read_to_string(&zshrc) else {
+        return CheckResult::skip(format!("could not read {}", zshrc.display()));
     };
 
-    match std::fs::read_to_string(&path) {
-        Ok(content) => {
-            if content.contains("# >>> ghost-complete initialize >>>") {
-                CheckResult::ok(format!("Shell integration installed in {}", path.display()))
-            } else {
-                CheckResult::warn(
-                    "Shell integration not found in ~/.zshrc — run `ghost-complete install`",
-                )
-            }
-        }
-        Err(e) => CheckResult::warn(format!("Cannot read ~/.zshrc: {e}")),
+    // 1. Both managed blocks present?
+    if !content.contains(INIT_BEGIN) {
+        return CheckResult::skip(
+            "no ghost-complete managed block in .zshrc — run `ghost-complete install`",
+        );
     }
+    if !content.contains(SHELL_BEGIN) {
+        return CheckResult::fail(
+            "missing shell-integration managed block — run `ghost-complete install` to repair",
+        );
+    }
+
+    // 2. Duplicate managed blocks?
+    let init_count = content.matches(INIT_BEGIN).count();
+    if init_count > 1 {
+        return CheckResult::fail(format!(
+            "{init_count} duplicate init blocks in .zshrc — run `ghost-complete uninstall` then reinstall",
+        ));
+    }
+
+    // 3. Referenced script files exist + readable?
+    let cfg_dir = home.join(".config/ghost-complete");
+    let init_path = cfg_dir.join("init.zsh");
+    let script_path = cfg_dir.join("ghost-complete.zsh");
+    let installed_init = match std::fs::read_to_string(&init_path) {
+        Ok(s) => s,
+        Err(_) => {
+            return CheckResult::fail(format!(
+                "missing or unreadable: {} — run `ghost-complete install` to refresh",
+                init_path.display(),
+            ));
+        }
+    };
+    let installed_script = match std::fs::read_to_string(&script_path) {
+        Ok(s) => s,
+        Err(_) => {
+            return CheckResult::fail(format!(
+                "missing or unreadable: {} — run `ghost-complete install` to refresh",
+                script_path.display(),
+            ));
+        }
+    };
+
+    // 4. Installed snippets match embedded versions?
+    if installed_init != ZSH_INIT || installed_script != ZSH_INTEGRATION {
+        return CheckResult::warn(format!(
+            "shell integration files at {} drifted from embedded version — run `ghost-complete install` to refresh",
+            cfg_dir.display(),
+        ));
+    }
+
+    // 5. Legacy OSC 7770 reporter present?
+    if installed_script.contains("7770;") && !installed_script.contains("7772;") {
+        return CheckResult::warn(
+            "shell integration uses legacy OSC 7770 — run `ghost-complete install` to migrate to OSC 7772",
+        );
+    }
+
+    CheckResult::ok("ghost-complete shell integration looks healthy")
 }
 
 /// Check 5: Running inside a supported terminal

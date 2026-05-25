@@ -29,8 +29,8 @@ use gc_suggest::embedded_filenames;
 // around indefinitely.
 use gc_suggest::purge_embedded_cache_if_present;
 
-const ZSH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.zsh");
-const ZSH_INIT: &str = include_str!("../../../shell/init.zsh");
+pub const ZSH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.zsh");
+pub const ZSH_INIT: &str = include_str!("../../../shell/init.zsh");
 
 const DEFAULT_CONFIG_TOML: &str = "\
 # Ghost Complete configuration
@@ -91,9 +91,9 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # aws_sdk_fallback_to_cli = true  # Fall back to the aws CLI when SDK completions cannot run
 ";
 
-const INIT_BEGIN: &str = "# >>> ghost-complete initialize >>>";
+pub const INIT_BEGIN: &str = "# >>> ghost-complete initialize >>>";
 const INIT_END: &str = "# <<< ghost-complete initialize <<<";
-const SHELL_BEGIN: &str = "# >>> ghost-complete shell integration >>>";
+pub const SHELL_BEGIN: &str = "# >>> ghost-complete shell integration >>>";
 const SHELL_END: &str = "# <<< ghost-complete shell integration <<<";
 const MANAGED_WARNING: &str =
     "# !! Contents within this block are managed by 'ghost-complete install' !!";

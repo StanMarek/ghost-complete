@@ -53,10 +53,16 @@ fn doctor_with_clean_config_runs_to_completion() {
     let cfg = tmp.path().join("config.toml");
     std::fs::write(&cfg, "").unwrap();
 
+    // Pin HOME to a clean temp dir so the shell-integration check (which
+    // probes `~/.zshrc` + `~/.config/ghost-complete/{init,ghost-complete}.zsh`)
+    // returns a deterministic Skip — without this pin, a dev whose local
+    // .zshrc has half-installed managed blocks would see this test flap
+    // when check_shell_integration starts surfacing Fail results.
     let output = Command::new(ghost_bin())
         .arg("--config")
         .arg(&cfg)
         .arg("doctor")
+        .env("HOME", tmp.path())
         .output()
         .expect("failed to spawn ghost-complete");
 
@@ -75,5 +81,42 @@ fn doctor_with_clean_config_runs_to_completion() {
     assert!(
         stdout.contains("Ghost Complete Doctor"),
         "doctor must emit its banner, got stdout:\n{stdout}"
+    );
+}
+
+#[test]
+fn doctor_warns_on_stale_init_block() {
+    use std::process::Command;
+    use tempfile::TempDir;
+
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path();
+    let zshrc = home.join(".zshrc");
+    // Write a managed block with no matching managed files.
+    std::fs::write(
+        &zshrc,
+        "# >>> ghost-complete initialize >>>\nsource ~/.config/ghost-complete/missing-init.zsh\n# <<< ghost-complete initialize <<<\n",
+    )
+    .unwrap();
+
+    let cfg = tmp.path().join("config.toml");
+    std::fs::write(&cfg, "").unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_ghost-complete"))
+        .arg("--config")
+        .arg(&cfg)
+        .arg("doctor")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let combined = format!("{stderr}{stdout}");
+    assert!(
+        combined.to_lowercase().contains("missing")
+            || combined.to_lowercase().contains("not found")
+            || combined.to_lowercase().contains("stale"),
+        "doctor must warn about missing source target; got:\n{combined}",
     );
 }
