@@ -24,7 +24,7 @@ pub struct CommandContext {
     pub in_redirect: bool,
     /// Whether the cursor is inside an unclosed quote.
     pub quote_state: QuoteState,
-    /// True when there are no preceding `|`, `&&`, `||`, or `;` operators.
+    /// True when there are no preceding `|`, `&&`, `||`, `&`, or `;` operators.
     pub is_first_segment: bool,
 }
 
@@ -41,7 +41,7 @@ pub fn parse_command_context(buffer: &str, cursor: usize) -> CommandContext {
     let result = tokenize(before_cursor);
     let tokens = &result.tokens;
 
-    // Find the last pipeline segment: everything after the last |, &&, ||, or ;
+    // Find the last pipeline segment: everything after the last |, &&, ||, &, or ;
     let mut segment_start = 0;
     let mut found_pipe = false;
     for (i, tok) in tokens.iter().enumerate() {
@@ -413,5 +413,16 @@ mod tests {
     fn ampersand_redirect_does_not_split() {
         let ctx = parse_command_context("cmd &>file ", 11);
         assert_eq!(ctx.command, Some("cmd".to_string()));
+    }
+
+    #[test]
+    fn background_after_pipe_resets_in_pipe() {
+        // "cat f | grep x & ls " — `&` starts a new segment, so `in_pipe`
+        // must reset to false for `ls` even though the earlier segment had a pipe.
+        // Cursor at 20 (past the trailing space) puts `ls` in command-completed
+        // position with empty current_word.
+        let ctx = parse_command_context("cat f | grep x & ls ", 20);
+        assert!(!ctx.in_pipe, "`&` must reset in_pipe for the new segment");
+        assert_eq!(ctx.command, Some("ls".into()));
     }
 }

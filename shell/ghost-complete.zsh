@@ -30,14 +30,16 @@ _gc_urlencode_path() {
 
 # Percent-encode a command-line buffer for OSC 7772 transport.
 #
-# STRICTER alphabet than _gc_urlencode_path: only [a-zA-Z0-9._~/-] and the
-# literal space pass through. Everything else — including ';', '%', '\',
-# all control bytes (0x00-0x1F, 0x7F) and high bytes (0x80-0xFF) — gets
-# `%XX`-encoded. This is non-negotiable: any unencoded ';' would split
-# the OSC parameter list and silently truncate the buffer at the parser;
-# any unencoded BEL (0x07) or ESC+ST (0x1B 0x5C) would terminate the OSC
-# envelope mid-payload; an unencoded ESC could smuggle a nested escape
-# sequence into the parser's state machine. See ADR 0003.
+# Strict alphabet for OSC 7772 transport: [a-zA-Z0-9._~/-] plus literal
+# space. Differs from _gc_urlencode_path only by allowing space (path
+# components rarely need a literal space and percent-encoding is harmless
+# if they do). Everything else — including ';', '%', '\', all control
+# bytes (0x00-0x1F, 0x7F) and high bytes (0x80-0xFF) — gets `%XX`-encoded.
+# This is non-negotiable: any unencoded ';' would split the OSC parameter
+# list and silently truncate the buffer at the parser; any unencoded BEL
+# (0x07) or ESC+ST (0x1B 0x5C) would terminate the OSC envelope mid-
+# payload; an unencoded ESC could smuggle a nested escape sequence into
+# the parser's state machine. See ADR 0003.
 #
 # Do NOT widen the allow-list. If a future use case wants more characters
 # unencoded, weigh it against the cost of re-introducing the original
@@ -63,8 +65,8 @@ _gc_urlencode_buffer() {
 # Shell-side budgets. Below the Rust hard cap (1 MiB) so we never produce
 # a frame the parser will reject silently. Per-entry cap drops individual
 # pathological values (e.g. a multi-MB LS_COLORS) without losing the rest.
-typeset -gri _GC_ENV_TOTAL_BUDGET=524288
-typeset -gri _GC_ENV_PER_VALUE_CAP=16384
+typeset -gi _GC_ENV_TOTAL_BUDGET=524288
+typeset -gi _GC_ENV_PER_VALUE_CAP=16384
 
 _gc_report_env() {
     [[ -n "$GHOST_COMPLETE_ACTIVE" ]] || return
@@ -223,9 +225,10 @@ _gc_install_zle_hook() {
     #   1. No widget registered         → direct-install _gc_report_buffer.
     #   2. Existing plain user widget   → chain over it so $WIDGET is preserved.
     #   3. Existing non-user widget
-    #      (completion:/builtin:/…)     → leave it alone. We can't chain a
-    #      non-user widget safely, and silently clobbering someone else's
-    #      registration is worse than losing our buffer hook.
+    #      (completion:/builtin:/…)     → don't clobber it; emit OSC 7774
+    #      zle_hook_disabled so the proxy can warn. We can't chain a non-user
+    #      widget safely, and silently clobbering someone else's registration
+    #      is worse than losing our buffer hook.
     if (( ! ${+widgets[zle-line-pre-redraw]} )); then
         zle -N zle-line-pre-redraw _gc_report_buffer
     elif [[ "${widgets[zle-line-pre-redraw]}" == user:* ]]; then

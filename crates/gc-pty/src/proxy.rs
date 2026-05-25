@@ -1052,14 +1052,15 @@ enum PrivateOscFilterState {
 impl PrivateOscFilter {
     /// OSC codes considered Ghost-Complete-private. These are produced by
     /// `shell/ghost-complete.zsh` for the proxy's consumption only and MUST
-    /// NOT reach the terminal. The proxy `gc-parser` consumes them before
-    /// this filter runs; we strip them from the byte stream so the terminal
+    /// NOT reach the terminal. The proxy's `gc-parser` dispatches these
+    /// frames for state updates before this filter runs; the bytes themselves
+    /// remain in the stream until this filter strips them so the terminal
     /// never sees them.
     ///
     /// Per ADR 0003: 7770 is the legacy raw buffer (deprecated; parser still
     /// accepts it with a one-shot warning); 7771 is the prompt-boundary
     /// fallback; 7772 is the percent-encoded buffer report; 7773 is the
-    /// env snapshot; 7774 is the runtime diagnostic frame (Task 9 / Task 10).
+    /// env snapshot; 7774 is the runtime diagnostic frame.
     const PRIVATE_CODES: &'static [&'static [u8]] = &[b"7770", b"7771", b"7772", b"7773", b"7774"];
 
     fn filter(&mut self, input: &[u8]) -> Vec<u8> {
@@ -1831,6 +1832,27 @@ mod tests {
         // `777` is a prefix of `7770`-`7774` but is not itself private.
         let mut f = PrivateOscFilter::default();
         let input = b"\x1b]777;x\x07tail";
+        assert_eq!(f.filter(input), &input[..]);
+    }
+
+    #[test]
+    fn private_osc_filter_preserves_st_terminated_non_private_frame() {
+        // Regression: the `byte == 0x1b` branch in `CodeAcc` must flush the
+        // prefix and re-enter `Esc` (not `StripEsc`) when `acc` is not a
+        // private code. A regression that always entered `StripEsc` here
+        // would silently swallow legitimate OSC 133 ST-terminated frames.
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]133\x1b\\tail";
+        assert_eq!(f.filter(input), &input[..]);
+    }
+
+    #[test]
+    fn private_osc_filter_passes_long_six_digit_osc_through_unchanged() {
+        // Regression: the `acc.len() >= 5` overflow branch must flush 6+ digit
+        // OSC codes as non-private. A regression that flipped `>= 5` to `> 5`
+        // would let a 6-digit code accumulate forever and produce wrong output.
+        let mut f = PrivateOscFilter::default();
+        let input = b"\x1b]123456;x\x07tail";
         assert_eq!(f.filter(input), &input[..]);
     }
 

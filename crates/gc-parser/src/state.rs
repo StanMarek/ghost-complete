@@ -18,6 +18,19 @@ pub enum CprOwner {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CprToken(u64);
 
+/// Structured shell-side runtime diagnostic carried by OSC 7774.
+///
+/// The reason-code set is documented in ADR 0007. `Unknown` exists so a
+/// stale parser observing a new reason code from a newer shell integration
+/// does not silently drop the frame — downstream consumers can still log
+/// the raw code and detail.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Diagnostic {
+    EnvTruncated { bytes_emitted: u64 },
+    ZleHookDisabled { widget_descriptor: String },
+    Unknown { code: String, detail: String },
+}
+
 #[derive(Debug)]
 struct CprEntry {
     owner: CprOwner,
@@ -75,10 +88,12 @@ pub struct TerminalState {
     /// currently constructs a single parser per proxy session, so this is
     /// effectively per-process. See ADR 0003.
     legacy_osc7770_warned: bool,
-    /// Last GC-private diagnostic frame (OSC 7774). Used by the proxy to
-    /// surface shell-side warnings such as `env_truncated:<bytes>` or
-    /// `zle_hook_disabled:<widget_descriptor>`. Reset on next diagnostic.
-    pub last_diagnostic: Option<String>,
+    /// Last OSC 7774 diagnostic frame; consumers drain via
+    /// [`Self::take_diagnostic`]. Currently observation-only (parser tests
+    /// and the `tracing::warn!` emitted inline by `osc_dispatch`); reserved
+    /// for future proxy consumers. Overwritten by each new diagnostic until
+    /// drained.
+    last_diagnostic: Option<Diagnostic>,
     /// FIFO queue of pending CPR requests in send-order.
     ///
     /// Terminals respond to `CSI 6n` requests in the same order they
@@ -216,6 +231,17 @@ impl TerminalState {
         let dirty = self.display_dirty;
         self.display_dirty = false;
         dirty
+    }
+
+    /// Drains and returns the most recent OSC 7774 diagnostic, if any.
+    /// One-shot per ADR 0007 — repeated polls without an intervening
+    /// dispatch yield `None`.
+    pub fn take_diagnostic(&mut self) -> Option<Diagnostic> {
+        self.last_diagnostic.take()
+    }
+
+    pub(crate) fn record_diagnostic(&mut self, diagnostic: Diagnostic) {
+        self.last_diagnostic = Some(diagnostic);
     }
 
     pub fn take_viewport_scroll_count(&mut self) -> u16 {

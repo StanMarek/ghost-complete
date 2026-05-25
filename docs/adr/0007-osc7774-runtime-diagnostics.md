@@ -50,9 +50,11 @@ and is stripped before any bytes reach the terminal emulator.
 - **`<reason_code>`** — plain ASCII token identifying the failure class.
   Initial set: `env_truncated`, `zle_hook_disabled`.
 - **`<percent_encoded_detail>`** — an additional payload, percent-encoded
-  using `_gc_urlencode_buffer`'s allow-list (`[A-Za-z0-9._~/-% ]`; all
-  other bytes as `%XX` uppercase hex). The encoding rules are identical
-  to those specified for OSC 7772 in ADR 0003.
+  using `_gc_urlencode_buffer`'s allow-list (`[A-Za-z0-9._~/-]` plus the
+  literal space; all other bytes as `%XX` uppercase hex). A literal `%`
+  byte is itself encoded as `%25`, which keeps the encoder round-trip-safe
+  over already-encoded payloads. The encoding rules are identical to
+  those specified for OSC 7772 in ADR 0003.
 
 ### `env_truncated` emission
 
@@ -61,10 +63,11 @@ one variable was dropped due to the per-value cap or the total-budget
 ceiling. The detail field is a **decimal byte count equal to the number
 of bytes successfully emitted** into the OSC 7773 payload — it is the
 final value of the shell's `$used` accumulator (the total size of the
-payload actually emitted), not the number of bytes dropped. A small
-`$used` value therefore signals a per-value-cap rejection of a single
-oversized variable early in the iteration (e.g. a multi-MB `LS_COLORS`)
-rather than total-budget exhaustion after a nearly-full sweep.
+payload actually emitted), not the number of bytes dropped. A `$used`
+value much smaller than `_GC_ENV_TOTAL_BUDGET` suggests a per-value-cap
+rejection cut the sweep short; a value close to the budget indicates
+total-budget exhaustion. The split is not exact — `essentials` are
+emitted first, so even a small `$used` includes those bytes.
 
 The frame is guarded by a one-shot latch (`_GC_ENV_TRUNCATED_REPORTED`)
 so at most one `env_truncated` diagnostic is emitted per shell session,
@@ -92,19 +95,26 @@ receiving the output.
 ### Parser-side consumption
 
 `crates/gc-parser/src/performer.rs::osc_dispatch` matches `b"7774"`,
-concatenates `params[1]` and `params[2]` as `<reason_code>:<detail>`,
-stores the result in `TerminalState.last_diagnostic` (an
-`Option<String>`), and emits a `tracing::warn!` with the full message.
-`last_diagnostic` is overwritten on each received diagnostic; callers
-that need to act on it should drain it promptly.
+parses `params[1]` (reason code) and `params[2]` (detail) into a
+structured `Diagnostic` enum variant (`EnvTruncated`, `ZleHookDisabled`,
+or `Unknown` for codes a stale parser does not recognise), stores it on
+the private `TerminalState::last_diagnostic` field, and emits a
+`tracing::warn!` with the full message. The field is overwritten on
+each received diagnostic; callers drain it via the public
+`TerminalState::take_diagnostic()` accessor and should do so promptly.
 
 ### Filter-side consumption
 
-`PrivateOscFilter::PRIVATE_CODES` in `crates/gc-pty/src/proxy.rs` was
-extended from `[b"7773"]` (single fixed match) to the full set
-`[b"7770", b"7771", b"7772", b"7773", b"7774"]`. The digit-accumulating
-state machine matches on the terminator byte, so adding `b"7774"` to the
-slice is sufficient — no other filter logic changes.
+`PrivateOscFilter` in `crates/gc-pty/src/proxy.rs` previously used a
+static prefix matcher keyed on a single hard-coded code (`OscPrefix {
+matched: usize }` against `CODE = b"7773"`). As part of this ADR's
+footprint, that matcher was replaced with a digit-accumulating state
+machine (`CodeAcc { acc: Vec<u8> }`) that buffers the numeric OSC code
+bytes and matches the accumulator against `PRIVATE_CODES` on the OSC
+terminator byte. `PRIVATE_CODES` is now the full set `[b"7770",
+b"7771", b"7772", b"7773", b"7774"]`. Once the digit-accumulating
+machine is in place, supporting OSC 7774 is just an entry in the slice
+— but the refactor itself is new in this PR, not pre-existing.
 
 ## Consequences
 
@@ -139,9 +149,11 @@ slice is sufficient — no other filter logic changes.
 
 ### Neutral
 
-- The parser-side `last_diagnostic` field is also exposed in the public
-  `TerminalState` struct. Callers that do not use OSC 7774 see `None`
-  and are unaffected.
+- The parser captures the most recent OSC 7774 frame as an
+  `Option<Diagnostic>` and exposes it via `TerminalState::take_diagnostic()`
+  (the underlying field is private). The accessor is currently
+  observation-only — the parser's own tests are the sole in-tree
+  consumer; it is reserved for future proxy-side use.
 
 ## Alternatives considered
 
