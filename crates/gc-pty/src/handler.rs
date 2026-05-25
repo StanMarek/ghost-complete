@@ -774,6 +774,12 @@ impl InputHandler {
             if self.visible {
                 if let Some(layout) = self.last_layout.clone() {
                     self.bump_output_epoch();
+                    // TODO(phase-N-follow-up): route through
+                    // with_overlay_update_frame so the popup-clear and the
+                    // subsequent detail-clear land inside ONE balanced DECSET
+                    // 2026 pair on Synchronized terminals (see PR #138 "Out
+                    // of scope" — render_at was scoped to do this; the
+                    // config-cleanup path was deliberately deferred).
                     clear_popup(&mut cleanup, &layout, &self.terminal_profile);
                     if let Some(ref det) = self.last_detail_layout {
                         clear_detail_box(&mut cleanup, det);
@@ -2766,6 +2772,11 @@ impl InputHandler {
         if let Some(layout) = self.last_layout.clone() {
             let mut buf = Vec::new();
             self.bump_output_epoch();
+            // TODO(phase-N-follow-up): wrap clear_popup_unframed +
+            // clear_detail_box in with_overlay_update_frame so the entire
+            // teardown lands inside ONE balanced DECSET 2026 pair on
+            // Synchronized terminals (see PR #138 "Out of scope" — render_at
+            // was scoped to do this; teardown_popup was deliberately deferred).
             clear_popup(&mut buf, &layout, &self.terminal_profile);
             if let Some(ref det) = detail_layout {
                 clear_detail_box(&mut buf, det);
@@ -7374,5 +7385,69 @@ mod tests {
             "no-op render must emit zero bytes; got {} bytes",
             stdout.len()
         );
+    }
+
+    #[test]
+    fn render_at_emits_one_sync_frame_when_only_clear_runs() {
+        // Boundary case: last_layout=Some(non-zero) AND suggestions=vec![] —
+        // the popup was visible last frame but the user has typed a query that
+        // filtered out all matches. clear_popup_unframed writes bytes (DECSC
+        // \x1b7 + spaces) but render_popup_unframed early-exits because
+        // suggestions.is_empty() and feedback is None. The frame helper must
+        // still emit exactly one balanced begin_sync/end_sync pair around the
+        // clear bytes — a future re-order of the clear/render calls could
+        // regress this and only fail in live use.
+        let mut handler = make_handler();
+        handler.terminal_profile = TerminalProfile::for_ghostty();
+        handler.last_layout = Some(PopupLayout {
+            start_row: 5,
+            start_col: 0,
+            width: 20,
+            height: 1,
+            scroll_deficit: 0,
+        });
+        // suggestions stays empty (default); feedback stays Idle (None).
+        let mut stdout = Vec::<u8>::new();
+
+        handler.render_at(&mut stdout, 10, 0, 24, 80);
+
+        let begin_count = stdout.windows(8).filter(|w| *w == b"\x1b[?2026h").count();
+        let end_count = stdout.windows(8).filter(|w| *w == b"\x1b[?2026l").count();
+        assert_eq!(
+            begin_count, 1,
+            "expected exactly one begin_sync; got {begin_count}"
+        );
+        assert_eq!(
+            end_count, 1,
+            "expected exactly one end_sync; got {end_count}"
+        );
+
+        // The clear bytes (DECSC \x1b7 emitted by clear_popup_unframed) must
+        // sit inside the sync window.
+        let begin_pos = stdout.windows(8).position(|w| w == b"\x1b[?2026h").unwrap();
+        let end_pos = stdout.windows(8).position(|w| w == b"\x1b[?2026l").unwrap();
+        let decsc_pos = stdout
+            .windows(2)
+            .position(|w| w == b"\x1b7")
+            .expect("clear_popup_unframed must emit DECSC \\x1b7");
+        assert!(
+            decsc_pos > begin_pos && decsc_pos < end_pos,
+            "clear bytes must be inside the sync window \
+             (begin={begin_pos}, decsc={decsc_pos}, end={end_pos})"
+        );
+    }
+
+    // Phase N follow-up stub — the production teardown_popup path is
+    // intentionally not wrapped in with_overlay_update_frame yet (see PR #138
+    // "Out of scope" section). When the follow-up phase routes teardown_popup
+    // through the frame helper, remove this `#[ignore]` and tighten the body
+    // to match render_at_emits_exactly_one_sync_frame_on_synchronized_profile.
+    #[test]
+    #[ignore = "Phase N follow-up: teardown_popup not yet wrapped in with_overlay_update_frame"]
+    fn teardown_popup_emits_one_balanced_sync_pair_around_popup_and_detail() {
+        // When implemented: set last_layout and last_detail_layout to
+        // Some(non-zero), call teardown_popup, assert exactly one begin_sync /
+        // end_sync pair AND that BOTH the popup-clear and the detail-clear
+        // bytes sit between them.
     }
 }

@@ -70,6 +70,57 @@ pub mod test_utils {
             let result = build_osc7772_envelope("中", 1);
             assert_eq!(result, b"\x1b]7772;1;%E4%B8%AD\x07");
         }
+
+        /// Round-trip: feed the helper's output through `TerminalParser` and
+        /// assert the decoded `(command_buffer, buffer_cursor)` matches the
+        /// originals. Guards against an encoder regression (wrong allow-list
+        /// char, missed percent-encoding for a control byte) silently
+        /// producing envelopes the production decoder rejects — a class of
+        /// bug otherwise visible only as opaque "popup did not render"
+        /// PTY-smoke failures. Mirrors the parallel `build_osc7772` helper
+        /// exercised by `tests/osc7772_proptest.rs`.
+        #[test]
+        fn roundtrip_ascii_only() {
+            let buffer = "git status";
+            let cursor = buffer.chars().count();
+            let envelope = build_osc7772_envelope(buffer, cursor);
+
+            let mut parser = crate::TerminalParser::new(24, 80);
+            parser.process_bytes(&envelope);
+
+            assert_eq!(parser.state().command_buffer(), Some(buffer));
+            assert_eq!(parser.state().buffer_cursor(), cursor);
+        }
+
+        #[test]
+        fn roundtrip_with_percent_encoded_semicolon() {
+            // Semicolon is the OSC param delimiter — encoder must emit `%3B`
+            // and the decoder must reverse it.
+            let buffer = "echo a;b";
+            let cursor = buffer.chars().count();
+            let envelope = build_osc7772_envelope(buffer, cursor);
+
+            let mut parser = crate::TerminalParser::new(24, 80);
+            parser.process_bytes(&envelope);
+
+            assert_eq!(parser.state().command_buffer(), Some(buffer));
+            assert_eq!(parser.state().buffer_cursor(), cursor);
+        }
+
+        #[test]
+        fn roundtrip_with_utf8_multibyte() {
+            // "中" is three bytes (E4 B8 AD), all percent-encoded on the
+            // wire, and counts as a single character for cursor positioning.
+            let buffer = "echo 中";
+            let cursor = buffer.chars().count();
+            let envelope = build_osc7772_envelope(buffer, cursor);
+
+            let mut parser = crate::TerminalParser::new(24, 80);
+            parser.process_bytes(&envelope);
+
+            assert_eq!(parser.state().command_buffer(), Some(buffer));
+            assert_eq!(parser.state().buffer_cursor(), cursor);
+        }
     }
 }
 

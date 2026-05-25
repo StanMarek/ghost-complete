@@ -12,14 +12,51 @@
 use crate::ansi;
 use gc_terminal::{RenderStrategy, TerminalProfile};
 
+/// Wrap an overlay update closure in exactly one balanced DECSET 2026 frame.
+///
+/// Use this to own the outer synchronized-output frame for one overlay tick —
+/// the whole popup + detail box update lands inside a single
+/// `begin_sync`/`end_sync` pair on `RenderStrategy::Synchronized` terminals,
+/// preventing the user from seeing partial paints. On
+/// `RenderStrategy::PreRenderBuffer` no markers are emitted; the caller's
+/// single coalesced `write()` is the atomicity guarantee.
+///
+/// # Invocation contract
+///
+/// `body` is called exactly once. `FnOnce` guarantees AT MOST one call; this
+/// function additionally guarantees AT LEAST one — callers (e.g.
+/// `render_popup`) rely on this to populate `Option<PopupLayout>` captures
+/// inside the closure. Any future refactor that conditionally skips `body`
+/// must update those callers.
+///
+/// # No-op short-circuit
+///
+/// If `body` leaves `buf` unchanged (its post-call length equals the
+/// pre-`begin_sync` length), the speculatively-written `begin_sync` is rolled
+/// back so the call emits zero bytes — saves the 16-byte cost of
+/// `\x1b[?2026h\x1b[?2026l` on no-op renders.
+///
+/// # Do NOT nest
+///
+/// Calling `with_overlay_update_frame` from inside another
+/// `with_overlay_update_frame` body is an anti-pattern: each level emits its
+/// own balanced pair, producing nested markers (see
+/// `nested_calls_emit_independent_frame_pairs` for the exact bytes). To fold
+/// multiple overlay operations into ONE frame, call the `*_unframed`
+/// primitives — `render_popup_unframed`, `clear_popup_unframed`,
+/// `render_detail_box`, `clear_detail_box` — inside the body instead of their
+/// framed wrappers (`render_popup`, `clear_popup`).
 pub fn with_overlay_update_frame<F>(buf: &mut Vec<u8>, profile: &TerminalProfile, body: F)
 where
     F: FnOnce(&mut Vec<u8>),
 {
     let sync = matches!(profile.render_strategy(), RenderStrategy::Synchronized);
-    // Captured before `begin_sync` so a no-op-body rollback (`truncate(pre)`)
-    // also drops the speculative `begin_sync`; `body_pre` (after it) is the
-    // baseline for detecting whether the body wrote anything.
+    // On Synchronized profiles, `pre` snapshots the buffer length BEFORE the
+    // speculative `begin_sync` so a no-op-body rollback (`truncate(pre)`)
+    // drops both the body bytes and the speculative marker. `body_pre` (after
+    // the marker) is the baseline for detecting whether the body wrote
+    // anything. On PreRenderBuffer profiles no marker is emitted, so
+    // `pre == body_pre` and the rollback branch never runs.
     let pre = buf.len();
     if sync {
         ansi::begin_sync(buf);
@@ -72,10 +109,13 @@ mod tests {
     }
 
     #[test]
-    fn nested_calls_emit_only_one_outer_frame_pair() {
-        // If a caller accidentally nests (anti-pattern), each frame is
-        // independently balanced. Test guards against the prior bug where
-        // popup helpers AND caller both emit sync.
+    fn nested_calls_emit_independent_frame_pairs() {
+        // Nesting is an anti-pattern: each `with_overlay_update_frame` level
+        // emits its own balanced `begin_sync`/`end_sync` pair without any
+        // deduplication. Callers must avoid nesting by using the `*_unframed`
+        // primitives inside the outer frame body. This test pins the current
+        // behavior so a regression that breaks the balance — or, conversely,
+        // a refactor that secretly starts deduping — is caught.
         let mut buf = Vec::new();
         with_overlay_update_frame(&mut buf, &TerminalProfile::for_ghostty(), |b| {
             with_overlay_update_frame(b, &TerminalProfile::for_ghostty(), |bb| {
@@ -83,8 +123,5 @@ mod tests {
             });
         });
         assert_eq!(buf, b"\x1b[?2026h\x1b[?2026hINNER\x1b[?2026l\x1b[?2026l");
-        // 2 begin + 2 end is correct for nested usage; we just rely on
-        // callers NOT to nest. The unframed primitives in Task 3 are how
-        // we avoid nesting in practice.
     }
 }

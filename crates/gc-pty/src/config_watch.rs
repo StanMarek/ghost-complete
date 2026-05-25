@@ -286,4 +286,75 @@ mod tests {
 
         assert_eq!(handler.lock().unwrap().render_block_ms(), 150);
     }
+
+    /// Drives the full hot-reload seam end-to-end: an on-disk config.toml,
+    /// the real `notify::RecommendedWatcher` (kind filter + 200ms debounce +
+    /// `GhostConfig::load`), and the handler update. The pure-Rust test
+    /// above (`render_block_ms_propagates_on_config_reload`) only exercises
+    /// `apply_config_reload`; if the event-kind filter or `file_name` match
+    /// silently drops a `Modify` event for an in-place rewrite, the
+    /// single-field reload never reaches `update_config` in production —
+    /// this test catches that regression.
+    ///
+    /// Timeout is 5s to tolerate slow CI; the notify backend on macOS is
+    /// fsevents and typically delivers events within ~100ms.
+    #[test]
+    fn render_block_ms_propagates_through_file_watcher() {
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("tokio runtime");
+
+        rt.block_on(async {
+            let dir = tempfile::tempdir().expect("tempdir");
+            let config_path = dir.path().join("config.toml");
+
+            // Seed with a starting value so the second write is an in-place
+            // Modify (not a Create) — exercises the EventKind::Modify branch
+            // of the kind filter.
+            std::fs::write(&config_path, "[popup]\nrender_block_ms = 90\n").expect("seed config");
+
+            let handler = Arc::new(Mutex::new(
+                InputHandler::new_with_embedded(
+                    &[],
+                    gc_terminal::TerminalProfile::for_ghostty(),
+                    false,
+                )
+                .expect("handler builds"),
+            ));
+            // Sanity: default render_block_ms before the watcher fires.
+            assert_eq!(handler.lock().unwrap().render_block_ms(), 80);
+
+            let watcher_handle = spawn_config_watcher(config_path.clone(), Arc::clone(&handler))
+                .expect("watcher spawns");
+
+            // The 200ms debounce treats events as "recent" if last_reload
+            // was within the window. Wait past it before the meaningful
+            // write to guarantee this edit is not coalesced with a startup
+            // event (notify sometimes emits a creation/touch event during
+            // watcher registration).
+            tokio::time::sleep(Duration::from_millis(300)).await;
+
+            // Trigger the reload: rewrite with the target value.
+            std::fs::write(&config_path, "[popup]\nrender_block_ms = 150\n")
+                .expect("rewrite config");
+
+            // Poll the handler for up to 5s for the new value to land.
+            let deadline = Instant::now() + Duration::from_secs(5);
+            let mut observed = handler.lock().unwrap().render_block_ms();
+            while observed != 150 && Instant::now() < deadline {
+                tokio::time::sleep(Duration::from_millis(50)).await;
+                observed = handler.lock().unwrap().render_block_ms();
+            }
+
+            watcher_handle.shutdown();
+
+            assert_eq!(
+                observed, 150,
+                "watcher did not propagate render_block_ms within 5s; \
+                 the notify event-kind filter or file_name match likely \
+                 dropped the Modify event"
+            );
+        });
+    }
 }

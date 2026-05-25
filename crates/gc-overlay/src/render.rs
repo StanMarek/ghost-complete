@@ -246,6 +246,16 @@ pub fn render_popup(
 /// Callers that own a surrounding `with_overlay_update_frame` can call this
 /// directly to fold multiple overlay operations into a single atomic frame.
 /// The public `render_popup` is the framed convenience wrapper.
+///
+/// # Atomicity contract
+///
+/// This function emits NO DECSET 2026 markers. On
+/// `RenderStrategy::Synchronized` terminals, calling it without a surrounding
+/// `with_overlay_update_frame` silently loses atomicity and may flicker as
+/// partial paints reach the screen. Callers MUST either (a) call the framed
+/// wrapper `render_popup` instead, or (b) invoke this from inside a
+/// `with_overlay_update_frame` body. The `_unframed` suffix marks the
+/// type-by-convention contract; there is no compile-time enforcement.
 #[allow(clippy::too_many_arguments)]
 pub fn render_popup_unframed(
     buf: &mut Vec<u8>,
@@ -274,6 +284,9 @@ pub fn render_popup_unframed(
 
     // Suppress rendering when terminal is too narrow — must check BEFORE any
     // terminal state mutation (scrolling, cursor save) to avoid corruption.
+    // Sync markers, if any, are emitted by the caller
+    // (`with_overlay_update_frame`), which rolls back the speculative
+    // `begin_sync` when this early return leaves the body buffer untouched.
     if screen_cols < min_width {
         return PopupLayout {
             start_row: 0,
@@ -802,6 +815,16 @@ pub fn clear_popup(buf: &mut Vec<u8>, layout: &PopupLayout, profile: &TerminalPr
 /// Callers that own a surrounding `with_overlay_update_frame` can call this
 /// directly to fold multiple overlay operations into a single atomic frame.
 /// The public `clear_popup` is the framed convenience wrapper.
+///
+/// # Atomicity contract
+///
+/// This function emits NO DECSET 2026 markers. On
+/// `RenderStrategy::Synchronized` terminals, calling it without a surrounding
+/// `with_overlay_update_frame` silently loses atomicity and may flicker as
+/// partial paints reach the screen. Callers MUST either (a) call the framed
+/// wrapper `clear_popup` instead, or (b) invoke this from inside a
+/// `with_overlay_update_frame` body. The `_unframed` suffix marks the
+/// type-by-convention contract; there is no compile-time enforcement.
 pub fn clear_popup_unframed(buf: &mut Vec<u8>, layout: &PopupLayout) {
     if layout.height == 0 || layout.width == 0 {
         return;
