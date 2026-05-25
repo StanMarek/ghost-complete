@@ -284,6 +284,223 @@ fn doctor_fails_when_zshrc_sources_missing_file() {
 }
 
 #[test]
+fn doctor_accepts_legacy_double_quoted_source_paths() {
+    // Regression: v0.9-v0.16 wrote managed blocks with double-quoted source
+    // paths (raw `path.display()` inside `"`). The doctor parser added in
+    // f2be2c4 only accepted single quotes, so anyone upgrading with that
+    // older managed block intact saw a misleading "no parseable source line"
+    // Fail. This test pins the legacy double-quoted form as accepted: the
+    // canonical files are present on disk and the parser must surface them
+    // through to the existence check, which passes.
+    use std::process::Command;
+    use tempfile::TempDir;
+
+    let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(2)
+        .expect("repo root");
+    let zsh_init = std::fs::read_to_string(repo_root.join("shell/init.zsh"))
+        .expect("read shell/init.zsh from repo");
+    let zsh_integration = std::fs::read_to_string(repo_root.join("shell/ghost-complete.zsh"))
+        .expect("read shell/ghost-complete.zsh from repo");
+
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path();
+    let shell_dir = home.join(".config/ghost-complete/shell");
+    std::fs::create_dir_all(&shell_dir).unwrap();
+    let init_path = shell_dir.join("init.zsh");
+    let script_path = shell_dir.join("ghost-complete.zsh");
+    std::fs::write(&init_path, &zsh_init).unwrap();
+    std::fs::write(&script_path, &zsh_integration).unwrap();
+
+    // v0.9-v0.16 .zshrc shape: double-quoted source paths. The init block
+    // wrapped `builtin source` inside `if [[ -f ... ]]; then ... fi`; the
+    // shell-integration block was a single bare `source` line. Mirror both
+    // forms so the parser exercises double-quote handling on both blocks.
+    let zshrc = home.join(".zshrc");
+    let zshrc_contents = format!(
+        "# >>> ghost-complete initialize >>>\n\
+         if [[ -f \"{init}\" ]]; then\n  \
+         builtin source \"{init}\"\n\
+         fi\n\
+         # <<< ghost-complete initialize <<<\n\
+         # >>> ghost-complete shell integration >>>\n\
+         source \"{script}\"\n\
+         # <<< ghost-complete shell integration <<<\n",
+        init = init_path.display(),
+        script = script_path.display(),
+    );
+    std::fs::write(&zshrc, &zshrc_contents).unwrap();
+
+    let cfg = tmp.path().join("config.toml");
+    std::fs::write(&cfg, "").unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_ghost-complete"))
+        .arg("--config")
+        .arg(&cfg)
+        .arg("doctor")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let combined = format!("{stdout}{stderr}");
+
+    assert!(
+        output.status.success(),
+        "doctor must exit 0 when shell integration uses legacy double-quoted source \
+         paths and the referenced files exist.\nexit: {:?}\ncombined:\n{combined}",
+        output.status.code(),
+    );
+    assert!(
+        !combined.contains("[FAIL]"),
+        "doctor must not report any [FAIL] lines on a legacy double-quoted install with \
+         files at the canonical path; got:\n{combined}",
+    );
+    assert!(
+        !combined.contains("no parseable"),
+        "doctor must not surface 'no parseable source line' for double-quoted paths; \
+         got:\n{combined}",
+    );
+}
+
+#[test]
+fn doctor_fails_legacy_double_quoted_path_when_file_missing() {
+    // Companion to doctor_accepts_legacy_double_quoted_source_paths: the
+    // parser still extracts the path from double-quoted source lines, but
+    // when the referenced file is absent the existence check Fails. The
+    // discriminator is the file check, not the quoting style.
+    //
+    // Pre-fix behavior on this fixture: parser returned None for both
+    // blocks → Fail with "no parseable source line" → exit 1 → but the
+    // failure message would NOT contain the stale path. Post-fix: parser
+    // extracts the stale path, existence check Fails → exit 1 → the
+    // failure message SHOULD contain the stale path or "missing".
+    use std::process::Command;
+    use tempfile::TempDir;
+
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path();
+    let zshrc = home.join(".zshrc");
+    std::fs::write(
+        &zshrc,
+        "# >>> ghost-complete initialize >>>\n\
+         if [[ -f \"/nonexistent/legacy/init.zsh\" ]]; then\n  \
+         builtin source \"/nonexistent/legacy/init.zsh\"\n\
+         fi\n\
+         # <<< ghost-complete initialize <<<\n\
+         # >>> ghost-complete shell integration >>>\n\
+         source \"/nonexistent/legacy/ghost-complete.zsh\"\n\
+         # <<< ghost-complete shell integration <<<\n",
+    )
+    .unwrap();
+
+    let cfg = home.join("config.toml");
+    std::fs::write(&cfg, "").unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_ghost-complete"))
+        .arg("--config")
+        .arg(&cfg)
+        .arg("doctor")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete");
+
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout),
+    );
+    assert!(
+        !output.status.success(),
+        "doctor must NOT succeed when legacy double-quoted source paths reference \
+         missing files. Got exit success.\n{combined}",
+    );
+    // The post-fix path either names the stale path (the existence-check Fail
+    // message includes it via `path.display()`) or says "missing/unreadable".
+    // The pre-fix path emits "no parseable source line" with neither marker —
+    // assert against the post-fix wording so this test discriminates.
+    let lower = combined.to_lowercase();
+    assert!(
+        combined.contains("/nonexistent/legacy/") || lower.contains("missing"),
+        "doctor must surface the stale double-quoted source path or 'missing'; \
+         got:\n{combined}",
+    );
+    assert!(
+        !lower.contains("no parseable"),
+        "doctor must NOT report 'no parseable source line' for double-quoted paths; \
+         got:\n{combined}",
+    );
+}
+
+#[test]
+fn doctor_warns_on_pre_v0_9_exec_install_style() {
+    // The original (pre-v0.9) installer wrote a managed block with no
+    // `source` line at all — just an inline `exec ghost-complete`. There
+    // are no external script files to verify. The post-fix doctor should
+    // surface this as a Warn with a migration nudge (not a Fail), so
+    // older installs keep doctor exit 0 while still being told to
+    // upgrade.
+    //
+    // Pre-fix behavior: parser returns None → Fail "no parseable source
+    // line" → exit 1. Post-fix: both blocks return None → Warn → exit 0.
+    use std::process::Command;
+    use tempfile::TempDir;
+
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path();
+    let zshrc = home.join(".zshrc");
+    let exec_body = "if [[ -z \"$GHOST_COMPLETE_ACTIVE\" ]]; then\n   \
+                     export GHOST_COMPLETE_ACTIVE=1\n   \
+                     exec ghost-complete\nfi\n";
+    let zshrc_contents = format!(
+        "# >>> ghost-complete initialize >>>\n{exec_body}# <<< ghost-complete initialize <<<\n\
+         # >>> ghost-complete shell integration >>>\n{exec_body}# <<< ghost-complete shell integration <<<\n",
+    );
+    std::fs::write(&zshrc, &zshrc_contents).unwrap();
+
+    let cfg = home.join("config.toml");
+    std::fs::write(&cfg, "").unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_ghost-complete"))
+        .arg("--config")
+        .arg(&cfg)
+        .arg("doctor")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete");
+
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout),
+    );
+    assert!(
+        output.status.success(),
+        "doctor must exit 0 on the pre-v0.9 exec-style install (Warn, not Fail).\n\
+         exit: {:?}\ncombined:\n{combined}",
+        output.status.code(),
+    );
+    let lower = combined.to_lowercase();
+    assert!(
+        lower.contains("[warn]"),
+        "doctor must emit a [WARN] line for the pre-v0.9 install style; \
+         got:\n{combined}",
+    );
+    assert!(
+        lower.contains("pre-v0.9") || lower.contains("migrate"),
+        "doctor must nudge the user toward `ghost-complete install` to migrate; \
+         got:\n{combined}",
+    );
+    assert!(
+        !lower.contains("no parseable"),
+        "doctor must NOT report 'no parseable source line' for the pre-v0.9 install; \
+         got:\n{combined}",
+    );
+}
+
+#[test]
 fn doctor_warns_when_zshrc_sources_noncanonical_path() {
     // .zshrc sources working files at a non-canonical location.
     // doctor should warn (not fail) so the user notices the drift

@@ -189,12 +189,17 @@ fn check_theme(config: &gc_config::GhostConfig) -> CheckResult {
 }
 
 /// Extract the file path that the given managed block sources, by parsing
-/// the `[builtin ]source '<path>'` line. Returns `None` if the block isn't
-/// found or has no parseable source line.
+/// the `[builtin ]source '<path>'` or `[builtin ]source "<path>"` line.
+/// Returns `None` if the block isn't found or has no parseable source line.
 ///
-/// `install.rs::shell_safe_path` always single-quotes the path and escapes
-/// embedded `'` with the `'\''` close-quote/escaped-quote/open-quote idiom,
-/// so we only accept single-quoted paths and undo the escape.
+/// Today's `install.rs::shell_safe_path` (post-0.17) always single-quotes
+/// the path and escapes embedded `'` with the `'\''`
+/// close-quote/escaped-quote/open-quote idiom. v0.9 through v0.16 wrote raw
+/// `path.display()` inside double quotes with NO escaping (worked only
+/// because home paths never contain `"`, `\`, `$`, or backticks). Accept
+/// both quoting styles so an upgrading user with an intact older managed
+/// block still gets meaningful doctor output instead of "no parseable
+/// source line".
 fn extract_block_source_path(content: &str, begin: &str, end: &str) -> Option<PathBuf> {
     let block_start = content.find(begin)?;
     let after_begin = &content[block_start..];
@@ -214,11 +219,25 @@ fn extract_block_source_path(content: &str, begin: &str, end: &str) -> Option<Pa
             },
         };
         let quoted = after_kw.trim();
-        let Some(inner) = quoted.strip_prefix('\'').and_then(|s| s.strip_suffix('\'')) else {
-            continue;
-        };
-        let unescaped = inner.replace("'\\''", "'");
-        return Some(PathBuf::from(unescaped));
+
+        // Current install.rs (post-0.17) uses single quotes via
+        // shell_safe_path, escaping embedded `'` as `'\''`.
+        if let Some(inner) = quoted.strip_prefix('\'').and_then(|s| s.strip_suffix('\'')) {
+            let unescaped = inner.replace("'\\''", "'");
+            return Some(PathBuf::from(unescaped));
+        }
+        // v0.9-v0.16 used naked `format!("source \"{}\"", path.display())` —
+        // double-quoted, no escaping. The only sequences worth unescaping
+        // are the ones a literal raw path could not have contained: `\"`
+        // and `\\`. (Old format never wrote escapes, so these unescapes are
+        // pass-through on every real legacy install, and harmless if a
+        // user later hand-escaped a backslash or quote.)
+        if let Some(inner) = quoted.strip_prefix('"').and_then(|s| s.strip_suffix('"')) {
+            let unescaped = inner.replace("\\\"", "\"").replace("\\\\", "\\");
+            return Some(PathBuf::from(unescaped));
+        }
+        // Unrecognized quoting on this line — keep scanning; another line
+        // in the same block might still match.
     }
     None
 }
@@ -284,13 +303,32 @@ fn check_shell_integration() -> CheckResult {
     // (e.g. a previous XDG_CONFIG_HOME) — the previous canonical-only
     // probe would silently pass if files happened to exist at the
     // canonical location.
-    let Some(init_path) = extract_block_source_path(&content, INIT_BEGIN, INIT_END) else {
+    //
+    // If BOTH blocks lack a `source` line we treat that as the pre-v0.9
+    // install style (which embedded `exec ghost-complete` inline and
+    // had no external script files to verify). Surface that as Warn
+    // with a migration nudge — the install is functional but laid out
+    // in a layout we no longer write. If exactly one block is missing
+    // its source line that's hand-edit corruption: Fail loudly so the
+    // user fixes it rather than silently degrading.
+    let init_path = extract_block_source_path(&content, INIT_BEGIN, INIT_END);
+    let script_path = extract_block_source_path(&content, SHELL_BEGIN, SHELL_END);
+
+    if init_path.is_none() && script_path.is_none() {
+        return CheckResult::warn(
+            "ghost-complete managed blocks present in .zshrc but neither references \
+             an external script via `source` — this is the pre-v0.9 install style. \
+             Run `ghost-complete install` to migrate to the current layout.",
+        );
+    }
+
+    let Some(init_path) = init_path else {
         return CheckResult::fail(
             "ghost-complete init block in .zshrc has no parseable `source` line — \
              run `ghost-complete uninstall` then reinstall",
         );
     };
-    let Some(script_path) = extract_block_source_path(&content, SHELL_BEGIN, SHELL_END) else {
+    let Some(script_path) = script_path else {
         return CheckResult::fail(
             "ghost-complete shell-integration block in .zshrc has no parseable `source` line — \
              run `ghost-complete uninstall` then reinstall",
