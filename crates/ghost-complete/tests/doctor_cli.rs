@@ -125,3 +125,78 @@ fn doctor_warns_on_stale_init_block() {
         "doctor must reference the missing managed-file path or block by name; got:\n{combined}",
     );
 }
+
+#[test]
+fn doctor_passes_when_shell_integration_files_present_at_correct_path() {
+    // Regression: the shell-integration check briefly looked for
+    // init.zsh / ghost-complete.zsh directly under
+    // ~/.config/ghost-complete/, but install writes them to the
+    // shell/ subdirectory. Any user who actually ran
+    // `ghost-complete install` would have seen doctor report
+    // Fail: missing or unreadable for both files. This test
+    // exercises the happy path — correct layout, embedded
+    // snippets on disk — and asserts doctor exits 0 with no
+    // [FAIL] lines.
+    use std::process::Command;
+    use tempfile::TempDir;
+
+    let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(2)
+        .expect("repo root");
+    let zsh_init = std::fs::read_to_string(repo_root.join("shell/init.zsh"))
+        .expect("read shell/init.zsh from repo");
+    let zsh_integration = std::fs::read_to_string(repo_root.join("shell/ghost-complete.zsh"))
+        .expect("read shell/ghost-complete.zsh from repo");
+
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path();
+
+    // .zshrc must contain BOTH managed blocks for check 1 to pass.
+    // Marker strings mirror install.rs INIT_BEGIN/SHELL_BEGIN constants.
+    let zshrc = home.join(".zshrc");
+    std::fs::write(
+        &zshrc,
+        "# >>> ghost-complete initialize >>>\n\
+         source ~/.config/ghost-complete/shell/init.zsh\n\
+         # <<< ghost-complete initialize <<<\n\
+         # >>> ghost-complete shell integration >>>\n\
+         source ~/.config/ghost-complete/shell/ghost-complete.zsh\n\
+         # <<< ghost-complete shell integration <<<\n",
+    )
+    .unwrap();
+
+    // Lay the install mirror down at the exact path install.rs writes:
+    // ~/.config/ghost-complete/shell/{init.zsh,ghost-complete.zsh}.
+    let shell_dir = home.join(".config/ghost-complete/shell");
+    std::fs::create_dir_all(&shell_dir).unwrap();
+    std::fs::write(shell_dir.join("init.zsh"), &zsh_init).unwrap();
+    std::fs::write(shell_dir.join("ghost-complete.zsh"), &zsh_integration).unwrap();
+
+    let cfg = tmp.path().join("config.toml");
+    std::fs::write(&cfg, "").unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_ghost-complete"))
+        .arg("--config")
+        .arg(&cfg)
+        .arg("doctor")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let combined = format!("{stdout}{stderr}");
+
+    assert!(
+        output.status.success(),
+        "doctor must exit 0 when shell integration is installed at the correct path \
+         (~/.config/ghost-complete/shell/...).\nexit: {:?}\ncombined:\n{combined}",
+        output.status.code(),
+    );
+    assert!(
+        !combined.contains("[FAIL]"),
+        "doctor must not report any [FAIL] lines on a clean install at the correct \
+         path; got:\n{combined}",
+    );
+}

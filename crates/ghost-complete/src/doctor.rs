@@ -194,7 +194,7 @@ fn check_theme(config: &gc_config::GhostConfig) -> CheckResult {
 ///
 /// * a stray init block with no shell-integration block (half-installed),
 /// * duplicate init blocks (a botched manual edit),
-/// * `~/.config/ghost-complete/init.zsh` / `ghost-complete.zsh` missing or
+/// * `~/.config/ghost-complete/shell/init.zsh` / `ghost-complete.zsh` missing or
 ///   unreadable while the managed block still tries to `source` them,
 /// * installed snippet contents that drift from the embedded copy
 ///   (`ghost-complete install` re-runs the embedded version onto disk),
@@ -232,8 +232,9 @@ fn check_shell_integration() -> CheckResult {
 
     // 3. Referenced script files exist + readable?
     let cfg_dir = home.join(".config/ghost-complete");
-    let init_path = cfg_dir.join("init.zsh");
-    let script_path = cfg_dir.join("ghost-complete.zsh");
+    let shell_dir = cfg_dir.join("shell");
+    let init_path = shell_dir.join("init.zsh");
+    let script_path = shell_dir.join("ghost-complete.zsh");
     let installed_init = match std::fs::read_to_string(&init_path) {
         Ok(s) => s,
         Err(_) => {
@@ -257,7 +258,7 @@ fn check_shell_integration() -> CheckResult {
     if installed_init != ZSH_INIT || installed_script != ZSH_INTEGRATION {
         return CheckResult::warn(format!(
             "shell integration files at {} drifted from embedded version — run `ghost-complete install` to refresh",
-            cfg_dir.display(),
+            shell_dir.display(),
         ));
     }
 
