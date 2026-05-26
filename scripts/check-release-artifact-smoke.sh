@@ -32,7 +32,7 @@ case "${ARTIFACT}" in
     *) echo "unknown archive: ${ARTIFACT}" >&2; exit 64 ;;
 esac
 
-BIN=$(find "${WORK}" -type f -name 'ghost-complete' -perm -u+x | head -1)
+BIN=$(find "${WORK}" -type f -name 'ghost-complete' -perm -u+x -print -quit)
 if [[ -z "${BIN}" ]]; then
     echo "FAIL: no executable ghost-complete in archive" >&2
     find "${WORK}" -type f
@@ -42,12 +42,21 @@ fi
 ARCH=$(file "${BIN}" | awk -F': ' '{print $2}')
 echo "Architecture: ${ARCH}"
 
-# Detect runner arch; only execute matching-arch binary.
+# Detect runner arch; only execute matching-arch binary. The default branch
+# catches future file(1) wording drift, universal Mach-O wrappers, or a host
+# arch we have no pattern for — any of which would otherwise leave RUN=0 and
+# silently downgrade the smoke to extraction-only without saying why.
 HOST_ARCH=$(uname -m)
 RUN=0
 case "${HOST_ARCH}:${ARCH}" in
     arm64:*arm64*|arm64:*aarch64*) RUN=1 ;;
     x86_64:*x86_64*|x86_64:*x86-64*) RUN=1 ;;
+    arm64:*|x86_64:*)
+        echo "WARN: arch detection inconclusive — host ${HOST_ARCH}, file(1) returned: ${ARCH} — falling back to structural smoke (no execution test)" >&2
+        ;;
+    *)
+        echo "WARN: unrecognized host arch ${HOST_ARCH} (file(1): ${ARCH}) — falling back to structural smoke (no execution test)" >&2
+        ;;
 esac
 
 if (( RUN == 0 )); then
@@ -78,12 +87,23 @@ echo "--help excerpt:"
 HELP_OUT="$("${BIN}" --help)"
 print_head 5 "${HELP_OUT}"
 
+# Run validate-specs and status from an isolated HOME with cwd inside that
+# HOME. auto_detect_spec_dirs walks $XDG_CONFIG_HOME/ghost-complete/specs,
+# the directory next to the binary, and ./specs in cwd; without isolation
+# the workflow's repo-root cwd would let ./specs leak in and the smoke
+# would validate merged (embedded + source) specs instead of the packaged
+# binary's embedded-only view — precisely the regression this gate exists
+# to catch. ISO_HOME contains no specs/ subdir and no config dir.
+ISO_ENV=(env HOME="${ISO_HOME}" XDG_CONFIG_HOME="${ISO_HOME}/.config")
+ORIGINAL_PWD="$PWD"
+cd "${ISO_HOME}"
+
 echo "validate-specs (first 5 of JSONL output):"
-VALIDATE_OUT="$("${BIN}" validate-specs --json)"
+VALIDATE_OUT="$("${ISO_ENV[@]}" "${BIN}" validate-specs --json)"
 print_head 5 "${VALIDATE_OUT}"
 
 echo "status --json (fully_functional count):"
-STATUS_JSON="$("${BIN}" status --json)"
+STATUS_JSON="$("${ISO_ENV[@]}" "${BIN}" status --json)"
 SPECS=""
 while IFS= read -r line; do
     if [[ "${line}" == *'"fully_functional"'* ]]; then
@@ -100,8 +120,7 @@ echo "${SPECS}"
 }
 
 echo "install --dry-run (isolated HOME=${ISO_HOME}):"
-INSTALL_OUT="$(HOME="${ISO_HOME}" XDG_CONFIG_HOME="${ISO_HOME}/.config" \
-    "${BIN}" install --dry-run)"
+INSTALL_OUT="$("${ISO_ENV[@]}" "${BIN}" install --dry-run)"
 print_head 20 "${INSTALL_OUT}"
 
 # Confirm dry-run did not write anything visible under the isolated HOME.
@@ -113,5 +132,9 @@ if [[ -d "${ISO_HOME}/.config/ghost-complete" ]]; then
     echo "FAIL: install --dry-run wrote .config/ghost-complete" >&2
     exit 1
 fi
+
+# Step back out of ISO_HOME so the EXIT trap can rm -rf it cleanly on every
+# platform.
+cd "${ORIGINAL_PWD}"
 
 echo "OK: release artifact smoke passed for ${ARTIFACT}"

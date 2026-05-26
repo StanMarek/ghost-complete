@@ -15,14 +15,25 @@ use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
-pub fn atomic_write_preserving_mode(path: &Path, bytes: &[u8]) -> anyhow::Result<()> {
+pub(crate) fn atomic_write_preserving_mode(path: &Path, bytes: &[u8]) -> anyhow::Result<()> {
     let parent = path
         .parent()
         .ok_or_else(|| anyhow::anyhow!("path has no parent: {}", path.display()))?;
-    // Read existing mode if any; default to 0o644 for new files.
-    let target_mode: u32 = fs::metadata(path)
-        .map(|m| m.permissions().mode() & 0o777)
-        .unwrap_or(0o644);
+    // Read existing mode if any; default to 0o644 only when the target does
+    // not yet exist. Any other metadata failure (PermissionDenied on the
+    // parent dir, broken symlink, EIO) is propagated rather than silently
+    // widening permissions on the next rewrite — a 0o600 .zshrc must never
+    // be downgraded to world-readable 0o644 because a stat briefly failed.
+    let target_mode: u32 = match fs::metadata(path) {
+        Ok(m) => m.permissions().mode() & 0o777,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => 0o644,
+        Err(e) => {
+            return Err(anyhow::Error::new(e).context(format!(
+                "refusing to write {} without knowing its mode",
+                path.display()
+            )));
+        }
+    };
 
     let mut tmp = tempfile::NamedTempFile::new_in(parent)?;
     tmp.write_all(bytes)?;
@@ -35,17 +46,44 @@ pub fn atomic_write_preserving_mode(path: &Path, bytes: &[u8]) -> anyhow::Result
 
     // Preserve the underlying io::Error chain so callers can downcast for
     // ErrorKind::PermissionDenied (the manual-instructions fallback path).
-    // anyhow::anyhow!("string") would stringify the io::Error and break the
-    // downcast at install.rs:522.
+    // anyhow::anyhow!("string") would stringify the io::Error and break
+    // callers that walk e.chain() to recover the original ErrorKind — see
+    // `is_permission_denied` below, used by `install_to_with_cache_hooks`.
     tmp.persist(path).map_err(|e| {
         anyhow::Error::new(e.error).context(format!("atomic rename failed for {}", path.display()))
     })?;
 
-    // Best-effort fsync parent for durability (no-op on APFS).
-    if let Ok(dir) = fs::File::open(parent) {
-        let _ = dir.sync_all();
+    // Best-effort fsync parent for durability (no-op on APFS, but
+    // load-bearing on filesystems where the dir entry is not committed
+    // until the parent itself is synced — e.g. FAT on an external drive).
+    // Failure is non-fatal; surface it under `RUST_LOG=debug` so an
+    // operator can investigate rather than hitting an entirely silent loss.
+    match fs::File::open(parent) {
+        Ok(dir) => {
+            if let Err(e) = dir.sync_all() {
+                tracing::debug!("parent fsync failed for {}: {}", parent.display(), e);
+            }
+        }
+        Err(e) => {
+            tracing::debug!("could not open {} for fsync: {}", parent.display(), e);
+        }
     }
     Ok(())
+}
+
+/// Returns true if `err` (or anything in its source chain) is an
+/// `io::Error` with `ErrorKind::PermissionDenied`. Centralises the
+/// chain-walk that `install_to_with_cache_hooks` relies on to take the
+/// manual-instructions fallback when `.zshrc` (or its parent dir) is not
+/// writable — e.g. on a nix-managed `~/.zshrc`. Callers that just want a
+/// boolean should not have to re-derive the downcast inline; keeping the
+/// walk here means the silent contract documented above lives next to
+/// the code that establishes it.
+pub(crate) fn is_permission_denied(err: &anyhow::Error) -> bool {
+    err.chain()
+        .find_map(|src| src.downcast_ref::<std::io::Error>())
+        .map(|ioe| ioe.kind())
+        == Some(std::io::ErrorKind::PermissionDenied)
 }
 
 #[cfg(test)]
@@ -90,5 +128,67 @@ mod tests {
         atomic_write_preserving_mode(&path, b"x").unwrap();
         let count = fs::read_dir(&dir).unwrap().count();
         assert_eq!(count, 1, "only the target should remain");
+    }
+
+    #[test]
+    fn errors_on_path_with_no_parent() {
+        // `/` has no parent — the early-return guard must surface a clear
+        // anyhow error rather than panicking or leaking a tempfile in an
+        // unrelated directory. Pin the behaviour so a future maintainer
+        // can't accidentally remove the guard.
+        let err = atomic_write_preserving_mode(Path::new("/"), b"x").unwrap_err();
+        assert!(
+            err.to_string().contains("path has no parent"),
+            "expected `path has no parent` in error, got: {err}"
+        );
+    }
+
+    #[test]
+    fn preserves_io_error_kind_in_chain() {
+        // The install fallback path at `install_to_with_cache_hooks`
+        // walks `e.chain()` to recover the underlying io::Error kind
+        // (`is_permission_denied`). A future refactor that switches the
+        // `.persist()` arm to `anyhow::anyhow!("string")` would stringify
+        // the io::Error and silently break that contract. Pin it.
+        use std::io::ErrorKind;
+
+        let dir = TempDir::new().unwrap();
+        // Make the parent directory unwritable so `NamedTempFile::new_in`
+        // fails with PermissionDenied.
+        fs::set_permissions(dir.path(), fs::Permissions::from_mode(0o555)).unwrap();
+
+        let target = dir.path().join("target");
+        let err = atomic_write_preserving_mode(&target, b"x")
+            .expect_err("writing under an unwritable parent must fail with PermissionDenied");
+
+        // Restore perms so TempDir cleanup can remove the directory.
+        fs::set_permissions(dir.path(), fs::Permissions::from_mode(0o755)).unwrap();
+
+        let kind = err
+            .chain()
+            .find_map(|s| s.downcast_ref::<std::io::Error>())
+            .map(|e| e.kind());
+        assert_eq!(
+            kind,
+            Some(ErrorKind::PermissionDenied),
+            "io::Error must remain in the chain so callers can downcast for kind; got chain: {err:?}"
+        );
+        assert!(
+            is_permission_denied(&err),
+            "is_permission_denied must agree with the manual chain walk"
+        );
+    }
+
+    #[test]
+    fn is_permission_denied_distinguishes_other_errors() {
+        // A generic anyhow error (no io::Error in the chain) must not be
+        // misclassified — otherwise the install fallback would silently
+        // swallow real failures and print the manual-instructions block
+        // when something unrelated went wrong.
+        let other = anyhow::anyhow!("totally unrelated failure");
+        assert!(!is_permission_denied(&other));
+
+        let not_found = anyhow::Error::new(std::io::Error::from(std::io::ErrorKind::NotFound));
+        assert!(!is_permission_denied(&not_found));
     }
 }

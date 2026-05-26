@@ -263,9 +263,8 @@ jobs:
     name: Coverage regression
     # Coverage regression gate: fails when the unsupported requires_js
     # generator count rises above the baseline by more than the configured
-    # tolerance, OR when any command becomes nonfunctional. Promoted to a
-    # blocking gate in the 0.17 hardening sweep after a stable rollout
-    # window under `continue-on-error: true`.
+    # tolerance, OR when any command becomes nonfunctional. Refresh
+    # docs/coverage-baseline.json before adjusting tolerance.
     needs: [check]
     runs-on: macos-latest
     steps:

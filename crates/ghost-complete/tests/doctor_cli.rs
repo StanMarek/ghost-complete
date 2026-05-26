@@ -113,10 +113,22 @@ fn doctor_warns_on_stale_init_block() {
     let stderr = String::from_utf8_lossy(&output.stderr);
     let stdout = String::from_utf8_lossy(&output.stdout);
     let combined = format!("{stderr}{stdout}");
-    // Assert the specific new check fires: it names the missing init.zsh path
-    // or the shell-integration managed block. The pre-Task-10 implementation
-    // would only emit a generic "managed block present" Ok and never reference
-    // init.zsh by name from the shell-integration check.
+    // Discriminates from the older check that emitted only a generic
+    // "managed block present" Ok without naming the missing managed-file
+    // path. The missing SHELL_BEGIN block is a Fail (exit 1), not a Warn —
+    // pin both the exit code and a [FAIL] marker so a regression that
+    // demotes the severity is caught.
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "doctor must exit 1 when the shell-integration managed block is \
+         missing.\ncombined:\n{combined}",
+    );
+    assert!(
+        combined.contains("[FAIL]"),
+        "doctor must emit a [FAIL] line for the missing managed block; \
+         got:\n{combined}",
+    );
     let lower = combined.to_lowercase();
     assert!(
         lower.contains("init.zsh")
@@ -285,13 +297,12 @@ fn doctor_fails_when_zshrc_sources_missing_file() {
 
 #[test]
 fn doctor_accepts_legacy_double_quoted_source_paths() {
-    // Regression: v0.9-v0.16 wrote managed blocks with double-quoted source
-    // paths (raw `path.display()` inside `"`). The doctor parser added in
-    // f2be2c4 only accepted single quotes, so anyone upgrading with that
-    // older managed block intact saw a misleading "no parseable source line"
-    // Fail. This test pins the legacy double-quoted form as accepted: the
-    // canonical files are present on disk and the parser must surface them
-    // through to the existence check, which passes.
+    // Regression: pre-shell_safe_path versions (roughly v0.6.1–v0.7.0) wrote
+    // managed blocks with raw `path.display()` inside double quotes. The
+    // single-quote-only parser would mis-handle those installs as "no
+    // parseable source line". This test pins the legacy double-quoted form as
+    // accepted — the canonical files are present and the parser must surface
+    // them through to the existence check.
     use std::process::Command;
     use tempfile::TempDir;
 
@@ -313,10 +324,11 @@ fn doctor_accepts_legacy_double_quoted_source_paths() {
     std::fs::write(&init_path, &zsh_init).unwrap();
     std::fs::write(&script_path, &zsh_integration).unwrap();
 
-    // v0.9-v0.16 .zshrc shape: double-quoted source paths. The init block
-    // wrapped `builtin source` inside `if [[ -f ... ]]; then ... fi`; the
-    // shell-integration block was a single bare `source` line. Mirror both
-    // forms so the parser exercises double-quote handling on both blocks.
+    // Legacy v0.6.1–v0.7.0 .zshrc shape: double-quoted source paths. The
+    // init block wrapped `builtin source` inside `if [[ -f ... ]]; then ...
+    // fi`; the shell-integration block was a single bare `source` line.
+    // Mirror both forms so the parser exercises double-quote handling on
+    // both blocks.
     let zshrc = home.join(".zshrc");
     let zshrc_contents = format!(
         "# >>> ghost-complete initialize >>>\n\
@@ -556,7 +568,19 @@ fn doctor_warns_when_zshrc_sources_noncanonical_path() {
         String::from_utf8_lossy(&output.stdout),
     );
     // Warn shouldn't push exit nonzero in the existing doctor (warn != fail).
-    // Assert the noncanonical-path drift line appears.
+    // Assert the severity is Warn (not Fail) and that the noncanonical-path
+    // drift line appears.
+    assert!(
+        output.status.success(),
+        "non-canonical drift must be Warn, not Fail (exit 0).\n\
+         exit: {:?}\ncombined:\n{combined}",
+        output.status.code(),
+    );
+    assert!(
+        combined.contains("[WARN]"),
+        "doctor must emit a [WARN] line for non-canonical source paths; \
+         got:\n{combined}",
+    );
     let lower = combined.to_lowercase();
     assert!(
         lower.contains("non-canonical")
@@ -564,5 +588,318 @@ fn doctor_warns_when_zshrc_sources_noncanonical_path() {
             || lower.contains("alt/ghost-complete-files"),
         "doctor must surface a drift warning for non-canonical source paths; \
          got:\n{combined}",
+    );
+}
+
+#[test]
+fn doctor_fails_on_duplicate_init_block() {
+    // A botched manual edit can leave two `# >>> ghost-complete initialize >>>`
+    // markers in .zshrc. The doctor must Fail (exit 1) and surface the
+    // duplicate so the user knows to uninstall+reinstall rather than
+    // silently picking the first block.
+    use tempfile::TempDir;
+
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path();
+    let zshrc = home.join(".zshrc");
+    let block = "# >>> ghost-complete initialize >>>\n\
+                 source '/home/user/init.zsh'\n\
+                 # <<< ghost-complete initialize <<<\n";
+    let shell_block = "# >>> ghost-complete shell integration >>>\n\
+                       source '/home/user/ghost-complete.zsh'\n\
+                       # <<< ghost-complete shell integration <<<\n";
+    std::fs::write(&zshrc, format!("{block}{shell_block}{block}")).unwrap();
+
+    let cfg = home.join("config.toml");
+    std::fs::write(&cfg, "").unwrap();
+
+    let output = Command::new(ghost_bin())
+        .arg("--config")
+        .arg(&cfg)
+        .arg("doctor")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete");
+
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout),
+    );
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "doctor must exit 1 on duplicate init blocks.\ncombined:\n{combined}",
+    );
+    assert!(
+        combined.contains("[FAIL]"),
+        "doctor must emit [FAIL] for duplicate init blocks; got:\n{combined}",
+    );
+    let lower = combined.to_lowercase();
+    assert!(
+        lower.contains("duplicate"),
+        "doctor must surface 'duplicate' in the message; got:\n{combined}",
+    );
+}
+
+#[test]
+fn doctor_fails_on_duplicate_shell_block() {
+    // Symmetric to doctor_fails_on_duplicate_init_block: a duplicate
+    // `# >>> ghost-complete shell integration >>>` block must also Fail.
+    // Without this test the symmetric check at the SHELL_BEGIN side could
+    // silently regress.
+    use tempfile::TempDir;
+
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path();
+    let zshrc = home.join(".zshrc");
+    let init_block = "# >>> ghost-complete initialize >>>\n\
+                      source '/home/user/init.zsh'\n\
+                      # <<< ghost-complete initialize <<<\n";
+    let shell_block = "# >>> ghost-complete shell integration >>>\n\
+                       source '/home/user/ghost-complete.zsh'\n\
+                       # <<< ghost-complete shell integration <<<\n";
+    std::fs::write(&zshrc, format!("{init_block}{shell_block}{shell_block}")).unwrap();
+
+    let cfg = home.join("config.toml");
+    std::fs::write(&cfg, "").unwrap();
+
+    let output = Command::new(ghost_bin())
+        .arg("--config")
+        .arg(&cfg)
+        .arg("doctor")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete");
+
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout),
+    );
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "doctor must exit 1 on duplicate shell-integration blocks.\n\
+         combined:\n{combined}",
+    );
+    assert!(
+        combined.contains("[FAIL]"),
+        "doctor must emit [FAIL] for duplicate shell-integration blocks; \
+         got:\n{combined}",
+    );
+    let lower = combined.to_lowercase();
+    assert!(
+        lower.contains("duplicate"),
+        "doctor must surface 'duplicate' in the message; got:\n{combined}",
+    );
+    // The error wording should name which block(s) are duplicated.
+    assert!(
+        lower.contains("shell=") || lower.contains("shell ") || lower.contains("shell-integration"),
+        "doctor must identify the duplicated shell block; got:\n{combined}",
+    );
+}
+
+#[test]
+fn doctor_warns_on_drifted_shell_integration_content() {
+    // A user with both shell-integration files on disk at the canonical
+    // path, but with content drifted from the embedded copy by a single
+    // byte. The doctor must Warn (exit 0) with a "drifted" message so the
+    // operator notices and can re-run install.
+    use tempfile::TempDir;
+
+    let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(2)
+        .expect("repo root");
+    let zsh_init = std::fs::read_to_string(repo_root.join("shell/init.zsh"))
+        .expect("read shell/init.zsh from repo");
+    let zsh_integration = std::fs::read_to_string(repo_root.join("shell/ghost-complete.zsh"))
+        .expect("read shell/ghost-complete.zsh from repo");
+
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path();
+    let shell_dir = home.join(".config/ghost-complete/shell");
+    std::fs::create_dir_all(&shell_dir).unwrap();
+    let init_path = shell_dir.join("init.zsh");
+    let script_path = shell_dir.join("ghost-complete.zsh");
+    // Drift by appending one extra line. The OSC 7770 legacy check must
+    // not match (neither 7770; nor 7772; is added), so this falls through
+    // to the content-drift Warn.
+    std::fs::write(&init_path, format!("{zsh_init}# drifted by one line\n")).unwrap();
+    std::fs::write(&script_path, &zsh_integration).unwrap();
+
+    let zshrc = home.join(".zshrc");
+    let zshrc_contents = format!(
+        "# >>> ghost-complete initialize >>>\n\
+         builtin source '{init}'\n\
+         # <<< ghost-complete initialize <<<\n\
+         # >>> ghost-complete shell integration >>>\n\
+         source '{script}'\n\
+         # <<< ghost-complete shell integration <<<\n",
+        init = init_path.display(),
+        script = script_path.display(),
+    );
+    std::fs::write(&zshrc, &zshrc_contents).unwrap();
+
+    let cfg = home.join("config.toml");
+    std::fs::write(&cfg, "").unwrap();
+
+    let output = Command::new(ghost_bin())
+        .arg("--config")
+        .arg(&cfg)
+        .arg("doctor")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete");
+
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout),
+    );
+    assert!(
+        output.status.success(),
+        "content drift must be Warn, not Fail.\nexit: {:?}\ncombined:\n{combined}",
+        output.status.code(),
+    );
+    assert!(
+        combined.contains("[WARN]"),
+        "doctor must emit [WARN] for drifted shell integration content; \
+         got:\n{combined}",
+    );
+    assert!(
+        combined.to_lowercase().contains("drifted"),
+        "doctor must surface 'drifted' in the message; got:\n{combined}",
+    );
+}
+
+#[test]
+fn doctor_warns_on_legacy_osc_7770_reporter() {
+    // A user upgrading from a pre-OSC-7772 install (where ghost-complete.zsh
+    // emitted `\e]7770;...` instead of `\e]7772;...`). The doctor must
+    // detect the legacy reporter and surface a migration-specific Warn
+    // even though the file content drifts from the embedded copy (the
+    // OSC 7770 check runs before the drift check so the user gets a
+    // pointed migration message instead of the generic drift Warn).
+    use tempfile::TempDir;
+
+    let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(2)
+        .expect("repo root");
+    let zsh_init = std::fs::read_to_string(repo_root.join("shell/init.zsh"))
+        .expect("read shell/init.zsh from repo");
+
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path();
+    let shell_dir = home.join(".config/ghost-complete/shell");
+    std::fs::create_dir_all(&shell_dir).unwrap();
+    let init_path = shell_dir.join("init.zsh");
+    let script_path = shell_dir.join("ghost-complete.zsh");
+    std::fs::write(&init_path, &zsh_init).unwrap();
+    // Synthetic pre-OSC-7772 ghost-complete.zsh — emits 7770;, never 7772;.
+    let legacy_script = "#!/usr/bin/env zsh\n\
+                         _gc_legacy_report() {\n  \
+                         printf '\\e]7770;1;%s\\a' \"$BUFFER\"\n\
+                         }\n";
+    std::fs::write(&script_path, legacy_script).unwrap();
+
+    let zshrc = home.join(".zshrc");
+    let zshrc_contents = format!(
+        "# >>> ghost-complete initialize >>>\n\
+         builtin source '{init}'\n\
+         # <<< ghost-complete initialize <<<\n\
+         # >>> ghost-complete shell integration >>>\n\
+         source '{script}'\n\
+         # <<< ghost-complete shell integration <<<\n",
+        init = init_path.display(),
+        script = script_path.display(),
+    );
+    std::fs::write(&zshrc, &zshrc_contents).unwrap();
+
+    let cfg = home.join("config.toml");
+    std::fs::write(&cfg, "").unwrap();
+
+    let output = Command::new(ghost_bin())
+        .arg("--config")
+        .arg(&cfg)
+        .arg("doctor")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete");
+
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout),
+    );
+    assert!(
+        output.status.success(),
+        "legacy OSC 7770 reporter must be Warn, not Fail.\n\
+         exit: {:?}\ncombined:\n{combined}",
+        output.status.code(),
+    );
+    assert!(
+        combined.contains("[WARN]"),
+        "doctor must emit [WARN] for legacy OSC 7770 reporter; got:\n{combined}",
+    );
+    assert!(
+        combined.contains("7770") && combined.contains("7772"),
+        "doctor must reference both OSC numbers so the user understands the \
+         migration; got:\n{combined}",
+    );
+}
+
+#[test]
+fn doctor_fails_when_one_block_has_no_parseable_source() {
+    // Hand-edit corruption: the init block keeps a normal `source` line,
+    // but the shell-integration block has the source line removed (only the
+    // marker comments remain). Pre-fix this would have been bucketed under
+    // the same `(None, None) => pre-v0.9 Warn` path as a fully unsourced
+    // install; the post-fix doctor distinguishes "one block missing source"
+    // as hand-edit corruption and Fails.
+    use tempfile::TempDir;
+
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path();
+    let zshrc = home.join(".zshrc");
+    let zshrc_contents = "# >>> ghost-complete initialize >>>\n\
+         builtin source '/home/user/init.zsh'\n\
+         # <<< ghost-complete initialize <<<\n\
+         # >>> ghost-complete shell integration >>>\n\
+         # (source line removed by a botched manual edit)\n\
+         # <<< ghost-complete shell integration <<<\n";
+    std::fs::write(&zshrc, zshrc_contents).unwrap();
+
+    let cfg = home.join("config.toml");
+    std::fs::write(&cfg, "").unwrap();
+
+    let output = Command::new(ghost_bin())
+        .arg("--config")
+        .arg(&cfg)
+        .arg("doctor")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete");
+
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout),
+    );
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "doctor must exit 1 when exactly one block lacks a parseable source.\n\
+         combined:\n{combined}",
+    );
+    assert!(
+        combined.contains("[FAIL]"),
+        "doctor must emit [FAIL] for hand-edit corruption; got:\n{combined}",
+    );
+    assert!(
+        combined.contains("no parseable"),
+        "doctor must surface 'no parseable' in the message; got:\n{combined}",
     );
 }

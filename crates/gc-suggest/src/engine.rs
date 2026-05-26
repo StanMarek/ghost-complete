@@ -76,8 +76,21 @@ struct TokenOnlyDemotionState {
 }
 
 impl TokenOnlyDemotionState {
-    fn is_demoted(&self, generator_id: &str) -> bool {
-        let failures = match self.consecutive_failures.lock() {
+    /// Acquire the failures map, recovering from a poisoned mutex by
+    /// wiping state, clearing the poison flag, and emitting a single
+    /// `tracing::warn!`. The contract is: callers NEVER see a
+    /// `PoisonError` and NEVER observe a partially updated map across
+    /// panics, and after one poison event the mutex is fully restored —
+    /// subsequent calls take the `Ok` arm, so the warn fires exactly once
+    /// per poison event rather than on every lock for the rest of the
+    /// process lifetime.
+    ///
+    /// A poisoned mutex means a panic interrupted a mutation; the
+    /// partially-written map may have stale or torn counts. Clearing is
+    /// safer than reusing — demotion counts re-accrue on the next real
+    /// timeout/failure.
+    fn lock_failures(&self) -> std::sync::MutexGuard<'_, HashMap<String, u8>> {
+        match self.consecutive_failures.lock() {
             Ok(g) => g,
             Err(poisoned) => {
                 tracing::warn!(
@@ -85,24 +98,19 @@ impl TokenOnlyDemotionState {
                 );
                 let mut g = poisoned.into_inner();
                 *g = Default::default();
+                self.consecutive_failures.clear_poison();
                 g
             }
-        };
+        }
+    }
+
+    fn is_demoted(&self, generator_id: &str) -> bool {
+        let failures = self.lock_failures();
         failures.get(generator_id).copied().unwrap_or(0) >= TOKEN_ONLY_DEMOTE_AFTER_FAILURES
     }
 
     fn record_timeout(&self, generator_id: &str) -> u8 {
-        let mut failures = match self.consecutive_failures.lock() {
-            Ok(g) => g,
-            Err(poisoned) => {
-                tracing::warn!(
-                    "token_only demotion mutex was poisoned; clearing state and continuing"
-                );
-                let mut g = poisoned.into_inner();
-                *g = Default::default();
-                g
-            }
-        };
+        let mut failures = self.lock_failures();
         let count = failures.entry(generator_id.to_string()).or_insert(0);
         *count = count.saturating_add(1);
         *count
@@ -133,17 +141,7 @@ impl TokenOnlyDemotionState {
     /// design — token_only sources that touch a host API surface that
     /// diagnostic and we deliberately do not treat that as a failure.
     fn record_success(&self, generator_id: &str) {
-        let mut failures = match self.consecutive_failures.lock() {
-            Ok(g) => g,
-            Err(poisoned) => {
-                tracing::warn!(
-                    "token_only demotion mutex was poisoned; clearing state and continuing"
-                );
-                let mut g = poisoned.into_inner();
-                *g = Default::default();
-                g
-            }
-        };
+        let mut failures = self.lock_failures();
         failures.remove(generator_id);
     }
 }
@@ -4484,6 +4482,76 @@ mod tests {
         assert!(
             results.is_empty(),
             "requires_js without js_runtime must yield empty results, got {results:?}"
+        );
+    }
+
+    #[test]
+    fn token_only_demotion_recovers_from_poisoned_mutex() {
+        // Verifies the contract of `TokenOnlyDemotionState::lock_failures`:
+        // a poisoned mutex (from a panicking holder) must NOT propagate as
+        // a `PoisonError` to callers — `is_demoted`, `record_timeout`, and
+        // `record_success` must all return without panic, and the helper
+        // must wipe the (potentially torn) map so stale counts can't be
+        // observed by the call site. The very first recovery invocation
+        // must also clear the mutex's poison flag, so subsequent locks
+        // take the `Ok` arm and the `tracing::warn!` fires exactly once
+        // per poison event rather than on every keystroke for the rest
+        // of the process lifetime.
+        let state = Arc::new(TokenOnlyDemotionState::default());
+
+        // Pre-poison: lock the mutex inside a thread that then panics.
+        let state_clone = Arc::clone(&state);
+        let join = std::thread::spawn(move || {
+            let mut g = state_clone
+                .consecutive_failures
+                .lock()
+                .expect("first lock succeeds");
+            g.insert("gen-x".to_string(), 7); // torn write left behind
+            panic!("simulated panic to poison the mutex");
+        })
+        .join();
+        assert!(join.is_err(), "helper thread should have panicked");
+        assert!(
+            state.consecutive_failures.is_poisoned(),
+            "mutex must be poisoned after the helper thread panicked while holding it"
+        );
+
+        // First recovery call: must not panic, must ignore the torn count
+        // (`gen-x => 7` would otherwise trigger a false demotion), and
+        // must clear the poison flag as a side effect.
+        assert!(
+            !state.is_demoted("gen-x"),
+            "is_demoted must recover from poison and ignore the torn count"
+        );
+        assert!(
+            state.consecutive_failures.lock().is_ok(),
+            "first poison-recovery call must clear the poison flag so subsequent locks succeed"
+        );
+        assert!(
+            !state.consecutive_failures.is_poisoned(),
+            "poison flag must be cleared after the first recovery invocation"
+        );
+
+        // Remaining call sites must keep working normally once the mutex
+        // has recovered — they take the `Ok` arm now and behave as on a
+        // fresh state.
+        let count = state.record_timeout("gen-x");
+        assert_eq!(
+            count, 1,
+            "record_timeout must start fresh after wipe, not resume from the torn value"
+        );
+        state.record_success("gen-x");
+
+        // Final invariant: state observed via a plain lock (no recovery
+        // needed anymore) is empty — record_success removed the entry it
+        // just inserted.
+        let g = state
+            .consecutive_failures
+            .lock()
+            .expect("mutex must no longer be poisoned");
+        assert!(
+            g.is_empty(),
+            "after recovery + record_success, the failures map must be empty, got {g:?}"
         );
     }
 }
