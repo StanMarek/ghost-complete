@@ -287,7 +287,7 @@ The `release` workflow ([`.github/workflows/release.yml`](../.github/workflows/r
 **Failure modes:**
 
 - No executable `ghost-complete` extracted from the archive.
-- `validate-specs --json` or `status --json` returns fewer than 10 fully-functional specs (regression in the embedded corpus).
+- `status --json` returns fewer than 10 `fully_functional` specs (regression in the embedded corpus). `validate-specs --json` is exercised for crash/error but not for spec count.
 - `install --dry-run` writes to the isolated `HOME` (a real side effect during what is supposed to be a dry run).
 - Arch detection inconclusive (WARN on stderr; structural-only smoke for that artifact).
 - Zero artifacts of the expected shape found at all (driver loop in the workflow step fails closed).

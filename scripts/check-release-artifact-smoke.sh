@@ -20,7 +20,14 @@ ARTIFACT="$1"
 
 WORK="$(mktemp -d)"
 ISO_HOME="$(mktemp -d)"
+# Capture cwd before installing the trap so an early failure between here and
+# the `cd "${ISO_HOME}"` below still has a valid restore target. The trap
+# leaves cwd at "/" if ORIGINAL_PWD is unset (or the directory is gone) so
+# the subsequent `rm -rf` is not running from inside ISO_HOME on filesystems
+# (NFS, FUSE) that return EBUSY for self-deleted cwds.
+ORIGINAL_PWD="$PWD"
 cleanup() {
+    cd "${ORIGINAL_PWD:-/}" 2>/dev/null || true
     rm -rf "${WORK}" "${ISO_HOME}"
 }
 trap cleanup EXIT
@@ -95,15 +102,28 @@ print_head 5 "${HELP_OUT}"
 # binary's embedded-only view — precisely the regression this gate exists
 # to catch. ISO_HOME contains no specs/ subdir and no config dir.
 ISO_ENV=(env HOME="${ISO_HOME}" XDG_CONFIG_HOME="${ISO_HOME}/.config")
-ORIGINAL_PWD="$PWD"
 cd "${ISO_HOME}"
 
+# Capture-and-fail pattern: `OUT=$(cmd 2>&1)` under `set -e` discards the
+# captured output if cmd exits non-zero, leaving CI logs with only the exit
+# code. Wrap each capture in an explicit failure printer so stderr from the
+# binary surfaces in the workflow log when the smoke step fails.
 echo "validate-specs (first 5 of JSONL output):"
-VALIDATE_OUT="$("${ISO_ENV[@]}" "${BIN}" validate-specs --json)"
+if ! VALIDATE_OUT="$("${ISO_ENV[@]}" "${BIN}" validate-specs --json 2>&1)"; then
+    echo "FAIL: validate-specs exited non-zero" >&2
+    echo "Output:" >&2
+    echo "${VALIDATE_OUT}" >&2
+    exit 1
+fi
 print_head 5 "${VALIDATE_OUT}"
 
 echo "status --json (fully_functional count):"
-STATUS_JSON="$("${ISO_ENV[@]}" "${BIN}" status --json)"
+if ! STATUS_JSON="$("${ISO_ENV[@]}" "${BIN}" status --json 2>&1)"; then
+    echo "FAIL: status --json exited non-zero" >&2
+    echo "Output:" >&2
+    echo "${STATUS_JSON}" >&2
+    exit 1
+fi
 SPECS=""
 while IFS= read -r line; do
     if [[ "${line}" == *'"fully_functional"'* ]]; then
@@ -120,7 +140,12 @@ echo "${SPECS}"
 }
 
 echo "install --dry-run (isolated HOME=${ISO_HOME}):"
-INSTALL_OUT="$("${ISO_ENV[@]}" "${BIN}" install --dry-run)"
+if ! INSTALL_OUT="$("${ISO_ENV[@]}" "${BIN}" install --dry-run 2>&1)"; then
+    echo "FAIL: install --dry-run exited non-zero" >&2
+    echo "Output:" >&2
+    echo "${INSTALL_OUT}" >&2
+    exit 1
+fi
 print_head 20 "${INSTALL_OUT}"
 
 # Confirm dry-run did not write anything visible under the isolated HOME.
@@ -133,8 +158,7 @@ if [[ -d "${ISO_HOME}/.config/ghost-complete" ]]; then
     exit 1
 fi
 
-# Step back out of ISO_HOME so the EXIT trap can rm -rf it cleanly on every
-# platform.
-cd "${ORIGINAL_PWD}"
+# The EXIT trap restores cwd to ORIGINAL_PWD before `rm -rf`-ing ISO_HOME so
+# the unhappy path is covered too — no trailing manual `cd` needed here.
 
 echo "OK: release artifact smoke passed for ${ARTIFACT}"

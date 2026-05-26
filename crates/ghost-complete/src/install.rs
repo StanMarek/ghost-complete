@@ -467,9 +467,9 @@ fn install_to_with_cache_hooks(
     // the write completes. This preserves restrictive modes like 0o600 that
     // security-conscious users may have set on .zshrc containing secrets.
     //
-    // If the parent directory is unwritable (nix-managed /etc/zshrc, sealed
-    // Home Manager profile), backup creation is skipped and the .zshrc-write
-    // fallback below handles the manual-instructions path.
+    // If the parent directory is unwritable (nix-managed `~/.zshrc` symlink,
+    // sealed Home Manager profile), backup creation is skipped and the
+    // .zshrc-write fallback below handles the manual-instructions path.
     if zshrc_path.exists() {
         let backup = zshrc_path.with_extension("backup.ghost-complete");
         let src_perms = fs::metadata(zshrc_path)

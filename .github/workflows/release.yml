@@ -243,6 +243,13 @@ jobs:
     needs:
       - build-local-artifacts
       - build-global-artifacts
+    # Default `needs:` semantics auto-skip this job if either upstream build is
+    # skipped (e.g. a dist plan that produces only local artifacts skips the
+    # global build), which would let the host job's allow-list ('skipped' is
+    # treated like 'success') publish unsmoked artifacts. Run whenever either
+    # build job succeeded; the driver loop below fails closed if no .tar.gz/
+    # .tar.xz artifacts are present.
+    if: ${{ always() && (needs.build-local-artifacts.result == 'success' || needs.build-global-artifacts.result == 'success') }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v6

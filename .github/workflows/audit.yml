@@ -37,6 +37,7 @@ jobs:
         uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check
-          # Match deny.toml policy. log + warn for transient duplicates
-          # while we ladder up to multiple-versions = "deny".
+          # Resolve all optional features so duplicate-dep alerts hidden behind
+          # opt-in features still surface. The warn-vs-deny ladder for
+          # multiple-versions is governed by deny.toml, not by this flag.
           arguments: --all-features

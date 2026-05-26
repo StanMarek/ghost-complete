@@ -80,10 +80,15 @@ pub(crate) fn atomic_write_preserving_mode(path: &Path, bytes: &[u8]) -> anyhow:
 /// walk here means the silent contract documented above lives next to
 /// the code that establishes it.
 pub(crate) fn is_permission_denied(err: &anyhow::Error) -> bool {
+    // Scan every io::Error in the chain rather than stopping at the first.
+    // `find_map` would return the kind of the topmost io::Error only, so a
+    // future refactor that wraps a non-PermissionDenied io::Error around a
+    // genuine PermissionDenied one would silently report `false` and fall
+    // through to the catch-all in `install_to_with_cache_hooks`, breaking
+    // the documented nix-managed `~/.zshrc` fallback.
     err.chain()
-        .find_map(|src| src.downcast_ref::<std::io::Error>())
-        .map(|ioe| ioe.kind())
-        == Some(std::io::ErrorKind::PermissionDenied)
+        .filter_map(|src| src.downcast_ref::<std::io::Error>())
+        .any(|ioe| ioe.kind() == std::io::ErrorKind::PermissionDenied)
 }
 
 #[cfg(test)]
@@ -190,5 +195,51 @@ mod tests {
 
         let not_found = anyhow::Error::new(std::io::Error::from(std::io::ErrorKind::NotFound));
         assert!(!is_permission_denied(&not_found));
+    }
+
+    #[test]
+    fn is_permission_denied_finds_inner_permission_denied_through_wrapping_io_error() {
+        // Regression pin for the chain-walk contract: when a non-PermissionDenied
+        // io::Error wraps (or layers above) a PermissionDenied io::Error, the
+        // helper must still report `true`. A naive `find_map` would terminate
+        // at the first downcastable io::Error and miss a deeper PermissionDenied,
+        // silently breaking the nix-managed `~/.zshrc` fallback in
+        // `install_to_with_cache_hooks`.
+        use std::io::{Error, ErrorKind};
+
+        // Shape A: original PermissionDenied with a non-permission io::Error
+        // layered on top via `.context()`. Today's chain shape across
+        // `atomic_write_preserving_mode` is exactly this (context-wrapped
+        // io::Error at the leaf), so this pins the realistic case.
+        let outer = Error::other("outer-io");
+        let err = anyhow::Error::new(Error::from(ErrorKind::PermissionDenied)).context(outer);
+        assert!(
+            is_permission_denied(&err),
+            "outer non-permission io::Error must not mask a deeper PermissionDenied; got chain: {err:?}"
+        );
+
+        // Shape B: a custom error layer with a PermissionDenied io::Error as
+        // its `source()`, then a string `.context()` on top. Exercises the
+        // case where filter_map skips non-io chain links to reach the
+        // PermissionDenied at the bottom.
+        #[derive(Debug)]
+        struct CustomLayer(Error);
+        impl std::fmt::Display for CustomLayer {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "custom-layer")
+            }
+        }
+        impl std::error::Error for CustomLayer {
+            fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+                Some(&self.0)
+            }
+        }
+
+        let layered = CustomLayer(Error::from(ErrorKind::PermissionDenied));
+        let err = anyhow::Error::new(layered).context("string context on top");
+        assert!(
+            is_permission_denied(&err),
+            "PermissionDenied buried under a custom Error layer plus string context must still be detected; got chain: {err:?}"
+        );
     }
 }

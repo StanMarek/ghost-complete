@@ -190,15 +190,25 @@ fn check_theme(config: &gc_config::GhostConfig) -> CheckResult {
 
 /// Parsed outcome from probing a managed block's `source` line.
 ///
-/// Four genuinely distinct outcomes — encoded so the caller can pick a
-/// specific diagnostic instead of conflating them. `BlockNotFound` is
-/// unreachable from `check_shell_integration` (which gates on
+/// Distinct outcomes — encoded so the caller can match exhaustively and
+/// pick a specific diagnostic instead of conflating them. `BlockNotFound`
+/// is unreachable from `check_shell_integration` (which gates on
 /// `content.contains(BEGIN)`), but the function does not know that, so
 /// it must still encode the outcome rather than panic.
 #[derive(Debug, PartialEq, Eq)]
 enum BlockSource {
-    /// Block well-formed, `source <path>` line parsed cleanly.
+    /// Block well-formed, exactly one `source <path>` line parsed cleanly.
     Parsed(PathBuf),
+    /// Block well-formed, but contains two or more parseable `source`
+    /// lines. Clean installs only ever emit one per block — a hand edit
+    /// or merge-conflict resolution that duplicated the `source` line
+    /// silently makes the user's shell execute every listed path on
+    /// startup. Surface as Fail with the first + all additional paths
+    /// so the user can see the divergence in the diagnostic.
+    MultipleSourceLines {
+        first: PathBuf,
+        additional: Vec<PathBuf>,
+    },
     /// `BEGIN` marker present but no matching `END` marker.
     Unterminated,
     /// Block well-formed but contains no `source`/`builtin source` line —
@@ -233,6 +243,7 @@ fn extract_block_source_path(content: &str, begin: &str, end: &str) -> BlockSour
     let block = &after_begin[..block_end_offset];
 
     let mut saw_source_line = false;
+    let mut parsed_paths: Vec<PathBuf> = Vec::new();
     for line in block.lines() {
         let trimmed = line.trim();
         // Match only `[builtin ]source <quoted-path>` lines. Every other
@@ -253,25 +264,31 @@ fn extract_block_source_path(content: &str, begin: &str, end: &str) -> BlockSour
         // escapes embedded `'` as `'\''`.
         if let Some(inner) = quoted.strip_prefix('\'').and_then(|s| s.strip_suffix('\'')) {
             let unescaped = inner.replace("'\\''", "'");
-            return BlockSource::Parsed(PathBuf::from(unescaped));
+            parsed_paths.push(PathBuf::from(unescaped));
+            continue;
         }
         // v0.6.1–v0.7.0 used naked `format!("source \"{}\"", path.display())` —
-        // double-quoted, no escaping. The only sequences worth unescaping
-        // are the ones a literal raw path could not have contained: `\"`
-        // and `\\`. (Old format never wrote escapes, so these unescapes are
-        // pass-through on every real legacy install, and harmless if a
-        // user later hand-escaped a backslash or quote.)
+        // double-quoted, no escaping. Real legacy installs never contained
+        // backslash-escape sequences, so the parser must pass the inner
+        // bytes through untouched. A path whose home contains a literal
+        // `\\` byte would otherwise be silently mangled into `\`.
         if let Some(inner) = quoted.strip_prefix('"').and_then(|s| s.strip_suffix('"')) {
-            let unescaped = inner.replace("\\\"", "\"").replace("\\\\", "\\");
-            return BlockSource::Parsed(PathBuf::from(unescaped));
+            parsed_paths.push(PathBuf::from(inner));
+            continue;
         }
         // Unrecognized quoting on this line — keep scanning; another line
         // in the same block might still match.
     }
-    if saw_source_line {
-        BlockSource::UnparseableQuoting
-    } else {
-        BlockSource::NoSourceLine
+    match parsed_paths.len() {
+        0 if saw_source_line => BlockSource::UnparseableQuoting,
+        0 => BlockSource::NoSourceLine,
+        1 => BlockSource::Parsed(parsed_paths.into_iter().next().expect("len == 1")),
+        _ => {
+            let mut iter = parsed_paths.into_iter();
+            let first = iter.next().expect("len >= 2");
+            let additional: Vec<PathBuf> = iter.collect();
+            BlockSource::MultipleSourceLines { first, additional }
+        }
     }
 }
 
@@ -280,7 +297,7 @@ fn extract_block_source_path(content: &str, begin: &str, end: &str) -> BlockSour
 /// Beyond verifying the init marker is present, this also surfaces:
 ///
 /// * a stray init block with no shell-integration block (half-installed),
-/// * duplicate init blocks (a botched manual edit),
+/// * duplicate init OR shell-integration blocks (a botched manual edit),
 /// * a managed block whose `source` line cannot be parsed (hand-edited
 ///   beyond recognition),
 /// * the file the managed block actually `source`s missing or unreadable
@@ -293,15 +310,25 @@ fn extract_block_source_path(content: &str, begin: &str, end: &str) -> BlockSour
 /// * the `.zshrc` sourcing from a non-canonical location, so the next
 ///   `ghost-complete install` won't silently swap the user's edits out.
 ///
-/// Order: existence/readability Fails first (the user's shell really is
-/// broken), then legacy OSC 7770 reporter Warn (checked before content
-/// drift so an upgrading user with a pre-OSC 7772 file on disk still
-/// gets the migration-specific hint), then content drift Warn, then
-/// non-canonical path Warn. Each check returns on its first finding —
-/// surfacing the most pressing issue keeps the doctor output focused.
+/// Order (each step returns on its first finding so the output stays
+/// focused on the most pressing issue):
 ///
-/// All "no install yet" paths use `Skip` so the doctor still exits 0 on
-/// a clean system that has never run `install`.
+/// 1. both managed blocks present (else half-installed Fail / clean Skip),
+/// 2. no duplicate managed blocks (else hand-edit Fail),
+/// 3. `source` line in each block is parseable (else class-specific Fail
+///    for unterminated / unrecognized quoting / multiple sources / one
+///    block missing the source line; both blocks missing is the pre-v0.9
+///    install style and Warn-with-migration-nudge),
+/// 4. referenced script files exist + are readable (else Fail),
+/// 5. legacy OSC 7770 reporter Warn (checked before content drift so an
+///    upgrading user with a pre-OSC 7772 file on disk still gets the
+///    migration-specific hint),
+/// 6. content drift Warn (installed snippets vs embedded),
+/// 7. non-canonical path Warn.
+///
+/// A clean system that never ran `install` (no managed blocks present)
+/// uses `Skip` so the doctor still exits 0; partial installs (one block
+/// but not the other) are escalated to `Fail` with concrete remediation.
 fn check_shell_integration() -> CheckResult {
     let Some(home) = dirs::home_dir() else {
         return CheckResult::skip("no $HOME — cannot check shell integration");
@@ -377,6 +404,14 @@ fn check_shell_integration() -> CheckResult {
             return CheckResult::fail(
                 "ghost-complete managed block in .zshrc is missing its END marker — \
                  run `ghost-complete uninstall` then reinstall",
+            );
+        }
+        (BlockSource::MultipleSourceLines { .. }, _)
+        | (_, BlockSource::MultipleSourceLines { .. }) => {
+            return CheckResult::fail(
+                "ghost-complete managed block in .zshrc has multiple `source` lines — \
+                 every listed path will run at shell startup. Run `ghost-complete \
+                 uninstall` then reinstall to restore a single source line per block.",
             );
         }
         (BlockSource::UnparseableQuoting, _) | (_, BlockSource::UnparseableQuoting) => {
@@ -2803,17 +2838,19 @@ aws_access_key_id = AKIA...
     }
 
     #[test]
-    fn extract_unescapes_double_quote_legacy() {
-        // Legacy v0.6.1–v0.7.0 form: double-quoted, no escaping. A user
-        // who later hand-escaped a stray `\"` or `\\` should still get a
-        // sensible unescape.
+    fn extract_passes_through_double_quote_legacy() {
+        // Legacy v0.6.1–v0.7.0 form: double-quoted, no escaping. Real
+        // legacy installs never wrote backslash escapes — the inner bytes
+        // must pass through untouched so a `$HOME` containing literal `\\`
+        // (allowed on Unix) is not silently mangled into `\` and then
+        // resolved to a non-existent file.
         let block = format!(
             "{TEST_INIT_BEGIN}\nsource \"/home/user/dir\\\\sub/init.zsh\"\n{TEST_INIT_END}",
         );
         let got = extract_block_source_path(&block, TEST_INIT_BEGIN, TEST_INIT_END);
         assert_eq!(
             got,
-            BlockSource::Parsed(PathBuf::from("/home/user/dir\\sub/init.zsh"))
+            BlockSource::Parsed(PathBuf::from("/home/user/dir\\\\sub/init.zsh"))
         );
     }
 
@@ -2873,5 +2910,27 @@ aws_access_key_id = AKIA...
         let block = "no managed block here at all";
         let got = extract_block_source_path(block, TEST_INIT_BEGIN, TEST_INIT_END);
         assert_eq!(got, BlockSource::BlockNotFound);
+    }
+
+    #[test]
+    fn extract_returns_multiple_source_lines_when_block_has_two_sources() {
+        // A hand edit or merge-conflict resolution that duplicated the
+        // `source` line. Clean installs only ever emit one — surfacing
+        // the divergence as a distinct variant lets the doctor Fail with
+        // a remediation that names the actual symptom.
+        let block = format!(
+            "{TEST_INIT_BEGIN}\n\
+             source '/home/user/init-a.zsh'\n\
+             builtin source '/home/user/init-b.zsh'\n\
+             {TEST_INIT_END}",
+        );
+        let got = extract_block_source_path(&block, TEST_INIT_BEGIN, TEST_INIT_END);
+        assert_eq!(
+            got,
+            BlockSource::MultipleSourceLines {
+                first: PathBuf::from("/home/user/init-a.zsh"),
+                additional: vec![PathBuf::from("/home/user/init-b.zsh")],
+            }
+        );
     }
 }

@@ -16,10 +16,16 @@ fn doctor_exits_nonzero_when_config_is_malformed() {
     let cfg = tmp.path().join("config.toml");
     std::fs::write(&cfg, "this = is = not = valid = toml").unwrap();
 
+    // Pin HOME to the clean temp dir so check_shell_integration
+    // deterministically Skips. Without this pin, a developer running
+    // tests on a machine with a half-installed ghost-complete in their
+    // real ~/.zshrc could see check_shell_integration emit extra
+    // [FAIL] lines, masking the malformed-config diagnostic.
     let output = Command::new(ghost_bin())
         .arg("--config")
         .arg(&cfg)
         .arg("doctor")
+        .env("HOME", tmp.path())
         .output()
         .expect("failed to spawn ghost-complete");
 
@@ -901,5 +907,222 @@ fn doctor_fails_when_one_block_has_no_parseable_source() {
     assert!(
         combined.contains("no parseable"),
         "doctor must surface 'no parseable' in the message; got:\n{combined}",
+    );
+}
+
+#[test]
+fn doctor_fails_when_init_block_has_no_parseable_source() {
+    // Mirror of doctor_fails_when_one_block_has_no_parseable_source, but
+    // inverted: the init block has only marker comments (no source line)
+    // while the shell-integration block keeps a normal source line. This
+    // pins the (BlockSource::NoSourceLine, _) match arm in
+    // check_shell_integration that emits the init-specific Fail message,
+    // discriminating from the shell-integration-block-corrupt arm covered
+    // by the existing test.
+    use tempfile::TempDir;
+
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path();
+    let zshrc = home.join(".zshrc");
+    let zshrc_contents = "# >>> ghost-complete initialize >>>\n\
+         # (source line removed by a botched manual edit)\n\
+         # <<< ghost-complete initialize <<<\n\
+         # >>> ghost-complete shell integration >>>\n\
+         source '/home/user/ghost-complete.zsh'\n\
+         # <<< ghost-complete shell integration <<<\n";
+    std::fs::write(&zshrc, zshrc_contents).unwrap();
+
+    let cfg = home.join("config.toml");
+    std::fs::write(&cfg, "").unwrap();
+
+    let output = Command::new(ghost_bin())
+        .arg("--config")
+        .arg(&cfg)
+        .arg("doctor")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete");
+
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout),
+    );
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "doctor must exit 1 when the init block lacks a parseable source.\n\
+         combined:\n{combined}",
+    );
+    assert!(
+        combined.contains("[FAIL]"),
+        "doctor must emit [FAIL] for init-block hand-edit corruption; got:\n{combined}",
+    );
+    assert!(
+        combined.contains("init block"),
+        "doctor must name the init block (discriminating from the \
+         shell-integration block wording); got:\n{combined}",
+    );
+}
+
+#[test]
+fn doctor_fails_when_managed_block_missing_end_marker() {
+    // The init block opens with `# >>> ghost-complete initialize >>>` and
+    // a `source '...'` line but is never closed by the matching `# <<< ...
+    // <<<` marker. The shell-integration block remains intact (otherwise
+    // check 1 would Fail first). The doctor must Fail with the END-marker
+    // diagnostic — a regression that fell through to UnparseableQuoting or
+    // BlockNotFound would silently downgrade the user-facing message.
+    use tempfile::TempDir;
+
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path();
+    let zshrc = home.join(".zshrc");
+    let zshrc_contents = "# >>> ghost-complete initialize >>>\n\
+         source '/home/user/init.zsh'\n\
+         # (no closing END marker — the rest of the file follows)\n\
+         # >>> ghost-complete shell integration >>>\n\
+         source '/home/user/ghost-complete.zsh'\n\
+         # <<< ghost-complete shell integration <<<\n";
+    std::fs::write(&zshrc, zshrc_contents).unwrap();
+
+    let cfg = home.join("config.toml");
+    std::fs::write(&cfg, "").unwrap();
+
+    let output = Command::new(ghost_bin())
+        .arg("--config")
+        .arg(&cfg)
+        .arg("doctor")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete");
+
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout),
+    );
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "doctor must exit 1 when a managed block is missing its END marker.\n\
+         combined:\n{combined}",
+    );
+    assert!(
+        combined.contains("[FAIL]"),
+        "doctor must emit [FAIL] for the unterminated managed block; \
+         got:\n{combined}",
+    );
+    assert!(
+        combined.contains("END marker"),
+        "doctor must surface the specific END-marker diagnostic; \
+         got:\n{combined}",
+    );
+}
+
+#[test]
+fn doctor_fails_on_unparseable_quoted_source_path() {
+    // The init block contains a `source <path>` line with neither single
+    // nor double quotes. The doctor must Fail with the unrecognized-quoting
+    // diagnostic — a regression that bucketed this under NoSourceLine would
+    // silently downgrade the user-facing message from the actionable
+    // 'unrecognized quoting' wording.
+    use tempfile::TempDir;
+
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path();
+    let zshrc = home.join(".zshrc");
+    let zshrc_contents = "# >>> ghost-complete initialize >>>\n\
+         source /home/user/init.zsh\n\
+         # <<< ghost-complete initialize <<<\n\
+         # >>> ghost-complete shell integration >>>\n\
+         source '/home/user/ghost-complete.zsh'\n\
+         # <<< ghost-complete shell integration <<<\n";
+    std::fs::write(&zshrc, zshrc_contents).unwrap();
+
+    let cfg = home.join("config.toml");
+    std::fs::write(&cfg, "").unwrap();
+
+    let output = Command::new(ghost_bin())
+        .arg("--config")
+        .arg(&cfg)
+        .arg("doctor")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete");
+
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout),
+    );
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "doctor must exit 1 when a managed block has an unparseable quoted source.\n\
+         combined:\n{combined}",
+    );
+    assert!(
+        combined.contains("[FAIL]"),
+        "doctor must emit [FAIL] for the unparseable quoting; got:\n{combined}",
+    );
+    assert!(
+        combined.contains("unrecognized quoting"),
+        "doctor must surface the specific 'unrecognized quoting' diagnostic; \
+         got:\n{combined}",
+    );
+}
+
+#[test]
+fn doctor_fails_on_duplicate_source_lines_in_managed_block() {
+    // A hand edit or merge-conflict resolution that duplicated the
+    // `source` line within a single managed block. Clean installs only
+    // ever emit one — the user's shell would silently execute every
+    // listed path on startup. The doctor must Fail with a remediation
+    // message that names the multiple-source symptom rather than
+    // silently picking the first path.
+    use tempfile::TempDir;
+
+    let tmp = TempDir::new().unwrap();
+    let home = tmp.path();
+    let zshrc = home.join(".zshrc");
+    let zshrc_contents = "# >>> ghost-complete initialize >>>\n\
+         source '/home/user/init-a.zsh'\n\
+         builtin source '/home/user/init-b.zsh'\n\
+         # <<< ghost-complete initialize <<<\n\
+         # >>> ghost-complete shell integration >>>\n\
+         source '/home/user/ghost-complete.zsh'\n\
+         # <<< ghost-complete shell integration <<<\n";
+    std::fs::write(&zshrc, zshrc_contents).unwrap();
+
+    let cfg = home.join("config.toml");
+    std::fs::write(&cfg, "").unwrap();
+
+    let output = Command::new(ghost_bin())
+        .arg("--config")
+        .arg(&cfg)
+        .arg("doctor")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete");
+
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stderr),
+        String::from_utf8_lossy(&output.stdout),
+    );
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "doctor must exit 1 when a managed block has multiple source lines.\n\
+         combined:\n{combined}",
+    );
+    assert!(
+        combined.contains("[FAIL]"),
+        "doctor must emit [FAIL] for duplicate source lines; got:\n{combined}",
+    );
+    assert!(
+        combined.contains("multiple `source` lines"),
+        "doctor must surface the multiple-source diagnostic; got:\n{combined}",
     );
 }
