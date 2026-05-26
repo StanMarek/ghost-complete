@@ -371,7 +371,7 @@ fn check_shell_integration() -> CheckResult {
         ));
     }
 
-    // 3. Referenced script files exist + readable?
+    // 3. Source line in each block is parseable?
     // Parse the actual source paths from each managed block; the
     // canonical install dir is a separate check below. This catches
     // stale .zshrc managed blocks pointing at long-gone install paths
@@ -406,13 +406,31 @@ fn check_shell_integration() -> CheckResult {
                  run `ghost-complete uninstall` then reinstall",
             );
         }
-        (BlockSource::MultipleSourceLines { .. }, _)
-        | (_, BlockSource::MultipleSourceLines { .. }) => {
-            return CheckResult::fail(
-                "ghost-complete managed block in .zshrc has multiple `source` lines — \
-                 every listed path will run at shell startup. Run `ghost-complete \
-                 uninstall` then reinstall to restore a single source line per block.",
-            );
+        (BlockSource::MultipleSourceLines { first, additional }, _) => {
+            let count = 1 + additional.len();
+            let paths = std::iter::once(first.display().to_string())
+                .chain(additional.iter().map(|p| p.display().to_string()))
+                .collect::<Vec<_>>()
+                .join(", ");
+            return CheckResult::fail(format!(
+                "ghost-complete init block in .zshrc has {count} `source` lines \
+                 ({paths}) — every listed path will run at shell startup. Run \
+                 `ghost-complete uninstall` then reinstall to restore a single \
+                 source line per block.",
+            ));
+        }
+        (_, BlockSource::MultipleSourceLines { first, additional }) => {
+            let count = 1 + additional.len();
+            let paths = std::iter::once(first.display().to_string())
+                .chain(additional.iter().map(|p| p.display().to_string()))
+                .collect::<Vec<_>>()
+                .join(", ");
+            return CheckResult::fail(format!(
+                "ghost-complete shell-integration block in .zshrc has {count} \
+                 `source` lines ({paths}) — every listed path will run at shell \
+                 startup. Run `ghost-complete uninstall` then reinstall to restore \
+                 a single source line per block.",
+            ));
         }
         (BlockSource::UnparseableQuoting, _) | (_, BlockSource::UnparseableQuoting) => {
             return CheckResult::fail(
@@ -443,6 +461,7 @@ fn check_shell_integration() -> CheckResult {
         }
     };
 
+    // 4. Referenced script files exist + readable?
     let installed_init = match std::fs::read_to_string(&init_path) {
         Ok(s) => s,
         Err(e) => {
@@ -468,7 +487,7 @@ fn check_shell_integration() -> CheckResult {
         }
     };
 
-    // 4. Legacy OSC 7770 reporter present? Checked BEFORE the content-drift
+    // 5. Legacy OSC 7770 reporter present? Checked BEFORE the content-drift
     // comparison so an upgrading user with a pre-OSC 7772 ghost-complete.zsh
     // on disk gets a migration-specific message. The embedded snippet no
     // longer emits OSC 7770, so deferring this check until after the drift
@@ -479,7 +498,7 @@ fn check_shell_integration() -> CheckResult {
         );
     }
 
-    // 5. Installed snippets match embedded versions?
+    // 6. Installed snippets match embedded versions?
     if installed_init != ZSH_INIT || installed_script != ZSH_INTEGRATION {
         return CheckResult::warn(format!(
             "shell integration files at {} / {} drifted from embedded version — run `ghost-complete install` to refresh",
@@ -488,7 +507,7 @@ fn check_shell_integration() -> CheckResult {
         ));
     }
 
-    // 6. Source paths point at the canonical install location?
+    // 7. Source paths point at the canonical install location?
     // Drift here is non-fatal (the user may deliberately ship their own
     // copy), but flag it so the next `ghost-complete install` doesn't
     // appear to swap their edits out from under them.

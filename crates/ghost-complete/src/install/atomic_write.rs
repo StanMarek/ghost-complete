@@ -77,8 +77,9 @@ pub(crate) fn atomic_write_preserving_mode(path: &Path, bytes: &[u8]) -> anyhow:
 /// manual-instructions fallback when `.zshrc` (or its parent dir) is not
 /// writable — e.g. on a nix-managed `~/.zshrc`. Callers that just want a
 /// boolean should not have to re-derive the downcast inline; keeping the
-/// walk here means the silent contract documented above lives next to
-/// the code that establishes it.
+/// walk here means the io::Error chain-preservation contract documented
+/// on `atomic_write_preserving_mode` above lives next to the code that
+/// establishes it.
 pub(crate) fn is_permission_denied(err: &anyhow::Error) -> bool {
     // Scan every io::Error in the chain rather than stopping at the first.
     // `find_map` would return the kind of the topmost io::Error only, so a

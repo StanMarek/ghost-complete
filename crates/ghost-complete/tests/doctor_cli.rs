@@ -1122,7 +1122,24 @@ fn doctor_fails_on_duplicate_source_lines_in_managed_block() {
         "doctor must emit [FAIL] for duplicate source lines; got:\n{combined}",
     );
     assert!(
-        combined.contains("multiple `source` lines"),
+        combined.contains("`source` lines"),
         "doctor must surface the multiple-source diagnostic; got:\n{combined}",
+    );
+    // Pin the path-binding contract documented on
+    // `BlockSource::MultipleSourceLines` — the consuming arm must
+    // interpolate the offending paths so the user can grep them out of
+    // `.zshrc` without having to manually locate each duplicated line.
+    assert!(
+        combined.contains("/home/user/init-a.zsh") || combined.contains("/home/user/init-b.zsh"),
+        "doctor must name at least one of the duplicated source paths so the \
+         user can find them in `.zshrc`; got:\n{combined}",
+    );
+    // The diagnostic must also discriminate WHICH managed block is
+    // corrupted (init vs shell-integration). The fixture above duplicates
+    // the init block, so the message must specifically identify it.
+    assert!(
+        combined.contains("init block"),
+        "doctor must name the init block specifically when only that block \
+         has multiple source lines; got:\n{combined}",
     );
 }
