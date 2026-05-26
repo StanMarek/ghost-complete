@@ -1127,12 +1127,17 @@ fn doctor_fails_on_duplicate_source_lines_in_managed_block() {
     );
     // Pin the path-binding contract documented on
     // `BlockSource::MultipleSourceLines` — the consuming arm must
-    // interpolate the offending paths so the user can grep them out of
-    // `.zshrc` without having to manually locate each duplicated line.
+    // interpolate `first` AND every entry in `additional` so the user
+    // can grep all duplicated lines out of `.zshrc`. Asserted as two
+    // separate checks (not OR) so a regression that drops `additional`
+    // from the interpolation surfaces here.
     assert!(
-        combined.contains("/home/user/init-a.zsh") || combined.contains("/home/user/init-b.zsh"),
-        "doctor must name at least one of the duplicated source paths so the \
-         user can find them in `.zshrc`; got:\n{combined}",
+        combined.contains("/home/user/init-a.zsh"),
+        "doctor must name the first duplicated source path (init-a.zsh); got:\n{combined}",
+    );
+    assert!(
+        combined.contains("/home/user/init-b.zsh"),
+        "doctor must name the additional duplicated source path (init-b.zsh); got:\n{combined}",
     );
     // The diagnostic must also discriminate WHICH managed block is
     // corrupted (init vs shell-integration). The fixture above duplicates

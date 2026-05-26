@@ -4506,7 +4506,7 @@ mod tests {
                 .consecutive_failures
                 .lock()
                 .expect("first lock succeeds");
-            g.insert("gen-x".to_string(), 7); // completed insert the poison flag now makes unsafe to observe
+            g.insert("gen-x".to_string(), 7); // completed insert; the poison flag now makes it unsafe to observe
             panic!("simulated panic to poison the mutex");
         })
         .join();
