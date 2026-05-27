@@ -7,6 +7,7 @@ use gc_suggest::specs::{
     GeneratorSpec, JsRuntimeKind, OptionSpec, SubcommandSpec,
 };
 
+use crate::install::{INIT_BEGIN, INIT_END, SHELL_BEGIN, SHELL_END, ZSH_INIT, ZSH_INTEGRATION};
 use crate::sanitize::sanitize_for_terminal;
 
 enum Severity {
@@ -187,26 +188,344 @@ fn check_theme(config: &gc_config::GhostConfig) -> CheckResult {
     }
 }
 
-/// Check 4: Shell integration installed in ~/.zshrc
-fn check_shell_integration() -> CheckResult {
-    let zshrc = dirs::home_dir().map(|h| h.join(".zshrc"));
+/// Parsed outcome from probing a managed block's `source` line.
+///
+/// Distinct outcomes — encoded so the caller can match exhaustively and
+/// pick a specific diagnostic instead of conflating them. `BlockNotFound`
+/// is unreachable from `check_shell_integration` (which gates on
+/// `content.contains(BEGIN)`), but the function does not know that, so
+/// it must still encode the outcome rather than panic.
+#[derive(Debug, PartialEq, Eq)]
+enum BlockSource {
+    /// Block well-formed, exactly one `source <path>` line parsed cleanly.
+    Parsed(PathBuf),
+    /// Block well-formed, but contains two or more parseable `source`
+    /// lines. Clean installs only ever emit one per block — a hand edit
+    /// or merge-conflict resolution that duplicated the `source` line
+    /// silently makes the user's shell execute every listed path on
+    /// startup. Surface as Fail with the first + all additional paths
+    /// so the user can see the divergence in the diagnostic.
+    MultipleSourceLines {
+        first: PathBuf,
+        additional: Vec<PathBuf>,
+    },
+    /// `BEGIN` marker present but no matching `END` marker.
+    Unterminated,
+    /// Block well-formed but contains no `source`/`builtin source` line —
+    /// the pre-v0.9 install style inlined `exec ghost-complete` instead.
+    NoSourceLine,
+    /// Block contains a `source` line but the path is in a quoting style
+    /// the parser doesn't recognize (corruption).
+    UnparseableQuoting,
+    /// `BEGIN` marker not present at all. Unreachable from
+    /// `check_shell_integration`, but encoded for completeness.
+    BlockNotFound,
+}
 
-    let Some(path) = zshrc else {
-        return CheckResult::warn("Cannot determine home directory");
+/// Extract the file path that the given managed block sources, by parsing
+/// the `[builtin ]source '<path>'` or `[builtin ]source "<path>"` line.
+///
+/// `shell_safe_path` (introduced in v0.7.1) single-quotes the path and
+/// escapes embedded `'` with the `'\''` close-quote/escaped-quote/open-quote
+/// idiom. The brief v0.6.1–v0.7.0 window wrote raw `path.display()` inside
+/// double quotes with NO escaping (worked only because home paths never
+/// contain `"`, `\`, `$`, or backticks). Accept both quoting styles so an
+/// upgrading user with an intact older managed block gets meaningful doctor
+/// output instead of "no parseable source line".
+fn extract_block_source_path(content: &str, begin: &str, end: &str) -> BlockSource {
+    let Some(block_start) = content.find(begin) else {
+        return BlockSource::BlockNotFound;
+    };
+    let after_begin = &content[block_start..];
+    let Some(block_end_offset) = after_begin.find(end) else {
+        return BlockSource::Unterminated;
+    };
+    let block = &after_begin[..block_end_offset];
+
+    let mut saw_source_line = false;
+    let mut parsed_paths: Vec<PathBuf> = Vec::new();
+    for line in block.lines() {
+        let trimmed = line.trim();
+        // Match only `[builtin ]source <quoted-path>` lines. Every other
+        // line in the managed block (the `if [[ -f ... ]]` guard, the
+        // else-branch warnings, the closing `fi`) is rejected by the
+        // strip_prefix checks below.
+        let after_kw = match trimmed.strip_prefix("builtin source ") {
+            Some(s) => s,
+            None => match trimmed.strip_prefix("source ") {
+                Some(s) => s,
+                None => continue,
+            },
+        };
+        saw_source_line = true;
+        let quoted = after_kw.trim();
+
+        // shell_safe_path (v0.7.1+) wraps the path in single quotes and
+        // escapes embedded `'` as `'\''`.
+        if let Some(inner) = quoted.strip_prefix('\'').and_then(|s| s.strip_suffix('\'')) {
+            let unescaped = inner.replace("'\\''", "'");
+            parsed_paths.push(PathBuf::from(unescaped));
+            continue;
+        }
+        // v0.6.1–v0.7.0 used naked `format!("source \"{}\"", path.display())` —
+        // double-quoted, no escaping. Real legacy installs never contained
+        // backslash-escape sequences, so the parser must pass the inner
+        // bytes through untouched. A path whose home contains a literal
+        // `\\` byte would otherwise be silently mangled into `\`.
+        if let Some(inner) = quoted.strip_prefix('"').and_then(|s| s.strip_suffix('"')) {
+            parsed_paths.push(PathBuf::from(inner));
+            continue;
+        }
+        // Unrecognized quoting on this line — keep scanning; another line
+        // in the same block might still match.
+    }
+    match parsed_paths.len() {
+        0 if saw_source_line => BlockSource::UnparseableQuoting,
+        0 => BlockSource::NoSourceLine,
+        1 => BlockSource::Parsed(parsed_paths.into_iter().next().expect("len == 1")),
+        _ => {
+            let mut iter = parsed_paths.into_iter();
+            let first = iter.next().expect("len >= 2");
+            let additional: Vec<PathBuf> = iter.collect();
+            BlockSource::MultipleSourceLines { first, additional }
+        }
+    }
+}
+
+/// Check 4: Shell integration installed in ~/.zshrc.
+///
+/// Beyond verifying the init marker is present, this also surfaces:
+///
+/// * a stray init block with no shell-integration block (half-installed),
+/// * duplicate init OR shell-integration blocks (a botched manual edit),
+/// * a managed block whose `source` line cannot be parsed (hand-edited
+///   beyond recognition),
+/// * the file the managed block actually `source`s missing or unreadable
+///   (so a stale .zshrc pointing at a long-gone install path Fails loudly,
+///   even when the canonical install dir happens to have files),
+/// * installed snippet contents that drift from the embedded copy
+///   (`ghost-complete install` re-runs the embedded version onto disk),
+/// * the legacy OSC 7770 reporter in `ghost-complete.zsh` (pre-OSC 7772
+///   migration),
+/// * the `.zshrc` sourcing from a non-canonical location, so the next
+///   `ghost-complete install` won't silently swap the user's edits out.
+///
+/// Order (each step returns on its first finding so the output stays
+/// focused on the most pressing issue):
+///
+/// 1. both managed blocks present (else half-installed Fail / clean Skip),
+/// 2. no duplicate managed blocks (else hand-edit Fail),
+/// 3. `source` line in each block is parseable (else class-specific Fail
+///    for unterminated / unrecognized quoting / multiple sources / one
+///    block missing the source line; both blocks missing is the pre-v0.9
+///    install style and Warn-with-migration-nudge),
+/// 4. referenced script files exist + are readable (else Fail),
+/// 5. legacy OSC 7770 reporter Warn (checked before content drift so an
+///    upgrading user with a pre-OSC 7772 file on disk still gets the
+///    migration-specific hint),
+/// 6. content drift Warn (installed snippets vs embedded),
+/// 7. non-canonical path Warn.
+///
+/// A clean system that never ran `install` (no managed blocks present)
+/// uses `Skip` so the doctor still exits 0; partial installs (one block
+/// but not the other) are escalated to `Fail` with concrete remediation.
+fn check_shell_integration() -> CheckResult {
+    let Some(home) = dirs::home_dir() else {
+        return CheckResult::skip("no $HOME — cannot check shell integration");
+    };
+    let zshrc = home.join(".zshrc");
+    let content = match std::fs::read_to_string(&zshrc) {
+        Ok(s) => s,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            return CheckResult::skip(format!("no {} — clean system", zshrc.display()));
+        }
+        Err(e) => {
+            return CheckResult::fail(format!(
+                "cannot read {}: {} ({:?})",
+                zshrc.display(),
+                e,
+                e.kind()
+            ));
+        }
     };
 
-    match std::fs::read_to_string(&path) {
-        Ok(content) => {
-            if content.contains("# >>> ghost-complete initialize >>>") {
-                CheckResult::ok(format!("Shell integration installed in {}", path.display()))
-            } else {
-                CheckResult::warn(
-                    "Shell integration not found in ~/.zshrc — run `ghost-complete install`",
-                )
-            }
-        }
-        Err(e) => CheckResult::warn(format!("Cannot read ~/.zshrc: {e}")),
+    // 1. Both managed blocks present?
+    if !content.contains(INIT_BEGIN) {
+        return CheckResult::skip(
+            "no ghost-complete managed block in .zshrc — run `ghost-complete install`",
+        );
     }
+    if !content.contains(SHELL_BEGIN) {
+        return CheckResult::fail(
+            "missing shell-integration managed block — run `ghost-complete install` to repair",
+        );
+    }
+
+    // 2. Duplicate managed blocks?
+    let init_count = content.matches(INIT_BEGIN).count();
+    let shell_count = content.matches(SHELL_BEGIN).count();
+    if init_count > 1 || shell_count > 1 {
+        return CheckResult::fail(format!(
+            "duplicate managed blocks in .zshrc (init={init_count}, shell={shell_count}) — \
+             run `ghost-complete uninstall` then reinstall",
+        ));
+    }
+
+    // 3. Source line in each block is parseable?
+    // Parse the actual source paths from each managed block; the
+    // canonical install dir is a separate check below. This catches
+    // stale .zshrc managed blocks pointing at long-gone install paths
+    // (e.g. a previous XDG_CONFIG_HOME) — the previous canonical-only
+    // probe would silently pass if files happened to exist at the
+    // canonical location.
+    //
+    // If BOTH blocks lack a `source` line we treat that as the pre-v0.9
+    // install style (which embedded `exec ghost-complete` inline and
+    // had no external script files to verify). Surface that as Warn
+    // with a migration nudge — the install is functional but laid out
+    // in a layout we no longer write. Other failure modes (missing END
+    // marker, unrecognized quoting, exactly one block missing its
+    // source line) are hand-edit corruption: Fail loudly with a
+    // class-specific message so the user can fix it rather than
+    // silently degrading.
+    let init_source = extract_block_source_path(&content, INIT_BEGIN, INIT_END);
+    let script_source = extract_block_source_path(&content, SHELL_BEGIN, SHELL_END);
+
+    let (init_path, script_path) = match (init_source, script_source) {
+        (BlockSource::Parsed(init), BlockSource::Parsed(script)) => (init, script),
+        (BlockSource::NoSourceLine, BlockSource::NoSourceLine) => {
+            return CheckResult::warn(
+                "ghost-complete managed blocks present in .zshrc but neither references \
+                 an external script via `source` — this is the pre-v0.9 install style. \
+                 Run `ghost-complete install` to migrate to the current layout.",
+            );
+        }
+        (BlockSource::Unterminated, _) | (_, BlockSource::Unterminated) => {
+            return CheckResult::fail(
+                "ghost-complete managed block in .zshrc is missing its END marker — \
+                 run `ghost-complete uninstall` then reinstall",
+            );
+        }
+        (BlockSource::MultipleSourceLines { first, additional }, _) => {
+            let count = 1 + additional.len();
+            let paths = std::iter::once(first.display().to_string())
+                .chain(additional.iter().map(|p| p.display().to_string()))
+                .collect::<Vec<_>>()
+                .join(", ");
+            return CheckResult::fail(format!(
+                "ghost-complete init block in .zshrc has {count} `source` lines \
+                 ({paths}) — every listed path will run at shell startup. Run \
+                 `ghost-complete uninstall` then reinstall to restore a single \
+                 source line per block.",
+            ));
+        }
+        (_, BlockSource::MultipleSourceLines { first, additional }) => {
+            let count = 1 + additional.len();
+            let paths = std::iter::once(first.display().to_string())
+                .chain(additional.iter().map(|p| p.display().to_string()))
+                .collect::<Vec<_>>()
+                .join(", ");
+            return CheckResult::fail(format!(
+                "ghost-complete shell-integration block in .zshrc has {count} \
+                 `source` lines ({paths}) — every listed path will run at shell \
+                 startup. Run `ghost-complete uninstall` then reinstall to restore \
+                 a single source line per block.",
+            ));
+        }
+        (BlockSource::UnparseableQuoting, _) | (_, BlockSource::UnparseableQuoting) => {
+            return CheckResult::fail(
+                "ghost-complete managed block in .zshrc has a `source` line with \
+                 unrecognized quoting around the path — run `ghost-complete uninstall` \
+                 then reinstall",
+            );
+        }
+        (BlockSource::NoSourceLine, _) => {
+            return CheckResult::fail(
+                "ghost-complete init block in .zshrc has no parseable `source` line — \
+                 run `ghost-complete uninstall` then reinstall",
+            );
+        }
+        (_, BlockSource::NoSourceLine) => {
+            return CheckResult::fail(
+                "ghost-complete shell-integration block in .zshrc has no parseable \
+                 `source` line — run `ghost-complete uninstall` then reinstall",
+            );
+        }
+        (BlockSource::BlockNotFound, _) | (_, BlockSource::BlockNotFound) => {
+            // Gated above by `content.contains(BEGIN)` checks; encoded for
+            // exhaustiveness only.
+            return CheckResult::fail(
+                "ghost-complete managed block in .zshrc disappeared between checks — \
+                 run `ghost-complete uninstall` then reinstall",
+            );
+        }
+    };
+
+    // 4. Referenced script files exist + readable?
+    let installed_init = match std::fs::read_to_string(&init_path) {
+        Ok(s) => s,
+        Err(e) => {
+            return CheckResult::fail(format!(
+                "cannot read {}: {} ({:?}) — run `ghost-complete install` to refresh, \
+                 or check file permissions",
+                init_path.display(),
+                e,
+                e.kind(),
+            ));
+        }
+    };
+    let installed_script = match std::fs::read_to_string(&script_path) {
+        Ok(s) => s,
+        Err(e) => {
+            return CheckResult::fail(format!(
+                "cannot read {}: {} ({:?}) — run `ghost-complete install` to refresh, \
+                 or check file permissions",
+                script_path.display(),
+                e,
+                e.kind(),
+            ));
+        }
+    };
+
+    // 5. Legacy OSC 7770 reporter present? Checked BEFORE the content-drift
+    // comparison so an upgrading user with a pre-OSC 7772 ghost-complete.zsh
+    // on disk gets a migration-specific message. The embedded snippet no
+    // longer emits OSC 7770, so deferring this check until after the drift
+    // comparison would render it unreachable on every upgrade path.
+    if installed_script.contains("7770;") && !installed_script.contains("7772;") {
+        return CheckResult::warn(
+            "shell integration uses legacy OSC 7770 — run `ghost-complete install` to migrate to OSC 7772",
+        );
+    }
+
+    // 6. Installed snippets match embedded versions?
+    if installed_init != ZSH_INIT || installed_script != ZSH_INTEGRATION {
+        return CheckResult::warn(format!(
+            "shell integration files at {} / {} drifted from embedded version — run `ghost-complete install` to refresh",
+            init_path.display(),
+            script_path.display(),
+        ));
+    }
+
+    // 7. Source paths point at the canonical install location?
+    // Drift here is non-fatal (the user may deliberately ship their own
+    // copy), but flag it so the next `ghost-complete install` doesn't
+    // appear to swap their edits out from under them.
+    let canonical_shell_dir = home.join(".config/ghost-complete/shell");
+    let canonical_init = canonical_shell_dir.join("init.zsh");
+    let canonical_script = canonical_shell_dir.join("ghost-complete.zsh");
+    if init_path != canonical_init || script_path != canonical_script {
+        return CheckResult::warn(format!(
+            ".zshrc managed block sources non-canonical paths ({}, {}) — expected ({}, {}); \
+             run `ghost-complete install` to refresh",
+            init_path.display(),
+            script_path.display(),
+            canonical_init.display(),
+            canonical_script.display(),
+        ));
+    }
+
+    CheckResult::ok("ghost-complete shell integration looks healthy")
 }
 
 /// Check 5: Running inside a supported terminal
@@ -2497,6 +2816,140 @@ aws_access_key_id = AKIA...
         assert!(
             !msg.contains("`script_function`/`custom`"),
             "warn message must not conflate unsupported coverage with malformed metadata: {msg}"
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // extract_block_source_path — unit coverage for the quote-handling branches
+    // that the E2E doctor_cli.rs fixtures don't exercise (apostrophes in paths,
+    // double-quote/backslash escapes, malformed blocks).
+    // -------------------------------------------------------------------------
+
+    const TEST_INIT_BEGIN: &str = INIT_BEGIN;
+    const TEST_INIT_END: &str = INIT_END;
+
+    #[test]
+    fn extract_parses_single_quoted_canonical_path() {
+        let block = format!(
+            "{TEST_INIT_BEGIN}\nsource '/home/user/.config/ghost-complete/shell/init.zsh'\n{TEST_INIT_END}",
+        );
+        let got = extract_block_source_path(&block, TEST_INIT_BEGIN, TEST_INIT_END);
+        assert_eq!(
+            got,
+            BlockSource::Parsed(PathBuf::from(
+                "/home/user/.config/ghost-complete/shell/init.zsh"
+            ))
+        );
+    }
+
+    #[test]
+    fn extract_unescapes_embedded_single_quote_via_idiom() {
+        // shell_safe_path writes /home/o'brien/init.zsh as
+        // '/home/o'\''brien/init.zsh'. The parser must invert that idiom.
+        let block = format!(
+            "{TEST_INIT_BEGIN}\nbuiltin source '/home/o'\\''brien/init.zsh'\n{TEST_INIT_END}",
+        );
+        let got = extract_block_source_path(&block, TEST_INIT_BEGIN, TEST_INIT_END);
+        assert_eq!(
+            got,
+            BlockSource::Parsed(PathBuf::from("/home/o'brien/init.zsh"))
+        );
+    }
+
+    #[test]
+    fn extract_passes_through_double_quote_legacy() {
+        // Legacy v0.6.1–v0.7.0 form: double-quoted, no escaping. Real
+        // legacy installs never wrote backslash escapes — the inner bytes
+        // must pass through untouched so a `$HOME` containing literal `\\`
+        // (allowed on Unix) is not silently mangled into `\` and then
+        // resolved to a non-existent file.
+        let block = format!(
+            "{TEST_INIT_BEGIN}\nsource \"/home/user/dir\\\\sub/init.zsh\"\n{TEST_INIT_END}",
+        );
+        let got = extract_block_source_path(&block, TEST_INIT_BEGIN, TEST_INIT_END);
+        assert_eq!(
+            got,
+            BlockSource::Parsed(PathBuf::from("/home/user/dir\\\\sub/init.zsh"))
+        );
+    }
+
+    #[test]
+    fn extract_returns_unparseable_quoting_on_unrecognized_quotes() {
+        // A source line with neither single- nor double-quoted path.
+        let block = format!("{TEST_INIT_BEGIN}\nsource /home/user/init.zsh\n{TEST_INIT_END}",);
+        let got = extract_block_source_path(&block, TEST_INIT_BEGIN, TEST_INIT_END);
+        assert_eq!(got, BlockSource::UnparseableQuoting);
+    }
+
+    #[test]
+    fn extract_skips_if_guard_line_finds_source() {
+        // The init_block format wraps `builtin source` in an `if [[ -f ... ]]`
+        // guard. The guard line must not be treated as a source line; only
+        // the inner `builtin source` line gets extracted.
+        let block = format!(
+            "{TEST_INIT_BEGIN}\n\
+             if [[ -f '/home/user/init.zsh' ]]; then\n  \
+             builtin source '/home/user/init.zsh'\n\
+             fi\n\
+             {TEST_INIT_END}",
+        );
+        let got = extract_block_source_path(&block, TEST_INIT_BEGIN, TEST_INIT_END);
+        assert_eq!(
+            got,
+            BlockSource::Parsed(PathBuf::from("/home/user/init.zsh"))
+        );
+    }
+
+    #[test]
+    fn extract_returns_no_source_line_on_pre_v0_9_exec_body() {
+        // pre-v0.9 inlined `exec ghost-complete` inside the block — no
+        // `source` line anywhere.
+        let block = format!(
+            "{TEST_INIT_BEGIN}\n\
+             if [[ -z \"$GHOST_COMPLETE_ACTIVE\" ]]; then\n  \
+             export GHOST_COMPLETE_ACTIVE=1\n  \
+             exec ghost-complete\n\
+             fi\n\
+             {TEST_INIT_END}",
+        );
+        let got = extract_block_source_path(&block, TEST_INIT_BEGIN, TEST_INIT_END);
+        assert_eq!(got, BlockSource::NoSourceLine);
+    }
+
+    #[test]
+    fn extract_returns_unterminated_when_end_marker_missing() {
+        let block =
+            format!("{TEST_INIT_BEGIN}\nsource '/home/user/init.zsh'\n# (no end marker)\n",);
+        let got = extract_block_source_path(&block, TEST_INIT_BEGIN, TEST_INIT_END);
+        assert_eq!(got, BlockSource::Unterminated);
+    }
+
+    #[test]
+    fn extract_returns_block_not_found_when_begin_marker_absent() {
+        let block = "no managed block here at all";
+        let got = extract_block_source_path(block, TEST_INIT_BEGIN, TEST_INIT_END);
+        assert_eq!(got, BlockSource::BlockNotFound);
+    }
+
+    #[test]
+    fn extract_returns_multiple_source_lines_when_block_has_two_sources() {
+        // A hand edit or merge-conflict resolution that duplicated the
+        // `source` line. Clean installs only ever emit one — surfacing
+        // the divergence as a distinct variant lets the doctor Fail with
+        // a remediation that names the actual symptom.
+        let block = format!(
+            "{TEST_INIT_BEGIN}\n\
+             source '/home/user/init-a.zsh'\n\
+             builtin source '/home/user/init-b.zsh'\n\
+             {TEST_INIT_END}",
+        );
+        let got = extract_block_source_path(&block, TEST_INIT_BEGIN, TEST_INIT_END);
+        assert_eq!(
+            got,
+            BlockSource::MultipleSourceLines {
+                first: PathBuf::from("/home/user/init-a.zsh"),
+                additional: vec![PathBuf::from("/home/user/init-b.zsh")],
+            }
         );
     }
 }

@@ -46,9 +46,13 @@ exceptions = []
 # Bans / duplicate detection
 # -----------------------------------------------------------------------------
 [bans]
-# Start conservative: warn on duplicate versions so we can review `cargo tree -d`
-# output, then flip to "deny" once tree is clean. Use skip / skip-tree below
-# to whitelist known-unavoidable duplicates (e.g. crates still on syn 1.x).
+# Duplicate-version policy: kept at "warn" because `toml_edit v0.22`
+# (a direct ghost-complete dep) drags in toml_datetime v0.6 / winnow v0.7
+# while the rest of the workspace is on toml v1.x (toml_datetime v1.1 /
+# winnow v1.0). Bumping or removing toml_edit is tracked as a follow-up;
+# once that lands, flip this to "deny". The aws-* skip-tree below already
+# absorbs the smithy hyper/h2/http v0.x/v1.x split that would otherwise
+# block the flip.
 multiple-versions = "warn"
 wildcards = "deny"
 # Workspace-internal path deps (e.g. `gc-pty = { path = "../gc-pty" }`) have
@@ -65,7 +69,15 @@ deny = [
 
 # Duplicates we accept today. Revisit whenever upstreams catch up.
 skip = []
-skip-tree = []
+# AWS smithy is mid-migration between hyper/h2/http v0.x and v1.x across
+# the aws-config → aws-smithy-runtime → aws-smithy-http-client chain.
+# Skipping the entire aws-config tree absorbs every transitive dupe the
+# smithy stack drags in (hyper, h2, http, http-body, socket2, ring's
+# getrandom v0.2, aws-smithy-http itself). Re-evaluate after each
+# aws-config / aws-sdk-* / aws-smithy-* bump.
+skip-tree = [
+    { name = "aws-config", reason = "smithy hyper v0.x/v1 split — track upstream" },
+]
 
 # -----------------------------------------------------------------------------
 # Advisories (RustSec)

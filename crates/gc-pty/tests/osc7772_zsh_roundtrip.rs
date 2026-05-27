@@ -66,6 +66,7 @@ fn emit_via_real_zsh(buffer: &[u8], cursor: usize) -> Vec<u8> {
     );
 
     let output = Command::new("zsh")
+        .arg("--no-rcs")
         .arg("-c")
         .arg(&script)
         .output()
@@ -89,6 +90,7 @@ fn emit_env_via_real_zsh(setup: &str) -> Vec<u8> {
     );
 
     let output = Command::new("zsh")
+        .arg("--no-rcs")
         .arg("-c")
         .arg(&script)
         .output()
@@ -115,6 +117,7 @@ fn run_zsh_after_source(body: &str) -> Vec<u8> {
     );
 
     let output = Command::new("zsh")
+        .arg("--no-rcs")
         .arg("-c")
         .arg(&script)
         .output()
@@ -141,6 +144,7 @@ fn run_zsh_before_source(before: &str) -> Vec<u8> {
     );
 
     let output = Command::new("zsh")
+        .arg("--no-rcs")
         .arg("-c")
         .arg(&script)
         .output()

@@ -44,10 +44,11 @@ gc-overlay = { path = "../gc-overlay" }
 ratatui = { workspace = true }
 toml_edit = { workspace = true }
 crossterm = { workspace = true }
+# Used in non-test code by `install::atomic_write` for tempfile + rename.
+tempfile = "3"
 
 [dev-dependencies]
 portable-pty = "0.9"
-tempfile = "3"
 # Enables the `TerminalProfile::for_*()` fixture constructors for tests only.
 gc-terminal = { path = "../gc-terminal", features = ["test-utils"] }
 # Enables `gc_parser::test_utils::build_osc7772_envelope` for smoke tests.

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Seven CI gates live in `.github/workflows/ci.yml`: binary size, snapshot diff, fig-converter oracle, corpus hash determinism (fig-converter PR subset), corpus hash determinism (full corpus on trunk pushes), coverage baseline drift, and coverage regression. Benchmark-regression checking is intentionally **not** a CI gate — it is run manually at release time (see [Release-time benchmark checking](#release-time-benchmark-checking) below). The gates are wired via `needs:` dependencies, which controls **ordering within a workflow run** — i.e. a gate waits for its prerequisite jobs before it starts. That is a separate concern from **branch protection**, which is what blocks the GitHub merge button on a PR. A repo admin must explicitly configure each PR status check as required in GitHub's branch-protection settings (see [Branch-protection configuration](#branch-protection-configuration) below). Without that step, the gates run and report results but cannot block a merge.
+Eight CI gates live in `.github/workflows/ci.yml`: binary size, snapshot diff, fig-converter oracle, corpus hash determinism (fig-converter PR subset), corpus hash determinism (full corpus on trunk pushes), coverage baseline drift, coverage regression, and zsh/ZLE shell smoke. Two more gates live outside `ci.yml`: `cargo-deny check` runs alongside `cargo audit` in [`.github/workflows/audit.yml`](../.github/workflows/audit.yml) (Cargo manifest / lockfile changes and a weekly cron), and `Smoke packaged artifacts` runs in [`.github/workflows/release.yml`](../.github/workflows/release.yml) on every release tag — those two are documented under [Audit workflow](#audit-workflow) and [Release-only gates](#release-only-gates) below. Benchmark-regression checking is intentionally **not** a CI gate — it is run manually at release time (see [Release-time benchmark checking](#release-time-benchmark-checking) below). The gates are wired via `needs:` dependencies, which controls **ordering within a workflow run** — i.e. a gate waits for its prerequisite jobs before it starts. That is a separate concern from **branch protection**, which is what blocks the GitHub merge button on a PR. A repo admin must explicitly configure each PR status check as required in GitHub's branch-protection settings (see [Branch-protection configuration](#branch-protection-configuration) below). Without that step, the gates run and report results but cannot block a merge.
 
 ---
 
@@ -154,7 +154,7 @@ To refresh the baseline: run `ghost-complete status --json` and follow the proce
 
 **Job name in CI:** `Coverage regression`
 **YAML key:** `coverage-regression`
-**Trigger:** `needs: [check]` — runs after the `check` job succeeds. Wired with `continue-on-error: true` pending promotion to a hard gate.
+**Trigger:** `needs: [check]` — runs after the `check` job succeeds. Blocking gate.
 
 **Purpose:** fails when the live `requires_js_generators_unsupported` count from `ghost-complete status --json` rises above the latest `docs/coverage-baseline.json` row by more than the configured tolerance (default: 0), or when any command is reported `commands_nonfunctional > 0`. Catches regressions where:
 
@@ -168,7 +168,7 @@ To refresh the baseline: run `ghost-complete status --json` and follow the proce
 - Hard fail (exit 1): `commands_nonfunctional > 0`. Always a defect — independent of baseline.
 - Soft warning (`::warning::` annotation, exit 0): the unsupported count rose by 1..=tolerance. Surfaces in the PR checks panel without blocking the merge.
 
-**Status today:** wired into CI as **non-blocking** (`continue-on-error: true`). The gate runs and reports results, but a failing run does not fail the workflow. Promotion to a blocking status check is a separate follow-up; the maintainer who promotes it is responsible for first refreshing the baseline if the live numbers have drifted.
+**Status today:** wired into CI as **blocking**. A failing run fails the workflow. The baseline was refreshed for `0.17-rc` when the gate was promoted from `continue-on-error: true`. Ready to add to branch protection.
 
 **How to debug locally:**
 
@@ -182,6 +182,30 @@ bash scripts/check-coverage-regression.test.sh                      # self-tests
 ```
 
 **Baseline refresh:** when an intentional change increases the unsupported count or modifies coverage, append a new release row to [`docs/coverage-baseline.json`](./coverage-baseline.json) capturing the new floor. The script reads `releases[-1]` (the latest entry) so an append-only history preserves prior numbers for trend reporting in `ghost-complete status` while updating the gate's baseline.
+
+---
+
+### Zsh/ZLE shell smoke
+
+**Job name in CI:** `zsh/ZLE shell smoke`
+**YAML key:** `zsh-zle-smoke`
+**Trigger:** `needs: [check]` — runs after the `check` job succeeds. Blocking gate.
+
+**Purpose:** exercises the production zsh shell integration (`shell/ghost-complete.zsh`) under a real `/bin/zsh --no-rcs` and asserts that the ZLE widget `_gc_report_buffer` emits OSC 7772 frames with the correct percent-encoding. Catches regressions in the encoder for characters that would otherwise corrupt a frame mid-stream (semicolons, BEL `0x07`, ESC `0x1B`, literal `%`), validates UTF-8 round-trip, exercises the OSC 7 path encoder, and verifies the `GHOST_COMPLETE_ACTIVE` gate guard turns the widget into a no-op outside the proxy. The matching runtime parser path lives in `gc-parser` and is unit-tested in Rust; this gate validates the shell-side producer end-to-end against a real zsh so a shell-script regression cannot ship undetected by `cargo test`.
+
+**Failure modes:**
+
+- Encoder regression: a frame is missing percent-encoding for one of the documented byte classes.
+- Gate guard regression: `_gc_report_buffer` emits OSC 7772 when `GHOST_COMPLETE_ACTIVE` is unset.
+- Environment failure: `zsh` is not on `PATH`, or `shell/ghost-complete.zsh` is missing.
+
+**Status today:** production-live. The check runs on every PR and trunk push. Ready to add to branch protection.
+
+**How to debug locally:**
+
+```bash
+scripts/check-zsh-zle-smoke.sh
+```
 
 ---
 
@@ -207,6 +231,80 @@ Include the Criterion summary and any regression >10% in `benchmarks/v<version>.
 
 ---
 
+## Audit workflow
+
+The `audit` workflow ([`.github/workflows/audit.yml`](../.github/workflows/audit.yml)) runs two dependency-policy checks on every Cargo manifest / lockfile change and on a weekly Monday cron. Both checks are blocking — a failure fails the workflow.
+
+> Both checks live in the single `cargo audit` job in `audit.yml`; failure of either step fails the job.
+
+### cargo audit step
+
+**Action:** `rustsec/audit-check@v2`.
+**Trigger:** Cargo.toml or Cargo.lock changes (PR or push to `master`), changes to `audit.yml` itself, and the weekly cron (`0 12 * * 1`).
+
+**Purpose:** scans the resolved dependency graph against the RustSec advisory database. Flags known vulnerabilities. Posts a GitHub Check annotation with the affected crates and advisory IDs.
+
+**Failure modes:** any unyanked advisory at `error` severity (per `audit-check`'s defaults) against a crate in `Cargo.lock`.
+
+### cargo-deny step
+
+**Step name:** `Run cargo-deny`, using `EmbarkStudios/cargo-deny-action@v2` with `command: check` and `arguments: --all-features`.
+**Trigger:** same trigger set as the `cargo audit` step (they share the `cargo audit` job).
+
+**Purpose:** enforces the policy in [`deny.toml`](../deny.toml) — license allow/deny lists, banned crates, source allowlist, and duplicate-version policy. `cargo deny check` runs the full check matrix (`advisories`, `bans`, `licenses`, `sources`).
+
+**Failure modes:**
+
+- Disallowed license: a dependency carries a license outside the allow list in `deny.toml`.
+- Banned crate: a dependency matches a `[bans] deny` entry.
+- Untrusted source: a dependency comes from a registry/git source outside the `[sources]` allowlist.
+- Duplicate-version policy: `multiple-versions` is currently `warn` while we ladder up to `deny`; future tightening will turn this into a hard fail.
+
+**Status today:** production-live. Should not be added as a branch-protection check on PRs unless the PR touches Cargo manifests (the workflow's path filter already gates it); branch protection cannot express "required only when this path changed".
+
+**How to debug locally:**
+
+```bash
+cargo audit                              # one-time: cargo install cargo-audit
+cargo deny check                         # one-time: cargo install cargo-deny
+cargo deny check --all-features
+```
+
+---
+
+## Release-only gates
+
+The `release` workflow ([`.github/workflows/release.yml`](../.github/workflows/release.yml)) runs on `push` of any version-shaped tag. It hosts one smoke gate that is **not** part of CI and only ever runs at release time.
+
+### Smoke packaged artifacts
+
+**Job name in release workflow:** `Smoke packaged artifacts`
+**YAML key:** `artifact-smoke`
+**Trigger:** `needs: [build-local-artifacts, build-global-artifacts]` inside `release.yml`. Runs after every successful artifact build and gates the downstream `host` job (which is what actually publishes the GitHub Release).
+
+**Purpose:** refuses to publish a release whose packaged macOS artifact can't execute `--version`, `--help`, `validate-specs --json`, `status --json`, or `install --dry-run` cleanly. Native-arch binaries (arm64 on the `macos-latest` runner) execute end-to-end against an isolated `HOME` and `cwd` so the test reflects the binary's embedded spec corpus only — not anything that would otherwise leak in from the runner's filesystem. Cross-arch binaries (x86_64) get a structural smoke (extract + `file(1)` arch check) since the runner can't execute them; the script warns loudly if arch detection is inconclusive.
+
+**Failure modes:**
+
+- No executable `ghost-complete` extracted from the archive.
+- `status --json` returns fewer than 10 `fully_functional` specs (regression in the embedded corpus). `validate-specs --json` is exercised for crash/error but not for spec count.
+- `install --dry-run` writes to the isolated `HOME` (a real side effect during what is supposed to be a dry run).
+- Arch detection inconclusive (WARN on stderr; structural-only smoke for that artifact).
+- Zero artifacts of the expected shape found at all (driver loop in the workflow step fails closed).
+
+**Status today:** production-live. Gates the `host` job in `release.yml`; nothing publishes without it.
+
+**How to debug locally:**
+
+```bash
+cargo build --release
+# Approximate the packaged path: build, tar, run the smoke script against
+# the archive. The smoke script itself is the canonical reproducer:
+scripts/check-release-artifact-smoke.sh <path/to/ghost-complete-*-apple-darwin.tar.{gz,xz}>
+```
+
+---
+
 ## Branch-protection configuration
 
 These steps require repo admin access. Without them the gates run but **do not block merge**.
@@ -229,7 +327,10 @@ These checks are added **alongside** any existing required checks (e.g. `Check`,
 | `Corpus hash determinism (fig-converter)` | Ready to add. This is the PR corpus-hash check. |
 | `Corpus hash determinism (full corpus)` | Push-to-trunk safety net only. Do not add as a PR branch-protection check. |
 | `Coverage baseline drift` | Informational only (non-blocking warning). Do not add to branch protection. |
-| `Coverage regression` | Wired as `continue-on-error: true` during the initial rollout. Promotion to a hard gate is a separate follow-up; the maintainer who promotes it is responsible for refreshing the baseline first. |
+| `Coverage regression` | Ready to add. Blocking gate (refresh `docs/coverage-baseline.json` when tightening tolerance). |
+| `zsh/ZLE shell smoke` | Ready to add. |
+| `cargo audit` (audit workflow — covers both `cargo audit` and `cargo deny check` steps) | Path-filtered to Cargo manifest / lockfile changes. Branch protection cannot express "required only when this path changed"; leave unenforced and let the workflow's own path filter gate it. |
+| `Smoke packaged artifacts` (release workflow) | Release-only — not a PR check. Gates the `host` job inside `release.yml`; cannot meaningfully be added to PR branch protection. |
 
 > **Note on job names vs. YAML keys:** GitHub branch protection displays the `name:` field of each job, not the YAML key. `Binary size gate` (the name) corresponds to `binary-size-gate` (the key). Using the YAML key in the search box will not match.
 

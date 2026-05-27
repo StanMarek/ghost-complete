@@ -4,6 +4,8 @@ use std::io::Write as _;
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
 
+pub mod atomic_write;
+
 use crate::sanitize::{sanitize_for_terminal, sanitize_path};
 
 // The embedded spec archive lives in `gc-suggest` because the spec loader
@@ -27,8 +29,8 @@ use gc_suggest::embedded_filenames;
 // around indefinitely.
 use gc_suggest::purge_embedded_cache_if_present;
 
-const ZSH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.zsh");
-const ZSH_INIT: &str = include_str!("../../../shell/init.zsh");
+pub(crate) const ZSH_INTEGRATION: &str = include_str!("../../../shell/ghost-complete.zsh");
+pub(crate) const ZSH_INIT: &str = include_str!("../../../shell/init.zsh");
 
 const DEFAULT_CONFIG_TOML: &str = "\
 # Ghost Complete configuration
@@ -89,10 +91,10 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # aws_sdk_fallback_to_cli = true  # Fall back to the aws CLI when SDK completions cannot run
 ";
 
-const INIT_BEGIN: &str = "# >>> ghost-complete initialize >>>";
-const INIT_END: &str = "# <<< ghost-complete initialize <<<";
-const SHELL_BEGIN: &str = "# >>> ghost-complete shell integration >>>";
-const SHELL_END: &str = "# <<< ghost-complete shell integration <<<";
+pub(crate) const INIT_BEGIN: &str = "# >>> ghost-complete initialize >>>";
+pub(crate) const INIT_END: &str = "# <<< ghost-complete initialize <<<";
+pub(crate) const SHELL_BEGIN: &str = "# >>> ghost-complete shell integration >>>";
+pub(crate) const SHELL_END: &str = "# <<< ghost-complete shell integration <<<";
 const MANAGED_WARNING: &str =
     "# !! Contents within this block are managed by 'ghost-complete install' !!";
 
@@ -402,11 +404,11 @@ fn install_to_with_cache_hooks(
     fs::create_dir_all(&shell_dir)
         .with_context(|| format!("failed to create {}", shell_dir.display()))?;
 
-    fs::write(&init_path, ZSH_INIT)
+    atomic_write::atomic_write_preserving_mode(&init_path, ZSH_INIT.as_bytes())
         .with_context(|| format!("failed to write {}", init_path.display()))?;
     println!("  Wrote init script to {}", sanitize_path(&init_path));
 
-    fs::write(&script_path, ZSH_INTEGRATION)
+    atomic_write::atomic_write_preserving_mode(&script_path, ZSH_INTEGRATION.as_bytes())
         .with_context(|| format!("failed to write {}", script_path.display()))?;
     println!("  Wrote zsh integration to {}", sanitize_path(&script_path));
 
@@ -464,6 +466,10 @@ fn install_to_with_cache_hooks(
     // half-written world-readable copy, then chmod to match the source after
     // the write completes. This preserves restrictive modes like 0o600 that
     // security-conscious users may have set on .zshrc containing secrets.
+    //
+    // If the parent directory is unwritable (nix-managed `~/.zshrc` symlink,
+    // sealed Home Manager profile), backup creation is skipped and the
+    // .zshrc-write fallback below handles the manual-instructions path.
     if zshrc_path.exists() {
         let backup = zshrc_path.with_extension("backup.ghost-complete");
         let src_perms = fs::metadata(zshrc_path)
@@ -490,6 +496,13 @@ fn install_to_with_cache_hooks(
             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
                 println!("  Backup already exists at {}", sanitize_path(&backup));
             }
+            Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+                let parent_display = backup
+                    .parent()
+                    .map(sanitize_path)
+                    .unwrap_or_else(|| sanitize_path(&backup));
+                println!("  Skipping backup (cannot write to {parent_display})");
+            }
             Err(e) => {
                 return Err(anyhow::Error::new(e))
                     .with_context(|| format!("failed to backup to {}", backup.display()));
@@ -513,13 +526,19 @@ fn install_to_with_cache_hooks(
     new_zshrc.push_str(&shell_integration_block(&script_path));
     new_zshrc.push('\n');
 
-    // 6. Write .zshrc — graceful fallback if permission denied (e.g. nix-managed)
-    match fs::write(zshrc_path, &new_zshrc) {
+    // 6. Write .zshrc — graceful fallback if permission denied (e.g. nix-managed).
+    //
+    // The atomic helper wraps the underlying `io::Error` inside an
+    // `anyhow::Error::context(...)` chain, so the `io::Error` lives in the
+    // source chain rather than at the top. The `atomic_write::is_permission_denied`
+    // helper centralises the chain walk that surfaces the original kind and
+    // preserves the manual-instructions fallback path documented below.
+    match atomic_write::atomic_write_preserving_mode(zshrc_path, new_zshrc.as_bytes()) {
         Ok(()) => {
             println!("  Updated {}", sanitize_path(zshrc_path));
             print!("\n{}", post_install_summary(config_dir, true));
         }
-        Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+        Err(e) if atomic_write::is_permission_denied(&e) => {
             println!(
                 "\n  \x1b[33m\u{26a0}  Could not write to {} (permission denied)\x1b[0m\n",
                 sanitize_path(zshrc_path)
@@ -528,11 +547,7 @@ fn install_to_with_cache_hooks(
             print!("\n{}", post_install_summary(config_dir, false));
         }
         Err(e) => {
-            return Err(anyhow::anyhow!(
-                "failed to write {}: {}",
-                zshrc_path.display(),
-                e
-            ));
+            return Err(e.context(format!("failed to write {}", zshrc_path.display())));
         }
     }
     Ok(())
@@ -562,7 +577,7 @@ fn uninstall_from_with_cache_purge(
         let (content, found_shell) = remove_block(&content, SHELL_BEGIN, SHELL_END);
 
         if found_init || found_shell {
-            fs::write(zshrc_path, &content)
+            atomic_write::atomic_write_preserving_mode(zshrc_path, content.as_bytes())
                 .with_context(|| format!("failed to write {}", zshrc_path.display()))?;
             println!(
                 "  Removed managed blocks from {}",
@@ -1333,22 +1348,62 @@ mod tests {
     fn test_install_readonly_zshrc_succeeds() {
         use std::os::unix::fs::PermissionsExt;
 
+        // Exercises the full first-install PermissionDenied path: parent
+        // dir is read-only, so backup creation fails-fast with
+        // PermissionDenied (tolerated, no backup made), then the .zshrc
+        // atomic_write also hits PermissionDenied and the graceful
+        // manual-instructions fallback runs. .zshrc must remain untouched
+        // and the install must succeed.
+        //
+        // The atomic helper writes via `NamedTempFile::new_in(parent)` +
+        // `rename(2)`, which on macOS succeeds even when only the target
+        // file is read-only — the rename inherits the parent dir's perms,
+        // not the target's. So we make .zshrc live in its own subdir and
+        // chmod just that dir to 0o555, leaving config (which lives
+        // elsewhere) writable.
         let dir = TempDir::new().unwrap();
-        let zshrc = dir.path().join(".zshrc");
+        let zshrc_dir = dir.path().join("home");
         let config = dir.path().join("config");
-
-        // Create a read-only .zshrc
-        fs::write(&zshrc, "export FOO=bar\n").unwrap();
-        fs::set_permissions(&zshrc, fs::Permissions::from_mode(0o444)).unwrap();
+        fs::create_dir_all(&zshrc_dir).unwrap();
+        let zshrc = zshrc_dir.join(".zshrc");
+        let original = "export FOO=bar\n";
+        fs::write(&zshrc, original).unwrap();
+        fs::set_permissions(&zshrc_dir, fs::Permissions::from_mode(0o555)).unwrap();
 
         // Install should succeed (graceful fallback, not error)
         let result = install_to(&zshrc, &config, false);
-        assert!(result.is_ok());
 
-        // File deployments should still have happened
+        // Restore perms before any assertion-driven panic so TempDir
+        // cleanup can recurse into zshrc_dir.
+        fs::set_permissions(&zshrc_dir, fs::Permissions::from_mode(0o755)).unwrap();
+
+        assert!(
+            result.is_ok(),
+            "install must take graceful fallback, got: {result:?}"
+        );
+
+        // File deployments to a writable directory should still have happened
         assert!(config.join("shell/init.zsh").exists());
         assert!(config.join("shell/ghost-complete.zsh").exists());
         assert!(config.join("specs").exists());
+
+        // .zshrc content must be untouched — proof the fallback path ran
+        // instead of silently rewriting the file. A regression that
+        // simplified the chain walk would surface here as either an Err
+        // (test fails on .is_ok()) or a modified .zshrc.
+        assert_eq!(
+            fs::read_to_string(&zshrc).unwrap(),
+            original,
+            "fallback path must leave .zshrc untouched"
+        );
+
+        // No backup should have been created — backup creation was
+        // skipped (not silently succeeded) when the parent dir is
+        // unwritable.
+        assert!(
+            !zshrc.with_extension("backup.ghost-complete").exists(),
+            "no backup should be created when parent dir is unwritable"
+        );
     }
 
     #[test]
@@ -1603,5 +1658,18 @@ mod tests {
             ZSH_INTEGRATION.contains("7774;zle_hook_disabled"),
             "_gc_install_zle_hook must emit OSC 7774 zle_hook_disabled when bailing on a non-user widget"
         );
+    }
+
+    #[test]
+    fn install_zshrc_write_is_atomic_visible_state() {
+        use tempfile::TempDir;
+        let tmp = TempDir::new().unwrap();
+        let target = tmp.path().join(".zshrc");
+        std::fs::write(&target, b"original\n").unwrap();
+        atomic_write::atomic_write_preserving_mode(&target, b"new\n").unwrap();
+        let content = std::fs::read_to_string(&target).unwrap();
+        assert_eq!(content, "new\n");
+        let entries: Vec<_> = std::fs::read_dir(tmp.path()).unwrap().collect();
+        assert_eq!(entries.len(), 1);
     }
 }

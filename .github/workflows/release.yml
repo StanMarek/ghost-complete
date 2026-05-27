@@ -233,14 +233,58 @@ jobs:
           path: |
             ${{ steps.cargo-dist.outputs.paths }}
             ${{ env.BUILD_MANIFEST_NAME }}
+
+  # Refuse to publish a release whose packaged macOS artifact can't even
+  # run `--version`, `validate-specs`, or `install --dry-run` cleanly. The
+  # runner is macos-latest (arm64); the arm64 binary executes end-to-end,
+  # the x86_64 binary is inspected structurally.
+  artifact-smoke:
+    name: Smoke packaged artifacts
+    needs:
+      - build-local-artifacts
+      - build-global-artifacts
+    # Default `needs:` semantics auto-skip this job if either upstream build is
+    # skipped (e.g. a dist plan that produces only local artifacts skips the
+    # global build), which would let the host job's allow-list ('skipped' is
+    # treated like 'success') publish unsmoked artifacts. Run whenever either
+    # build job succeeded; the driver loop below fails closed if no .tar.gz/
+    # .tar.xz artifacts are present.
+    if: ${{ always() && (needs.build-local-artifacts.result == 'success' || needs.build-global-artifacts.result == 'success') }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: artifacts-*
+          merge-multiple: true
+          path: /tmp/artifacts
+      - name: Smoke each artifact
+        run: |
+          set -e
+          shopt -s nullglob
+          found=0
+          for f in /tmp/artifacts/*.tar.gz /tmp/artifacts/*.tar.xz; do
+            found=1
+            ./scripts/check-release-artifact-smoke.sh "$f"
+          done
+          if [[ "$found" == "0" ]]; then
+            echo "FAIL: no .tar.gz/.tar.xz artifacts to smoke" >&2
+            exit 1
+          fi
+
   # Determines if we should publish/announce
   host:
     needs:
       - plan
       - build-local-artifacts
       - build-global-artifacts
-    # Only run if we're "publishing", and only if plan, local and global didn't fail (skipped is fine)
-    if: ${{ always() && needs.plan.result == 'success' && needs.plan.outputs.publishing == 'true' && (needs.build-global-artifacts.result == 'skipped' || needs.build-global-artifacts.result == 'success') && (needs.build-local-artifacts.result == 'skipped' || needs.build-local-artifacts.result == 'success') }}
+      - artifact-smoke
+    # Only run if we're "publishing", and only if plan, local, global, and
+    # artifact-smoke didn't fail (skipped is fine — e.g. pre-release plan with
+    # no buildable artifacts).
+    if: ${{ always() && needs.plan.result == 'success' && needs.plan.outputs.publishing == 'true' && (needs.build-global-artifacts.result == 'skipped' || needs.build-global-artifacts.result == 'success') && (needs.build-local-artifacts.result == 'skipped' || needs.build-local-artifacts.result == 'success') && (needs.artifact-smoke.result == 'skipped' || needs.artifact-smoke.result == 'success') }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     runs-on: "ubuntu-22.04"
