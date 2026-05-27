@@ -83,12 +83,42 @@
     },
     {
       "args": {
-        "generators": [
+        "isVariadic": true,
+        "name": "option",
+        "suggestions": [
           {
-            "requires_js": true
+            "description": "Hardened runtime",
+            "name": "runtime"
+          },
+          {
+            "description": "Hard (cannot be replaced or deleted)",
+            "name": "hard"
+          },
+          {
+            "description": "Kill (terminate on signature failure)",
+            "name": "kill"
+          },
+          {
+            "description": "Expires (signature invalid past expiry date)",
+            "name": "expires"
+          },
+          {
+            "description": "Library validation",
+            "name": "library"
+          },
+          {
+            "description": "Restrict (deny unsigned plug-ins)",
+            "name": "restrict"
+          },
+          {
+            "description": "Enforcement (resource enforcement)",
+            "name": "enforcement"
+          },
+          {
+            "description": "Host (host requirement check)",
+            "name": "host"
           }
-        ],
-        "name": "version-string"
+        ]
       },
       "description": "During signing, specifies a set of option flags to be embedded in the code signature",
       "name": [
@@ -157,7 +187,8 @@
     },
     {
       "args": {
-        "name": "path"
+        "name": "path",
+        "template": "filepaths"
       },
       "description": "When signing, take the file at the given path and embed its contents in the signature as entitlement data",
       "name": [
@@ -192,7 +223,8 @@
     },
     {
       "args": {
-        "name": "filename"
+        "name": "filename",
+        "template": "filepaths"
       },
       "description": "During signing, only search for the signing identity in the keychain file specified",
       "name": [
@@ -209,19 +241,50 @@
       ]
     },
     {
+      "args": {
+        "isVariadic": true,
+        "name": "metadata",
+        "suggestions": [
+          {
+            "description": "Preserve embedded entitlements",
+            "name": "entitlements"
+          },
+          {
+            "description": "Preserve embedded requirements",
+            "name": "requirements"
+          },
+          {
+            "description": "Preserve resource rules",
+            "name": "resource-rules"
+          },
+          {
+            "description": "Preserve runtime version",
+            "name": "runtime"
+          },
+          {
+            "description": "Preserve signing flags",
+            "name": "flags"
+          },
+          {
+            "description": "Preserve signing identifier",
+            "name": "identifier"
+          }
+        ]
+      },
       "description": "When re-signing code that is already signed, reuse some information from the old signature",
       "name": [
-        "--preserve-metadata=list"
+        "--preserve-metadata"
       ]
     },
     {
       "args": {
         "generators": [
           {
-            "requires_js": true
+            "_lowered_from_requires_js": true
           }
         ],
-        "name": "file"
+        "name": "file",
+        "template": "filepaths"
       },
       "description": "During signing, this option overrides the default rules for identifying and collecting bundle resources and nested code to be sealed into the signature",
       "name": [
