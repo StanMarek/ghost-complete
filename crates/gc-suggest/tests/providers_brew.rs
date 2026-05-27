@@ -25,9 +25,11 @@ mod providers {
 use gc_suggest::providers::{Provider, ProviderCtx};
 use gc_suggest::types::{SuggestionKind, SuggestionSource};
 use providers::brew::{
-    parse_casks_installed_output, parse_formulae_installed_output,
-    parse_formulae_searchable_output, run_brew_with_binary, set_brew_search_cap,
-    BrewCasksInstalled, BrewFormulaeInstalled, BrewFormulaeSearchable, DEFAULT_BREW_SEARCH_CAP,
+    brew_search_plan, parse_casks_installed_output, parse_casks_searchable_output,
+    parse_formulae_installed_output, parse_formulae_searchable_output,
+    parse_packages_searchable_output, run_brew_with_binary, set_brew_search_cap,
+    BrewCasksInstalled, BrewCasksSearchable, BrewFormulaeInstalled, BrewFormulaeSearchable,
+    BrewPackagesSearchable, DEFAULT_BREW_SEARCH_CAP,
 };
 
 fn ctx_for(cwd: &Path) -> ProviderCtx {
@@ -44,6 +46,8 @@ fn provider_names_match_spec_type_strings() {
     assert_eq!(BrewFormulaeInstalled.name(), "brew_formulae_installed");
     assert_eq!(BrewCasksInstalled.name(), "brew_casks_installed");
     assert_eq!(BrewFormulaeSearchable.name(), "brew_formulae_searchable");
+    assert_eq!(BrewCasksSearchable.name(), "brew_casks_searchable");
+    assert_eq!(BrewPackagesSearchable.name(), "brew_packages_searchable");
 }
 
 #[test]
@@ -142,6 +146,84 @@ fn set_brew_search_cap_normalises_zero_input() {
     set_brew_search_cap(DEFAULT_BREW_SEARCH_CAP);
 }
 
+#[test]
+fn brew_search_plan_forwards_typed_query_and_skips_cap() {
+    let (args, cap) = brew_search_plan("rust", DEFAULT_BREW_SEARCH_CAP);
+    assert_eq!(args, ["search", "rust"]);
+    assert_eq!(
+        cap,
+        usize::MAX,
+        "typed-query search must not be cap-clipped; only empty-query exploration is"
+    );
+}
+
+#[test]
+fn brew_search_plan_uses_empty_arg_and_cap_for_empty_query() {
+    let (args, cap) = brew_search_plan("", 7);
+    assert_eq!(args, ["search", ""]);
+    assert_eq!(cap, 7);
+}
+
+#[test]
+fn parse_casks_searchable_handles_modern_and_legacy_headers() {
+    // Homebrew 4.x style: `==> Casks` header marks the cask section.
+    let modern = "\
+==> Formulae
+formula1
+==> Casks
+cask1
+cask2
+";
+    let parsed = parse_casks_searchable_output(modern);
+    let texts: Vec<&str> = parsed.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(texts, vec!["cask1", "cask2"]);
+    for s in &parsed {
+        assert_eq!(s.description.as_deref(), Some("brew cask"));
+        assert_eq!(s.kind, SuggestionKind::ProviderValue);
+        assert_eq!(s.source, SuggestionSource::Provider);
+    }
+
+    // Homebrew 2.x legacy style: `Casks:` colon header.
+    let legacy = "\
+Formulae:
+formula1
+Casks:
+cask1
+cask2
+";
+    let parsed = parse_casks_searchable_output(legacy);
+    let texts: Vec<&str> = parsed.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(texts, vec!["cask1", "cask2"]);
+}
+
+#[test]
+fn parse_casks_searchable_returns_empty_when_no_cask_section() {
+    let formulae_only = "==> Formulae\nfoo\nbar\n";
+    assert!(parse_casks_searchable_output(formulae_only).is_empty());
+    assert!(parse_casks_searchable_output("").is_empty());
+}
+
+#[test]
+fn parse_packages_searchable_emits_formulae_and_casks() {
+    let input = "==> Formulae\nfoo\nbaz\n==> Casks\nbar\n";
+    let parsed = parse_packages_searchable_output(input);
+    let texts: Vec<&str> = parsed.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(texts, vec!["foo", "baz", "bar"]);
+    for s in &parsed {
+        assert_eq!(s.description.as_deref(), Some("brew formula or cask"));
+        assert_eq!(s.kind, SuggestionKind::ProviderValue);
+        assert_eq!(s.source, SuggestionSource::Provider);
+    }
+}
+
+#[test]
+fn parse_packages_searchable_handles_legacy_headers() {
+    let legacy = "Formulae:\nfoo\nCasks:\nbar\n";
+    let parsed = parse_packages_searchable_output(legacy);
+    let texts: Vec<&str> = parsed.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(texts, vec!["foo", "bar"]);
+}
+
 #[tokio::test]
 async fn run_brew_missing_binary_returns_none() {
     let tmp = tempfile::TempDir::new().unwrap();
@@ -174,8 +256,18 @@ async fn providers_return_ok_empty_when_brew_binary_is_missing() {
         .generate_with_binary(&ctx, missing)
         .await
         .unwrap();
+    let cask_search = BrewCasksSearchable
+        .generate_with_binary(&ctx, missing)
+        .await
+        .unwrap();
+    let pkg_search = BrewPackagesSearchable
+        .generate_with_binary(&ctx, missing)
+        .await
+        .unwrap();
 
     assert!(formulae.is_empty());
     assert!(casks.is_empty());
     assert!(searchable.is_empty());
+    assert!(cask_search.is_empty());
+    assert!(pkg_search.is_empty());
 }

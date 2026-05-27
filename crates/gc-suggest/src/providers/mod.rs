@@ -352,6 +352,12 @@ pub enum ProviderKind {
     BrewCasksInstalled,
     /// searchable Homebrew formulae, capped for popup latency.
     BrewFormulaeSearchable,
+    /// searchable Homebrew casks via `brew search --cask <query>`.
+    BrewCasksSearchable,
+    /// searchable Homebrew packages (union of formulae + casks) via
+    /// `brew search <query>`. Used when the install/search position is
+    /// ambiguous between formula and cask names.
+    BrewPackagesSearchable,
     /// Test-only provider that echoes `ProviderCtx::params` into
     /// suggestions so engine-boundary tests can prove per-resolution
     /// params reached dispatch.
@@ -377,8 +383,10 @@ impl ProviderKind {
         ProviderKind::CargoFeatures,
         ProviderKind::CargoTargets,
         ProviderKind::BrewCasksInstalled,
+        ProviderKind::BrewCasksSearchable,
         ProviderKind::BrewFormulaeInstalled,
         ProviderKind::BrewFormulaeSearchable,
+        ProviderKind::BrewPackagesSearchable,
         ProviderKind::DefaultsDomains,
         ProviderKind::DockerContainers,
         ProviderKind::DockerImages,
@@ -432,8 +440,10 @@ impl ProviderKind {
             Self::CargoTargets => "cargo_targets",
             Self::CargoFeatures => "cargo_features",
             Self::BrewCasksInstalled => "brew_casks_installed",
+            Self::BrewCasksSearchable => "brew_casks_searchable",
             Self::BrewFormulaeInstalled => "brew_formulae_installed",
             Self::BrewFormulaeSearchable => "brew_formulae_searchable",
+            Self::BrewPackagesSearchable => "brew_packages_searchable",
             Self::DefaultsDomains => "defaults_domains",
             Self::DockerContainers => "docker_containers",
             Self::DockerImages => "docker_images",
@@ -557,8 +567,10 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
         ProviderKind::CargoTargets => cargo_metadata::CargoTargets.generate(ctx).await,
         ProviderKind::CargoFeatures => cargo_metadata::CargoFeatures.generate(ctx).await,
         ProviderKind::BrewCasksInstalled => brew::BrewCasksInstalled.generate(ctx).await,
+        ProviderKind::BrewCasksSearchable => brew::BrewCasksSearchable.generate(ctx).await,
         ProviderKind::BrewFormulaeInstalled => brew::BrewFormulaeInstalled.generate(ctx).await,
         ProviderKind::BrewFormulaeSearchable => brew::BrewFormulaeSearchable.generate(ctx).await,
+        ProviderKind::BrewPackagesSearchable => brew::BrewPackagesSearchable.generate(ctx).await,
         ProviderKind::DefaultsDomains => macos_defaults::DefaultsDomains.generate(ctx).await,
         ProviderKind::DockerContainers => docker::DockerContainers.generate(ctx).await,
         ProviderKind::DockerImages => docker::DockerImages.generate(ctx).await,
@@ -687,6 +699,14 @@ mod tests {
         assert_eq!(
             kind_from_type_str("brew_formulae_searchable"),
             Some(ProviderKind::BrewFormulaeSearchable)
+        );
+        assert_eq!(
+            kind_from_type_str("brew_casks_searchable"),
+            Some(ProviderKind::BrewCasksSearchable)
+        );
+        assert_eq!(
+            kind_from_type_str("brew_packages_searchable"),
+            Some(ProviderKind::BrewPackagesSearchable)
         );
         assert_eq!(
             kind_from_type_str("defaults_domains"),
