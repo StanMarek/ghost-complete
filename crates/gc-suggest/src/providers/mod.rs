@@ -511,6 +511,36 @@ impl From<ProviderKind> for ProviderResolution {
     }
 }
 
+/// Provider kinds that need the previously-completed shell argument
+/// surfaced via `ProviderCtx::params["prev_arg"]`. Keeps `ProviderCtx`
+/// slim (no `args: Vec<String>` channel) by injecting only the one
+/// token the consuming provider actually reads.
+///
+/// Today: `defaults read <domain> <key>` — `DefaultsKeys` needs `<domain>`
+/// to dispatch `defaults read <domain>` and parse the resulting plist.
+pub const NEEDS_PREV_ARG: &[ProviderKind] = &[];
+
+/// Mutate `resolutions` in-place, copying `prev_arg` into the params
+/// of every resolution whose kind appears in [`NEEDS_PREV_ARG`].
+///
+/// Empty `prev_arg` is a no-op — providers that need it bail on an
+/// empty value anyway, and skipping the clone here saves an Arc churn
+/// on the keystroke hot path when there is no previous argument
+/// (e.g. cursor sitting at the first positional slot).
+pub fn inject_prev_arg(resolutions: &mut [ProviderResolution], prev_arg: &str) {
+    if prev_arg.is_empty() {
+        return;
+    }
+    for resolution in resolutions.iter_mut() {
+        if !NEEDS_PREV_ARG.contains(&resolution.kind) {
+            continue;
+        }
+        let mut params: BTreeMap<String, String> = resolution.params.as_ref().clone();
+        params.insert("prev_arg".to_string(), prev_arg.to_string());
+        resolution.params = Arc::new(params);
+    }
+}
+
 /// Map a spec's `"type"` string to a `ProviderKind`, or `None` if the
 /// string does not name a registered native provider.
 ///
@@ -981,5 +1011,40 @@ mod tests {
                 "round-trip failed for {kind:?} (type_str = {s:?})"
             );
         }
+    }
+
+    #[test]
+    fn inject_prev_arg_leaves_non_listed_kinds_untouched() {
+        // Sanity: a kind that is NOT in NEEDS_PREV_ARG must never have
+        // its params Arc rewritten. Picking DefaultsDomains because it
+        // is the closest sibling to DefaultsKeys but explicitly does
+        // not need prev_arg.
+        let untouched = ProviderKind::DefaultsDomains;
+        assert!(
+            !NEEDS_PREV_ARG.contains(&untouched),
+            "test invariant: untouched kind must not be in NEEDS_PREV_ARG"
+        );
+        let mut resolutions = vec![ProviderResolution::from_kind(untouched)];
+        let original_ptr = Arc::as_ptr(&resolutions[0].params);
+        inject_prev_arg(&mut resolutions, "com.apple.dock");
+        assert!(
+            std::ptr::eq(Arc::as_ptr(&resolutions[0].params), original_ptr),
+            "kinds outside NEEDS_PREV_ARG must not churn the params Arc"
+        );
+        assert!(resolutions[0].params.is_empty());
+    }
+
+    #[test]
+    fn inject_prev_arg_empty_value_is_noop_even_for_listed_kinds() {
+        // Empty prev_arg means the cursor is at the first positional
+        // slot — there is no previous arg to thread. The helper must
+        // skip the whole sweep so we don't churn Arcs on the hot path.
+        let mut resolutions = vec![ProviderResolution::from_kind(ProviderKind::DefaultsDomains)];
+        let original_ptr = Arc::as_ptr(&resolutions[0].params);
+        inject_prev_arg(&mut resolutions, "");
+        assert!(std::ptr::eq(
+            Arc::as_ptr(&resolutions[0].params),
+            original_ptr
+        ));
     }
 }
