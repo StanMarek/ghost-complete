@@ -526,14 +526,22 @@ fn install_to_with_cache_hooks(
     let (content, _) = remove_block(&existing, INIT_BEGIN, INIT_END);
     let (content, _) = remove_block(&content, SHELL_BEGIN, SHELL_END);
 
-    // 5. Prepend init block, append shell integration block
-    let content = content.trim().to_string();
+    // 5. Prepend init block, append shell integration block.
+    // We preserve user .zshrc bytes outside managed blocks byte-for-byte:
+    // do NOT trim() the deduped middle, and only add a trailing newline
+    // when the user's content does not already end with one. Reinstalls
+    // are byte-identical to first installs because remove_block consumes
+    // one trailing '\n' after each managed block, mirroring the single
+    // '\n' that this code inserts between init_block and the middle.
+    // See install_preserves_user_blank_lines_around_managed_blocks.
     let mut new_zshrc = String::new();
     new_zshrc.push_str(&init_block(&init_path));
     new_zshrc.push('\n');
     if !content.is_empty() {
         new_zshrc.push_str(&content);
-        new_zshrc.push('\n');
+        if !content.ends_with('\n') {
+            new_zshrc.push('\n');
+        }
     }
     new_zshrc.push_str(&shell_integration_block(&script_path));
     new_zshrc.push('\n');
@@ -1136,6 +1144,55 @@ mod tests {
         let shell_pos = content.find(SHELL_BEGIN).unwrap();
         assert!(init_pos < user_pos);
         assert!(user_pos < shell_pos);
+    }
+
+    #[test]
+    fn install_preserves_user_blank_lines_around_managed_blocks() {
+        let tmp = TempDir::new().unwrap();
+        let zshrc = tmp.path().join(".zshrc");
+        let user_content = "\n\n# top comment\n\nalias g=git\n\n\n# bottom comment\n\n";
+        fs::write(&zshrc, user_content).unwrap();
+
+        let cfg_dir = tmp.path().join(".config/ghost-complete");
+        fs::create_dir_all(&cfg_dir).unwrap();
+
+        install_to(&zshrc, &cfg_dir, false).expect("install");
+
+        let after = fs::read_to_string(&zshrc).unwrap();
+
+        let after_init_end =
+            after.find(INIT_END).expect("init end marker present") + INIT_END.len();
+        let user_region =
+            &after[after_init_end..after.find(SHELL_BEGIN).expect("shell begin marker present")];
+        assert!(
+            user_region.contains("# top comment")
+                && user_region.contains("alias g=git")
+                && user_region.contains("# bottom comment"),
+            "user content survived in middle region:\n{user_region}",
+        );
+
+        // The user's leading and trailing blank lines must survive verbatim.
+        // `.trim()` on user content destroyed them on first install AND on
+        // every reinstall. Look for the original "\n\n# top comment" and
+        // "# bottom comment\n\n" framing inside the middle region.
+        assert!(
+            user_region.contains("\n\n# top comment"),
+            "leading blank line before user content lost:\n{user_region:?}",
+        );
+        assert!(
+            user_region.contains("# bottom comment\n\n"),
+            "trailing blank line after user content lost:\n{user_region:?}",
+        );
+
+        // Reinstall should not accumulate blank lines around the managed blocks.
+        install_to(&zshrc, &cfg_dir, false).expect("reinstall");
+        let after2 = fs::read_to_string(&zshrc).unwrap();
+        let triple_blank = after2.matches("\n\n\n").count();
+        let original_triple = after.matches("\n\n\n").count();
+        assert!(
+            triple_blank <= original_triple + 1,
+            "reinstall accumulated blank lines: original={original_triple}, after={triple_blank}",
+        );
     }
 
     #[test]
