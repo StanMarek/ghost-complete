@@ -265,6 +265,11 @@ pub enum ProviderKind {
     /// `defaults domains`, splitting the single-line comma-separated
     /// output into individual macOS preference domain identifiers.
     DefaultsDomains,
+    /// Top-level keys of a macOS preferences domain, parsed from
+    /// `defaults read <domain>`. The domain is read from
+    /// `ctx.params["prev_arg"]`, populated by the engine for kinds
+    /// listed in [`NEEDS_PREV_ARG`].
+    DefaultsKeys,
     /// Docker image references from `docker images --format '{{json .}}'`.
     DockerImages,
     /// Docker containers from `docker ps -a --format '{{json .}}'`.
@@ -380,6 +385,7 @@ impl ProviderKind {
         ProviderKind::BrewFormulaeInstalled,
         ProviderKind::BrewFormulaeSearchable,
         ProviderKind::DefaultsDomains,
+        ProviderKind::DefaultsKeys,
         ProviderKind::DockerContainers,
         ProviderKind::DockerImages,
         ProviderKind::DockerNetworks,
@@ -435,6 +441,7 @@ impl ProviderKind {
             Self::BrewFormulaeInstalled => "brew_formulae_installed",
             Self::BrewFormulaeSearchable => "brew_formulae_searchable",
             Self::DefaultsDomains => "defaults_domains",
+            Self::DefaultsKeys => "defaults_keys",
             Self::DockerContainers => "docker_containers",
             Self::DockerImages => "docker_images",
             Self::DockerNetworks => "docker_networks",
@@ -518,7 +525,7 @@ impl From<ProviderKind> for ProviderResolution {
 ///
 /// Today: `defaults read <domain> <key>` — `DefaultsKeys` needs `<domain>`
 /// to dispatch `defaults read <domain>` and parse the resulting plist.
-pub const NEEDS_PREV_ARG: &[ProviderKind] = &[];
+pub const NEEDS_PREV_ARG: &[ProviderKind] = &[ProviderKind::DefaultsKeys];
 
 /// Mutate `resolutions` in-place, copying `prev_arg` into the params
 /// of every resolution whose kind appears in [`NEEDS_PREV_ARG`].
@@ -590,6 +597,7 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
         ProviderKind::BrewFormulaeInstalled => brew::BrewFormulaeInstalled.generate(ctx).await,
         ProviderKind::BrewFormulaeSearchable => brew::BrewFormulaeSearchable.generate(ctx).await,
         ProviderKind::DefaultsDomains => macos_defaults::DefaultsDomains.generate(ctx).await,
+        ProviderKind::DefaultsKeys => macos_defaults::DefaultsKeys.generate(ctx).await,
         ProviderKind::DockerContainers => docker::DockerContainers.generate(ctx).await,
         ProviderKind::DockerImages => docker::DockerImages.generate(ctx).await,
         ProviderKind::DockerNetworks => docker::DockerNetworks.generate(ctx).await,
@@ -721,6 +729,10 @@ mod tests {
         assert_eq!(
             kind_from_type_str("defaults_domains"),
             Some(ProviderKind::DefaultsDomains)
+        );
+        assert_eq!(
+            kind_from_type_str("defaults_keys"),
+            Some(ProviderKind::DefaultsKeys)
         );
         assert_eq!(
             kind_from_type_str("docker_containers"),

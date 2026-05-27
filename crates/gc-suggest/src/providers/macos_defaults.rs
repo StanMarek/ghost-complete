@@ -68,6 +68,74 @@ pub(crate) async fn run_defaults_domains_with_binary(cwd: &Path, binary: &str) -
     Some(String::from_utf8_lossy(&output.stdout).into_owned())
 }
 
+/// Extract top-level keys from `defaults read <domain>` output.
+///
+/// The wire format is plist-flavored: `{ key = value; ... }` where the
+/// outermost `{` opens the dictionary, keys are quoted-or-unquoted, and
+/// values may be scalars (`1`, `"YES"`), nested dictionaries
+/// (`{ ... }`), or arrays (`( ... )`). We track depth across BOTH
+/// `{}` and `()` so nested arrays of dicts (e.g. `persistent-apps`)
+/// don't bleed inner keys into the output.
+///
+/// Conservative on ambiguity: if a `=` appears at depth>1 we ignore it
+/// (it's part of a nested value). Lines we cannot make sense of are
+/// skipped silently — better an under-complete suggestion list than a
+/// confidently-wrong one.
+pub(crate) fn parse_defaults_keys(text: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut depth: i32 = 0;
+    let mut in_value = false;
+    let mut in_quote = false;
+    let mut key_buf = String::new();
+    for ch in text.chars() {
+        if in_quote {
+            if ch == '"' {
+                in_quote = false;
+            } else if depth == 1 && !in_value {
+                key_buf.push(ch);
+            }
+            continue;
+        }
+        match ch {
+            '"' => {
+                if depth == 1 && !in_value {
+                    in_quote = true;
+                }
+            }
+            '{' | '(' => {
+                depth += 1;
+                if depth > 1 {
+                    in_value = true;
+                }
+            }
+            '}' | ')' => {
+                depth -= 1;
+                if depth <= 1 {
+                    in_value = false;
+                }
+            }
+            '=' if depth == 1 && !in_value => {
+                let key = key_buf.trim().to_string();
+                if !key.is_empty() {
+                    out.push(key);
+                }
+                key_buf.clear();
+                in_value = true;
+            }
+            ';' if depth == 1 => {
+                in_value = false;
+                key_buf.clear();
+            }
+            _ => {
+                if depth == 1 && !in_value && !ch.is_whitespace() {
+                    key_buf.push(ch);
+                }
+            }
+        }
+    }
+    out
+}
+
 /// Parse `defaults domains` output into suggestions. Pure so tests can
 /// exercise every branch without spawning a subprocess.
 ///
@@ -123,9 +191,164 @@ impl DefaultsDomains {
     }
 }
 
+/// Run `defaults read <domain>` against the user's real `defaults`
+/// binary. Returns the raw stdout — callers parse it via
+/// [`parse_defaults_keys`].
+pub(crate) async fn run_defaults_read_with_binary(
+    cwd: &Path,
+    binary: &str,
+    domain: &str,
+) -> Option<String> {
+    let output = match tokio::time::timeout(
+        Duration::from_millis(DEFAULTS_DOMAINS_TIMEOUT_MS),
+        Command::new(binary)
+            .args(["read", domain])
+            .current_dir(cwd)
+            .kill_on_drop(true)
+            .output(),
+    )
+    .await
+    {
+        Ok(Ok(o)) => o,
+        Ok(Err(e)) => {
+            tracing::trace!(domain, "defaults read command failed: {e}");
+            return None;
+        }
+        Err(_) => {
+            tracing::warn!(domain, "defaults read timed out after {DEFAULTS_DOMAINS_TIMEOUT_MS}ms");
+            return None;
+        }
+    };
+
+    if !output.status.success() {
+        tracing::trace!(
+            domain,
+            exit = ?output.status.code(),
+            "defaults read failed (likely empty or unknown domain)"
+        );
+        return None;
+    }
+
+    Some(String::from_utf8_lossy(&output.stdout).into_owned())
+}
+
+/// `defaults_keys` — enumerates the top-level keys of a macOS
+/// preferences domain. The domain is read from
+/// `ctx.params["prev_arg"]`, which the engine injects for providers
+/// in `NEEDS_PREV_ARG` (currently `DefaultsKeys`).
+///
+/// The spec uses `-globalDomain` as a literal flag-style sentinel for
+/// the global preferences domain; rewrite it to `NSGlobalDomain` so
+/// `defaults read NSGlobalDomain` actually returns data. The `-app`
+/// sentinel requires a follow-up argument we cannot resolve here, so
+/// we bail with an empty suggestion list rather than misdispatch.
+pub struct DefaultsKeys;
+
+impl Provider for DefaultsKeys {
+    fn name(&self) -> &'static str {
+        "defaults_keys"
+    }
+
+    async fn generate(&self, ctx: &ProviderCtx) -> Result<Vec<Suggestion>> {
+        self.generate_with_binary(ctx, "defaults").await
+    }
+}
+
+impl DefaultsKeys {
+    pub(crate) async fn generate_with_binary(
+        &self,
+        ctx: &ProviderCtx,
+        binary: &str,
+    ) -> Result<Vec<Suggestion>> {
+        let Some(raw_domain) = ctx.params.get("prev_arg").map(String::as_str) else {
+            return Ok(Vec::new());
+        };
+        let domain = match raw_domain {
+            "-globalDomain" => "NSGlobalDomain",
+            "-app" => return Ok(Vec::new()),
+            other => other,
+        };
+        let Some(output) = run_defaults_read_with_binary(&ctx.cwd, binary, domain).await else {
+            return Ok(Vec::new());
+        };
+        let keys = parse_defaults_keys(&output);
+        let description = format!("key in {}", domain);
+        Ok(keys
+            .into_iter()
+            .map(|k| Suggestion {
+                text: k,
+                description: Some(description.clone()),
+                kind: SuggestionKind::ProviderValue,
+                source: SuggestionSource::Provider,
+                ..Default::default()
+            })
+            .collect())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_defaults_keys_extracts_top_level_keys() {
+        let plist = r#"{
+            "ApplePersistence" = 1;
+            "AppleShowAllExtensions" = 1;
+            "AppleShowAllFiles" = "YES";
+            "tilesize" = 48;
+            "nested" =     {
+                "ignored_inner" = 1;
+                "also_ignored" = (1, 2, 3);
+            };
+        }
+        "#;
+        let keys = parse_defaults_keys(plist);
+        assert_eq!(
+            keys,
+            vec![
+                "ApplePersistence",
+                "AppleShowAllExtensions",
+                "AppleShowAllFiles",
+                "tilesize",
+                "nested",
+            ],
+        );
+    }
+
+    #[test]
+    fn parse_defaults_keys_handles_unquoted_names() {
+        let plist = r#"{
+            keyWithoutQuotes = 1;
+            AnotherKey = 2;
+        }
+        "#;
+        let keys = parse_defaults_keys(plist);
+        assert_eq!(keys, vec!["keyWithoutQuotes", "AnotherKey"]);
+    }
+
+    #[test]
+    fn parse_defaults_keys_handles_arrays_in_nested_value() {
+        // Real-world: `defaults read com.apple.dock persistent-apps`
+        // values contain arrays of dicts. The outer reader is a dict
+        // with nested array values — depth tracking must not blow up.
+        let plist = r#"{
+            "persistent-apps" = (
+                { "tile-data" = { "label" = "Finder"; }; },
+                { "tile-data" = { "label" = "Mail"; }; }
+            );
+            "tilesize" = 48;
+        }
+        "#;
+        let keys = parse_defaults_keys(plist);
+        assert_eq!(keys, vec!["persistent-apps", "tilesize"]);
+    }
+
+    #[test]
+    fn parse_defaults_keys_empty_input_yields_empty() {
+        assert!(parse_defaults_keys("").is_empty());
+        assert!(parse_defaults_keys("{ }").is_empty());
+    }
 
     #[test]
     fn parse_happy_path() {

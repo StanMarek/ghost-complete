@@ -657,3 +657,40 @@ fn aws_empty_query_returns_subcommands_not_filesystem() {
             .collect::<Vec<_>>()
     );
 }
+
+#[test]
+fn defaults_read_key_arg_routes_to_defaults_keys_provider() {
+    // `defaults read com.apple.dock <TAB>` — the key arg must dispatch
+    // the native `defaults_keys` provider so the engine threads
+    // `params["prev_arg"] = "com.apple.dock"` at runtime.
+    let engine = build_engine();
+    let buffer = "defaults read com.apple.dock ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let kinds: Vec<gc_suggest::providers::ProviderKind> = result
+        .provider_generators
+        .iter()
+        .map(|p| p.kind)
+        .collect();
+    assert!(
+        kinds.contains(&gc_suggest::providers::ProviderKind::DefaultsKeys),
+        "defaults read <domain> <TAB> must schedule defaults_keys; got {kinds:?}"
+    );
+}
+
+#[test]
+fn defaults_write_key_arg_routes_to_defaults_keys_provider() {
+    let engine = build_engine();
+    let buffer = "defaults write com.apple.dock ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let kinds: Vec<gc_suggest::providers::ProviderKind> = result
+        .provider_generators
+        .iter()
+        .map(|p| p.kind)
+        .collect();
+    assert!(
+        kinds.contains(&gc_suggest::providers::ProviderKind::DefaultsKeys),
+        "defaults write <domain> <TAB> must schedule defaults_keys; got {kinds:?}"
+    );
+}
