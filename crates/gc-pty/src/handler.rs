@@ -1238,7 +1238,7 @@ impl InputHandler {
             }
         };
 
-        let (forward, cwd, cursor_position, screen_dimensions) =
+        let (forward, cwd, cursor_position, screen_dimensions, escaped_replacement) =
             match self.accept_suggestion_locked(&p) {
                 Some(tuple) => tuple,
                 None => {
@@ -1278,15 +1278,18 @@ impl InputHandler {
         let old_ctx = parse_command_context(&buffer, char_cursor);
         let word_start_bytes = byte_cursor - old_ctx.current_word.len();
 
-        let mut predicted = String::with_capacity(buffer.len() + selected_text.len());
+        // The shell receives `escaped_replacement` from `forward`; the
+        // predicted buffer must use the same text so the next suggestion
+        // round sees the bytes the shell will see, not the raw display text.
+        let mut predicted = String::with_capacity(buffer.len() + escaped_replacement.len());
         predicted.push_str(&buffer[..word_start_bytes]);
-        predicted.push_str(&selected_text);
+        predicted.push_str(&escaped_replacement);
         if byte_cursor < buffer.len() {
             predicted.push_str(&buffer[byte_cursor..]);
         }
         // new_cursor is a char offset for predict_command_buffer
         let word_start_chars = byte_to_char_offset(&buffer, word_start_bytes);
-        let new_cursor = word_start_chars + selected_text.chars().count();
+        let new_cursor = word_start_chars + escaped_replacement.chars().count();
 
         let predicted_ctx = parse_command_context(&predicted, new_cursor);
         let predicted_buffer = predicted.clone();
@@ -2850,33 +2853,46 @@ impl InputHandler {
         let cursor_position = state.cursor_position();
         let screen_dimensions = state.screen_dimensions();
 
-        let (delete_chars, replacement, command) =
-            if selected.kind == gc_suggest::SuggestionKind::History {
-                // History: delete the entire buffer up to cursor, then type
-                // the full command. Cursor is always at buffer end when
-                // popup is visible (arrow keys dismiss), but we use cursor
-                // (not buffer.chars().count()) because over-deleting past
-                // cursor into the prompt would be worse than leaving
-                // trailing chars.
-                //
-                // Defense-in-depth: clamp cursor to buffer length even
-                // though set_command_buffer already clamps, to prevent PTY
-                // corruption if an unclamped value ever reaches here.
-                let buf_len = buffer.chars().count();
-                let safe_cursor = cursor.min(buf_len);
-                if safe_cursor != buf_len {
-                    tracing::warn!(
-                        cursor = safe_cursor,
-                        buffer_len = buf_len,
-                        "history accept: cursor not at end of buffer — \
+        let (delete_chars, replacement, command) = if selected.kind
+            == gc_suggest::SuggestionKind::History
+        {
+            // History: delete the entire buffer up to cursor, then type
+            // the full command. Cursor is always at buffer end when
+            // popup is visible (arrow keys dismiss), but we use cursor
+            // (not buffer.chars().count()) because over-deleting past
+            // cursor into the prompt would be worse than leaving
+            // trailing chars.
+            //
+            // Defense-in-depth: clamp cursor to buffer length even
+            // though set_command_buffer already clamps, to prevent PTY
+            // corruption if an unclamped value ever reaches here.
+            let buf_len = buffer.chars().count();
+            let safe_cursor = cursor.min(buf_len);
+            if safe_cursor != buf_len {
+                tracing::warn!(
+                    cursor = safe_cursor,
+                    buffer_len = buf_len,
+                    "history accept: cursor not at end of buffer — \
                          using cursor position to avoid over-deleting into prompt"
-                    );
+                );
+            }
+            (safe_cursor, selected.text.clone(), ctx.command)
+        } else {
+            let word_len = ctx.current_word.chars().count();
+            // Filesystem suggestions go through shell-escape so paths
+            // containing spaces or other metacharacters survive
+            // re-parsing by the shell. The chaining caller reuses the
+            // same escaped string (returned below) so the predicted
+            // buffer matches what the shell will actually see.
+            let raw = selected.text.clone();
+            let escaped = match selected.kind {
+                gc_suggest::SuggestionKind::FilePath | gc_suggest::SuggestionKind::Directory => {
+                    shell_escape_for_context(&raw, ctx.quote_state)
                 }
-                (safe_cursor, selected.text.clone(), ctx.command)
-            } else {
-                let word_len = ctx.current_word.chars().count();
-                (word_len, selected.text.clone(), ctx.command)
+                _ => raw,
             };
+            (word_len, escaped, ctx.command)
+        };
 
         // Record accepted completion for frecency scoring.
         // History items are full commands — always keyed without command scope
@@ -2893,7 +2909,7 @@ impl InputHandler {
         let mut bytes = vec![0x7F; delete_chars];
         bytes.extend_from_slice(replacement.as_bytes());
 
-        Some((bytes, cwd, cursor_position, screen_dimensions))
+        Some((bytes, cwd, cursor_position, screen_dimensions, replacement))
     }
 
     fn accept_suggestion(&self, parser: &Arc<Mutex<TerminalParser>>) -> Vec<u8> {
@@ -2909,7 +2925,9 @@ impl InputHandler {
             }
         };
         match self.accept_suggestion_locked(&p) {
-            Some((bytes, _cwd, _cursor_position, _screen_dimensions)) => bytes,
+            Some((bytes, _cwd, _cursor_position, _screen_dimensions, _escaped_replacement)) => {
+                bytes
+            }
             None => Vec::new(),
         }
     }
@@ -2959,10 +2977,80 @@ impl InputHandler {
 }
 
 /// Return value of `accept_suggestion_locked`: the bytes to forward to the
-/// PTY plus the cwd and terminal geometry read under the same parser lock.
-/// The cwd and geometry are only consumed by the CD-chaining path in
-/// `accept_with_chaining`; the plain accept path discards them.
-type AcceptLockedOutput = (Vec<u8>, PathBuf, (u16, u16), (u16, u16));
+/// PTY plus the cwd and terminal geometry read under the same parser lock,
+/// followed by the (possibly-escaped) replacement text. The cwd, geometry
+/// and replacement text are only consumed by the CD-chaining path in
+/// `accept_with_chaining`; the plain accept path discards them. Sharing the
+/// replacement here is what keeps the predicted post-accept buffer aligned
+/// with the bytes the shell actually receives — re-escaping it in the
+/// chaining caller would risk drift between the two sites.
+type AcceptLockedOutput = (Vec<u8>, PathBuf, (u16, u16), (u16, u16), String);
+
+/// Quote-context-aware shell escape for filesystem path insertions.
+///
+/// The shell parses words differently depending on quote state: unquoted
+/// words split on whitespace and interpret `*?[]{}~$`<>|&;()#`, single quotes
+/// only end on the next `'`, and double quotes interpret `$\`"\\`. Without
+/// matching the user's current quote state, accepting a path with spaces
+/// silently corrupts the next command line.
+///
+/// The escape is conservative — in unquoted context every word-splitting or
+/// expansion-triggering metacharacter is backslashed. Within single quotes
+/// only an embedded apostrophe needs the close-reopen dance (`'\''`). Within
+/// double quotes the four-character set `"`, `\`, `$`, `` ` `` is escaped;
+/// everything else (including spaces and globs) is literal.
+fn shell_escape_for_context(text: &str, quote: gc_buffer::QuoteState) -> String {
+    match quote {
+        gc_buffer::QuoteState::None => {
+            let needs_escape = |c: char| {
+                matches!(
+                    c,
+                    ' ' | '\t'
+                        | '\n'
+                        | ';'
+                        | '&'
+                        | '|'
+                        | '<'
+                        | '>'
+                        | '('
+                        | ')'
+                        | '$'
+                        | '`'
+                        | '\\'
+                        | '"'
+                        | '\''
+                        | '*'
+                        | '?'
+                        | '['
+                        | ']'
+                        | '{'
+                        | '}'
+                        | '#'
+                        | '~'
+                )
+            };
+            let mut out = String::with_capacity(text.len() + 4);
+            for ch in text.chars() {
+                if needs_escape(ch) {
+                    out.push('\\');
+                }
+                out.push(ch);
+            }
+            out
+        }
+        gc_buffer::QuoteState::SingleQuoted => text.replace('\'', r"'\''"),
+        gc_buffer::QuoteState::DoubleQuoted => {
+            let mut out = String::with_capacity(text.len() + 4);
+            for ch in text.chars() {
+                if matches!(ch, '"' | '\\' | '$' | '`') {
+                    out.push('\\');
+                }
+                out.push(ch);
+            }
+            out
+        }
+    }
+}
 
 const DEFAULT_TRIGGER_CHARS: &[char] = &[' ', '/', '-', '.'];
 
@@ -7449,5 +7537,145 @@ mod tests {
         // Some(non-zero), call teardown_popup, assert exactly one begin_sync /
         // end_sync pair AND that BOTH the popup-clear and the detail-clear
         // bytes sit between them.
+    }
+
+    // ---- shell_escape_for_context unit tests ----
+
+    #[test]
+    fn shell_escape_unquoted_escapes_whitespace_and_metacharacters() {
+        let out = shell_escape_for_context("My Folder/file.txt", gc_buffer::QuoteState::None);
+        assert_eq!(out, r"My\ Folder/file.txt");
+
+        let out = shell_escape_for_context("a$b`c|d", gc_buffer::QuoteState::None);
+        assert_eq!(out, r"a\$b\`c\|d");
+    }
+
+    #[test]
+    fn shell_escape_unquoted_identity_for_safe_chars() {
+        let out = shell_escape_for_context("plain_file.txt", gc_buffer::QuoteState::None);
+        assert_eq!(out, "plain_file.txt");
+    }
+
+    #[test]
+    fn shell_escape_single_quoted_leaves_spaces_alone() {
+        let out =
+            shell_escape_for_context("My Folder/file.txt", gc_buffer::QuoteState::SingleQuoted);
+        assert_eq!(out, "My Folder/file.txt");
+    }
+
+    #[test]
+    fn shell_escape_single_quoted_close_reopens_internal_apostrophe() {
+        let out = shell_escape_for_context("don't.txt", gc_buffer::QuoteState::SingleQuoted);
+        assert_eq!(out, r"don'\''t.txt");
+    }
+
+    #[test]
+    fn shell_escape_double_quoted_escapes_only_special_quad() {
+        // Inside double quotes, only " \ $ ` are special; spaces stay literal.
+        let out = shell_escape_for_context(
+            "My Folder/$VAR-`cmd`-\"q\"-\\b",
+            gc_buffer::QuoteState::DoubleQuoted,
+        );
+        assert_eq!(out, r#"My Folder/\$VAR-\`cmd\`-\"q\"-\\b"#);
+    }
+
+    // ---- shell escape applied at the accept call site ----
+
+    /// Drive a parser to report a known command buffer via OSC 7770 so the
+    /// accept-time `parse_command_context` sees the expected state. Returns
+    /// the parser ready for `handler.accept_suggestion(&parser)`.
+    fn parser_with_buffer(buffer: &str) -> Arc<Mutex<gc_parser::TerminalParser>> {
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let cursor = buffer.chars().count();
+        let osc = format!("\x1b]7770;{cursor};{buffer}\x07");
+        parser.lock().unwrap().process_bytes(osc.as_bytes());
+        parser
+    }
+
+    fn path_suggestion(text: &str, kind: SuggestionKind) -> Suggestion {
+        Suggestion {
+            text: text.to_string(),
+            kind,
+            source: SuggestionSource::Filesystem,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn accept_path_with_spaces_is_shell_escaped() {
+        let handler = make_selected_handler(path_suggestion(
+            "My Folder/file.txt",
+            SuggestionKind::FilePath,
+        ));
+        let parser = parser_with_buffer("cat My");
+
+        let bytes = handler.accept_suggestion(&parser);
+        let s = String::from_utf8_lossy(&bytes);
+        assert!(
+            s.contains(r"My\ Folder/file.txt"),
+            "unquoted accept must backslash-escape spaces; got bytes={:?}",
+            s
+        );
+        // Defensive: the un-escaped form is NOT present (otherwise the
+        // shell would word-split into 'My' + 'Folder/file.txt').
+        assert!(
+            !s.contains("My Folder/file.txt"),
+            "unescaped path must not appear in accept bytes: {:?}",
+            s
+        );
+    }
+
+    #[test]
+    fn accept_path_in_single_quotes_is_not_backslash_escaped() {
+        // Buffer ends inside an unclosed single quote: tokenizer reports
+        // quote_state = SingleQuoted, so spaces are already preserved as
+        // literal — backslash-escaping them would inject a stray '\'.
+        let handler = make_selected_handler(path_suggestion(
+            "My Folder/file.txt",
+            SuggestionKind::FilePath,
+        ));
+        let parser = parser_with_buffer("cat 'My");
+
+        let bytes = handler.accept_suggestion(&parser);
+        let s = String::from_utf8_lossy(&bytes);
+        assert!(
+            !s.contains(r"\ "),
+            "single-quoted accept must NOT backslash-escape spaces; got bytes={:?}",
+            s
+        );
+        assert!(
+            s.contains("My Folder/file.txt"),
+            "raw path text expected inside single quotes; got bytes={:?}",
+            s
+        );
+    }
+
+    #[test]
+    fn chaining_uses_escaped_buffer() {
+        // After accepting a directory, the chaining path predicts the
+        // post-acceptance buffer state so the next suggestion round sees
+        // the SAME bytes the shell will see. Without the escape applied
+        // here, the engine reads "cd My Folder/" (3 tokens) while the
+        // shell sees "cd My\ Folder/" (2 tokens) — the next completion
+        // resolves the wrong directory.
+        let mut handler =
+            make_selected_handler(path_suggestion("My Folder/", SuggestionKind::Directory));
+        let parser = parser_with_buffer("cd My");
+
+        let mut stdout = Vec::new();
+        let _ = handler.accept_with_chaining(&parser, &mut stdout);
+
+        let predicted = parser
+            .lock()
+            .unwrap()
+            .state()
+            .command_buffer()
+            .map(|s| s.to_string())
+            .unwrap_or_default();
+        assert!(
+            predicted.contains(r"My\ Folder/"),
+            "chaining predicted buffer must use escaped path; got {:?}",
+            predicted
+        );
     }
 }
