@@ -719,3 +719,71 @@ fn defaults_write_key_arg_routes_to_defaults_keys_provider() {
         "defaults write <domain> <TAB> must schedule defaults_keys; got {kinds:?}"
     );
 }
+
+#[test]
+fn open_a_arg_routes_to_macos_applications_provider() {
+    let engine = build_engine();
+    let buffer = "open -a ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let kinds: Vec<gc_suggest::providers::ProviderKind> = result
+        .provider_generators
+        .iter()
+        .map(|p| p.kind)
+        .collect();
+    assert!(
+        kinds.contains(&gc_suggest::providers::ProviderKind::MacosApplications),
+        "open -a must schedule macos_applications; got {kinds:?}"
+    );
+}
+
+#[test]
+fn open_b_arg_routes_to_macos_bundle_identifiers_provider() {
+    let engine = build_engine();
+    let buffer = "open -b ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let kinds: Vec<gc_suggest::providers::ProviderKind> = result
+        .provider_generators
+        .iter()
+        .map(|p| p.kind)
+        .collect();
+    assert!(
+        kinds.contains(&gc_suggest::providers::ProviderKind::MacosBundleIdentifiers),
+        "open -b must schedule macos_bundle_identifiers; got {kinds:?}"
+    );
+}
+
+#[test]
+fn osascript_l_arg_suggests_applescript_and_javascript() {
+    let engine = build_engine();
+    let buffer = "osascript -l ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let texts: Vec<&str> = result.suggestions.iter().map(|s| s.text.as_str()).collect();
+    assert!(
+        texts.contains(&"AppleScript"),
+        "osascript -l must offer AppleScript; got {texts:?}"
+    );
+    assert!(
+        texts.contains(&"JavaScript"),
+        "osascript -l must offer JavaScript; got {texts:?}"
+    );
+}
+
+#[test]
+fn codesign_options_arg_suggests_runtime_and_hard() {
+    let engine = build_engine();
+    let buffer = "codesign -o ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let texts: Vec<&str> = result.suggestions.iter().map(|s| s.text.as_str()).collect();
+    assert!(
+        texts.contains(&"runtime"),
+        "codesign -o must offer runtime; got {texts:?}"
+    );
+    assert!(
+        texts.contains(&"hard"),
+        "codesign -o must offer hard; got {texts:?}"
+    );
+}
