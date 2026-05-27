@@ -806,6 +806,24 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
     // Drop the sender we cloned from — we only need the ones in the tasks
     drop(shutdown_tx);
 
+    // Deferred initial resize. Some outer terminals (observed: Ghostty on
+    // Linux/Wayland) don't have their final window size reported via
+    // TIOCGWINSZ at the instant spawn_shell() called get_terminal_size(),
+    // so the inner PTY is created with stale dimensions and the inner
+    // shell's $COLUMNS is wrong until the first real SIGWINCH. That
+    // shows up as a misaligned first prompt: right-aligned RPROMPT
+    // segments land off-screen, PROMPT_SP fires because zsh's internal
+    // cursor-column tracking disagrees with the real terminal width,
+    // and zooming "fixes" it only because the zoom triggers SIGWINCH.
+    // Re-querying once shortly after startup catches the race; if the
+    // initial size was already correct, the second resize_pty with the
+    // same dimensions is a no-op.
+    let (initial_resize_tx, mut initial_resize_rx) = mpsc::channel::<()>(1);
+    tokio::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        let _ = initial_resize_tx.send(()).await;
+    });
+
     // Task C: Signal handling
     let mut sigwinch =
         signal(SignalKind::window_change()).context("failed to register SIGWINCH handler")?;
@@ -874,6 +892,39 @@ pub async fn run_proxy(shell: &str, args: &[String], config: &GhostConfig) -> Re
                     }
                     Err(e) => {
                         tracing::warn!("failed to get terminal size for resize: {}", e);
+                    }
+                }
+            }
+            _ = initial_resize_rx.recv() => {
+                // Defensive re-resize after startup — see channel setup above.
+                // Body intentionally narrower than the SIGWINCH branch: at
+                // startup no popup is visible yet, so the overlay-cleanup
+                // path is unnecessary; we only need to propagate the
+                // (possibly corrected) outer size to the inner PTY and the
+                // parser. The channel is single-shot, so this branch fires
+                // at most once per proxy lifetime.
+                match get_terminal_size() {
+                    Ok(size) => {
+                        if let Err(e) = resize_pty(master.as_ref(), size) {
+                            tracing::warn!("failed deferred initial resize: {}", e);
+                        } else {
+                            match parser.lock() {
+                                Ok(mut p) => {
+                                    p.state_mut().update_dimensions(size.rows, size.cols);
+                                }
+                                Err(e) => {
+                                    tracing::warn!(
+                                        "parser mutex poisoned on deferred initial resize: {e}"
+                                    );
+                                }
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            "failed to query terminal size for deferred initial resize: {}",
+                            e
+                        );
                     }
                 }
             }
