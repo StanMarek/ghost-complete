@@ -612,9 +612,9 @@ alias multiline='ls \
         assert_eq!(map.get("gco").map(|v| v.as_str()), Some("git checkout"));
         assert_eq!(map.get("gcb").map(|v| v.as_str()), Some("git checkout -b"));
         assert_eq!(map.get("dev").map(|v| v.as_str()), Some("ssh"));
-        assert!(map.get("broken-name").is_none());
-        assert!(map.get("multiline").is_none());
-        assert!(map.get("helper").is_none());
+        assert!(!map.contains_key("broken-name"));
+        assert!(!map.contains_key("multiline"));
+        assert!(!map.contains_key("helper"));
     }
 
     #[test]
