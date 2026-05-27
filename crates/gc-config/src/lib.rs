@@ -608,6 +608,76 @@ const DESC_BOX_MAX_WIDTH_CEILING: u16 = 200;
 const DESC_BOX_LINES_CEILING: u16 = 20;
 const DESC_BOX_DEBOUNCE_CEILING: u16 = 500;
 
+/// Returns every leaf field path in dotted form, e.g. `popup.render_block_ms`.
+/// Used by drift tests in `ghost-complete` to verify the install template,
+/// TUI editor metadata, and `docs/CONFIGURATION.md` hot-reload table stay
+/// in sync with the schema.
+///
+/// New schema fields MUST appear here. Adding via copy-paste from
+/// `GhostConfig` is acceptable; the cost of forgetting is a failing
+/// drift test, not a runtime bug.
+pub fn all_field_paths() -> Vec<&'static str> {
+    vec![
+        // [trigger]
+        "trigger.auto_chars",
+        "trigger.delay_ms",
+        "trigger.auto_trigger",
+        // [popup]
+        "popup.max_visible",
+        "popup.borders",
+        "popup.feedback_dismiss_ms",
+        "popup.spinner",
+        "popup.show_provider_errors",
+        "popup.render_block_ms",
+        "popup.min_width",
+        "popup.max_width",
+        "popup.description_box",
+        "popup.description_box_max_width",
+        "popup.description_box_lines",
+        "popup.description_box_debounce_ms",
+        // [suggest]
+        "suggest.max_results",
+        "suggest.max_history_results",
+        "suggest.generator_timeout_ms",
+        // [suggest.providers]
+        "suggest.providers.commands",
+        "suggest.providers.filesystem",
+        "suggest.providers.specs",
+        "suggest.providers.git",
+        "suggest.providers.js_runtime",
+        // [suggest.spec_cache]
+        "suggest.spec_cache.idle_ttl_secs",
+        "suggest.spec_cache.sweep_interval_secs",
+        "suggest.spec_cache.keep_warm",
+        "suggest.spec_cache.max_resident_mb",
+        // [paths]
+        "paths.spec_dirs",
+        // [keybindings] — 6 fields
+        "keybindings.accept",
+        "keybindings.accept_and_enter",
+        "keybindings.dismiss",
+        "keybindings.navigate_up",
+        "keybindings.navigate_down",
+        "keybindings.trigger",
+        // [theme] — 10 fields
+        "theme.preset",
+        "theme.selected",
+        "theme.description",
+        "theme.match_highlight",
+        "theme.item_text",
+        "theme.scrollbar",
+        "theme.border",
+        "theme.feedback_loading",
+        "theme.feedback_empty",
+        "theme.feedback_error",
+        // [experimental]
+        "experimental.multi_terminal",
+        "experimental.aws_sdk_provider",
+        "experimental.aws_sdk_fallback_to_cli",
+        "experimental.brew_search_cap",
+    ]
+}
+
 impl GhostConfig {
     /// Clamp config values to sane bounds, logging warnings when clamping.
     ///
@@ -869,6 +939,38 @@ fn diff_unknown_keys(
 mod tests {
     use super::*;
     use std::io::Write;
+
+    #[test]
+    fn all_field_paths_covers_every_section() {
+        let paths = all_field_paths();
+        let expected_sections = &[
+            "trigger.",
+            "popup.",
+            "suggest.",
+            "suggest.providers.",
+            "suggest.spec_cache.",
+            "paths.",
+            "keybindings.",
+            "theme.",
+            "experimental.",
+        ];
+        for prefix in expected_sections {
+            assert!(
+                paths.iter().any(|p| p.starts_with(prefix)),
+                "missing section: {}",
+                prefix,
+            );
+        }
+    }
+
+    #[test]
+    fn all_field_paths_includes_render_block_ms() {
+        let paths = all_field_paths();
+        assert!(paths.contains(&"popup.render_block_ms"));
+        assert!(paths.contains(&"suggest.providers.js_runtime"));
+        assert!(paths.contains(&"experimental.brew_search_cap"));
+        assert!(paths.contains(&"suggest.spec_cache.idle_ttl_secs"));
+    }
 
     #[test]
     fn test_default_config_matches_hardcoded() {
