@@ -355,7 +355,7 @@ describe('convertSingleSpec', () => {
 
       const brew = await convertSingleSpec('brew');
       assert.ok(brew);
-      assert.ok(findGenerator(brew.spec, (gen) => gen.type === 'brew_formulae_searchable'));
+      assert.ok(findGenerator(brew.spec, (gen) => gen.type === 'brew_packages_searchable'));
 
       const kubectl = await convertSingleSpec('kubectl');
       assert.ok(kubectl);

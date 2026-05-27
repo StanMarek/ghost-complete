@@ -204,7 +204,15 @@ function smallToolProvider(scriptArgv) {
   if (binary === 'brew') {
     if (sub === 'list' && scriptArgv.includes('--cask')) return { type: 'brew_casks_installed' };
     if (sub === 'list') return { type: 'brew_formulae_installed' };
-    if (sub === 'search') return { type: 'brew_formulae_searchable' };
+    if (sub === 'search') {
+      if (scriptArgv.includes('--cask') || scriptArgv.includes('--casks')) {
+        return { type: 'brew_casks_searchable' };
+      }
+      if (scriptArgv.includes('--formula') || scriptArgv.includes('--formulae')) {
+        return { type: 'brew_formulae_searchable' };
+      }
+      return { type: 'brew_packages_searchable' };
+    }
   }
   if (binary === 'dscl' && scriptArgv[1] === '.' && scriptArgv[2] === 'list') {
     if (scriptArgv[3] === '/Users') return { type: 'dscl_users' };

@@ -457,12 +457,15 @@ function applyNpmNativeProviderFixups(spec) {
 }
 
 function applyBrewNativeProviderFixups(spec) {
+  // Upstream Fig uses `brew formulae` (formula-only listing) for install,
+  // edit, home, abv. Those subcommands all accept casks too, so route to
+  // brew_packages_searchable (union of formulae + casks) for accuracy.
   walkSpecNodes(spec, (node) => {
     const gen = firstGenerator(node);
     if (!gen?.script || gen.script[0] !== 'brew' || gen.script[1] !== 'formulae') {
       return;
     }
-    setNodeProvider(node, provider('brew_formulae_searchable'));
+    setNodeProvider(node, provider('brew_packages_searchable'));
   });
 }
 
