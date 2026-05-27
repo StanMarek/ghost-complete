@@ -1648,21 +1648,55 @@ impl SuggestionEngine {
         candidates: Vec<Suggestion>,
         include_history: bool,
     ) -> Vec<Suggestion> {
-        let mut results = fuzzy::rank(&ctx.current_word, candidates, self.max_results);
+        // Cap of high-confidence history rows reserved before normal
+        // candidates are ranked. Two is enough to keep the most recent
+        // exact/prefix match visible without crowding flags or refs.
+        const RESERVED_HISTORY: usize = 2;
 
-        // History doesn't belong in redirect context — user expects filenames, not commands
-        if include_history && self.max_history_results > 0 && !ctx.in_redirect {
+        // Flag context (current_word starts with '-') and redirect context
+        // both want a different lane than command-history: flags don't
+        // prefix-match command lines, and redirects expect filenames.
+        let history_lane_allowed =
+            include_history && self.max_history_results > 0 && !ctx.in_redirect && !ctx.is_flag;
+
+        // Fetch history once when the lane is allowed. The same Vec feeds
+        // both the reservation count and the existing fuzzy-fill step
+        // below, so we avoid a second `history_provider.provide` round.
+        let history_entries: Vec<Suggestion> = if history_lane_allowed {
+            match self.history_provider.provide(ctx, cwd) {
+                Ok(h) => h,
+                Err(e) => {
+                    tracing::warn!("history provider error: {e}");
+                    Vec::new()
+                }
+            }
+        } else {
+            Vec::new()
+        };
+
+        // Reserve up to RESERVED_HISTORY exact/prefix-matching rows. The
+        // budget MUST be reduced BEFORE `fuzzy::rank` runs — capping only
+        // after the rank lets a saturated candidate set grow the popup
+        // past `max_results` once history is appended.
+        let reserved_history = history_entries
+            .iter()
+            .filter(|s| s.text == buffer || s.text.starts_with(buffer))
+            .take(RESERVED_HISTORY)
+            .count();
+        let normal_budget = self.max_results.saturating_sub(reserved_history);
+
+        let mut results = fuzzy::rank(&ctx.current_word, candidates, normal_budget);
+
+        // History fuzzy-fill: with `normal_budget` shrunk above, there is
+        // now at least `reserved_history` extra room for the entries that
+        // drove the reservation. Additional low-confidence matches fill
+        // any further slack up to `max_history_results`.
+        if !history_entries.is_empty() {
             let remaining = self
                 .max_history_results
                 .min(self.max_results.saturating_sub(results.len()));
             if remaining > 0 {
-                match self.history_provider.provide(ctx, cwd) {
-                    Ok(hist) if !hist.is_empty() => {
-                        results.extend(fuzzy::rank(buffer, hist, remaining));
-                    }
-                    Ok(_) => {}
-                    Err(e) => tracing::warn!("history provider error: {e}"),
-                }
+                results.extend(fuzzy::rank(buffer, history_entries, remaining));
             }
         }
 
@@ -4552,6 +4586,105 @@ mod tests {
         assert!(
             g.is_empty(),
             "after recovery + record_success, the failures map must be empty, got {g:?}"
+        );
+    }
+
+    // ---- engine_history: history-lane reservation ----
+
+    fn make_history_engine(history: Vec<String>) -> SuggestionEngine {
+        let spec_store = SpecStore::load_from_dir(&spec_dir()).unwrap().store;
+        let history = HistoryProvider::from_entries(history);
+        let commands = CommandsProvider::from_list(vec!["git".into()]);
+        let mut engine = SuggestionEngine::with_providers(spec_store, history, commands);
+        engine.max_results = 10;
+        engine.max_history_results = 5;
+        engine
+    }
+
+    fn flag_candidates(n: usize) -> Vec<Suggestion> {
+        (0..n)
+            .map(|i| Suggestion {
+                text: format!("flag{i}"),
+                kind: SuggestionKind::Flag,
+                source: SuggestionSource::Spec,
+                ..Default::default()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn engine_history_reserves_two_rows_when_candidates_fill_budget() {
+        // With max_results = 10 and 10 candidates that all match the
+        // (empty) current_word, the pre-reservation behaviour saturated
+        // the popup with candidates and pushed every history row out. The
+        // reservation lane shrinks the candidate cap by 2 so two high-
+        // confidence (prefix-matching) history entries always have room.
+        let engine = make_history_engine(vec![
+            "git checkout master".into(),
+            "git checkout develop".into(),
+        ]);
+        let ctx = make_ctx(Some("git"), vec!["checkout"], "", 2);
+        let results = engine.rank_with_history(
+            &ctx,
+            Path::new("/tmp"),
+            "git checkout ",
+            flag_candidates(10),
+            true,
+        );
+
+        assert_eq!(
+            results.len(),
+            10,
+            "8 candidates + 2 reserved history must still fit max_results = 10 (no popup growth)"
+        );
+        let history_count = results
+            .iter()
+            .filter(|s| s.source == SuggestionSource::History)
+            .count();
+        assert_eq!(
+            history_count, 2,
+            "two prefix-matching history entries must survive: {results:?}"
+        );
+    }
+
+    #[test]
+    fn engine_history_skipped_in_redirect_context() {
+        let engine = make_history_engine(vec!["echo redirected".into()]);
+        let mut ctx = make_ctx(Some("echo"), vec![], "", 1);
+        ctx.in_redirect = true;
+        let candidates = vec![Suggestion {
+            text: "foo.txt".to_string(),
+            kind: SuggestionKind::FilePath,
+            source: SuggestionSource::Filesystem,
+            ..Default::default()
+        }];
+        let results =
+            engine.rank_with_history(&ctx, Path::new("/tmp"), "echo > ", candidates, true);
+        let history_count = results
+            .iter()
+            .filter(|s| s.source == SuggestionSource::History)
+            .count();
+        assert_eq!(
+            history_count, 0,
+            "redirect context expects filenames, not command history: {results:?}"
+        );
+    }
+
+    #[test]
+    fn engine_history_skipped_in_flag_context() {
+        // ctx.is_flag = current_word.starts_with('-'). Flags don't
+        // prefix-match command lines, so the lane is wasted here.
+        let engine = make_history_engine(vec!["git --version".into()]);
+        let ctx = make_ctx(Some("git"), vec![], "--", 1);
+        let candidates = flag_candidates(10);
+        let results = engine.rank_with_history(&ctx, Path::new("/tmp"), "git --", candidates, true);
+        let history_count = results
+            .iter()
+            .filter(|s| s.source == SuggestionSource::History)
+            .count();
+        assert_eq!(
+            history_count, 0,
+            "flag context must not surface history rows: {results:?}"
         );
     }
 }
