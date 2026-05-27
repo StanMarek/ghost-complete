@@ -104,6 +104,9 @@ enum Command {
         /// Override the embedded coverage baseline
         #[arg(long, value_name = "PATH")]
         baseline: Option<PathBuf>,
+        /// Show the full per-command JS-only list (plain output is summary-only)
+        #[arg(long)]
+        verbose: bool,
     },
     /// Show or edit resolved configuration
     Config {
@@ -291,9 +294,16 @@ fn main() -> Result<()> {
             strict,
             json,
             baseline,
+            verbose,
         }) => {
             init_tracing(log_level, log_file.as_deref())?;
-            status::run_status_with_opts(config_path.as_deref(), strict, json, baseline.as_deref())
+            status::run_status_with_opts(
+                config_path.as_deref(),
+                strict,
+                json,
+                baseline.as_deref(),
+                verbose,
+            )
         }
         Some(Command::Config {
             subcommand: Some(ConfigCommand::Edit),
