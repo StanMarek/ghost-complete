@@ -47,6 +47,7 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # feedback_dismiss_ms = 1200  # Empty/error feedback auto-dismiss delay; 0 disables
 # spinner = true  # Animate async Loading feedback in wide popups
 # show_provider_errors = false  # Set true to show provider names in error feedback
+# render_block_ms = 80  # Pre-paint window (ms, 0-300); 0 paints immediately, higher races fast async generators into the first frame
 # min_width = 20  # Lower bound for popup width; clamped to [10, 500]
 # max_width = 60  # Upper bound for popup width; clamped to [min_width, 500]
 # description_box = \"off\"  # \"off\" for inline descriptions, \"side\" for wrapped adjacent box
@@ -64,6 +65,16 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # filesystem = true
 # specs = true
 # git = true
+# js_runtime = true  # Master kill switch for the QuickJS evaluator backing requires_js generators; restart required
+
+# [suggest.spec_cache]
+# idle_ttl_secs = 0  # Seconds idle before a parsed spec is evicted; 0 disables eviction
+# sweep_interval_secs = 60  # Background sweep cadence (seconds); ignored when idle_ttl_secs = 0
+# keep_warm = []  # Spec names (filename stem) that are never evicted; e.g. [\"git\", \"docker\"]
+# max_resident_mb = 0  # LRU backstop in MB after TTL eviction; 0 disables
+
+# [paths]
+# spec_dirs = []  # Additional spec source directories searched at startup (highest precedence first)
 
 # [keybindings]
 # accept = \"tab\"
@@ -89,6 +100,7 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # multi_terminal = false  # Set to true to enable unsupported/unknown terminals
 # aws_sdk_provider = false  # Opt in to native AWS SDK completions; may make outbound AWS calls
 # aws_sdk_fallback_to_cli = true  # Fall back to the aws CLI when SDK completions cannot run
+# brew_search_cap = 1000  # Cap on `brew search \"\"` results before fuzzy ranking; raise for unfiltered exploration
 ";
 
 pub(crate) const INIT_BEGIN: &str = "# >>> ghost-complete initialize >>>";
