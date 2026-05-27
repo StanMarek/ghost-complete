@@ -1673,3 +1673,27 @@ mod tests {
         assert_eq!(entries.len(), 1);
     }
 }
+
+#[cfg(test)]
+mod drift_tests {
+    use super::DEFAULT_CONFIG_TOML;
+    use gc_config::all_field_paths;
+
+    #[test]
+    fn install_template_contains_every_schema_field() {
+        let mut missing = Vec::new();
+        for path in all_field_paths() {
+            let (_section, key) = path.rsplit_once('.').expect("dotted path");
+            // Field is "present" if its bare key appears in the template
+            // (commented-out lines count — the template is documentation).
+            if !DEFAULT_CONFIG_TOML.contains(key) {
+                missing.push(path);
+            }
+        }
+        assert!(
+            missing.is_empty(),
+            "install template missing keys: {:#?}",
+            missing,
+        );
+    }
+}

@@ -2081,3 +2081,82 @@ auto_trigger = false
         assert_eq!(cfg.popup.render_block_ms, 0);
     }
 }
+
+#[cfg(test)]
+mod docs_drift_tests {
+    use super::all_field_paths;
+
+    /// Read docs/CONFIGURATION.md via the workspace root computed from
+    /// CARGO_MANIFEST_DIR (gc-config is at `<root>/crates/gc-config`,
+    /// so we go up two levels).
+    fn configuration_md() -> String {
+        let manifest = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let root = manifest
+            .parent()
+            .expect("crates/")
+            .parent()
+            .expect("repo root");
+        let path = root.join("docs/CONFIGURATION.md");
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {}", path.display(), e))
+    }
+
+    /// Decide whether a single field key is "documented" in CONFIGURATION.md.
+    ///
+    /// Accept any of three forms — all are how the docs reference fields:
+    ///   1. Markdown code span:        `key`
+    ///   2. TOML assignment with ws:   key = ...
+    ///   3. TOML assignment no ws:     key=...
+    ///
+    /// Bare prose matches don't count — many leaf keys (`background`,
+    /// `description`, `accept`) are common English and would false-positive
+    /// against unrelated docs text.
+    fn is_documented(doc: &str, key: &str) -> bool {
+        let backtick = format!("`{key}`");
+        let toml_eq_ws = format!("{key} =");
+        let toml_eq_tight = format!("{key}=");
+        doc.contains(&backtick) || doc.contains(&toml_eq_ws) || doc.contains(&toml_eq_tight)
+    }
+
+    /// Every schema field must be referenced in CONFIGURATION.md. This is
+    /// the actual drift guard — a section-only check would silently allow
+    /// a field to be removed from the docs as long as the section header
+    /// stayed.
+    #[test]
+    fn configuration_md_lists_every_field() {
+        let doc = configuration_md();
+        let mut missing: Vec<&str> = Vec::new();
+        for path in all_field_paths() {
+            let (_section, key) = path.rsplit_once('.').expect("dotted path");
+            if !is_documented(&doc, key) {
+                missing.push(path);
+            }
+        }
+        assert!(
+            missing.is_empty(),
+            "CONFIGURATION.md is missing these schema fields: {:#?}",
+            missing,
+        );
+    }
+
+    /// Section headers are a cheaper smoke check — useful if the field
+    /// test fails wholesale (entire section gone) to surface a clearer
+    /// failure first.
+    #[test]
+    fn configuration_md_mentions_every_section() {
+        let doc = configuration_md();
+        let sections = [
+            "[trigger]",
+            "[popup]",
+            "[suggest]",
+            "[suggest.providers]",
+            "[suggest.spec_cache]",
+            "[paths]",
+            "[keybindings]",
+            "[theme]",
+            "[experimental]",
+        ];
+        for s in sections {
+            assert!(doc.contains(s), "CONFIGURATION.md missing section {}", s);
+        }
+    }
+}
