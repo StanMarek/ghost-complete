@@ -23,35 +23,27 @@ const ALIAS_CACHE_FILE: &str = "aliases-cache.json";
 /// On-disk schema version; bump on incompatible CachedAliases changes.
 const CURRENT_ALIAS_CACHE_VERSION: u32 = 2;
 
-/// Source dotfiles whose mtimes invalidate the alias cache. If any exists
-/// with an mtime newer than the cache file, we regenerate. Includes every
-/// file the load paths in [`load_shell_aliases`] actually consult:
-///
-///   * shell rc files (run on every shell start, may `alias` directly)
-///   * `*.local` per-host overrides that our own users often add
-///   * dedicated alias files the fast path reads directly
-///   * `~/.bash_profile` (login-shell counterpart to `.bashrc`)
-///
-/// Missing the file-read fast-path files here is the bug that let a user
-/// edit `~/.zsh_aliases` and see a stale cache forever.
+/// Source dotfiles whose mtimes invalidate the alias cache. Must mirror
+/// [`STATIC_ALIAS_FILES`] exactly — files the static parser doesn't read
+/// can never produce alias entries, so watching them only forces useless
+/// regenerations. Files the parser DOES read but that aren't watched here
+/// would silently let stale caches persist (the bug that originally let
+/// a user edit `~/.zsh_aliases` and see a stale cache forever).
 const ALIAS_SOURCE_FILES: &[&str] = &[
     ".zshrc",
     ".zshrc.local",
     ".zshenv",
-    ".zshenv.local",
-    ".zprofile",
-    ".bashrc",
-    ".bash_profile",
     ".zsh_aliases",
     ".aliases",
     ".bash_aliases",
+    ".bashrc",
+    ".bash_profile",
 ];
 
 /// Directories whose mtime (i.e. child add/remove/rename) invalidates the
-/// alias cache. We use directory mtime rather than recursing: it flips on
-/// any entry change, which catches the user adding/removing a custom-alias
-/// drop-in in oh-my-zsh without us having to scan every file on every launch.
-const ALIAS_SOURCE_DIRS: &[&str] = &[".oh-my-zsh/custom", ".config/fish/functions"];
+/// alias cache. Same shape as [`ALIAS_SOURCE_FILES`] but for trees: only
+/// drop-in dirs the parser actually walks earn a slot.
+const ALIAS_SOURCE_DIRS: &[&str] = &[".oh-my-zsh/custom"];
 
 /// Fingerprint of a watched source file. We pair mtime-seconds with
 /// subsecond precision AND the file length so rapid in-place edits inside
