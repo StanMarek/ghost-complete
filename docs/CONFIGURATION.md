@@ -411,6 +411,7 @@ match_highlight = "underline"
 | `[popup]` | `max_visible`, `borders`, `feedback_dismiss_ms`, `spinner`, `show_provider_errors`, `render_block_ms`, `min_width`, `max_width`, `description_box`, `description_box_max_width`, `description_box_lines`, `description_box_debounce_ms` | Yes |
 | `[suggest]` | All fields | No |
 | `[suggest.providers]` | All fields | No |
+| `[suggest.spec_cache]` | All fields | No |
 | `[paths]` | All fields | No |
 | `[experimental]` | All fields | No |
 
