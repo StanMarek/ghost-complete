@@ -52,6 +52,7 @@ pub mod docker;
 pub mod dscl_principals;
 pub mod kubectl;
 pub mod local_project;
+pub mod macos_apps;
 pub mod macos_defaults;
 pub mod mamba;
 pub mod multipass;
@@ -301,6 +302,14 @@ pub enum ProviderKind {
     K8sNodes,
     /// Kubernetes service names from `kubectl get services -o json`.
     K8sServices,
+    /// Installed `.app` bundles via Spotlight (`mdfind`), surfacing
+    /// the display name (`Safari`) with the full bundle path as the
+    /// description. Replaces the JS-lowered generator for `open -a`.
+    MacosApplications,
+    /// Bundle identifiers for installed `.app` bundles, resolved from
+    /// each Spotlight result via `mdls -name kMDItemCFBundleIdentifier
+    /// -raw`. Replaces the `requires_js: true` generator for `open -b`.
+    MacosBundleIdentifiers,
     /// Targets parsed from the nearest ancestor
     /// `GNUmakefile`/`makefile`/`Makefile`. Hand-parsed (no `make -qp`
     /// shellout). Filters meta targets, pattern rules, and
@@ -405,6 +414,8 @@ impl ProviderKind {
         ProviderKind::K8sPods,
         ProviderKind::K8sResources,
         ProviderKind::K8sServices,
+        ProviderKind::MacosApplications,
+        ProviderKind::MacosBundleIdentifiers,
         ProviderKind::MakefileTargets,
         ProviderKind::MambaEnvs,
         ProviderKind::MultipassList,
@@ -462,6 +473,8 @@ impl ProviderKind {
             Self::K8sPods => "k8s_pods",
             Self::K8sResources => "k8s_resources",
             Self::K8sServices => "k8s_services",
+            Self::MacosApplications => "macos_applications",
+            Self::MacosBundleIdentifiers => "macos_bundle_identifiers",
             Self::MakefileTargets => "makefile_targets",
             Self::MambaEnvs => "mamba_envs",
             Self::MultipassList => "multipass_list",
@@ -621,6 +634,10 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
         ProviderKind::K8sPods => kubectl::K8sPods.generate(ctx).await,
         ProviderKind::K8sResources => kubectl::K8sResources.generate(ctx).await,
         ProviderKind::K8sServices => kubectl::K8sServices.generate(ctx).await,
+        ProviderKind::MacosApplications => macos_apps::MacosApplications.generate(ctx).await,
+        ProviderKind::MacosBundleIdentifiers => {
+            macos_apps::MacosBundleIdentifiers.generate(ctx).await
+        }
         ProviderKind::MakefileTargets => {
             local_project::makefile::MakefileTargets.generate(ctx).await
         }
@@ -794,6 +811,14 @@ mod tests {
         assert_eq!(
             kind_from_type_str("k8s_services"),
             Some(ProviderKind::K8sServices)
+        );
+        assert_eq!(
+            kind_from_type_str("macos_applications"),
+            Some(ProviderKind::MacosApplications)
+        );
+        assert_eq!(
+            kind_from_type_str("macos_bundle_identifiers"),
+            Some(ProviderKind::MacosBundleIdentifiers)
         );
         assert_eq!(
             kind_from_type_str("makefile_targets"),
