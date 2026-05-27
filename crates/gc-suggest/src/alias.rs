@@ -13,7 +13,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 use serde::{Deserialize, Serialize};
 
@@ -318,6 +318,52 @@ impl AliasStore {
     }
 }
 
+/// Parse a zsh-flavored alias file (`.zshrc`, `.zshenv`, drop-ins, etc.).
+///
+/// Recognises `alias name=value`, `alias name='quoted value'`, and
+/// `alias name="quoted value"`. Ignores comments, function definitions,
+/// conditional blocks, `alias -g/-s/-L` declarations, and any line that
+/// can't be locally interpreted. Multi-line values (trailing `\`) are
+/// skipped — a parser that can't see the full expansion shouldn't guess.
+pub(crate) fn parse_alias_file(src: &str) -> HashMap<String, String> {
+    let mut out = HashMap::new();
+    for raw in src.lines() {
+        if raw.trim_end().ends_with('\\') {
+            continue;
+        }
+        let line = raw.trim_start();
+        let line = line.split_once('#').map(|(l, _)| l).unwrap_or(line).trim();
+        if line.is_empty() || !line.starts_with("alias ") {
+            continue;
+        }
+        let rest = line[6..].trim_start();
+        let Some((name, value)) = rest.split_once('=') else {
+            continue;
+        };
+        let name = name.trim();
+        if name.is_empty()
+            || name.starts_with('-')
+            || !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+        {
+            continue;
+        }
+        let value = value.trim();
+        let unquoted = if value.len() >= 2
+            && ((value.starts_with('\'') && value.ends_with('\''))
+                || (value.starts_with('"') && value.ends_with('"')))
+        {
+            &value[1..value.len() - 1]
+        } else {
+            value
+        };
+        if unquoted.is_empty() {
+            continue;
+        }
+        out.insert(name.to_string(), unquoted.to_string());
+    }
+    out
+}
+
 /// Parse zsh/bash `alias` output into name -> token-vector pairs; full tokens preserved via shlex.
 pub fn parse_aliases(output: &str) -> HashMap<String, Vec<String>> {
     let mut map = HashMap::new();
@@ -371,6 +417,144 @@ pub fn parse_aliases(output: &str) -> HashMap<String, Vec<String>> {
     map
 }
 
+/// Tokenise an alias value, falling back to whitespace split when shlex
+/// can't parse it. `None` when no usable tokens remain.
+fn shlex_tokens(value: &str) -> Option<Vec<String>> {
+    match shlex::split(value) {
+        Some(toks) if !toks.is_empty() => Some(toks),
+        Some(_) => None,
+        None => {
+            let fallback: Vec<String> = value.split_whitespace().map(String::from).collect();
+            if fallback.is_empty() {
+                None
+            } else {
+                Some(fallback)
+            }
+        }
+    }
+}
+
+/// Source files (relative to `$HOME`) the static parser reads. Order
+/// matches the load order zsh/bash use so later definitions override
+/// earlier ones. Must stay in sync with [`ALIAS_SOURCE_FILES`] —
+/// anything missing here can never invalidate the cache.
+const STATIC_ALIAS_FILES: &[&str] = &[
+    ".zshrc",
+    ".zshrc.local",
+    ".zshenv",
+    ".zsh_aliases",
+    ".aliases",
+    ".bash_aliases",
+    ".bashrc",
+    ".bash_profile",
+];
+
+/// Static walk: parses alias declarations directly out of dotfiles and
+/// oh-my-zsh custom drop-ins. Avoids the 300–500 ms `zsh -c alias`
+/// startup cost on oh-my-zsh setups.
+fn load_static_aliases_from(home: &Path) -> HashMap<String, Vec<String>> {
+    let mut out: HashMap<String, Vec<String>> = HashMap::new();
+    let mut ingest = |content: &str| {
+        for (name, value) in parse_alias_file(content) {
+            if let Some(toks) = shlex_tokens(&value) {
+                out.insert(name, toks);
+            }
+        }
+    };
+    for name in STATIC_ALIAS_FILES {
+        if let Ok(content) = std::fs::read_to_string(home.join(name)) {
+            ingest(&content);
+        }
+    }
+    let omz_custom = home.join(".oh-my-zsh/custom");
+    if let Ok(rd) = std::fs::read_dir(&omz_custom) {
+        for entry in rd.flatten() {
+            let p = entry.path();
+            if p.extension().and_then(|e| e.to_str()) == Some("zsh") {
+                if let Ok(content) = std::fs::read_to_string(&p) {
+                    ingest(&content);
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Spawn `zsh -c alias` (then `bash -c alias`) with a polling deadline.
+/// Returns the first non-empty parse. Only used when the static walk
+/// produced nothing.
+fn load_aliases_via_subprocess(timeout: Duration) -> HashMap<String, Vec<String>> {
+    for shell in &["zsh", "bash"] {
+        tracing::debug!("spawning {shell} -c alias");
+        let mut child = match std::process::Command::new(shell)
+            .args(["-c", "alias"])
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+        {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::debug!("failed to spawn {shell}: {e}");
+                continue;
+            }
+        };
+
+        let deadline = std::time::Instant::now() + timeout;
+        let status = loop {
+            match child.try_wait() {
+                Ok(Some(s)) => break Some(s),
+                Ok(None) => {
+                    if std::time::Instant::now() >= deadline {
+                        tracing::debug!("{shell} alias timed out, killing");
+                        let _ = child.kill();
+                        let _ = child.wait();
+                        break None;
+                    }
+                    std::thread::sleep(Duration::from_millis(10));
+                }
+                Err(e) => {
+                    tracing::debug!("{shell} alias wait error: {e}");
+                    break None;
+                }
+            }
+        };
+
+        if let Some(s) = status {
+            if s.success() {
+                if let Some(mut stdout) = child.stdout.take() {
+                    use std::io::Read;
+                    let mut text = String::new();
+                    if stdout.read_to_string(&mut text).is_ok() {
+                        let aliases = parse_aliases(&text);
+                        if !aliases.is_empty() {
+                            tracing::debug!("loaded {} aliases from {shell} -c", aliases.len());
+                            return aliases;
+                        }
+                    }
+                }
+            } else {
+                tracing::debug!("{shell} alias command failed: {s}");
+            }
+        }
+    }
+    HashMap::new()
+}
+
+/// Resolve aliases for a specific `$HOME`. Tests use this to bypass the
+/// real home and the on-disk cache. Production callers go through
+/// [`load_shell_aliases`].
+pub(crate) fn load_shell_aliases_from(
+    home: &Path,
+    subprocess_timeout: Duration,
+) -> HashMap<String, Vec<String>> {
+    let aliases = load_static_aliases_from(home);
+    if !aliases.is_empty() {
+        tracing::debug!("loaded {} aliases via static parser", aliases.len());
+        return aliases;
+    }
+    load_aliases_via_subprocess(subprocess_timeout)
+}
+
 /// Load aliases by reading common alias dotfiles, falling back to a
 /// non-interactive shell subprocess.
 ///
@@ -393,87 +577,20 @@ pub fn load_shell_aliases() -> HashMap<String, Vec<String>> {
         }
     }
 
-    // Fast path: read alias dotfiles directly (no subprocess)
-    if let Some(ref home) = home {
-        for file in &[".zsh_aliases", ".aliases", ".bash_aliases"] {
-            let path = home.join(file);
-            if let Ok(contents) = std::fs::read_to_string(&path) {
-                let aliases = parse_aliases(&contents);
-                if !aliases.is_empty() {
-                    tracing::debug!("loaded {} aliases from {}", aliases.len(), path.display());
-                    if let Some(ref cp) = cache_path {
-                        save_alias_cache(home, cp, &aliases);
-                    }
-                    return aliases;
-                }
-            }
-        }
+    let aliases = match home.as_ref() {
+        Some(h) => load_shell_aliases_from(h, Duration::from_secs(2)),
+        None => load_aliases_via_subprocess(Duration::from_secs(2)),
+    };
+
+    if aliases.is_empty() {
+        // "No aliases loaded" is a legitimate empty state — a user may
+        // simply have no aliases defined. Keep at debug level so it
+        // doesn't pollute normal logs.
+        tracing::debug!("no aliases loaded from any source");
+    } else if let (Some(h), Some(cp)) = (home.as_ref(), cache_path.as_ref()) {
+        save_alias_cache(h, cp, &aliases);
     }
-
-    // Slow path: non-interactive subprocess with 2-second timeout.
-    // Uses try_wait polling to avoid blocking indefinitely on a hanging .zshenv.
-    for shell in &["zsh", "bash"] {
-        tracing::debug!("spawning {shell} -c alias");
-        let mut child = match std::process::Command::new(shell)
-            .args(["-c", "alias"])
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::null())
-            .spawn()
-        {
-            Ok(c) => c,
-            Err(e) => {
-                tracing::debug!("failed to spawn {shell}: {e}");
-                continue;
-            }
-        };
-
-        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
-        let status = loop {
-            match child.try_wait() {
-                Ok(Some(s)) => break Some(s),
-                Ok(None) => {
-                    if std::time::Instant::now() >= deadline {
-                        tracing::debug!("{shell} alias timed out, killing");
-                        let _ = child.kill();
-                        let _ = child.wait();
-                        break None;
-                    }
-                    std::thread::sleep(std::time::Duration::from_millis(10));
-                }
-                Err(e) => {
-                    tracing::debug!("{shell} alias wait error: {e}");
-                    break None;
-                }
-            }
-        };
-
-        if let Some(s) = status {
-            if s.success() {
-                if let Some(mut stdout) = child.stdout.take() {
-                    use std::io::Read;
-                    let mut text = String::new();
-                    if stdout.read_to_string(&mut text).is_ok() {
-                        let aliases = parse_aliases(&text);
-                        if !aliases.is_empty() {
-                            tracing::debug!("loaded {} aliases from {shell} -c", aliases.len());
-                            if let (Some(h), Some(cp)) = (home.as_ref(), cache_path.as_ref()) {
-                                save_alias_cache(h, cp, &aliases);
-                            }
-                            return aliases;
-                        }
-                    }
-                }
-            } else {
-                tracing::debug!("{shell} alias command failed: {s}");
-            }
-        }
-    }
-
-    // "No aliases loaded" is a legitimate empty state — a user may simply
-    // have no aliases defined. Keep this at debug level so it doesn't
-    // pollute normal logs.
-    tracing::debug!("no aliases loaded from any source");
-    HashMap::new()
+    aliases
 }
 
 #[cfg(test)]
@@ -484,6 +601,52 @@ fn token_vec(tokens: &[&str]) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_alias_file_handles_quoted_and_simple_forms() {
+        let src = r#"
+# top comment
+alias gco='git checkout'
+alias gcb="git checkout -b"
+alias dev=ssh
+alias=not_an_alias
+function helper() { echo nope; }
+alias 'broken-name'='whatever'   # invalid name; skip
+alias g\=git                     # malformed; skip
+alias multiline='ls \
+  -la'                           # multiline; skip conservatively
+"#;
+        let map = parse_alias_file(src);
+        assert_eq!(map.get("gco").map(|v| v.as_str()), Some("git checkout"));
+        assert_eq!(map.get("gcb").map(|v| v.as_str()), Some("git checkout -b"));
+        assert_eq!(map.get("dev").map(|v| v.as_str()), Some("ssh"));
+        assert!(map.get("broken-name").is_none());
+        assert!(map.get("multiline").is_none());
+        assert!(map.get("helper").is_none());
+    }
+
+    #[test]
+    fn load_shell_aliases_uses_static_parser_for_zshrc_aliases() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let home = tmp.path();
+        std::fs::write(
+            home.join(".zshrc"),
+            "alias gco='git checkout'\nalias zz='zsh -c'\n",
+        )
+        .unwrap();
+
+        let map = load_shell_aliases_from(home, std::time::Duration::from_secs(2));
+        assert_eq!(
+            map.get("gco"),
+            Some(&token_vec(&["git", "checkout"])),
+            "static parser must populate gco from ~/.zshrc"
+        );
+        assert_eq!(
+            map.get("zz"),
+            Some(&token_vec(&["zsh", "-c"])),
+            "static parser must populate zz from ~/.zshrc"
+        );
+    }
 
     #[test]
     fn test_parse_zsh_aliases() {
