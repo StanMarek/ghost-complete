@@ -27,7 +27,10 @@ fn parse_applications_real_world_paths() {
     );
     let paths: Vec<&str> = parsed.iter().map(|(_, p)| p.as_str()).collect();
     assert_eq!(paths[0], "/Applications/Safari.app");
-    assert_eq!(paths[2], "/System/Applications/Utilities/Activity Monitor.app");
+    assert_eq!(
+        paths[2],
+        "/System/Applications/Utilities/Activity Monitor.app"
+    );
 }
 
 #[test]

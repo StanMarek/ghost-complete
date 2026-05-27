@@ -667,11 +667,8 @@ fn defaults_read_key_arg_routes_to_defaults_keys_provider() {
     let buffer = "defaults read com.apple.dock ";
     let ctx = ctx_from(buffer);
     let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
-    let kinds: Vec<gc_suggest::providers::ProviderKind> = result
-        .provider_generators
-        .iter()
-        .map(|p| p.kind)
-        .collect();
+    let kinds: Vec<gc_suggest::providers::ProviderKind> =
+        result.provider_generators.iter().map(|p| p.kind).collect();
     assert!(
         kinds.contains(&gc_suggest::providers::ProviderKind::DefaultsKeys),
         "defaults read <domain> <TAB> must schedule defaults_keys; got {kinds:?}"
@@ -687,11 +684,8 @@ fn chown_first_arg_routes_to_chown_owner_group_provider() {
     let buffer = "chown ";
     let ctx = ctx_from(buffer);
     let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
-    let kinds: Vec<gc_suggest::providers::ProviderKind> = result
-        .provider_generators
-        .iter()
-        .map(|p| p.kind)
-        .collect();
+    let kinds: Vec<gc_suggest::providers::ProviderKind> =
+        result.provider_generators.iter().map(|p| p.kind).collect();
     assert!(
         kinds.contains(&gc_suggest::providers::ProviderKind::ChownOwnerGroup),
         "chown first arg must schedule chown_owner_group; got {kinds:?}"
@@ -709,11 +703,8 @@ fn defaults_write_key_arg_routes_to_defaults_keys_provider() {
     let buffer = "defaults write com.apple.dock ";
     let ctx = ctx_from(buffer);
     let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
-    let kinds: Vec<gc_suggest::providers::ProviderKind> = result
-        .provider_generators
-        .iter()
-        .map(|p| p.kind)
-        .collect();
+    let kinds: Vec<gc_suggest::providers::ProviderKind> =
+        result.provider_generators.iter().map(|p| p.kind).collect();
     assert!(
         kinds.contains(&gc_suggest::providers::ProviderKind::DefaultsKeys),
         "defaults write <domain> <TAB> must schedule defaults_keys; got {kinds:?}"
@@ -726,11 +717,8 @@ fn open_a_arg_routes_to_macos_applications_provider() {
     let buffer = "open -a ";
     let ctx = ctx_from(buffer);
     let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
-    let kinds: Vec<gc_suggest::providers::ProviderKind> = result
-        .provider_generators
-        .iter()
-        .map(|p| p.kind)
-        .collect();
+    let kinds: Vec<gc_suggest::providers::ProviderKind> =
+        result.provider_generators.iter().map(|p| p.kind).collect();
     assert!(
         kinds.contains(&gc_suggest::providers::ProviderKind::MacosApplications),
         "open -a must schedule macos_applications; got {kinds:?}"
@@ -743,11 +731,8 @@ fn open_b_arg_routes_to_macos_bundle_identifiers_provider() {
     let buffer = "open -b ";
     let ctx = ctx_from(buffer);
     let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
-    let kinds: Vec<gc_suggest::providers::ProviderKind> = result
-        .provider_generators
-        .iter()
-        .map(|p| p.kind)
-        .collect();
+    let kinds: Vec<gc_suggest::providers::ProviderKind> =
+        result.provider_generators.iter().map(|p| p.kind).collect();
     assert!(
         kinds.contains(&gc_suggest::providers::ProviderKind::MacosBundleIdentifiers),
         "open -b must schedule macos_bundle_identifiers; got {kinds:?}"

@@ -215,7 +215,10 @@ pub(crate) async fn run_defaults_read_with_binary(
             return None;
         }
         Err(_) => {
-            tracing::warn!(domain, "defaults read timed out after {DEFAULTS_DOMAINS_TIMEOUT_MS}ms");
+            tracing::warn!(
+                domain,
+                "defaults read timed out after {DEFAULTS_DOMAINS_TIMEOUT_MS}ms"
+            );
             return None;
         }
     };

@@ -194,7 +194,11 @@ fn chown_owner_group_owner_only_emits_users_without_colon() {
 
 #[test]
 fn chown_owner_group_with_leading_colon_emits_prefixed_groups() {
-    let groups = vec!["admin".to_string(), "staff".to_string(), "wheel".to_string()];
+    let groups = vec![
+        "admin".to_string(),
+        "staff".to_string(),
+        "wheel".to_string(),
+    ];
     let suggestions = chown_owner_group_from_principals(":sta", &[], &groups);
     let texts: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
     assert_eq!(texts, vec![":staff"]);
@@ -202,7 +206,11 @@ fn chown_owner_group_with_leading_colon_emits_prefixed_groups() {
 
 #[test]
 fn chown_owner_group_with_owner_colon_emits_owner_prefixed_pairs() {
-    let groups = vec!["admin".to_string(), "staff".to_string(), "wheel".to_string()];
+    let groups = vec![
+        "admin".to_string(),
+        "staff".to_string(),
+        "wheel".to_string(),
+    ];
     let suggestions = chown_owner_group_from_principals("stan:", &[], &groups);
     let texts: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
     assert_eq!(texts, vec!["stan:admin", "stan:staff", "stan:wheel"]);
@@ -210,7 +218,11 @@ fn chown_owner_group_with_owner_colon_emits_owner_prefixed_pairs() {
 
 #[test]
 fn chown_owner_group_with_owner_colon_and_group_prefix_filters() {
-    let groups = vec!["admin".to_string(), "staff".to_string(), "wheel".to_string()];
+    let groups = vec![
+        "admin".to_string(),
+        "staff".to_string(),
+        "wheel".to_string(),
+    ];
     let suggestions = chown_owner_group_from_principals("stan:sta", &[], &groups);
     let texts: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
     assert_eq!(texts, vec!["stan:staff"]);
