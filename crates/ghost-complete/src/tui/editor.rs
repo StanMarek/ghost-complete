@@ -70,8 +70,39 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
 
     // Navigation mode (EditState::None)
     match key.code {
+        // Esc with an active filter clears the filter first; only a second
+        // Esc (or `q`) reaches the quit path. Matches vim/less muscle memory
+        // and prevents "I just wanted to drop the filter, why am I being
+        // asked to discard unsaved edits?".
+        KeyCode::Esc if app.filter.is_some() => {
+            app.filter = None;
+            app.field_scroll = 0;
+            app.field_idx = 0;
+        }
         KeyCode::Char('q') | KeyCode::Esc => {
             request_quit(app);
+        }
+        KeyCode::Char('/') => {
+            app.filter = Some(String::new());
+            app.field_scroll = 0;
+            app.field_idx = 0;
+            app.focus = Focus::Fields;
+            app.prompt = Some(Prompt::FilterInput);
+        }
+        KeyCode::Char('p') => {
+            app.show_preview = !app.show_preview;
+        }
+        KeyCode::PageDown => {
+            app.field_scroll = app.field_scroll.saturating_add(10);
+        }
+        KeyCode::PageUp => {
+            app.field_scroll = app.field_scroll.saturating_sub(10);
+        }
+        KeyCode::Home => {
+            app.field_scroll = 0;
+        }
+        KeyCode::End => {
+            app.field_scroll = u16::MAX;
         }
         KeyCode::Tab | KeyCode::BackTab => {
             app.focus = match app.focus {
@@ -98,7 +129,7 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
                 }
             }
             Focus::Fields => {
-                let max = app.current_section_fields().len().saturating_sub(1);
+                let max = app.displayed_fields().len().saturating_sub(1);
                 if app.field_idx < max {
                     app.field_idx += 1;
                 }
@@ -118,7 +149,9 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
 }
 
 fn start_edit(app: &mut App) {
-    let fields = app.current_section_fields();
+    // Use `displayed_fields` so editing while filtered targets the filtered
+    // row, not the section-indexed row underneath.
+    let fields = app.displayed_fields();
     let Some(field) = fields.get(app.field_idx) else {
         return;
     };
@@ -166,7 +199,7 @@ fn apply_edit(app: &mut App) {
     };
     let buffer = buffer.clone();
 
-    let fields = app.current_section_fields();
+    let fields = app.displayed_fields();
     let Some(field) = fields.get(app.field_idx) else {
         app.edit_state = EditState::None;
         return;
@@ -393,6 +426,38 @@ fn handle_prompt_key(app: &mut App, prompt: Prompt, key: KeyEvent) {
             }
             KeyCode::Char('c') | KeyCode::Char('C') | KeyCode::Esc => {
                 app.prompt = None;
+            }
+            _ => {}
+        },
+        Prompt::FilterInput => match key.code {
+            KeyCode::Enter => {
+                // Commit: keep `app.filter` as the active query, dismiss the
+                // prompt. If the user committed an empty string, drop the
+                // filter entirely so the section view returns.
+                app.prompt = None;
+                if matches!(&app.filter, Some(s) if s.is_empty()) {
+                    app.filter = None;
+                }
+            }
+            KeyCode::Esc => {
+                // Cancel: discard the filter entirely.
+                app.prompt = None;
+                app.filter = None;
+                app.field_scroll = 0;
+                app.field_idx = 0;
+            }
+            KeyCode::Backspace => {
+                if let Some(s) = &mut app.filter {
+                    s.pop();
+                    app.field_idx = 0;
+                }
+            }
+            KeyCode::Char(c) => {
+                if let Some(s) = &mut app.filter {
+                    s.push(c);
+                    app.field_idx = 0;
+                    app.field_scroll = 0;
+                }
             }
             _ => {}
         },
@@ -698,5 +763,150 @@ mod tests {
 
         assert!(!app.should_quit);
         assert_eq!(app.prompt, None);
+    }
+
+    #[test]
+    fn slash_opens_filter_prompt_with_empty_filter() {
+        let mut app = make_app("");
+        handle_key(
+            &mut app,
+            KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE),
+        );
+        assert_eq!(app.prompt, Some(Prompt::FilterInput));
+        assert_eq!(app.filter.as_deref(), Some(""));
+    }
+
+    #[test]
+    fn filter_prompt_collects_typed_characters() {
+        let mut app = make_app("");
+        app.prompt = Some(Prompt::FilterInput);
+        app.filter = Some(String::new());
+
+        for c in "render".chars() {
+            handle_prompt_key(
+                &mut app,
+                Prompt::FilterInput,
+                KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE),
+            );
+        }
+        assert_eq!(app.filter.as_deref(), Some("render"));
+
+        handle_prompt_key(
+            &mut app,
+            Prompt::FilterInput,
+            KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE),
+        );
+        assert_eq!(app.filter.as_deref(), Some("rende"));
+    }
+
+    #[test]
+    fn filter_prompt_enter_commits_and_dismisses() {
+        let mut app = make_app("");
+        app.prompt = Some(Prompt::FilterInput);
+        app.filter = Some("render".to_string());
+
+        handle_prompt_key(
+            &mut app,
+            Prompt::FilterInput,
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+        );
+        assert_eq!(app.prompt, None);
+        assert_eq!(app.filter.as_deref(), Some("render"));
+    }
+
+    #[test]
+    fn filter_prompt_enter_with_empty_clears_filter() {
+        let mut app = make_app("");
+        app.prompt = Some(Prompt::FilterInput);
+        app.filter = Some(String::new());
+
+        handle_prompt_key(
+            &mut app,
+            Prompt::FilterInput,
+            KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE),
+        );
+        assert_eq!(app.prompt, None);
+        assert_eq!(app.filter, None);
+    }
+
+    #[test]
+    fn filter_prompt_esc_clears_filter() {
+        let mut app = make_app("");
+        app.prompt = Some(Prompt::FilterInput);
+        app.filter = Some("render".to_string());
+
+        handle_prompt_key(
+            &mut app,
+            Prompt::FilterInput,
+            KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE),
+        );
+        assert_eq!(app.prompt, None);
+        assert_eq!(app.filter, None);
+    }
+
+    #[test]
+    fn esc_with_active_filter_clears_filter_not_quit() {
+        let mut app = make_app("");
+        app.filter = Some("render".to_string());
+
+        handle_key(&mut app, KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+        assert!(!app.should_quit, "first Esc must clear filter, not quit");
+        assert_eq!(app.filter, None);
+        assert_eq!(app.prompt, None);
+    }
+
+    #[test]
+    fn page_down_advances_field_scroll() {
+        let mut app = make_app("");
+        handle_key(
+            &mut app,
+            KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE),
+        );
+        assert_eq!(app.field_scroll, 10);
+
+        handle_key(
+            &mut app,
+            KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE),
+        );
+        assert_eq!(app.field_scroll, 20);
+    }
+
+    #[test]
+    fn page_up_saturates_at_zero() {
+        let mut app = make_app("");
+        app.field_scroll = 5;
+        handle_key(&mut app, KeyEvent::new(KeyCode::PageUp, KeyModifiers::NONE));
+        assert_eq!(app.field_scroll, 0);
+
+        // Second PgUp from 0 stays at 0 — saturating, not wrapping.
+        handle_key(&mut app, KeyEvent::new(KeyCode::PageUp, KeyModifiers::NONE));
+        assert_eq!(app.field_scroll, 0);
+    }
+
+    #[test]
+    fn home_resets_and_end_jumps_to_max() {
+        let mut app = make_app("");
+        app.field_scroll = 42;
+        handle_key(&mut app, KeyEvent::new(KeyCode::Home, KeyModifiers::NONE));
+        assert_eq!(app.field_scroll, 0);
+
+        handle_key(&mut app, KeyEvent::new(KeyCode::End, KeyModifiers::NONE));
+        assert_eq!(app.field_scroll, u16::MAX);
+    }
+
+    #[test]
+    fn p_toggles_preview_visibility() {
+        let mut app = make_app("");
+        assert!(app.show_preview, "preview defaults to visible");
+        handle_key(
+            &mut app,
+            KeyEvent::new(KeyCode::Char('p'), KeyModifiers::NONE),
+        );
+        assert!(!app.show_preview);
+        handle_key(
+            &mut app,
+            KeyEvent::new(KeyCode::Char('p'), KeyModifiers::NONE),
+        );
+        assert!(app.show_preview);
     }
 }
