@@ -262,6 +262,11 @@ pub enum ProviderKind {
     /// Feature names from the active package in `cargo metadata
     /// --format-version 1 --no-deps`.
     CargoFeatures,
+    /// Colon-aware chown owner/group completion. Handles all three
+    /// `chown` argument shapes (`owner`, `owner:group`, `:group`) and
+    /// emits pre-prefixed suggestions so nucleo's `:`-delimiter fuzzy
+    /// matching does not strand the user mid-token.
+    ChownOwnerGroup,
     /// `defaults domains`, splitting the single-line comma-separated
     /// output into individual macOS preference domain identifiers.
     DefaultsDomains,
@@ -384,6 +389,7 @@ impl ProviderKind {
         ProviderKind::BrewCasksInstalled,
         ProviderKind::BrewFormulaeInstalled,
         ProviderKind::BrewFormulaeSearchable,
+        ProviderKind::ChownOwnerGroup,
         ProviderKind::DefaultsDomains,
         ProviderKind::DefaultsKeys,
         ProviderKind::DockerContainers,
@@ -440,6 +446,7 @@ impl ProviderKind {
             Self::BrewCasksInstalled => "brew_casks_installed",
             Self::BrewFormulaeInstalled => "brew_formulae_installed",
             Self::BrewFormulaeSearchable => "brew_formulae_searchable",
+            Self::ChownOwnerGroup => "chown_owner_group",
             Self::DefaultsDomains => "defaults_domains",
             Self::DefaultsKeys => "defaults_keys",
             Self::DockerContainers => "docker_containers",
@@ -596,6 +603,7 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
         ProviderKind::BrewCasksInstalled => brew::BrewCasksInstalled.generate(ctx).await,
         ProviderKind::BrewFormulaeInstalled => brew::BrewFormulaeInstalled.generate(ctx).await,
         ProviderKind::BrewFormulaeSearchable => brew::BrewFormulaeSearchable.generate(ctx).await,
+        ProviderKind::ChownOwnerGroup => dscl_principals::ChownOwnerGroup.generate(ctx).await,
         ProviderKind::DefaultsDomains => macos_defaults::DefaultsDomains.generate(ctx).await,
         ProviderKind::DefaultsKeys => macos_defaults::DefaultsKeys.generate(ctx).await,
         ProviderKind::DockerContainers => docker::DockerContainers.generate(ctx).await,
@@ -725,6 +733,10 @@ mod tests {
         assert_eq!(
             kind_from_type_str("brew_formulae_searchable"),
             Some(ProviderKind::BrewFormulaeSearchable)
+        );
+        assert_eq!(
+            kind_from_type_str("chown_owner_group"),
+            Some(ProviderKind::ChownOwnerGroup)
         );
         assert_eq!(
             kind_from_type_str("defaults_domains"),

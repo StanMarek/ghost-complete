@@ -679,6 +679,31 @@ fn defaults_read_key_arg_routes_to_defaults_keys_provider() {
 }
 
 #[test]
+fn chown_first_arg_routes_to_chown_owner_group_provider() {
+    // `chown <TAB>` — the first positional must dispatch the single
+    // colon-aware provider, replacing the legacy `[dscl_users, dscl_groups]`
+    // pair so nucleo's `:` delimiter cannot strand the user mid-token.
+    let engine = build_engine();
+    let buffer = "chown ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let kinds: Vec<gc_suggest::providers::ProviderKind> = result
+        .provider_generators
+        .iter()
+        .map(|p| p.kind)
+        .collect();
+    assert!(
+        kinds.contains(&gc_suggest::providers::ProviderKind::ChownOwnerGroup),
+        "chown first arg must schedule chown_owner_group; got {kinds:?}"
+    );
+    assert!(
+        !kinds.contains(&gc_suggest::providers::ProviderKind::DsclUsers)
+            && !kinds.contains(&gc_suggest::providers::ProviderKind::DsclGroups),
+        "chown first arg must NOT keep the legacy [dscl_users, dscl_groups] pair; got {kinds:?}"
+    );
+}
+
+#[test]
 fn defaults_write_key_arg_routes_to_defaults_keys_provider() {
     let engine = build_engine();
     let buffer = "defaults write com.apple.dock ";

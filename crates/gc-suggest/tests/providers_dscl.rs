@@ -21,7 +21,8 @@ mod providers {
 use gc_suggest::providers::{Provider, ProviderCtx};
 use gc_suggest::types::{SuggestionKind, SuggestionSource};
 use providers::dscl_principals::{
-    include_system_from_ctx, parse_principals_output, run_dscl_list_with_binary, DsclGroups,
+    chown_owner_group_from_principals, classify_chown_token, include_system_from_ctx,
+    parse_principals_output, run_dscl_list_with_binary, ChownOwnerGroup, ChownToken, DsclGroups,
     DsclUsers,
 };
 
@@ -143,4 +144,90 @@ async fn providers_return_ok_empty_when_dscl_binary_is_missing() {
 
     assert!(users.is_empty());
     assert!(groups.is_empty());
+}
+
+#[test]
+fn classify_chown_token_distinguishes_owner_only_group_only_and_pair() {
+    assert_eq!(
+        classify_chown_token("stan"),
+        ChownToken::OwnerOnly { prefix: "stan" }
+    );
+    assert_eq!(
+        classify_chown_token(""),
+        ChownToken::OwnerOnly { prefix: "" }
+    );
+    assert_eq!(
+        classify_chown_token(":staff"),
+        ChownToken::GroupOnly { prefix: "staff" }
+    );
+    assert_eq!(
+        classify_chown_token(":"),
+        ChownToken::GroupOnly { prefix: "" }
+    );
+    assert_eq!(
+        classify_chown_token("stan:"),
+        ChownToken::OwnerGroup {
+            owner: "stan",
+            group_prefix: ""
+        }
+    );
+    assert_eq!(
+        classify_chown_token("stan:sta"),
+        ChownToken::OwnerGroup {
+            owner: "stan",
+            group_prefix: "sta"
+        }
+    );
+}
+
+#[test]
+fn chown_owner_group_owner_only_emits_users_without_colon() {
+    let users = vec!["daemon".to_string(), "stan".to_string()];
+    let suggestions = chown_owner_group_from_principals("sta", &users, &[]);
+    let texts: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(texts, vec!["stan"]);
+    assert!(
+        !suggestions.iter().any(|s| s.text.contains(':')),
+        "owner-only completion must never pre-emptively add a colon"
+    );
+}
+
+#[test]
+fn chown_owner_group_with_leading_colon_emits_prefixed_groups() {
+    let groups = vec!["admin".to_string(), "staff".to_string(), "wheel".to_string()];
+    let suggestions = chown_owner_group_from_principals(":sta", &[], &groups);
+    let texts: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(texts, vec![":staff"]);
+}
+
+#[test]
+fn chown_owner_group_with_owner_colon_emits_owner_prefixed_pairs() {
+    let groups = vec!["admin".to_string(), "staff".to_string(), "wheel".to_string()];
+    let suggestions = chown_owner_group_from_principals("stan:", &[], &groups);
+    let texts: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(texts, vec!["stan:admin", "stan:staff", "stan:wheel"]);
+}
+
+#[test]
+fn chown_owner_group_with_owner_colon_and_group_prefix_filters() {
+    let groups = vec!["admin".to_string(), "staff".to_string(), "wheel".to_string()];
+    let suggestions = chown_owner_group_from_principals("stan:sta", &[], &groups);
+    let texts: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(texts, vec!["stan:staff"]);
+}
+
+#[tokio::test]
+async fn chown_owner_group_provider_name_matches_spec_string() {
+    assert_eq!(ChownOwnerGroup.name(), "chown_owner_group");
+}
+
+#[tokio::test]
+async fn chown_owner_group_returns_ok_empty_when_dscl_missing() {
+    let tmp = tempfile::TempDir::new().unwrap();
+    let ctx = ctx_with_params(tmp.path(), &[]);
+    let suggestions = ChownOwnerGroup
+        .generate_with_binary(&ctx, "/nonexistent/dscl-for-chown-tests")
+        .await
+        .unwrap();
+    assert!(suggestions.is_empty());
 }
