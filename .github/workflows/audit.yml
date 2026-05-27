@@ -24,7 +24,10 @@ permissions:
 jobs:
   audit:
     name: cargo audit
-    runs-on: macos-latest
+    # ubuntu-latest, not macos-latest: EmbarkStudios/cargo-deny-action@v2 is a
+    # Docker container action and only runs on Linux. cargo-audit / cargo-deny
+    # analyze Cargo.lock (platform-agnostic), so Linux is the right home.
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
