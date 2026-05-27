@@ -2,17 +2,20 @@
 
 ## Supported Versions
 
-| Version | Supported |
-|---------|-----------|
-| 0.10.x  | Yes       |
+We provide security fixes for the **latest released minor** and any **in-flight release candidate** for the next minor. Older minors are end-of-life; please upgrade.
+
+The current supported version is whatever `git describe --tags --abbrev=0` reports on `master`. Patch releases (0.x.y → 0.x.(y+1)) are issued as needed for security and critical-correctness fixes.
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Ghost Complete, please report it responsibly.
+Email security findings privately to <maintainer-email>, or use [GitHub's private vulnerability reporting](https://github.com/StanMarek/ghost-complete/security/advisories/new). Areas of particular interest:
 
-**Do not open a public issue.**
+- terminal escape handling (any input that escapes the proxy boundary)
+- local config/spec parsing (file-read paths trusted by the proxy)
+- JS runtime sandbox escapes (see [`docs/JS_RUNTIME.md`](docs/JS_RUNTIME.md))
+- shell integration touching `.zshrc` outside managed blocks
 
-Instead, email the maintainer directly or use [GitHub's private vulnerability reporting](https://github.com/StanMarek/ghost-complete/security/advisories/new).
+Please do **not** open public GitHub issues for security findings.
 
 ## What Constitutes a Security Issue
 
@@ -22,6 +25,7 @@ Ghost Complete is a PTY proxy that sits between your terminal and shell. Securit
 - **Information disclosure** (e.g., leaking environment variables, command history to unintended destinations)
 - **PTY escape** allowing a child process to break out of the proxy
 - **Completion spec injection** where a malicious spec file could execute code
+- **JS runtime sandbox escape** allowing a `requires_js` spec to escape `gc-jsrt`'s resource caps or restricted host API
 
 General bugs (crashes, rendering glitches, incorrect completions) should be reported as regular issues.
 
