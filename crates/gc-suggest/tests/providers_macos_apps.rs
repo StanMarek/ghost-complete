@@ -4,7 +4,9 @@
 //! pure parsers via the crate's public API so other crates depending
 //! on `gc_suggest::providers::macos_apps::*` see the same contract.
 
-use gc_suggest::providers::macos_apps::{parse_applications, parse_bundle_identifiers};
+use gc_suggest::providers::macos_apps::{
+    app_paths_to_resolve, parse_applications, parse_bundle_identifiers,
+};
 
 #[test]
 fn parse_applications_real_world_paths() {
@@ -43,4 +45,20 @@ kMDItemCFBundleIdentifier = \"com.googlecode.iterm2\"
 ";
     let bids = parse_bundle_identifiers(mdls);
     assert_eq!(bids, vec!["com.apple.Safari", "com.googlecode.iterm2"]);
+}
+
+#[test]
+fn app_paths_to_resolve_filters_and_caps() {
+    let mdfind = "\
+/Applications/Safari.app
+not-an-app
+/Applications/Terminal.app
+/System/Applications/Music.app
+";
+    // Cap of 2 keeps only the first two `.app` lines, dropping noise.
+    let paths = app_paths_to_resolve(mdfind, 2);
+    assert_eq!(
+        paths,
+        vec!["/Applications/Safari.app", "/Applications/Terminal.app"]
+    );
 }

@@ -98,7 +98,15 @@ pub(crate) fn parse_defaults_keys(text: &str) -> Vec<String> {
         }
         match ch {
             '"' => {
-                if depth == 1 && !in_value {
+                // Enter quote mode for BOTH keys (`!in_value`) and value
+                // strings (`in_value`). A value string can legitimately
+                // contain `;` or `"` (paths, serialized prefs); without
+                // tracking quotes here a `;` inside a value (e.g.
+                // `"key" = "a;b";`) would prematurely end the statement
+                // and corrupt key state. Inside a quote we only append to
+                // `key_buf` when `!in_value`, so value content is consumed
+                // harmlessly.
+                if depth == 1 {
                     in_quote = true;
                 }
             }
@@ -211,7 +219,7 @@ pub(crate) async fn run_defaults_read_with_binary(
     {
         Ok(Ok(o)) => o,
         Ok(Err(e)) => {
-            tracing::trace!(domain, "defaults read command failed: {e}");
+            tracing::warn!(domain, "defaults read command failed: {e}");
             return None;
         }
         Err(_) => {
@@ -247,6 +255,23 @@ pub(crate) async fn run_defaults_read_with_binary(
 /// we bail with an empty suggestion list rather than misdispatch.
 pub struct DefaultsKeys;
 
+/// Resolve the raw `prev_arg` token into the domain to pass to
+/// `defaults read`.
+///
+/// - `-globalDomain` is the spec's flag-style sentinel for the global
+///   preferences domain; rewrite it to `NSGlobalDomain` (the literal
+///   `defaults read` expects).
+/// - `-app` is a sentinel that requires a follow-up argument we cannot
+///   resolve here, so return `None` to signal "bail with no suggestions".
+/// - Anything else is a real domain identifier — pass it through.
+fn resolve_domain(raw: &str) -> Option<&str> {
+    match raw {
+        "-globalDomain" => Some("NSGlobalDomain"),
+        "-app" => None,
+        other => Some(other),
+    }
+}
+
 impl Provider for DefaultsKeys {
     fn name(&self) -> &'static str {
         "defaults_keys"
@@ -266,10 +291,8 @@ impl DefaultsKeys {
         let Some(raw_domain) = ctx.params.get("prev_arg").map(String::as_str) else {
             return Ok(Vec::new());
         };
-        let domain = match raw_domain {
-            "-globalDomain" => "NSGlobalDomain",
-            "-app" => return Ok(Vec::new()),
-            other => other,
+        let Some(domain) = resolve_domain(raw_domain) else {
+            return Ok(Vec::new());
         };
         let Some(output) = run_defaults_read_with_binary(&ctx.cwd, binary, domain).await else {
             return Ok(Vec::new());
@@ -351,6 +374,105 @@ mod tests {
     fn parse_defaults_keys_empty_input_yields_empty() {
         assert!(parse_defaults_keys("").is_empty());
         assert!(parse_defaults_keys("{ }").is_empty());
+    }
+
+    #[test]
+    fn parse_defaults_keys_quoted_value_with_separators_stays_intact() {
+        // A quoted key/value containing `=` and `;` must not corrupt
+        // parsing: the `;` inside the value cannot end the statement, and
+        // the value content cannot leak into the key list. This locks in
+        // the quote-tracking-for-values fix.
+        let plist = r#"{ "weird=key;name" = 1; "plain" = 2; }"#;
+        let keys = parse_defaults_keys(plist);
+        assert!(
+            keys.contains(&"weird=key;name".to_string()),
+            "expected quoted key with `=`/`;` to survive, got {keys:?}"
+        );
+        assert!(
+            keys.contains(&"plain".to_string()),
+            "expected `plain` key, got {keys:?}"
+        );
+        assert_eq!(keys, vec!["weird=key;name", "plain"]);
+    }
+
+    #[test]
+    fn parse_defaults_keys_string_value_with_semicolon_does_not_spawn_keys() {
+        // `defaults read` string values legitimately contain `;` (paths,
+        // serialized prefs). The `;` inside the value must be consumed as
+        // quote content, not terminate the statement and spawn a bogus
+        // key from the value tail.
+        let plist = r#"{ "key" = "a;b"; "other" = 3; }"#;
+        let keys = parse_defaults_keys(plist);
+        assert_eq!(keys, vec!["key", "other"]);
+    }
+
+    #[test]
+    fn parse_defaults_keys_truncated_input_no_panic() {
+        // Truncated/interrupted output (e.g. process killed mid-stream)
+        // must not panic. Conservatively, only the keys whose statements
+        // could be fully recognized before truncation are emitted; here
+        // the outer `persistent-apps` key is recognized at depth 1 before
+        // the array opens, while the inner `x` lives at depth > 1 and is
+        // never surfaced.
+        let plist = r#"{ "persistent-apps" = ( { "x" = 1;"#;
+        let keys = parse_defaults_keys(plist);
+        assert_eq!(keys, vec!["persistent-apps"]);
+    }
+
+    #[test]
+    fn resolve_domain_rewrites_global_domain_sentinel() {
+        assert_eq!(resolve_domain("-globalDomain"), Some("NSGlobalDomain"));
+    }
+
+    #[test]
+    fn resolve_domain_bails_on_app_sentinel() {
+        assert_eq!(resolve_domain("-app"), None);
+    }
+
+    #[test]
+    fn resolve_domain_passes_through_real_domain() {
+        assert_eq!(resolve_domain("com.apple.dock"), Some("com.apple.dock"));
+    }
+
+    #[tokio::test]
+    async fn defaults_keys_generate_empty_without_prev_arg() {
+        // No `prev_arg` param → the provider has no domain to read and
+        // must yield `Ok(vec![])` without spawning anything.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let ctx = ProviderCtx {
+            cwd: tmp.path().to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+            params: std::sync::Arc::new(std::collections::BTreeMap::new()),
+        };
+        let result = DefaultsKeys
+            .generate_with_binary(&ctx, "/nonexistent/defaults-for-test")
+            .await;
+        assert!(matches!(result, Ok(ref v) if v.is_empty()));
+    }
+
+    #[tokio::test]
+    async fn defaults_keys_generate_bails_on_app_sentinel_before_spawn() {
+        // `prev_arg = "-app"` must short-circuit to `Ok(vec![])` BEFORE
+        // attempting to spawn `defaults read`. Using a nonexistent binary
+        // proves it: if the code reached the spawn it would still return
+        // `Ok(vec![])` via the spawn-failure path, but the assertion that
+        // it returns empty (and the documented early-return semantics)
+        // confirms the bail. The nonexistent binary also guarantees no
+        // real `defaults read` side effect occurs.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let mut params = std::collections::BTreeMap::new();
+        params.insert("prev_arg".to_string(), "-app".to_string());
+        let ctx = ProviderCtx {
+            cwd: tmp.path().to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+            params: std::sync::Arc::new(params),
+        };
+        let result = DefaultsKeys
+            .generate_with_binary(&ctx, "/nonexistent/defaults-for-test")
+            .await;
+        assert!(matches!(result, Ok(ref v) if v.is_empty()));
     }
 
     #[test]

@@ -1084,6 +1084,53 @@ mod tests {
     }
 
     #[test]
+    fn inject_prev_arg_copies_value_into_params_for_listed_kind() {
+        // The actual feature: a kind that IS in NEEDS_PREV_ARG
+        // (DefaultsKeys) must have `prev_arg` copied into its params so
+        // `defaults read <domain> <key>` can dispatch `defaults read
+        // <domain>`. An inverted `.contains` check or a dropped
+        // `params.insert` would pass the no-op tests above yet break
+        // here.
+        let listed = ProviderKind::DefaultsKeys;
+        assert!(
+            NEEDS_PREV_ARG.contains(&listed),
+            "test invariant: listed kind must be in NEEDS_PREV_ARG"
+        );
+        let mut resolutions = vec![ProviderResolution::from_kind(listed)];
+        inject_prev_arg(&mut resolutions, "com.apple.dock");
+        assert_eq!(
+            resolutions[0].params.get("prev_arg").map(String::as_str),
+            Some("com.apple.dock"),
+            "listed kind must receive prev_arg in its params"
+        );
+    }
+
+    #[test]
+    fn inject_prev_arg_preserves_existing_params_for_listed_kind() {
+        // Injecting prev_arg must be additive — pre-existing params keys
+        // declared on the resolution survive the merge.
+        let listed = ProviderKind::DefaultsKeys;
+        assert!(NEEDS_PREV_ARG.contains(&listed));
+        let mut resolutions = vec![ProviderResolution {
+            kind: listed,
+            params: Arc::new(BTreeMap::from([(
+                "existing".to_string(),
+                "kept".to_string(),
+            )])),
+        }];
+        inject_prev_arg(&mut resolutions, "com.apple.dock");
+        assert_eq!(
+            resolutions[0].params.get("prev_arg").map(String::as_str),
+            Some("com.apple.dock")
+        );
+        assert_eq!(
+            resolutions[0].params.get("existing").map(String::as_str),
+            Some("kept"),
+            "pre-existing params must be preserved alongside prev_arg"
+        );
+    }
+
+    #[test]
     fn inject_prev_arg_empty_value_is_noop_even_for_listed_kinds() {
         // Empty prev_arg means the cursor is at the first positional
         // slot — there is no previous arg to thread. The helper must

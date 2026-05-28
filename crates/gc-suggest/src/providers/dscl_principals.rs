@@ -123,11 +123,15 @@ impl DsclGroups {
 /// Decoded shape of a partially-typed chown owner/group token.
 ///
 /// `chown` accepts `OWNER`, `OWNER:GROUP`, or `:GROUP` as a single
-/// argument. The fuzzy ranker (nucleo) treats `:` as a delimiter and
-/// cannot match `stan:staff` against the prefix `stan:` cleanly, so
-/// the provider has to emit pre-prefixed completions and the engine
-/// must NOT re-rank them by fuzzy score against the colon-containing
-/// token.
+/// argument. The provider emits pre-prefixed completions (e.g.
+/// `stan:staff` for the typed token `stan:`) carrying the full owner
+/// and colon, rather than relying on the engine to reconstruct the
+/// `owner:` prefix from a bare group name. At merge time the engine
+/// re-ranks the merged pool with `gc_suggest::fuzzy::rank` against the
+/// live `current_word` (the colon-containing token) — nucleo scores
+/// `:` as an ordinary character in a subsequence match, so a
+/// pre-prefixed `stan:staff` candidate still matches the query
+/// `stan:` and survives the re-rank.
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum ChownToken<'a> {
     /// No colon typed yet. `prefix` is what's been typed so far (may
@@ -214,9 +218,12 @@ pub(crate) fn chown_owner_group_from_principals(
 /// pair, which couldn't account for the `OWNER:GROUP` form because
 /// nucleo treats `:` as a fuzzy delimiter.
 ///
-/// The dispatch fetches BOTH users and groups (cheap on macOS), then
-/// the pure [`chown_owner_group_from_principals`] decides which set
-/// to surface based on the token shape.
+/// The dispatch fetches ONLY the principal set the token shape needs —
+/// `/Users` for an owner-only token, `/Groups` for a `:group` or
+/// `owner:group` token — via mutually exclusive branches, so each
+/// completion spawns at most one `dscl` call (never both). The pure
+/// [`chown_owner_group_from_principals`] then formats the surfaced set
+/// based on the same token shape.
 pub struct ChownOwnerGroup;
 
 impl Provider for ChownOwnerGroup {
