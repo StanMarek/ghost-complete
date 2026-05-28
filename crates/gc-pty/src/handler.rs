@@ -1238,15 +1238,20 @@ impl InputHandler {
             }
         };
 
-        let (forward, cwd, cursor_position, screen_dimensions, escaped_replacement) =
-            match self.accept_suggestion_locked(&p) {
-                Some(tuple) => tuple,
-                None => {
-                    drop(p);
-                    self.dismiss(stdout);
-                    return Vec::new();
-                }
-            };
+        let AcceptLocked {
+            forward,
+            cwd,
+            cursor,
+            screen,
+            escaped_replacement,
+        } = match self.accept_suggestion_locked(&p) {
+            Some(accepted) => accepted,
+            None => {
+                drop(p);
+                self.dismiss(stdout);
+                return Vec::new();
+            }
+        };
 
         // History entries never chain — they're full commands, not directory paths.
         if selected_kind == gc_suggest::SuggestionKind::History {
@@ -1275,8 +1280,13 @@ impl InputHandler {
         let buffer = state.command_buffer().unwrap_or("").to_string();
         let char_cursor = state.buffer_cursor(); // character offset
         let byte_cursor = char_to_byte_offset(&buffer, char_cursor);
-        let old_ctx = parse_command_context(&buffer, char_cursor);
-        let word_start_bytes = byte_cursor - old_ctx.current_word.len();
+        // Use the RAW on-screen word start, not `byte_cursor -
+        // old_ctx.current_word.len()`: the tokenizer-decoded `current_word`
+        // strips backslashes/quotes, so on a double-chain into a
+        // space-containing dir (buffer already `cd My\ Folder/`) the decoded
+        // length is shorter than the on-screen span and would mis-slice the
+        // predicted buffer, leaving a stray fragment of the previous word.
+        let word_start_bytes = current_word_raw_start(&buffer, byte_cursor);
 
         // The shell receives `escaped_replacement` from `forward`; the
         // predicted buffer must use the same text so the next suggestion
@@ -1299,8 +1309,8 @@ impl InputHandler {
         p.state_mut().predict_command_buffer(predicted, new_cursor);
         drop(p);
 
-        let (cr, cc) = cursor_position;
-        let (sr, sc) = screen_dimensions;
+        let (cr, cc) = (cursor.row, cursor.col);
+        let (sr, sc) = (screen.rows, screen.cols);
 
         match self
             .engine
@@ -2831,14 +2841,13 @@ impl InputHandler {
     /// (e.g. for CD chaining prediction) can happen under the same critical
     /// section without a second `parser.lock()` round-trip.
     ///
-    /// Returns `(forward_bytes, cwd, cursor_position, screen_dimensions)`:
-    /// the first element is what the simple-accept path needs, the remaining
-    /// three are cheap to pull from the same `TerminalState` snapshot and
-    /// are consumed by `accept_with_chaining` when the selection is a
-    /// directory.
+    /// Returns an [`AcceptLocked`]: `forward` is what the simple-accept path
+    /// needs; `cwd`, `cursor`, `screen` and `escaped_replacement` are cheap to
+    /// pull from the same `TerminalState` snapshot and are consumed by
+    /// `accept_with_chaining` when the selection is a directory.
     ///
     /// Returns `None` when the overlay has no valid selection.
-    fn accept_suggestion_locked(&self, p: &TerminalParser) -> Option<AcceptLockedOutput> {
+    fn accept_suggestion_locked(&self, p: &TerminalParser) -> Option<AcceptLocked> {
         let selected_idx = self.overlay.selected?;
         if selected_idx >= self.suggestions.len() {
             return None;
@@ -2850,8 +2859,8 @@ impl InputHandler {
         let cursor = state.buffer_cursor();
         let ctx = parse_command_context(buffer, cursor);
         let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
-        let cursor_position = state.cursor_position();
-        let screen_dimensions = state.screen_dimensions();
+        let (cursor_row, cursor_col) = state.cursor_position();
+        let (screen_rows, screen_cols) = state.screen_dimensions();
 
         let (delete_chars, replacement, command) = if selected.kind
             == gc_suggest::SuggestionKind::History
@@ -2878,7 +2887,16 @@ impl InputHandler {
             }
             (safe_cursor, selected.text.clone(), ctx.command)
         } else {
-            let word_len = ctx.current_word.chars().count();
+            // Delete one 0x7F per ON-SCREEN character of the current word, NOT
+            // per character of the tokenizer-decoded `current_word`. The raw
+            // buffer can hold backslash escapes / an opening quote (e.g.
+            // `My\ Folder/` or `'My Fo`) that the tokenizer strips; counting
+            // the decoded word would under-delete by exactly those bytes and
+            // leave stray chars before the replacement. Compute the span from
+            // the raw word start up to the cursor instead.
+            let byte_cursor = char_to_byte_offset(buffer, cursor);
+            let raw_word_start = current_word_raw_start(buffer, byte_cursor);
+            let on_screen_word_len = buffer[raw_word_start..byte_cursor].chars().count();
             // Filesystem suggestions go through shell-escape so paths
             // containing spaces or other metacharacters survive
             // re-parsing by the shell. The chaining caller reuses the
@@ -2891,7 +2909,7 @@ impl InputHandler {
                 }
                 _ => raw,
             };
-            (word_len, escaped, ctx.command)
+            (on_screen_word_len, escaped, ctx.command)
         };
 
         // Record accepted completion for frecency scoring.
@@ -2909,7 +2927,19 @@ impl InputHandler {
         let mut bytes = vec![0x7F; delete_chars];
         bytes.extend_from_slice(replacement.as_bytes());
 
-        Some((bytes, cwd, cursor_position, screen_dimensions, replacement))
+        Some(AcceptLocked {
+            forward: bytes,
+            cwd,
+            cursor: CursorPos {
+                row: cursor_row,
+                col: cursor_col,
+            },
+            screen: ScreenSize {
+                rows: screen_rows,
+                cols: screen_cols,
+            },
+            escaped_replacement: replacement,
+        })
     }
 
     fn accept_suggestion(&self, parser: &Arc<Mutex<TerminalParser>>) -> Vec<u8> {
@@ -2925,9 +2955,7 @@ impl InputHandler {
             }
         };
         match self.accept_suggestion_locked(&p) {
-            Some((bytes, _cwd, _cursor_position, _screen_dimensions, _escaped_replacement)) => {
-                bytes
-            }
+            Some(accepted) => accepted.forward,
             None => Vec::new(),
         }
     }
@@ -2976,15 +3004,44 @@ impl InputHandler {
     }
 }
 
-/// Return value of `accept_suggestion_locked`: the bytes to forward to the
-/// PTY plus the cwd and terminal geometry read under the same parser lock,
-/// followed by the (possibly-escaped) replacement text. The cwd, geometry
-/// and replacement text are only consumed by the CD-chaining path in
-/// `accept_with_chaining`; the plain accept path discards them. Sharing the
-/// replacement here is what keeps the predicted post-accept buffer aligned
-/// with the bytes the shell actually receives — re-escaping it in the
-/// chaining caller would risk drift between the two sites.
-type AcceptLockedOutput = (Vec<u8>, PathBuf, (u16, u16), (u16, u16), String);
+/// Terminal cursor location (row, col), read under the parser lock.
+///
+/// A distinct newtype from [`ScreenSize`] so the two `(u16, u16)` pairs in
+/// [`AcceptLocked`] can't be silently transposed at the call site — the
+/// compiler rejects passing a cursor where a screen size is expected.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CursorPos {
+    row: u16,
+    col: u16,
+}
+
+/// Terminal screen dimensions (rows, cols), read under the parser lock.
+///
+/// A distinct newtype from [`CursorPos`]; see that type's docs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ScreenSize {
+    rows: u16,
+    cols: u16,
+}
+
+/// Return value of `accept_suggestion_locked`.
+///
+/// - `forward`: the bytes to forward to the PTY — what the plain-accept path
+///   needs.
+/// - `cwd`, `cursor`, `screen`: terminal geometry and working directory read
+///   under the same parser lock. Only consumed by the CD-chaining path in
+///   `accept_with_chaining`; the plain accept path discards them.
+/// - `escaped_replacement`: the (possibly-escaped) replacement text. Sharing
+///   it here is what keeps the predicted post-accept buffer aligned with the
+///   bytes the shell actually receives — re-escaping it in the chaining caller
+///   would risk drift between the two sites.
+struct AcceptLocked {
+    forward: Vec<u8>,
+    cwd: PathBuf,
+    cursor: CursorPos,
+    screen: ScreenSize,
+    escaped_replacement: String,
+}
 
 /// Quote-context-aware shell escape for filesystem path insertions.
 ///
@@ -2999,9 +3056,20 @@ type AcceptLockedOutput = (Vec<u8>, PathBuf, (u16, u16), (u16, u16), String);
 /// only an embedded apostrophe needs the close-reopen dance (`'\''`). Within
 /// double quotes the four-character set `"`, `\`, `$`, `` ` `` is escaped;
 /// everything else (including spaces and globs) is literal.
+///
+/// Tilde is a special case in the unquoted arm: a **leading** `~` must be left
+/// bare so tilde expansion (`~` -> `$HOME`, `~user` -> that user's home) still
+/// fires — the filesystem provider preserves a leading `~/` in suggestion text
+/// (e.g. `cd ~/Doc` -> `~/Documents/`), and `\~` is a literal tilde that the
+/// shell will not expand. A `~` anywhere else in the word is not subject to
+/// expansion, so it is escaped like any other safe-by-default char would be if
+/// it were special — kept here for parity with the historical behavior.
 fn shell_escape_for_context(text: &str, quote: gc_buffer::QuoteState) -> String {
     match quote {
         gc_buffer::QuoteState::None => {
+            // `~` is intentionally absent: a leading `~` must stay unescaped for
+            // tilde expansion (see fn docs); a non-leading `~` is escaped via the
+            // index check below.
             let needs_escape = |c: char| {
                 matches!(
                     c,
@@ -3026,12 +3094,13 @@ fn shell_escape_for_context(text: &str, quote: gc_buffer::QuoteState) -> String 
                         | '{'
                         | '}'
                         | '#'
-                        | '~'
                 )
             };
             let mut out = String::with_capacity(text.len() + 4);
-            for ch in text.chars() {
-                if needs_escape(ch) {
+            for (i, ch) in text.chars().enumerate() {
+                // Escape a `~` only when it is NOT the first character of the
+                // token — only a leading `~` triggers tilde expansion.
+                if needs_escape(ch) || (ch == '~' && i != 0) {
                     out.push('\\');
                 }
                 out.push(ch);
@@ -3050,6 +3119,84 @@ fn shell_escape_for_context(text: &str, quote: gc_buffer::QuoteState) -> String 
             out
         }
     }
+}
+
+/// Byte offset where the word the cursor sits in *begins* in the **raw**
+/// buffer, including any opening quote and backslash escapes.
+///
+/// The tokenizer (`parse_command_context`) decodes words — it drops the
+/// backslashes of `My\ Folder/` and the opening `'` of `'My Fo`. Counting
+/// backspaces from the *decoded* `current_word` length therefore under-deletes
+/// the on-screen word by exactly the number of escape/quote bytes, leaving
+/// stray characters before the replacement. The accept path needs the RAW
+/// on-screen span instead, so it walks the raw prefix and records where the
+/// current word started.
+///
+/// `byte_cursor` is a byte offset into `buffer` (already converted from the
+/// char cursor by the caller). The returned offset is `<= byte_cursor`. When
+/// the cursor sits at a word boundary (trailing space / empty current word)
+/// the returned offset equals `byte_cursor`, so the on-screen span is empty —
+/// matching the tokenizer's empty `current_word`.
+///
+/// This mirrors the tokenizer's unquoted word-boundary rules (split on ASCII
+/// whitespace and on the pipe/redirect/control operators; `\` escapes the next
+/// char; `'` / `"` open quote spans that suppress boundaries). It only needs
+/// to be correct for the prefix up to the cursor, which is all the accept path
+/// inspects.
+fn current_word_raw_start(buffer: &str, byte_cursor: usize) -> usize {
+    let prefix = &buffer[..byte_cursor.min(buffer.len())];
+    // Byte offset where the in-progress word started; `None` while between
+    // words (i.e. cursor would have an empty current_word here).
+    let mut word_start: Option<usize> = None;
+    let mut quote = gc_buffer::QuoteState::None;
+    let mut iter = prefix.char_indices().peekable();
+
+    while let Some((idx, ch)) = iter.next() {
+        match quote {
+            gc_buffer::QuoteState::SingleQuoted => {
+                if ch == '\'' {
+                    quote = gc_buffer::QuoteState::None;
+                }
+                // Stays in the current word either way.
+            }
+            gc_buffer::QuoteState::DoubleQuoted => {
+                if ch == '"' {
+                    quote = gc_buffer::QuoteState::None;
+                } else if ch == '\\' {
+                    // Backslash + next char are both part of the word.
+                    iter.next();
+                }
+            }
+            gc_buffer::QuoteState::None => {
+                if ch == '\\' {
+                    // Escaped char joins (or starts) the current word.
+                    if word_start.is_none() {
+                        word_start = Some(idx);
+                    }
+                    iter.next();
+                } else if ch == '\'' {
+                    if word_start.is_none() {
+                        word_start = Some(idx);
+                    }
+                    quote = gc_buffer::QuoteState::SingleQuoted;
+                } else if ch == '"' {
+                    if word_start.is_none() {
+                        word_start = Some(idx);
+                    }
+                    quote = gc_buffer::QuoteState::DoubleQuoted;
+                } else if ch.is_ascii_whitespace()
+                    || matches!(ch, '|' | '&' | ';' | '<' | '>' | '(' | ')')
+                {
+                    // Word boundary — the next word (if any) starts later.
+                    word_start = None;
+                } else if word_start.is_none() {
+                    word_start = Some(idx);
+                }
+            }
+        }
+    }
+
+    word_start.unwrap_or(byte_cursor)
 }
 
 const DEFAULT_TRIGGER_CHARS: &[char] = &[' ', '/', '-', '.'];
@@ -7557,6 +7704,86 @@ mod tests {
     }
 
     #[test]
+    fn shell_escape_unquoted_leading_tilde_is_not_escaped() {
+        // A leading `~` must survive bare so the shell still expands it to
+        // $HOME. Escaping it (`\~`) makes the shell treat it as a literal
+        // tilde and the `cd` fails. `/` is always left unescaped.
+        let out = shell_escape_for_context("~/Documents/file", gc_buffer::QuoteState::None);
+        assert_eq!(out, "~/Documents/file");
+    }
+
+    #[test]
+    fn shell_escape_unquoted_mid_word_tilde_is_escaped() {
+        // A non-leading `~` is not subject to tilde expansion, so it stays
+        // escaped (parity with the historical metacharacter handling).
+        let out = shell_escape_for_context("a~b", gc_buffer::QuoteState::None);
+        assert_eq!(out, r"a\~b");
+    }
+
+    #[test]
+    fn shell_escape_unquoted_escapes_glob_brace_and_hash() {
+        // Glob (* ? [ ]), brace ({ }), and comment (#) chars must all be
+        // backslashed so an accepted path is taken literally, not expanded.
+        // Avoids a leading `~` per the tilde rule above.
+        let out = shell_escape_for_context("a*b?c[d]e{f}g#i", gc_buffer::QuoteState::None);
+        assert_eq!(out, r"a\*b\?c\[d\]e\{f\}g\#i");
+    }
+
+    #[test]
+    fn shell_escape_empty_input_is_unchanged_for_all_quote_states() {
+        assert_eq!(
+            shell_escape_for_context("", gc_buffer::QuoteState::None),
+            ""
+        );
+        assert_eq!(
+            shell_escape_for_context("", gc_buffer::QuoteState::SingleQuoted),
+            ""
+        );
+        assert_eq!(
+            shell_escape_for_context("", gc_buffer::QuoteState::DoubleQuoted),
+            ""
+        );
+    }
+
+    // ---- current_word_raw_start unit tests ----
+
+    #[test]
+    fn raw_word_start_plain_word() {
+        // "cat My" — current word "My" starts at byte 4.
+        let buf = "cat My";
+        assert_eq!(current_word_raw_start(buf, buf.len()), 4);
+    }
+
+    #[test]
+    fn raw_word_start_includes_backslash_escapes() {
+        // "cd My\ Folder/" — the on-screen word starts at byte 3 and the
+        // whole `My\ Folder/` span (backslash included) is one word.
+        let buf = r"cd My\ Folder/";
+        assert_eq!(current_word_raw_start(buf, buf.len()), 3);
+        // On-screen char span = 11 (`My\ Folder/`), NOT the decoded 10.
+        let start = current_word_raw_start(buf, buf.len());
+        assert_eq!(buf[start..].chars().count(), 11);
+    }
+
+    #[test]
+    fn raw_word_start_includes_opening_single_quote() {
+        // "cat 'My Fo" — open single quote suppresses the space boundary, so
+        // the raw word starts at the opening quote (byte 4).
+        let buf = "cat 'My Fo";
+        assert_eq!(current_word_raw_start(buf, buf.len()), 4);
+        let start = current_word_raw_start(buf, buf.len());
+        // On-screen span `'My Fo` = 6 chars (opening quote + "My Fo").
+        assert_eq!(buf[start..].chars().count(), 6);
+    }
+
+    #[test]
+    fn raw_word_start_at_word_boundary_is_cursor() {
+        // Trailing space => empty current word => span start == cursor.
+        let buf = "cat ";
+        assert_eq!(current_word_raw_start(buf, buf.len()), buf.len());
+    }
+
+    #[test]
     fn shell_escape_single_quoted_leaves_spaces_alone() {
         let out =
             shell_escape_for_context("My Folder/file.txt", gc_buffer::QuoteState::SingleQuoted);
@@ -7676,6 +7903,113 @@ mod tests {
             predicted.contains(r"My\ Folder/"),
             "chaining predicted buffer must use escaped path; got {:?}",
             predicted
+        );
+    }
+
+    /// Count leading 0x7F (backspace) bytes at the front of an accept payload.
+    fn leading_backspaces(bytes: &[u8]) -> usize {
+        bytes.iter().take_while(|&&b| b == 0x7F).count()
+    }
+
+    #[test]
+    fn accept_deletes_on_screen_width_of_escaped_word_not_decoded() {
+        // Regression (code-reviewer-2): when the on-screen buffer already
+        // contains backslash escapes, the backspace count must match the RAW
+        // on-screen span, not the tokenizer-decoded current_word. Here the
+        // on-screen word `My\ Folder/` is 11 chars while the decoded word
+        // `My Folder/` is 10 — using 10 would leave a stray char.
+        let handler =
+            make_selected_handler(path_suggestion("My Folder/sub/", SuggestionKind::Directory));
+        let parser = parser_with_buffer(r"cd My\ Folder/");
+
+        let bytes = handler.accept_suggestion(&parser);
+        assert_eq!(
+            leading_backspaces(&bytes),
+            r"My\ Folder/".chars().count(),
+            "must delete the full on-screen (escaped) word width, got bytes={:?}",
+            String::from_utf8_lossy(&bytes)
+        );
+    }
+
+    #[test]
+    fn accept_deletes_partial_word_inside_open_single_quote_raw_span() {
+        // The on-screen word includes the opening quote: buffer `cat 'My Fo`
+        // has raw word `'My Fo` (6 chars) while the decoded current_word is
+        // `My Fo` (5). The delete count must cover the raw 6-char span.
+        let handler = make_selected_handler(path_suggestion(
+            "My Folder/file.txt",
+            SuggestionKind::FilePath,
+        ));
+        let parser = parser_with_buffer("cat 'My Fo");
+
+        let bytes = handler.accept_suggestion(&parser);
+        assert_eq!(
+            leading_backspaces(&bytes),
+            "'My Fo".chars().count(),
+            "must delete the raw on-screen span including the opening quote, got bytes={:?}",
+            String::from_utf8_lossy(&bytes)
+        );
+    }
+
+    #[test]
+    fn double_chain_into_space_dir_deletes_full_escaped_word() {
+        // Full chaining happy path: accept `My Folder/` (dir) so the predicted
+        // buffer becomes `cd My\ Folder/`, then accept a child. The second
+        // accept's leading-backspace count must equal the on-screen width of
+        // the escaped word `My\ Folder/`, not the decoded `My Folder/`.
+        let mut handler =
+            make_selected_handler(path_suggestion("My Folder/", SuggestionKind::Directory));
+        let parser = parser_with_buffer("cd My");
+
+        let mut stdout = Vec::new();
+        let _ = handler.accept_with_chaining(&parser, &mut stdout);
+
+        let predicted = parser
+            .lock()
+            .unwrap()
+            .state()
+            .command_buffer()
+            .map(|s| s.to_string())
+            .unwrap_or_default();
+        assert!(
+            predicted.contains(r"My\ Folder/"),
+            "precondition: chaining must predict escaped buffer; got {:?}",
+            predicted
+        );
+
+        // Simulate the user selecting a child on the now-visible popup, then
+        // accepting it. The second accept reads the predicted (escaped) buffer.
+        handler.suggestions = vec![path_suggestion("My Folder/sub/", SuggestionKind::Directory)];
+        handler.overlay.selected = Some(0);
+        let bytes = handler.accept_suggestion(&parser);
+        assert_eq!(
+            leading_backspaces(&bytes),
+            r"My\ Folder/".chars().count(),
+            "second accept must delete the full on-screen escaped word; got bytes={:?}",
+            String::from_utf8_lossy(&bytes)
+        );
+    }
+
+    #[test]
+    fn accept_inside_open_double_quote_escapes_special_quad_only() {
+        // Integration (pr-test-analyzer-6): buffer ends inside an unclosed
+        // double quote. A path containing `$` must have the `$` backslashed
+        // (double-quote-special) while spaces stay literal (no `\ `).
+        let handler =
+            make_selected_handler(path_suggestion("My $VAR Dir/", SuggestionKind::Directory));
+        let parser = parser_with_buffer("cd \"My $");
+
+        let bytes = handler.accept_suggestion(&parser);
+        let s = String::from_utf8_lossy(&bytes);
+        assert!(
+            s.contains(r"\$VAR"),
+            "double-quoted accept must escape `$`; got bytes={:?}",
+            s
+        );
+        assert!(
+            !s.contains(r"\ "),
+            "double-quoted accept must leave spaces literal (no `\\ `); got bytes={:?}",
+            s
         );
     }
 }
