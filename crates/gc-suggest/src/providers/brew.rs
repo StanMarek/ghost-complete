@@ -1,5 +1,6 @@
 // Homebrew native providers for installed formulae, installed casks,
-// and searchable formulae.
+// searchable formulae, searchable casks, and searchable packages
+// (the formulae + casks union).
 
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -34,13 +35,45 @@ fn brew_search_cap() -> usize {
 /// queries forward the user's token straight to `brew search <q>` and
 /// drop the cap — `brew search` already filters to substring matches,
 /// so the cap is only meaningful for the empty-query exploration path
-/// that returns the full formula list.
-pub(crate) fn brew_search_plan(query: &str, empty_cap: usize) -> ([&str; 2], usize) {
+/// that returns the full package list (every formula and cask).
+///
+/// `flag_prefix` is spliced in between `search` and the query token so a
+/// single planner serves the plain (`&[]`), cask-only (`&["--cask"]`),
+/// and any future filtered search path with one argv-construction and
+/// one cap rule — no per-provider divergence. The empty-query branch
+/// still passes a single empty-string argument so `brew search ""` keeps
+/// exploring the full list rather than treating the prefix flag as the
+/// final positional.
+pub(crate) fn brew_search_plan<'a>(
+    query: &'a str,
+    flag_prefix: &[&'a str],
+    empty_cap: usize,
+) -> (Vec<&'a str>, usize) {
+    let mut args = Vec::with_capacity(2 + flag_prefix.len());
+    args.push("search");
+    args.extend_from_slice(flag_prefix);
     if query.is_empty() {
-        (["search", ""], empty_cap)
+        args.push("");
+        (args, empty_cap)
     } else {
-        (["search", query], usize::MAX)
+        args.push(query);
+        (args, usize::MAX)
     }
+}
+
+/// Detect Homebrew's "nothing matched this query" failure. Modern `brew
+/// search <token>` exits non-zero and writes
+/// `Error: No formulae or casks found for "<token>".` to stderr when the
+/// partial token matches nothing — an expected outcome on the
+/// keystroke-to-suggestion hot path, not a command failure. The
+/// non-zero exit is surfaced by [`spawn_with_timeout`] as an
+/// `anyhow::Error` whose message embeds the trimmed stderr, so we match
+/// on the rendered error string. Kept deliberately narrow: genuine
+/// failures (timeout, other nonzero exits) do not carry these phrases
+/// and stay at `warn`.
+fn is_brew_no_match(error: &anyhow::Error) -> bool {
+    let message = error.to_string();
+    message.contains("No formula") || message.contains("No formulae") || message.contains("No cask")
 }
 
 pub(crate) async fn run_brew_with_binary(
@@ -60,6 +93,10 @@ pub(crate) async fn run_brew_with_binary(
         Ok(stdout) => Some(stdout),
         Err(error) if is_binary_missing(&error) => {
             tracing::trace!(binary, "brew binary not installed");
+            None
+        }
+        Err(error) if is_brew_no_match(&error) => {
+            tracing::trace!(binary, error = %error, "brew search found no matches");
             None
         }
         Err(error) => {
@@ -116,11 +153,22 @@ pub(crate) fn parse_formulae_searchable_output(text: &str, cap: usize) -> Vec<Su
     suggestions
 }
 
-/// Parse `brew search --cask <query>` output, projecting cask names from
-/// the cask section only. Handles both the modern `==> Casks` header
-/// (Homebrew 4.x) and the legacy `Casks:` header (Homebrew 2.x).
-pub(crate) fn parse_casks_searchable_output(text: &str) -> Vec<Suggestion> {
-    let mut in_casks = false;
+/// Parse `brew search --cask <query>` output, projecting cask names.
+///
+/// `brew search --cask <q>` on modern Homebrew (5.x) prints a BARE,
+/// header-less token list — it emits no `==> Casks` / `==> Formulae`
+/// section headers at all because the `--cask` filter already scopes the
+/// result to casks. So this defaults `in_casks` ON (mirroring
+/// [`parse_formulae_searchable_output`], which defaults its section flag
+/// on): a header-less run treats every line as a cask. A header is only
+/// honoured to SUPPRESS — once a non-cask section (`==> Formulae` /
+/// legacy `Formulae:`) appears, subsequent lines are dropped until a
+/// `==> Casks` / `Casks:` header re-enables emission. This keeps a
+/// TTY/legacy `brew search` run that does print headers working while
+/// fixing the header-less `--cask` path that previously returned empty.
+/// Capped for popup latency on the empty-query exploration path.
+pub(crate) fn parse_casks_searchable_output(text: &str, cap: usize) -> Vec<Suggestion> {
+    let mut in_casks = true;
     let mut out = Vec::new();
     for line in text.lines() {
         let line = line.trim();
@@ -137,6 +185,9 @@ pub(crate) fn parse_casks_searchable_output(text: &str) -> Vec<Suggestion> {
         }
         if in_casks {
             for cask in line.split_whitespace() {
+                if out.len() >= cap {
+                    return out;
+                }
                 out.push(provider_suggestion(cask, "brew cask"));
             }
         }
@@ -146,8 +197,11 @@ pub(crate) fn parse_casks_searchable_output(text: &str) -> Vec<Suggestion> {
 
 /// Parse `brew search <query>` output, projecting every token under both
 /// the formulae and casks sections. Used when the install/search position
-/// is ambiguous and either formula or cask names are acceptable.
-pub(crate) fn parse_packages_searchable_output(text: &str) -> Vec<Suggestion> {
+/// is ambiguous and either formula or cask names are acceptable. Capped
+/// for popup latency: the empty-query exploration path (`brew search ""`)
+/// returns ~16k lines (formulae + casks) on modern Homebrew, so the cap
+/// must be honoured here exactly as it is for the formulae-only path.
+pub(crate) fn parse_packages_searchable_output(text: &str, cap: usize) -> Vec<Suggestion> {
     let mut out = Vec::new();
     for line in text.lines() {
         let line = line.trim();
@@ -155,6 +209,9 @@ pub(crate) fn parse_packages_searchable_output(text: &str) -> Vec<Suggestion> {
             continue;
         }
         for token in line.split_whitespace() {
+            if out.len() >= cap {
+                return out;
+            }
             out.push(provider_suggestion(token, "brew formula or cask"));
         }
     }
@@ -257,7 +314,7 @@ impl BrewFormulaeSearchable {
         if !brew_is_supported(binary).await {
             return Ok(Vec::new());
         }
-        let (args, cap) = brew_search_plan(ctx.current_token.as_str(), brew_search_cap());
+        let (args, cap) = brew_search_plan(ctx.current_token.as_str(), &[], brew_search_cap());
         let Some(output) = run_brew_with_binary(&ctx.cwd, binary, &args).await else {
             return Ok(Vec::new());
         };
@@ -286,16 +343,12 @@ impl BrewCasksSearchable {
         if !brew_is_supported(binary).await {
             return Ok(Vec::new());
         }
-        let token = ctx.current_token.as_str();
-        let args: [&str; 3] = if token.is_empty() {
-            ["search", "--cask", ""]
-        } else {
-            ["search", "--cask", token]
-        };
+        let (args, cap) =
+            brew_search_plan(ctx.current_token.as_str(), &["--cask"], brew_search_cap());
         let Some(output) = run_brew_with_binary(&ctx.cwd, binary, &args).await else {
             return Ok(Vec::new());
         };
-        Ok(parse_casks_searchable_output(&output))
+        Ok(parse_casks_searchable_output(&output, cap))
     }
 }
 
@@ -320,10 +373,10 @@ impl BrewPackagesSearchable {
         if !brew_is_supported(binary).await {
             return Ok(Vec::new());
         }
-        let (args, _cap) = brew_search_plan(ctx.current_token.as_str(), brew_search_cap());
+        let (args, cap) = brew_search_plan(ctx.current_token.as_str(), &[], brew_search_cap());
         let Some(output) = run_brew_with_binary(&ctx.cwd, binary, &args).await else {
             return Ok(Vec::new());
         };
-        Ok(parse_packages_searchable_output(&output))
+        Ok(parse_packages_searchable_output(&output, cap))
     }
 }

@@ -342,6 +342,17 @@ describe('matchNativeGenerator', () => {
       matchNativeGenerator('brew', ['brew', 'search', 'foo']),
       { type: 'brew_packages_searchable' },
     );
+    // Precedence: when both --cask and --formula coexist, --cask wins because
+    // the implementation checks the cask flags before the formula flags. This
+    // pins that ordering so reordering the two if-branches would fail here.
+    assert.deepStrictEqual(
+      matchNativeGenerator('brew', ['brew', 'search', '--cask', '--formula', 'foo']),
+      { type: 'brew_casks_searchable' },
+    );
+    assert.deepStrictEqual(
+      matchNativeGenerator('brew', ['brew', 'search', '--formula', '--cask', 'foo']),
+      { type: 'brew_casks_searchable' },
+    );
   });
 
   it('does not map npm bash-c when post-process does not look like the package.json scripts shape', () => {
