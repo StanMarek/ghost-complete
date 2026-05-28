@@ -265,8 +265,11 @@ pub enum ProviderKind {
     CargoFeatures,
     /// Colon-aware chown owner/group completion. Handles all three
     /// `chown` argument shapes (`owner`, `owner:group`, `:group`) and
-    /// emits pre-prefixed suggestions so nucleo's `:`-delimiter fuzzy
-    /// matching does not strand the user mid-token.
+    /// emits pre-prefixed suggestions (e.g. `owner:group`) carrying the
+    /// typed owner and colon, so the candidate still matches the live
+    /// colon-containing token after the engine re-ranks the merged pool
+    /// with nucleo (which matches `:` as an ordinary subsequence
+    /// character, not a delimiter).
     ChownOwnerGroup,
     /// `defaults domains`, splitting the single-line comma-separated
     /// output into individual macOS preference domain identifiers.
@@ -547,6 +550,13 @@ impl From<ProviderKind> for ProviderResolution {
 /// to dispatch `defaults read <domain>` and parse the resulting plist.
 pub const NEEDS_PREV_ARG: &[ProviderKind] = &[ProviderKind::DefaultsKeys];
 
+/// The `ProviderCtx::params` key under which [`inject_prev_arg`] stashes
+/// the previously-completed shell argument. Single source of truth shared
+/// by the producer here and the consumer
+/// (`macos_defaults::DefaultsKeys::generate_with_binary`) so a typo in
+/// either cannot silently break the channel.
+pub(crate) const PREV_ARG_KEY: &str = "prev_arg";
+
 /// Mutate `resolutions` in-place, copying `prev_arg` into the params
 /// of every resolution whose kind appears in [`NEEDS_PREV_ARG`].
 ///
@@ -563,7 +573,7 @@ pub fn inject_prev_arg(resolutions: &mut [ProviderResolution], prev_arg: &str) {
             continue;
         }
         let mut params: BTreeMap<String, String> = resolution.params.as_ref().clone();
-        params.insert("prev_arg".to_string(), prev_arg.to_string());
+        params.insert(PREV_ARG_KEY.to_string(), prev_arg.to_string());
         resolution.params = Arc::new(params);
     }
 }

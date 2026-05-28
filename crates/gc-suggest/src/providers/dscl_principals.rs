@@ -215,8 +215,12 @@ pub(crate) fn chown_owner_group_from_principals(
 
 /// `chown_owner_group` — colon-aware completion for chown's first
 /// positional argument. Replaces the legacy `[dscl_users, dscl_groups]`
-/// pair, which couldn't account for the `OWNER:GROUP` form because
-/// nucleo treats `:` as a fuzzy delimiter.
+/// pair, which couldn't account for the `OWNER:GROUP` form because the
+/// colon must be carried into the emitted candidate (e.g. `stan:staff`)
+/// rather than reconstructed by the engine from a bare group name —
+/// nucleo matches `:` as an ordinary subsequence character, so a
+/// pre-prefixed candidate still matches a `stan:` query (see the
+/// [`ChownToken`] doc above).
 ///
 /// The dispatch fetches ONLY the principal set the token shape needs —
 /// `/Users` for an owner-only token, `/Groups` for a `:group` or

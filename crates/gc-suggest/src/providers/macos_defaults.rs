@@ -19,7 +19,7 @@ use std::time::Duration;
 use anyhow::Result;
 use tokio::process::Command;
 
-use super::{Provider, ProviderCtx};
+use super::{Provider, ProviderCtx, PREV_ARG_KEY};
 use crate::types::{Suggestion, SuggestionKind, SuggestionSource};
 
 /// Timeout for `defaults domains`. 2s is the convention for
@@ -98,17 +98,19 @@ pub(crate) fn parse_defaults_keys(text: &str) -> Vec<String> {
         }
         match ch {
             '"' => {
-                // Enter quote mode for BOTH keys (`!in_value`) and value
-                // strings (`in_value`). A value string can legitimately
-                // contain `;` or `"` (paths, serialized prefs); without
-                // tracking quotes here a `;` inside a value (e.g.
-                // `"key" = "a;b";`) would prematurely end the statement
-                // and corrupt key state. Inside a quote we only append to
-                // `key_buf` when `!in_value`, so value content is consumed
-                // harmlessly.
-                if depth == 1 {
-                    in_quote = true;
-                }
+                // Enter quote mode at ANY depth, for BOTH keys
+                // (`!in_value`) and value strings (`in_value`). A value
+                // string can legitimately contain `;`, `"`, or unbalanced
+                // structural chars (`(`,`)`,`{`,`}` — paths, regexes,
+                // window titles, a smiley `:)`). Tracking quotes
+                // regardless of depth keeps those structural chars inert:
+                // the `in_quote` branch above short-circuits (`continue`)
+                // before any depth/in_value handling, so a stray `)` inside
+                // a deeply-nested value string can no longer corrupt
+                // `depth` and silently drop sibling top-level keys. Inside
+                // a quote we only append to `key_buf` when at depth 1 and
+                // `!in_value`, so value content is consumed harmlessly.
+                in_quote = true;
             }
             '{' | '(' => {
                 depth += 1;
@@ -288,7 +290,7 @@ impl DefaultsKeys {
         ctx: &ProviderCtx,
         binary: &str,
     ) -> Result<Vec<Suggestion>> {
-        let Some(raw_domain) = ctx.params.get("prev_arg").map(String::as_str) else {
+        let Some(raw_domain) = ctx.params.get(PREV_ARG_KEY).map(String::as_str) else {
             return Ok(Vec::new());
         };
         let Some(domain) = resolve_domain(raw_domain) else {
@@ -407,6 +409,20 @@ mod tests {
     }
 
     #[test]
+    fn parse_defaults_keys_nested_quoted_value_with_unbalanced_brace_keeps_siblings() {
+        // Regression: a quoted VALUE string nested at depth >= 2 may
+        // contain an unbalanced structural char (a smiley `:)`, a regex,
+        // a window title). Before the fix, quote mode was only entered at
+        // depth 1, so the inner `)` of `"smiley :)"` decremented `depth`
+        // and corrupted state — silently dropping the sibling top-level
+        // key `after`. Quotes must be tracked at every depth so the `)`
+        // is inert quote content.
+        let plist = r#"{ "outer" = { "inner" = "smiley :)"; }; "after" = 1; }"#;
+        let keys = parse_defaults_keys(plist);
+        assert_eq!(keys, vec!["outer", "after"]);
+    }
+
+    #[test]
     fn parse_defaults_keys_truncated_input_no_panic() {
         // Truncated/interrupted output (e.g. process killed mid-stream)
         // must not panic. Conservatively, only the keys whose statements
@@ -462,7 +478,7 @@ mod tests {
         // real `defaults read` side effect occurs.
         let tmp = tempfile::TempDir::new().unwrap();
         let mut params = std::collections::BTreeMap::new();
-        params.insert("prev_arg".to_string(), "-app".to_string());
+        params.insert(PREV_ARG_KEY.to_string(), "-app".to_string());
         let ctx = ProviderCtx {
             cwd: tmp.path().to_path_buf(),
             env: std::sync::Arc::new(std::collections::HashMap::new()),
@@ -473,6 +489,92 @@ mod tests {
             .generate_with_binary(&ctx, "/nonexistent/defaults-for-test")
             .await;
         assert!(matches!(result, Ok(ref v) if v.is_empty()));
+    }
+
+    /// Write `script` to `<dir>/defaults` and mark it executable,
+    /// returning the path. Mirrors the fake-binary idiom used by the
+    /// kubectl/cargo provider tests so the success path of
+    /// `generate_with_binary` is exercised against a real spawn.
+    #[cfg(unix)]
+    fn write_fake_defaults(dir: &Path, script: &str) -> std::path::PathBuf {
+        use std::os::unix::fs::PermissionsExt;
+        let path = dir.join("defaults");
+        std::fs::write(&path, script).unwrap();
+        let mut perms = std::fs::metadata(&path).unwrap().permissions();
+        perms.set_mode(0o755);
+        std::fs::set_permissions(&path, perms).unwrap();
+        path
+    }
+
+    #[cfg(unix)]
+    fn ctx_with_prev_arg(cwd: &Path, prev_arg: &str) -> ProviderCtx {
+        let mut params = std::collections::BTreeMap::new();
+        params.insert(PREV_ARG_KEY.to_string(), prev_arg.to_string());
+        ProviderCtx {
+            cwd: cwd.to_path_buf(),
+            env: std::sync::Arc::new(std::collections::HashMap::new()),
+            current_token: String::new(),
+            params: std::sync::Arc::new(params),
+        }
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn defaults_keys_generate_reads_domain_and_parses_keys() {
+        // Full success wiring: `prev_arg = "com.apple.dock"` →
+        // `defaults read com.apple.dock` → parse_defaults_keys → one
+        // Suggestion per top-level key with description `key in <domain>`.
+        // The fake `defaults` only prints the plist when invoked as
+        // `read com.apple.dock`, so the test also proves the domain is
+        // threaded through to the spawn unchanged.
+        let tmp = tempfile::TempDir::new().unwrap();
+        let script = "#!/bin/sh\n\
+            if [ \"$1\" != \"read\" ] || [ \"$2\" != \"com.apple.dock\" ]; then exit 1; fi\n\
+            printf '%s\\n' '{ \"tilesize\" = 48; \"autohide\" = 1; }'\n";
+        let fake = write_fake_defaults(tmp.path(), script);
+        let ctx = ctx_with_prev_arg(tmp.path(), "com.apple.dock");
+
+        let suggestions = DefaultsKeys
+            .generate_with_binary(&ctx, fake.to_str().unwrap())
+            .await
+            .unwrap();
+
+        let texts: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(texts, vec!["tilesize", "autohide"]);
+        for s in &suggestions {
+            assert_eq!(s.description.as_deref(), Some("key in com.apple.dock"));
+            assert_eq!(s.kind, SuggestionKind::ProviderValue);
+            assert_eq!(s.source, SuggestionSource::Provider);
+        }
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn defaults_keys_generate_rewrites_global_domain_sentinel_through_to_read() {
+        // `prev_arg = "-globalDomain"` must be rewritten to
+        // `NSGlobalDomain` BEFORE the spawn. The fake `defaults` exits
+        // nonzero unless it receives the rewritten literal, so a non-empty
+        // success proves the `resolve_domain` rewrite flows through to the
+        // real read (not just the unit test of `resolve_domain`).
+        let tmp = tempfile::TempDir::new().unwrap();
+        let script = "#!/bin/sh\n\
+            if [ \"$2\" != \"NSGlobalDomain\" ]; then exit 1; fi\n\
+            printf '%s\\n' '{ \"AppleLanguages\" = ( \"en\" ); \"KeyRepeat\" = 2; }'\n";
+        let fake = write_fake_defaults(tmp.path(), script);
+        let ctx = ctx_with_prev_arg(tmp.path(), "-globalDomain");
+
+        let suggestions = DefaultsKeys
+            .generate_with_binary(&ctx, fake.to_str().unwrap())
+            .await
+            .unwrap();
+
+        let texts: Vec<&str> = suggestions.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(texts, vec!["AppleLanguages", "KeyRepeat"]);
+        for s in &suggestions {
+            // Description carries the REWRITTEN domain, confirming the
+            // rewrite is what reached `defaults read`.
+            assert_eq!(s.description.as_deref(), Some("key in NSGlobalDomain"));
+        }
     }
 
     #[test]
