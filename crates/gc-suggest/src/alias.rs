@@ -327,10 +327,11 @@ impl AliasStore {
 /// the whole expansion shouldn't guess at the tail.
 pub(crate) fn parse_alias_file(src: &str) -> HashMap<String, String> {
     let mut out = HashMap::new();
-    // Tracks whether the previous physical line ended in an unescaped `\`,
-    // so the continuation line is dropped too rather than parsed as a
-    // standalone statement (which would invent a phantom alias from the
-    // tail and lose the real one).
+    // Tracks whether the previous physical line ended in a trailing `\` (we
+    // treat any trailing backslash as a line continuation and skip
+    // conservatively), so the continuation line is dropped too rather than
+    // parsed as a standalone statement (which would invent a phantom alias
+    // from the tail and lose the real one).
     let mut skip_continuation = false;
     for raw in src.lines() {
         if skip_continuation {
@@ -339,6 +340,7 @@ pub(crate) fn parse_alias_file(src: &str) -> HashMap<String, String> {
             continue;
         }
         if raw.trim_end().ends_with('\\') {
+            tracing::debug!("skipping backslash-continued statement: {raw:?}");
             skip_continuation = true;
             continue;
         }
@@ -537,20 +539,41 @@ fn load_static_aliases_from(home: &Path) -> HashMap<String, Vec<String>> {
         }
     };
     for name in STATIC_ALIAS_FILES {
-        if let Ok(content) = std::fs::read_to_string(home.join(name)) {
-            ingest(&content);
+        match std::fs::read_to_string(home.join(name)) {
+            Ok(content) => ingest(&content),
+            // NotFound is the dominant legitimate case — most users lack
+            // most dotfiles — so it stays silent. An existing-but-unreadable
+            // file (PermissionDenied, non-UTF-8 InvalidData) is a real loss
+            // and earns a breadcrumb.
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
+                tracing::debug!("alias source {name} unreadable: {e}");
+            }
+            Err(_) => {}
         }
     }
     let omz_custom = home.join(".oh-my-zsh/custom");
-    if let Ok(rd) = std::fs::read_dir(&omz_custom) {
-        for entry in rd.flatten() {
-            let p = entry.path();
-            if p.extension().and_then(|e| e.to_str()) == Some("zsh") {
+    match std::fs::read_dir(&omz_custom) {
+        Ok(rd) => {
+            // read_dir yields entries in filesystem/OS-dependent order, so
+            // sort the matching `*.zsh` paths before ingesting — otherwise
+            // two drop-ins defining the same alias pick a nondeterministic
+            // last-write-wins winner across machines.
+            let mut dropins: Vec<PathBuf> = rd
+                .flatten()
+                .map(|entry| entry.path())
+                .filter(|p| p.extension().and_then(|e| e.to_str()) == Some("zsh"))
+                .collect();
+            dropins.sort();
+            for p in dropins {
                 if let Ok(content) = std::fs::read_to_string(&p) {
                     ingest(&content);
                 }
             }
         }
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
+            tracing::debug!("oh-my-zsh custom dir unreadable: {e}");
+        }
+        Err(_) => {}
     }
     out
 }
@@ -1165,6 +1188,33 @@ alias ll='ls -la'
                 "ALIAS_SOURCE_FILES must include {fast_path_file} (read by the file-based fast path)"
             );
         }
+    }
+
+    #[test]
+    fn read_set_equals_watch_set() {
+        use std::collections::BTreeSet;
+
+        // The PR's central invariant: the parser's READ set must equal the
+        // cache's WATCH set, BOTH ways. `STATIC_ALIAS_FILES` (read by
+        // `load_static_aliases_from`) and `ALIAS_SOURCE_FILES` (the mtime
+        // watch set) must be the same set — adding to one without the other
+        // silently reintroduces the "edit ~/.zsh_aliases, see a stale cache
+        // forever" bug this PR exists to fix. Membership-only (not order):
+        // the watch set is order-irrelevant, while the read set is ordered
+        // for precedence, so set-equality is the contract.
+        assert_eq!(
+            STATIC_ALIAS_FILES.iter().collect::<BTreeSet<_>>(),
+            ALIAS_SOURCE_FILES.iter().collect::<BTreeSet<_>>(),
+            "STATIC_ALIAS_FILES (parser reads) and ALIAS_SOURCE_FILES (cache watches) must be identical sets"
+        );
+
+        // The parser's hardcoded `.oh-my-zsh/custom` dir walk must be a
+        // member of the watched dir set, or edits to drop-ins never
+        // invalidate the cache.
+        assert!(
+            ALIAS_SOURCE_DIRS.contains(&".oh-my-zsh/custom"),
+            "ALIAS_SOURCE_DIRS must watch the parser-walked .oh-my-zsh/custom dir"
+        );
     }
 
     #[test]
