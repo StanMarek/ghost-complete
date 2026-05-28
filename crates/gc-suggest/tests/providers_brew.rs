@@ -572,3 +572,118 @@ async fn run_brew_demotes_no_match_failure_to_none() {
         "a brew no-match exit must map to None (empty result), not surface output"
     );
 }
+
+// ---------- log-level discrimination for the no-match demotion (G2) ----------
+//
+// `run_brew_demotes_no_match_failure_to_none` above pins `out.is_none()`, but
+// BOTH the `is_brew_no_match` arm and the catch-all `Err` arm return None — so
+// that test cannot tell whether the no-match path was actually demoted to
+// trace. These tests observe the LOG LEVEL instead: a no-match must NOT emit a
+// `warn`, while a genuine failure must. The capture harness mirrors the one in
+// `eviction.rs`: a WARN-max subscriber writing into an in-memory buffer,
+// installed for the current thread via `set_default`.
+
+use std::sync::{Arc as StdArc, Mutex};
+use tracing_subscriber::fmt::MakeWriter;
+
+#[derive(Clone)]
+struct CaptureWriter(StdArc<Mutex<Vec<u8>>>);
+
+impl std::io::Write for CaptureWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0
+            .lock()
+            .expect("capture buffer poisoned")
+            .extend_from_slice(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a> MakeWriter<'a> for CaptureWriter {
+    type Writer = CaptureWriter;
+
+    fn make_writer(&'a self) -> Self::Writer {
+        self.clone()
+    }
+}
+
+fn install_log_capture() -> (StdArc<Mutex<Vec<u8>>>, tracing::subscriber::DefaultGuard) {
+    let captured = StdArc::new(Mutex::new(Vec::<u8>::new()));
+    let writer = CaptureWriter(StdArc::clone(&captured));
+    let subscriber = tracing_subscriber::fmt()
+        .with_writer(writer)
+        .with_max_level(tracing::Level::WARN)
+        .with_ansi(false)
+        .finish();
+    let guard = tracing::subscriber::set_default(subscriber);
+    tracing_core::callsite::rebuild_interest_cache();
+    (captured, guard)
+}
+
+fn captured_logs(captured: &StdArc<Mutex<Vec<u8>>>) -> String {
+    String::from_utf8_lossy(&captured.lock().expect("capture buffer poisoned")).into_owned()
+}
+
+/// Write an executable fake `brew` that ignores its argv, writes `stderr` to
+/// fd 2, and exits 1. Used to drive the failure arms of `run_brew_with_binary`
+/// (which spawns the binary directly and never probes `--version`).
+fn write_failing_brew(dir: &Path, stderr: &str) -> std::path::PathBuf {
+    use std::os::unix::fs::PermissionsExt;
+
+    let bin = dir.join("brew");
+    // Single-quote the payload for /bin/sh; the fixtures below contain no
+    // single quotes, so this is safe and keeps the script trivial.
+    let script = format!("#!/bin/sh\nprintf '%s\\n' '{stderr}' 1>&2\nexit 1\n");
+    std::fs::write(&bin, script).unwrap();
+    let mut perms = std::fs::metadata(&bin).unwrap().permissions();
+    perms.set_mode(0o755);
+    std::fs::set_permissions(&bin, perms).unwrap();
+    bin
+}
+
+#[tokio::test]
+async fn run_brew_no_match_is_silent_not_warned() {
+    // Test A: a real `brew search` no-match (exit 1 with the canonical
+    // "No formulae or casks found" stderr) must be demoted below WARN — the
+    // capture buffer (WARN-max) stays EMPTY — AND map to None.
+    let tmp = tempfile::TempDir::new().unwrap();
+    let bin = write_failing_brew(
+        tmp.path(),
+        r#"Error: No formulae or casks found for "zzzznope"."#,
+    );
+
+    let (captured, _guard) = install_log_capture();
+    let out =
+        run_brew_with_binary(tmp.path(), bin.to_str().unwrap(), &["search", "zzzznope"]).await;
+
+    assert!(out.is_none(), "no-match must map to None");
+    let logs = captured_logs(&captured);
+    assert!(
+        logs.is_empty(),
+        "a brew no-match must NOT emit a warn (demoted to trace); captured:\n{logs}"
+    );
+}
+
+#[tokio::test]
+async fn run_brew_genuine_failure_still_warns() {
+    // Test B: a genuine failure whose stderr does NOT carry the no-match
+    // phrases must stay at WARN. This is the discrimination half that the
+    // is_none()-only test cannot observe: if `is_brew_no_match` over-matched
+    // (or the warn arm were removed) this capture would be empty and fail.
+    let tmp = tempfile::TempDir::new().unwrap();
+    let bin = write_failing_brew(tmp.path(), "Error: Failure while executing tap update");
+
+    let (captured, _guard) = install_log_capture();
+    let out = run_brew_with_binary(tmp.path(), bin.to_str().unwrap(), &["search", "rust"]).await;
+
+    assert!(out.is_none(), "a failed brew invocation still yields None");
+    let logs = captured_logs(&captured);
+    assert!(
+        logs.contains("brew command failed"),
+        "a genuine brew failure must stay at warn; captured:\n{logs}"
+    );
+}

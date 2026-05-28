@@ -34,8 +34,9 @@ fn brew_search_cap() -> usize {
 /// Decide the `brew search` argv and the parser cap for `query`. Typed
 /// queries forward the user's token straight to `brew search <q>` and
 /// drop the cap — `brew search` already filters to substring matches,
-/// so the cap is only meaningful for the empty-query exploration path
-/// that returns the full package list (every formula and cask).
+/// so the cap is only meaningful for the empty-query exploration path,
+/// which returns the full result set for the given `flag_prefix` (every
+/// formula and cask for `&[]`, every cask for `&["--cask"]`).
 ///
 /// `flag_prefix` is spliced in between `search` and the query token so a
 /// single planner serves the plain (`&[]`), cask-only (`&["--cask"]`),
@@ -73,7 +74,9 @@ pub(crate) fn brew_search_plan<'a>(
 /// and stay at `warn`.
 fn is_brew_no_match(error: &anyhow::Error) -> bool {
     let message = error.to_string();
-    message.contains("No formula") || message.contains("No formulae") || message.contains("No cask")
+    // "No formula" subsumes "No formulae" (the latter contains the former
+    // as a substring), so the two cover both phrasings with one check.
+    message.contains("No formula") || message.contains("No cask")
 }
 
 pub(crate) async fn run_brew_with_binary(

@@ -357,6 +357,18 @@ describe('convertSingleSpec', () => {
       assert.ok(brew);
       assert.ok(findGenerator(brew.spec, (gen) => gen.type === 'brew_packages_searchable'));
 
+      // `brew search` has no upstream args; applyBrewNativeProviderFixups
+      // injects a variadic optional `text` arg routed to the
+      // brew_packages_searchable native provider so search completions work.
+      const search = subcommand(brew.spec, 'search');
+      assert.deepStrictEqual(search.args, {
+        name: 'text',
+        description: 'Substring to search for',
+        isOptional: true,
+        isVariadic: true,
+        generators: [{ type: 'brew_packages_searchable' }],
+      });
+
       const kubectl = await convertSingleSpec('kubectl');
       assert.ok(kubectl);
       assert.ok(findGenerator(kubectl.spec, (gen) => gen.type === 'k8s_contexts'));
