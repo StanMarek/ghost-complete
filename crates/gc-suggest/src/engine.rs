@@ -4795,6 +4795,56 @@ mod tests {
     }
 
     #[test]
+    fn engine_history_clamps_reservation_to_max_history_results() {
+        // Exercises the `.min(self.max_history_results)` clamp on the
+        // reservation count. With max_history_results = 1 and TWO prefix-
+        // matching entries, `.take(RESERVED_HISTORY)` counts 2, but the clamp
+        // must reduce reserved_history to 1 — otherwise normal_budget shrinks
+        // by 2 while only 1 history row is ever appended, wasting a popup slot.
+        let engine = {
+            let mut engine = make_history_engine(vec![
+                "git checkout master".into(),
+                "git checkout develop".into(),
+            ]);
+            engine.max_history_results = 1;
+            engine
+        };
+        let ctx = make_ctx(Some("git"), vec!["checkout"], "", 2);
+        let results = engine.rank_with_history(
+            &ctx,
+            Path::new("/tmp"),
+            "git checkout ",
+            flag_candidates(10),
+            true,
+        );
+
+        assert_eq!(
+            results.len(),
+            10,
+            "reservation clamped to max_history_results = 1 => 9 candidates + 1 history fills \
+             max_results = 10 with no wasted slot: {results:?}"
+        );
+        let history_count = results
+            .iter()
+            .filter(|s| s.source == SuggestionSource::History)
+            .count();
+        assert_eq!(
+            history_count, 1,
+            "max_history_results = 1 caps history to a single row even with two prefix \
+             matches (reserved_history clamped to 1, not 2): {results:?}"
+        );
+        let candidate_count = results
+            .iter()
+            .filter(|s| s.source != SuggestionSource::History)
+            .count();
+        assert_eq!(
+            candidate_count, 9,
+            "without the .min() clamp, normal_budget would drop to 8 and leave only 8 \
+             candidate rows; the clamp keeps 9: {results:?}"
+        );
+    }
+
+    #[test]
     fn engine_history_empty_provider_with_allowed_lane_preserves_budget() {
         // Empty history while the lane is ALLOWED (not redirect/flag): the
         // false arm of `if !history_entries.is_empty()` and the

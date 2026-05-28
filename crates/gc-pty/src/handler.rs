@@ -1286,7 +1286,15 @@ impl InputHandler {
         // space-containing dir (buffer already `cd My\ Folder/`) the decoded
         // length is shorter than the on-screen span and would mis-slice the
         // predicted buffer, leaving a stray fragment of the previous word.
-        let word_start_bytes = current_word_raw_start(&buffer, byte_cursor);
+        let raw_word_start = current_word_raw_start(&buffer, byte_cursor);
+        // Mirror the accept path: in a quoted context the opening quote is
+        // structural and `escaped_replacement` is bare text that relies on it
+        // surviving. Slice the predicted buffer so the opening quote is kept
+        // (delete starts after it), otherwise the predicted buffer drifts from
+        // the bytes the shell actually receives.
+        let old_quote = parse_command_context(&buffer, char_cursor).quote_state;
+        let word_start_bytes =
+            current_word_delete_start(&buffer, raw_word_start, byte_cursor, old_quote);
 
         // The shell receives `escaped_replacement` from `forward`; the
         // predicted buffer must use the same text so the next suggestion
@@ -2859,8 +2867,18 @@ impl InputHandler {
         let cursor = state.buffer_cursor();
         let ctx = parse_command_context(buffer, cursor);
         let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
-        let (cursor_row, cursor_col) = state.cursor_position();
-        let (screen_rows, screen_cols) = state.screen_dimensions();
+        // Construct the newtypes directly from the parser tuples at the read
+        // site so the bare-`u16` window where a row/col (or rows/cols) swap is
+        // compiler-undetectable shrinks to a single destructuring line per
+        // tuple, rather than four free `u16` locals re-wired later.
+        let cursor_pos = {
+            let (row, col) = state.cursor_position();
+            CursorPos { row, col }
+        };
+        let screen = {
+            let (rows, cols) = state.screen_dimensions();
+            ScreenSize { rows, cols }
+        };
 
         let (delete_chars, replacement, command) = if selected.kind
             == gc_suggest::SuggestionKind::History
@@ -2896,7 +2914,14 @@ impl InputHandler {
             // the raw word start up to the cursor instead.
             let byte_cursor = char_to_byte_offset(buffer, cursor);
             let raw_word_start = current_word_raw_start(buffer, byte_cursor);
-            let on_screen_word_len = buffer[raw_word_start..byte_cursor].chars().count();
+            // In a quoted context the raw word start points at the opening
+            // quote, but that quote is structural and must survive the accept —
+            // the quoted escape arms emit bare text assuming it does. Stop the
+            // delete span after the opening quote so it is preserved; the
+            // unquoted case deletes the whole raw word unchanged.
+            let delete_start =
+                current_word_delete_start(buffer, raw_word_start, byte_cursor, ctx.quote_state);
+            let on_screen_word_len = buffer[delete_start..byte_cursor].chars().count();
             // Filesystem suggestions go through shell-escape so paths
             // containing spaces or other metacharacters survive
             // re-parsing by the shell. The chaining caller reuses the
@@ -2930,14 +2955,8 @@ impl InputHandler {
         Some(AcceptLocked {
             forward: bytes,
             cwd,
-            cursor: CursorPos {
-                row: cursor_row,
-                col: cursor_col,
-            },
-            screen: ScreenSize {
-                rows: screen_rows,
-                cols: screen_cols,
-            },
+            cursor: cursor_pos,
+            screen,
             escaped_replacement: replacement,
         })
     }
@@ -3184,10 +3203,13 @@ fn current_word_raw_start(buffer: &str, byte_cursor: usize) -> usize {
                         word_start = Some(idx);
                     }
                     quote = gc_buffer::QuoteState::DoubleQuoted;
-                } else if ch.is_ascii_whitespace()
-                    || matches!(ch, '|' | '&' | ';' | '<' | '>' | '(' | ')')
-                {
+                } else if ch.is_ascii_whitespace() || matches!(ch, '|' | '&' | ';' | '<' | '>') {
                     // Word boundary — the next word (if any) starts later.
+                    // `(`/`)` are intentionally NOT boundaries: the tokenizer
+                    // keeps unquoted parens inside `current_word` (only `$(...)`
+                    // is consumed specially), so treating them as boundaries
+                    // here would split the word earlier than the tokenizer and
+                    // under-delete a path containing a paren.
                     word_start = None;
                 } else if word_start.is_none() {
                     word_start = Some(idx);
@@ -3197,6 +3219,84 @@ fn current_word_raw_start(buffer: &str, byte_cursor: usize) -> usize {
     }
 
     word_start.unwrap_or(byte_cursor)
+}
+
+/// Byte offset where the accept path should **begin deleting** (and insert the
+/// replacement), given the raw word start and the cursor's quote context.
+///
+/// In an unquoted context this is just `raw_word_start` — the whole on-screen
+/// word is replaced. But when the cursor sits inside an *open* single/double
+/// quote, the opening quote is structural: `shell_escape_for_context` emits bare
+/// text for the quoted arms precisely because it assumes the surrounding quote
+/// survives (it does not re-emit one). If we deleted back through the opening
+/// quote and inserted that bare text, the quote would vanish and the now-
+/// unquoted spaces/metacharacters would word-split the line (regression fixed
+/// here: `cat 'My` accepting `My Folder/file.txt` previously produced
+/// `cat My Folder/file.txt`). So in a quoted context we stop the delete span
+/// *after* the unmatched opening quote, preserving it.
+///
+/// The opening quote is found by re-walking the raw word span `[raw_word_start,
+/// byte_cursor)` and tracking which quote char opened the span that is still
+/// open at the cursor — it is not always `buffer[raw_word_start]` (e.g.
+/// `foo'My Fo`, where the word starts at `foo` and the quote opens mid-word).
+/// `quote` is the tokenizer's quote state at the cursor; when it is
+/// `QuoteState::None` no quote is preserved.
+fn current_word_delete_start(
+    buffer: &str,
+    raw_word_start: usize,
+    byte_cursor: usize,
+    quote: gc_buffer::QuoteState,
+) -> usize {
+    if quote == gc_buffer::QuoteState::None {
+        return raw_word_start;
+    }
+    // Re-walk the word span to locate the unmatched opening quote whose span is
+    // still open at the cursor. The delete span starts just past it so the
+    // structural quote survives the accept.
+    let end = byte_cursor.min(buffer.len());
+    let span = &buffer[raw_word_start..end];
+    let mut state = gc_buffer::QuoteState::None;
+    // Byte offset (absolute into `buffer`) of the currently-open quote char.
+    let mut open_quote_at: Option<usize> = None;
+    let mut iter = span.char_indices().peekable();
+    while let Some((rel, ch)) = iter.next() {
+        let idx = raw_word_start + rel;
+        match state {
+            gc_buffer::QuoteState::SingleQuoted => {
+                if ch == '\'' {
+                    state = gc_buffer::QuoteState::None;
+                    open_quote_at = None;
+                }
+            }
+            gc_buffer::QuoteState::DoubleQuoted => {
+                if ch == '"' {
+                    state = gc_buffer::QuoteState::None;
+                    open_quote_at = None;
+                } else if ch == '\\' {
+                    iter.next();
+                }
+            }
+            gc_buffer::QuoteState::None => {
+                if ch == '\\' {
+                    iter.next();
+                } else if ch == '\'' {
+                    state = gc_buffer::QuoteState::SingleQuoted;
+                    open_quote_at = Some(idx);
+                } else if ch == '"' {
+                    state = gc_buffer::QuoteState::DoubleQuoted;
+                    open_quote_at = Some(idx);
+                }
+            }
+        }
+    }
+    match open_quote_at {
+        // Preserve the opening quote: start deleting at the byte AFTER it.
+        Some(q) => q + buffer[q..].chars().next().map_or(1, char::len_utf8),
+        // Defensive: tokenizer reported a quote state but the walk found no open
+        // quote in the word span (should not happen). Fall back to deleting the
+        // whole raw word rather than risk leaving a stray fragment.
+        None => raw_word_start,
+    }
 }
 
 const DEFAULT_TRIGGER_CHARS: &[char] = &[' ', '/', '-', '.'];
@@ -7875,6 +7975,14 @@ mod tests {
             "raw path text expected inside single quotes; got bytes={:?}",
             s
         );
+        // Full reconstruction: only the in-quote partial `My` (2 chars) is
+        // deleted; the opening `'` is preserved so the bare path stays quoted.
+        // Pre-fix this deleted the quote too -> `cat My Folder/file.txt`.
+        assert_eq!(
+            s,
+            format!("{}My Folder/file.txt", "\u{7f}".repeat(2)),
+            "single-quoted accept must preserve the opening quote and insert bare text"
+        );
     }
 
     #[test]
@@ -7932,10 +8040,15 @@ mod tests {
     }
 
     #[test]
-    fn accept_deletes_partial_word_inside_open_single_quote_raw_span() {
-        // The on-screen word includes the opening quote: buffer `cat 'My Fo`
-        // has raw word `'My Fo` (6 chars) while the decoded current_word is
-        // `My Fo` (5). The delete count must cover the raw 6-char span.
+    fn accept_deletes_partial_word_inside_open_single_quote_preserves_quote() {
+        // Regression (code-reviewer-1): the on-screen word `'My Fo` includes the
+        // OPENING quote, but that quote is structural — the single-quoted escape
+        // arm emits bare text assuming the quote survives. The delete span must
+        // therefore stop AFTER the opening quote, covering only the in-quote
+        // partial word `My Fo` (5 chars), and the opening `'` must be preserved.
+        // (Previously this deleted all 6 chars including the quote, dropping it
+        // and unquoting the space -> `cat My Folder/file.txt`, which the shell
+        // word-splits into 3 args.)
         let handler = make_selected_handler(path_suggestion(
             "My Folder/file.txt",
             SuggestionKind::FilePath,
@@ -7945,9 +8058,17 @@ mod tests {
         let bytes = handler.accept_suggestion(&parser);
         assert_eq!(
             leading_backspaces(&bytes),
-            "'My Fo".chars().count(),
-            "must delete the raw on-screen span including the opening quote, got bytes={:?}",
+            "My Fo".chars().count(),
+            "must delete only the in-quote partial word, preserving the opening quote; got bytes={:?}",
             String::from_utf8_lossy(&bytes)
+        );
+        // Full reconstruction: 5 backspaces erase `My Fo`, leaving `cat '`, then
+        // the bare (un-backslashed) path is typed inside the surviving quote.
+        let s = String::from_utf8_lossy(&bytes);
+        assert_eq!(
+            s,
+            format!("{}My Folder/file.txt", "\u{7f}".repeat(5)),
+            "resulting accept bytes must keep the opening quote and insert bare text"
         );
     }
 
@@ -8011,5 +8132,167 @@ mod tests {
             "double-quoted accept must leave spaces literal (no `\\ `); got bytes={:?}",
             s
         );
+        // Full reconstruction (code-reviewer-1): the opening `"` is structural
+        // and must survive. Only the in-quote partial `My $` (4 chars) is
+        // deleted; the `$` is escaped but spaces stay literal under the quote.
+        // Pre-fix the `"` was deleted too -> `cd My \$VAR Dir/` (quote gone).
+        assert_eq!(
+            s,
+            format!("{}My \\$VAR Dir/", "\u{7f}".repeat(4)),
+            "double-quoted accept must preserve the opening quote and escape only the special quad"
+        );
+    }
+
+    // ---- current_word_delete_start unit tests ----
+
+    #[test]
+    fn delete_start_unquoted_is_raw_word_start() {
+        // Unquoted context: delete span begins at the raw word start (whole
+        // on-screen word replaced), identical to pre-fix behavior.
+        let buf = "cat My";
+        let raw = current_word_raw_start(buf, buf.len());
+        assert_eq!(raw, 4);
+        assert_eq!(
+            current_word_delete_start(buf, raw, buf.len(), gc_buffer::QuoteState::None),
+            4
+        );
+    }
+
+    #[test]
+    fn delete_start_open_single_quote_skips_opening_quote() {
+        // `cat 'My Fo`: raw word starts at the opening quote (byte 4); the
+        // delete span must begin AFTER it (byte 5) so the quote is preserved.
+        let buf = "cat 'My Fo";
+        let raw = current_word_raw_start(buf, buf.len());
+        assert_eq!(raw, 4);
+        let start =
+            current_word_delete_start(buf, raw, buf.len(), gc_buffer::QuoteState::SingleQuoted);
+        assert_eq!(start, 5);
+        assert_eq!(&buf[start..], "My Fo");
+    }
+
+    #[test]
+    fn delete_start_open_double_quote_skips_opening_quote() {
+        // `cd "My $`: raw word starts at the opening quote (byte 3); delete
+        // span begins after it (byte 4).
+        let buf = "cd \"My $";
+        let raw = current_word_raw_start(buf, buf.len());
+        assert_eq!(raw, 3);
+        let start =
+            current_word_delete_start(buf, raw, buf.len(), gc_buffer::QuoteState::DoubleQuoted);
+        assert_eq!(start, 4);
+        assert_eq!(&buf[start..], "My $");
+    }
+
+    #[test]
+    fn delete_start_quote_opens_mid_word_preserves_only_up_to_quote() {
+        // `cat foo'My Fo`: the word starts at `foo` (byte 4) but the quote opens
+        // mid-word at byte 7. The delete span must begin after that quote (byte
+        // 8), preserving the structural `foo'` prefix, not just the bare quote.
+        let buf = "cat foo'My Fo";
+        let raw = current_word_raw_start(buf, buf.len());
+        assert_eq!(raw, 4);
+        let start =
+            current_word_delete_start(buf, raw, buf.len(), gc_buffer::QuoteState::SingleQuoted);
+        assert_eq!(start, 8);
+        assert_eq!(&buf[start..], "My Fo");
+    }
+
+    // ---- current_word_raw_start: closing-quote and edge coverage ----
+
+    #[test]
+    fn raw_word_start_closed_single_quote_then_more_of_word() {
+        // pr-test-analyzer-1: a CLOSED single quote followed by more of the same
+        // word. `cd 'a'/My` — the quote opens at byte 3, closes at byte 5, and
+        // `/My` continues the same word, so the word start stays at byte 3.
+        let buf = "cd 'a'/My";
+        let start = current_word_raw_start(buf, buf.len());
+        assert_eq!(start, 3);
+        assert_eq!(&buf[start..], "'a'/My");
+    }
+
+    #[test]
+    fn raw_word_start_closed_double_quote_then_new_word() {
+        // pr-test-analyzer-1: a CLOSED double quote, then whitespace, then a new
+        // word. `cd "x" My` — after the quote closes (byte 5) the space at byte
+        // 6 is a boundary, so the current word `My` starts at byte 7.
+        let buf = "cd \"x\" My";
+        let start = current_word_raw_start(buf, buf.len());
+        assert_eq!(start, 7);
+        assert_eq!(&buf[start..], "My");
+    }
+
+    #[test]
+    fn raw_word_start_backslash_escaped_quote_inside_double_quote() {
+        // pr-test-analyzer-1: inside double quotes, `\"` is an escaped literal
+        // quote that does NOT close the span. `cd "a\"b` stays one open word
+        // beginning at the opening quote (byte 3).
+        let buf = "cd \"a\\\"b";
+        let start = current_word_raw_start(buf, buf.len());
+        assert_eq!(start, 3);
+        assert_eq!(&buf[start..], "\"a\\\"b");
+    }
+
+    #[test]
+    fn raw_word_start_multibyte_prefix() {
+        // pr-test-analyzer-2: the helper returns a BYTE offset. With a multibyte
+        // char before the current word, the offset must land on a char boundary
+        // and slice correctly. `café My` — `é` is 2 bytes so `My` starts at
+        // byte 6 (c,a,f = 3, é = 2, space = 1).
+        let buf = "café My";
+        let start = current_word_raw_start(buf, buf.len());
+        assert_eq!(start, 6);
+        assert_eq!(&buf[start..], "My");
+    }
+
+    #[test]
+    fn accept_with_multibyte_before_word_counts_char_width_not_bytes() {
+        // pr-test-analyzer-2: leading-backspace count is the on-screen CHAR
+        // width of the current word, independent of multibyte bytes elsewhere.
+        // Buffer `café My` (cursor at end) — current word `My` is 2 chars, so 2
+        // backspaces regardless of the 2-byte `é` earlier in the line.
+        let handler =
+            make_selected_handler(path_suggestion("My Folder/", SuggestionKind::Directory));
+        let parser = parser_with_buffer("café My");
+        let bytes = handler.accept_suggestion(&parser);
+        assert_eq!(
+            leading_backspaces(&bytes),
+            "My".chars().count(),
+            "delete width must be the on-screen char width of the current word; got bytes={:?}",
+            String::from_utf8_lossy(&bytes)
+        );
+    }
+
+    #[test]
+    fn raw_word_start_operator_boundary() {
+        // pr-test-analyzer-4: the operator word-boundary arm. `ls foo|cat ba`
+        // — the pipe at byte 6 is a boundary, then `cat` and a space, so the
+        // current word `ba` starts at byte 11.
+        let buf = "ls foo|cat ba";
+        let start = current_word_raw_start(buf, buf.len());
+        assert_eq!(start, 11);
+        assert_eq!(&buf[start..], "ba");
+    }
+
+    #[test]
+    fn raw_word_start_paren_is_not_a_boundary() {
+        // code-reviewer-2: `(`/`)` are NOT boundaries (the tokenizer keeps them
+        // in current_word). `cat (a)b` — the word `(a)b` begins at byte 4, the
+        // paren is part of it, not a split point.
+        let buf = "cat (a)b";
+        let start = current_word_raw_start(buf, buf.len());
+        assert_eq!(start, 4);
+        assert_eq!(&buf[start..], "(a)b");
+    }
+
+    #[test]
+    fn raw_word_start_trailing_backslash_survives() {
+        // pr-test-analyzer-5: a dangling trailing `\` (iter.next() returns None)
+        // must not panic and the word `foo\` survives. `cat foo\` — word starts
+        // at byte 4.
+        let buf = "cat foo\\";
+        let start = current_word_raw_start(buf, buf.len());
+        assert_eq!(start, 4);
+        assert_eq!(&buf[start..], "foo\\");
     }
 }
