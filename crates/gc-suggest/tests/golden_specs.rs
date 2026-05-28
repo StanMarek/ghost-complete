@@ -679,7 +679,10 @@ fn defaults_read_key_arg_routes_to_defaults_keys_provider() {
 fn chown_first_arg_routes_to_chown_owner_group_provider() {
     // `chown <TAB>` — the first positional must dispatch the single
     // colon-aware provider, replacing the legacy `[dscl_users, dscl_groups]`
-    // pair so nucleo's `:` delimiter cannot strand the user mid-token.
+    // pair with one that emits pre-prefixed `owner:group` candidates, so the
+    // colon-containing token still re-ranks cleanly (nucleo matches `:` as an
+    // ordinary subsequence character, not a delimiter) instead of stranding
+    // the user mid-token.
     let engine = build_engine();
     let buffer = "chown ";
     let ctx = ctx_from(buffer);

@@ -38,7 +38,8 @@ use std::path::Path;
 use std::sync::Arc;
 
 use gc_suggest::providers::ProviderCtx;
-use providers::macos_apps::MacosBundleIdentifiers;
+use gc_suggest::types::{SuggestionKind, SuggestionSource};
+use providers::macos_apps::{MacosApplications, MacosBundleIdentifiers};
 
 fn ctx(cwd: &Path) -> ProviderCtx {
     ProviderCtx {
@@ -111,6 +112,56 @@ not-an-app
         paths,
         vec!["/Applications/Safari.app", "/Applications/Terminal.app"]
     );
+}
+
+/// End-to-end exercise of `MacosApplications::generate_with_binaries`
+/// (the `open -a` provider): a fake `mdfind` prints two `.app` paths and
+/// the live fan-out must map each to a suggestion whose `text` is the
+/// display name (`Safari`) and whose `description` is the full bundle
+/// path (`/Applications/Safari.app`). This pins the text != path mapping
+/// — a text/description swap would otherwise pass every pure-parser test.
+/// The `mdls` binary is unused by this provider, so it is never spawned.
+#[cfg(unix)]
+#[tokio::test]
+async fn applications_maps_display_name_to_text_and_path_to_description() {
+    let tmp = tempfile::TempDir::new().unwrap();
+
+    let fake_mdfind = tmp.path().join("mdfind");
+    // Ignore the query argument; print a canned application list.
+    write_executable(
+        &fake_mdfind,
+        "#!/bin/sh\nprintf '%s\\n' \
+'/Applications/Safari.app' \
+'/Applications/Terminal.app'\n",
+    );
+
+    let suggestions = MacosApplications
+        .generate_with_binaries(
+            &ctx(tmp.path()),
+            fake_mdfind.to_str().unwrap(),
+            // mdls is unused by this provider; pass a sentinel that must
+            // never be spawned.
+            "/nonexistent/mdls-must-not-be-spawned",
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(suggestions.len(), 2);
+    assert_eq!(suggestions[0].text, "Safari");
+    assert_eq!(
+        suggestions[0].description.as_deref(),
+        Some("/Applications/Safari.app"),
+        "description must be the full bundle path, not the display name"
+    );
+    assert_eq!(suggestions[1].text, "Terminal");
+    assert_eq!(
+        suggestions[1].description.as_deref(),
+        Some("/Applications/Terminal.app")
+    );
+    for suggestion in &suggestions {
+        assert_eq!(suggestion.kind, SuggestionKind::ProviderValue);
+        assert_eq!(suggestion.source, SuggestionSource::Provider);
+    }
 }
 
 /// End-to-end exercise of the semaphore-bounded `mdls` fan-out in

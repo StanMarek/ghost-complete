@@ -40,6 +40,24 @@ fn ctx_with_params(cwd: &Path, params: &[(&str, &str)]) -> ProviderCtx {
     }
 }
 
+fn ctx_with_token(cwd: &Path, token: &str) -> ProviderCtx {
+    ProviderCtx {
+        cwd: cwd.to_path_buf(),
+        env: Arc::new(HashMap::new()),
+        current_token: token.to_string(),
+        params: Arc::new(BTreeMap::new()),
+    }
+}
+
+#[cfg(unix)]
+fn write_executable(path: &Path, body: &str) {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::write(path, body).unwrap();
+    let mut perms = std::fs::metadata(path).unwrap().permissions();
+    perms.set_mode(0o755);
+    std::fs::set_permissions(path, perms).unwrap();
+}
+
 #[test]
 fn provider_names_match_spec_type_strings() {
     assert_eq!(DsclUsers.name(), "dscl_users");
@@ -242,4 +260,67 @@ async fn chown_owner_group_returns_ok_empty_when_dscl_missing() {
         .await
         .unwrap();
     assert!(suggestions.is_empty());
+}
+
+/// Drives the live, mutually-exclusive node selection in
+/// `ChownOwnerGroup::generate_with_binary` against a real spawn: the
+/// fake `dscl` is invoked as `dscl . list <node>`, so it branches on the
+/// FINAL argument (`/Users` vs `/Groups`) to emit disjoint principal
+/// sets (users for `/Users`, groups for `/Groups`). An `owner:` token
+/// must fetch ONLY `/Groups` (yielding `owner:group` pairs), and a
+/// bare-owner token must fetch ONLY `/Users` (yielding bare usernames) —
+/// proving the branch picks the right node, not just the right parser.
+#[cfg(unix)]
+#[tokio::test]
+async fn chown_owner_group_live_branch_selects_node_by_token_shape() {
+    let tmp = tempfile::TempDir::new().unwrap();
+
+    // `dscl . list <node>` — the node is the final positional argument.
+    // Emit usernames for `/Users` and group names for `/Groups` so the
+    // two branches are observably distinct. If the wrong node were
+    // queried, the emitted texts would carry the other category's names.
+    let fake_dscl = tmp.path().join("dscl");
+    write_executable(
+        &fake_dscl,
+        "#!/bin/sh\n\
+for arg in \"$@\"; do node=\"$arg\"; done\n\
+case \"$node\" in\n\
+  /Users) printf '%s\\n' daemon stan ;;\n\
+  /Groups) printf '%s\\n' admin staff wheel ;;\n\
+  *) exit 1 ;;\n\
+esac\n",
+    );
+    let dscl = fake_dscl.to_str().unwrap();
+
+    // `stan:` → OwnerGroup: must fetch ONLY `/Groups` and surface
+    // `stan:<group>` pairs (the group names, not the usernames).
+    let group_ctx = ctx_with_token(tmp.path(), "stan:");
+    let group_suggestions = ChownOwnerGroup
+        .generate_with_binary(&group_ctx, dscl)
+        .await
+        .unwrap();
+    let group_texts: Vec<&str> = group_suggestions.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(
+        group_texts,
+        vec!["stan:admin", "stan:staff", "stan:wheel"],
+        "owner:group token must fetch /Groups and emit owner-prefixed group pairs"
+    );
+
+    // `sta` → OwnerOnly: must fetch ONLY `/Users` and surface bare
+    // usernames matching the prefix (no colon, no group names).
+    let user_ctx = ctx_with_token(tmp.path(), "sta");
+    let user_suggestions = ChownOwnerGroup
+        .generate_with_binary(&user_ctx, dscl)
+        .await
+        .unwrap();
+    let user_texts: Vec<&str> = user_suggestions.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(
+        user_texts,
+        vec!["stan"],
+        "bare-owner token must fetch /Users and emit bare usernames"
+    );
+    assert!(
+        !user_suggestions.iter().any(|s| s.text.contains(':')),
+        "owner-only completion must never pre-emptively add a colon"
+    );
 }
