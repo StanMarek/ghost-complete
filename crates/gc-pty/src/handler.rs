@@ -8112,6 +8112,70 @@ mod tests {
     }
 
     #[test]
+    fn chaining_inside_open_double_quote_preserves_opening_quote() {
+        // Regression (pr-test-analyzer-1): the chaining predicted-buffer
+        // reconstruction (accept_with_chaining) was only exercised by UNQUOTED
+        // directory chains. A quoted-directory chain routes a non-None
+        // old_quote through `current_word_delete_start` at the predict slice
+        // (`predicted.push_str(&buffer[..word_start_bytes])`). The opening `"`
+        // is structural and `escaped_replacement` is bare text relying on it
+        // surviving, so the predicted buffer must KEEP the opening quote and
+        // leave the space literal inside the quote — no backslash inserted.
+        // If the predict path dropped the quote, the next suggestion round
+        // would read an unquoted buffer and resolve the wrong directory.
+        let mut handler =
+            make_selected_handler(path_suggestion("My Folder/", SuggestionKind::Directory));
+        let parser = parser_with_buffer("cd \"My");
+
+        let mut stdout = Vec::new();
+        let _ = handler.accept_with_chaining(&parser, &mut stdout);
+
+        let predicted = parser
+            .lock()
+            .unwrap()
+            .state()
+            .command_buffer()
+            .map(|s| s.to_string())
+            .unwrap_or_default();
+        // Exact reconstruction: opening `"` preserved, space left literal
+        // inside the quote, no backslash inserted. NOT a `.contains` check.
+        assert_eq!(
+            predicted, "cd \"My Folder/",
+            "double-quoted chaining predicted buffer must keep the opening quote \
+             and leave the space literal (no backslash); got {:?}",
+            predicted
+        );
+    }
+
+    #[test]
+    fn chaining_inside_open_single_quote_preserves_opening_quote() {
+        // Single-quote variant of the above (pr-test-analyzer-1). Inside an
+        // open single quote spaces are already literal, so the bare path is
+        // inserted unescaped and the opening `'` survives in the predicted
+        // buffer used to drive the next suggestion round.
+        let mut handler =
+            make_selected_handler(path_suggestion("My Folder/", SuggestionKind::Directory));
+        let parser = parser_with_buffer("cd 'My");
+
+        let mut stdout = Vec::new();
+        let _ = handler.accept_with_chaining(&parser, &mut stdout);
+
+        let predicted = parser
+            .lock()
+            .unwrap()
+            .state()
+            .command_buffer()
+            .map(|s| s.to_string())
+            .unwrap_or_default();
+        assert_eq!(
+            predicted, "cd 'My Folder/",
+            "single-quoted chaining predicted buffer must keep the opening quote \
+             and leave the space literal (no backslash); got {:?}",
+            predicted
+        );
+    }
+
+    #[test]
     fn accept_inside_open_double_quote_escapes_special_quad_only() {
         // Integration (pr-test-analyzer-6): buffer ends inside an unclosed
         // double quote. A path containing `$` must have the `$` backslashed
