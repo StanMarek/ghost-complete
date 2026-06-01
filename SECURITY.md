@@ -8,7 +8,7 @@ The current supported version is whatever `git describe --tags --abbrev=0` repor
 
 ## Reporting a Vulnerability
 
-Email security findings privately to <maintainer-email>, or use [GitHub's private vulnerability reporting](https://github.com/StanMarek/ghost-complete/security/advisories/new). Areas of particular interest:
+Report security findings privately via [GitHub's private vulnerability reporting](https://github.com/StanMarek/ghost-complete/security/advisories/new). Areas of particular interest:
 
 - terminal escape handling (any input that escapes the proxy boundary)
 - local config/spec parsing (file-read paths trusted by the proxy)
