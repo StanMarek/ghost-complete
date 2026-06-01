@@ -29,6 +29,10 @@ pub enum Prompt {
     /// Config file changed on disk after we loaded it; saving would clobber.
     /// r = reload from disk, o = overwrite anyway, c = cancel.
     FileChangedOnDisk,
+    /// User opened the `/` filter prompt and is typing the query into
+    /// `app.filter`. Enter commits (closes the prompt, keeps the filter);
+    /// Esc cancels (closes prompt, clears the filter).
+    FilterInput,
 }
 
 pub struct App {
@@ -61,6 +65,18 @@ pub struct App {
     pub loaded_mtime: Option<SystemTime>,
     /// Active modal prompt, if any. Blocks normal key handling while set.
     pub prompt: Option<Prompt>,
+    /// Scroll offset for the field list pane, in rendered rows. PgUp/PgDn,
+    /// Home, and End drive this. Long sections used to silently clip at the
+    /// bottom of the pane; the offset lets the user scroll them into view.
+    pub field_scroll: u16,
+    /// Active substring filter (case-insensitive match on key or help). When
+    /// `Some`, the field pane shows matches across *all* sections, ignoring
+    /// `section_idx`. `None` means show the current section's fields normally.
+    pub filter: Option<String>,
+    /// Whether the preview pane is shown at medium widths (60-99 cols). At
+    /// width >= 100 the pane is always shown; at width < 60 it is always
+    /// hidden. Toggled with `p` in nav mode.
+    pub show_preview: bool,
 }
 
 impl App {
@@ -83,6 +99,9 @@ impl App {
             should_quit: false,
             loaded_mtime,
             prompt: None,
+            field_scroll: 0,
+            filter: None,
+            show_preview: true,
         }
     }
 
@@ -104,6 +123,45 @@ impl App {
             .iter()
             .filter(|f| f.section == section)
             .collect()
+    }
+
+    /// Iterate over fields that match the current `filter`, ignoring section.
+    /// When `filter` is `None`, yields every field. Substring match is
+    /// case-insensitive against `key` and `help`.
+    pub fn visible_fields(&self) -> impl Iterator<Item = &FieldMeta> {
+        let needle = self.filter.as_ref().map(|s| s.to_lowercase());
+        self.all_fields
+            .iter()
+            .filter(move |f| match needle.as_ref() {
+                None => true,
+                Some(q) => f.key.to_lowercase().contains(q) || f.help.to_lowercase().contains(q),
+            })
+    }
+
+    /// What the field pane should actually render. When a filter is active,
+    /// match across every section; otherwise the selected section's fields.
+    pub fn displayed_fields(&self) -> Vec<&FieldMeta> {
+        if self.filter.is_some() {
+            self.visible_fields().collect()
+        } else {
+            self.current_section_fields()
+        }
+    }
+
+    /// Largest legal `field_scroll` value given the field pane's visible row
+    /// budget. Each field occupies four rendered rows (name + value + help +
+    /// blank); callers should clamp `field_scroll` to this before passing it
+    /// to `Paragraph::scroll`.
+    pub fn max_field_scroll_for(&self, visible_rows: u16) -> u16 {
+        let total_rows = self.displayed_fields().len().saturating_mul(4);
+        total_rows.saturating_sub(visible_rows as usize) as u16
+    }
+
+    /// True while the user is typing into the `/` filter prompt. Used to gate
+    /// global key handlers (`q` / `Esc` / `/`) so typed characters become part
+    /// of the filter buffer instead of quitting or restarting the prompt.
+    pub fn in_filter_input(&self) -> bool {
+        matches!(self.prompt, Some(Prompt::FilterInput))
     }
 
     /// Get the current value of a field from the config as a display string.
@@ -225,6 +283,98 @@ mod tests {
             .into_iter()
             .find(|field| field.section == "theme" && field.key == key)
             .expect("theme field should exist")
+    }
+
+    fn empty_app() -> App {
+        App::new(
+            GhostConfig::default(),
+            String::new(),
+            PathBuf::from("/tmp/test.toml"),
+        )
+    }
+
+    #[test]
+    fn filter_narrows_field_list() {
+        let mut app = empty_app();
+        app.filter = Some("render".to_string());
+        let filtered: Vec<&FieldMeta> = app.visible_fields().collect();
+        assert!(
+            !filtered.is_empty(),
+            "render filter should match at least one field"
+        );
+        assert!(filtered.iter().all(|f| {
+            f.key.to_lowercase().contains("render") || f.help.to_lowercase().contains("render")
+        }));
+    }
+
+    #[test]
+    fn filter_none_returns_every_field() {
+        let app = empty_app();
+        assert_eq!(app.visible_fields().count(), app.all_fields.len());
+    }
+
+    #[test]
+    fn filter_is_case_insensitive() {
+        let mut upper = empty_app();
+        upper.filter = Some("RENDER".to_string());
+        let mut lower = empty_app();
+        lower.filter = Some("render".to_string());
+        let lower_count = lower.visible_fields().count();
+        assert!(lower_count > 0);
+        assert_eq!(upper.visible_fields().count(), lower_count);
+    }
+
+    #[test]
+    fn filter_with_no_matches_yields_empty() {
+        let mut app = empty_app();
+        app.filter = Some("zzz-no-such-field-zzz".to_string());
+        assert_eq!(app.visible_fields().count(), 0);
+    }
+
+    #[test]
+    fn scroll_offset_clamped_to_field_count() {
+        let mut app = empty_app();
+        app.field_scroll = u16::MAX;
+        let max = app.max_field_scroll_for(80);
+        assert!(app.field_scroll >= max);
+    }
+
+    #[test]
+    fn max_field_scroll_is_zero_when_everything_fits() {
+        let app = empty_app();
+        let visible_rows = (app.all_fields.len() as u16).saturating_mul(4);
+        assert_eq!(app.max_field_scroll_for(visible_rows), 0);
+    }
+
+    #[test]
+    fn displayed_fields_falls_back_to_section_without_filter() {
+        let app = empty_app();
+        let displayed = app.displayed_fields();
+        let by_section = app.current_section_fields();
+        assert_eq!(displayed.len(), by_section.len());
+    }
+
+    #[test]
+    fn displayed_fields_uses_filter_across_sections_when_set() {
+        let mut app = empty_app();
+        app.filter = Some("theme".to_string());
+        let displayed = app.displayed_fields();
+        let sections: std::collections::HashSet<&str> =
+            displayed.iter().map(|f| f.section).collect();
+        assert!(
+            sections.contains("theme"),
+            "filter must include theme fields"
+        );
+    }
+
+    #[test]
+    fn in_filter_input_tracks_prompt_state() {
+        let mut app = empty_app();
+        assert!(!app.in_filter_input());
+        app.prompt = Some(Prompt::FilterInput);
+        assert!(app.in_filter_input());
+        app.prompt = Some(Prompt::ConfirmQuit);
+        assert!(!app.in_filter_input());
     }
 
     #[test]
