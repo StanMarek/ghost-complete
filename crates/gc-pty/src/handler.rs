@@ -1897,7 +1897,14 @@ impl InputHandler {
             };
             let provider_engine = Arc::clone(&engine);
             let provider_query = ctx.current_word.clone();
-            let provider_resolutions = provider_generators.clone();
+            let mut provider_resolutions = provider_generators.clone();
+            // Providers in NEEDS_PREV_ARG (e.g. defaults_keys) receive the
+            // previously-typed positional argument via params["prev_arg"]
+            // so `defaults read <domain> <key>` can dispatch with the
+            // resolved domain. Empty arg list is a noop.
+            if let Some(prev) = ctx.args.last() {
+                gc_suggest::providers::inject_prev_arg(&mut provider_resolutions, prev);
+            }
             let provider_ctx_for_fut = Arc::clone(&provider_ctx);
             let provider_fut = async move {
                 provider_engine

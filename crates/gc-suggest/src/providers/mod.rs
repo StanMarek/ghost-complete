@@ -52,6 +52,7 @@ pub mod docker;
 pub mod dscl_principals;
 pub mod kubectl;
 pub mod local_project;
+pub mod macos_apps;
 pub mod macos_defaults;
 pub mod mamba;
 pub mod multipass;
@@ -262,9 +263,22 @@ pub enum ProviderKind {
     /// Feature names from the active package in `cargo metadata
     /// --format-version 1 --no-deps`.
     CargoFeatures,
+    /// Colon-aware chown owner/group completion. Handles all three
+    /// `chown` argument shapes (`owner`, `owner:group`, `:group`) and
+    /// emits pre-prefixed suggestions (e.g. `owner:group`) carrying the
+    /// typed owner and colon, so the candidate still matches the live
+    /// colon-containing token after the engine re-ranks the merged pool
+    /// with nucleo (which matches `:` as an ordinary subsequence
+    /// character, not a delimiter).
+    ChownOwnerGroup,
     /// `defaults domains`, splitting the single-line comma-separated
     /// output into individual macOS preference domain identifiers.
     DefaultsDomains,
+    /// Top-level keys of a macOS preferences domain, parsed from
+    /// `defaults read <domain>`. The domain is read from
+    /// `ctx.params["prev_arg"]`, populated by the engine for kinds
+    /// listed in [`NEEDS_PREV_ARG`].
+    DefaultsKeys,
     /// Docker image references from `docker images --format '{{json .}}'`.
     DockerImages,
     /// Docker containers from `docker ps -a --format '{{json .}}'`.
@@ -291,6 +305,14 @@ pub enum ProviderKind {
     K8sNodes,
     /// Kubernetes service names from `kubectl get services -o json`.
     K8sServices,
+    /// Installed `.app` bundles via Spotlight (`mdfind`), surfacing
+    /// the display name (`Safari`) with the full bundle path as the
+    /// description. Replaces the JS-lowered generator for `open -a`.
+    MacosApplications,
+    /// Bundle identifiers for installed `.app` bundles, resolved from
+    /// each Spotlight result via `mdls -name kMDItemCFBundleIdentifier
+    /// -raw`. Replaces the `requires_js: true` generator for `open -b`.
+    MacosBundleIdentifiers,
     /// Targets parsed from the nearest ancestor
     /// `GNUmakefile`/`makefile`/`Makefile`. Hand-parsed (no `make -qp`
     /// shellout). Filters meta targets, pattern rules, and
@@ -387,7 +409,9 @@ impl ProviderKind {
         ProviderKind::BrewFormulaeInstalled,
         ProviderKind::BrewFormulaeSearchable,
         ProviderKind::BrewPackagesSearchable,
+        ProviderKind::ChownOwnerGroup,
         ProviderKind::DefaultsDomains,
+        ProviderKind::DefaultsKeys,
         ProviderKind::DockerContainers,
         ProviderKind::DockerImages,
         ProviderKind::DockerNetworks,
@@ -401,6 +425,8 @@ impl ProviderKind {
         ProviderKind::K8sPods,
         ProviderKind::K8sResources,
         ProviderKind::K8sServices,
+        ProviderKind::MacosApplications,
+        ProviderKind::MacosBundleIdentifiers,
         ProviderKind::MakefileTargets,
         ProviderKind::MambaEnvs,
         ProviderKind::MultipassList,
@@ -444,7 +470,9 @@ impl ProviderKind {
             Self::BrewFormulaeInstalled => "brew_formulae_installed",
             Self::BrewFormulaeSearchable => "brew_formulae_searchable",
             Self::BrewPackagesSearchable => "brew_packages_searchable",
+            Self::ChownOwnerGroup => "chown_owner_group",
             Self::DefaultsDomains => "defaults_domains",
+            Self::DefaultsKeys => "defaults_keys",
             Self::DockerContainers => "docker_containers",
             Self::DockerImages => "docker_images",
             Self::DockerNetworks => "docker_networks",
@@ -458,6 +486,8 @@ impl ProviderKind {
             Self::K8sPods => "k8s_pods",
             Self::K8sResources => "k8s_resources",
             Self::K8sServices => "k8s_services",
+            Self::MacosApplications => "macos_applications",
+            Self::MacosBundleIdentifiers => "macos_bundle_identifiers",
             Self::MakefileTargets => "makefile_targets",
             Self::MambaEnvs => "mamba_envs",
             Self::MultipassList => "multipass_list",
@@ -521,6 +551,43 @@ impl From<ProviderKind> for ProviderResolution {
     }
 }
 
+/// Provider kinds that need the previously-completed shell argument
+/// surfaced via `ProviderCtx::params["prev_arg"]`. Keeps `ProviderCtx`
+/// slim (no `args: Vec<String>` channel) by injecting only the one
+/// token the consuming provider actually reads.
+///
+/// Today: `defaults read <domain> <key>` — `DefaultsKeys` needs `<domain>`
+/// to dispatch `defaults read <domain>` and parse the resulting plist.
+pub const NEEDS_PREV_ARG: &[ProviderKind] = &[ProviderKind::DefaultsKeys];
+
+/// The `ProviderCtx::params` key under which [`inject_prev_arg`] stashes
+/// the previously-completed shell argument. Single source of truth shared
+/// by the producer here and the consumer
+/// (`macos_defaults::DefaultsKeys::generate_with_binary`) so a typo in
+/// either cannot silently break the channel.
+pub(crate) const PREV_ARG_KEY: &str = "prev_arg";
+
+/// Mutate `resolutions` in-place, copying `prev_arg` into the params
+/// of every resolution whose kind appears in [`NEEDS_PREV_ARG`].
+///
+/// Empty `prev_arg` is a no-op — providers that need it bail on an
+/// empty value anyway, and skipping the clone here saves an Arc churn
+/// on the keystroke hot path when there is no previous argument
+/// (e.g. cursor sitting at the first positional slot).
+pub fn inject_prev_arg(resolutions: &mut [ProviderResolution], prev_arg: &str) {
+    if prev_arg.is_empty() {
+        return;
+    }
+    for resolution in resolutions.iter_mut() {
+        if !NEEDS_PREV_ARG.contains(&resolution.kind) {
+            continue;
+        }
+        let mut params: BTreeMap<String, String> = resolution.params.as_ref().clone();
+        params.insert(PREV_ARG_KEY.to_string(), prev_arg.to_string());
+        resolution.params = Arc::new(params);
+    }
+}
+
 /// Map a spec's `"type"` string to a `ProviderKind`, or `None` if the
 /// string does not name a registered native provider.
 ///
@@ -571,7 +638,9 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
         ProviderKind::BrewFormulaeInstalled => brew::BrewFormulaeInstalled.generate(ctx).await,
         ProviderKind::BrewFormulaeSearchable => brew::BrewFormulaeSearchable.generate(ctx).await,
         ProviderKind::BrewPackagesSearchable => brew::BrewPackagesSearchable.generate(ctx).await,
+        ProviderKind::ChownOwnerGroup => dscl_principals::ChownOwnerGroup.generate(ctx).await,
         ProviderKind::DefaultsDomains => macos_defaults::DefaultsDomains.generate(ctx).await,
+        ProviderKind::DefaultsKeys => macos_defaults::DefaultsKeys.generate(ctx).await,
         ProviderKind::DockerContainers => docker::DockerContainers.generate(ctx).await,
         ProviderKind::DockerImages => docker::DockerImages.generate(ctx).await,
         ProviderKind::DockerNetworks => docker::DockerNetworks.generate(ctx).await,
@@ -587,6 +656,10 @@ pub async fn resolve(kind: ProviderKind, ctx: &ProviderCtx) -> Result<Vec<Sugges
         ProviderKind::K8sPods => kubectl::K8sPods.generate(ctx).await,
         ProviderKind::K8sResources => kubectl::K8sResources.generate(ctx).await,
         ProviderKind::K8sServices => kubectl::K8sServices.generate(ctx).await,
+        ProviderKind::MacosApplications => macos_apps::MacosApplications.generate(ctx).await,
+        ProviderKind::MacosBundleIdentifiers => {
+            macos_apps::MacosBundleIdentifiers.generate(ctx).await
+        }
         ProviderKind::MakefileTargets => {
             local_project::makefile::MakefileTargets.generate(ctx).await
         }
@@ -709,8 +782,16 @@ mod tests {
             Some(ProviderKind::BrewPackagesSearchable)
         );
         assert_eq!(
+            kind_from_type_str("chown_owner_group"),
+            Some(ProviderKind::ChownOwnerGroup)
+        );
+        assert_eq!(
             kind_from_type_str("defaults_domains"),
             Some(ProviderKind::DefaultsDomains)
+        );
+        assert_eq!(
+            kind_from_type_str("defaults_keys"),
+            Some(ProviderKind::DefaultsKeys)
         );
         assert_eq!(
             kind_from_type_str("docker_containers"),
@@ -760,6 +841,14 @@ mod tests {
         assert_eq!(
             kind_from_type_str("k8s_services"),
             Some(ProviderKind::K8sServices)
+        );
+        assert_eq!(
+            kind_from_type_str("macos_applications"),
+            Some(ProviderKind::MacosApplications)
+        );
+        assert_eq!(
+            kind_from_type_str("macos_bundle_identifiers"),
+            Some(ProviderKind::MacosBundleIdentifiers)
         );
         assert_eq!(
             kind_from_type_str("makefile_targets"),
@@ -1001,5 +1090,87 @@ mod tests {
                 "round-trip failed for {kind:?} (type_str = {s:?})"
             );
         }
+    }
+
+    #[test]
+    fn inject_prev_arg_leaves_non_listed_kinds_untouched() {
+        // Sanity: a kind that is NOT in NEEDS_PREV_ARG must never have
+        // its params Arc rewritten. Picking DefaultsDomains because it
+        // is the closest sibling to DefaultsKeys but explicitly does
+        // not need prev_arg.
+        let untouched = ProviderKind::DefaultsDomains;
+        assert!(
+            !NEEDS_PREV_ARG.contains(&untouched),
+            "test invariant: untouched kind must not be in NEEDS_PREV_ARG"
+        );
+        let mut resolutions = vec![ProviderResolution::from_kind(untouched)];
+        let original_ptr = Arc::as_ptr(&resolutions[0].params);
+        inject_prev_arg(&mut resolutions, "com.apple.dock");
+        assert!(
+            std::ptr::eq(Arc::as_ptr(&resolutions[0].params), original_ptr),
+            "kinds outside NEEDS_PREV_ARG must not churn the params Arc"
+        );
+        assert!(resolutions[0].params.is_empty());
+    }
+
+    #[test]
+    fn inject_prev_arg_copies_value_into_params_for_listed_kind() {
+        // The actual feature: a kind that IS in NEEDS_PREV_ARG
+        // (DefaultsKeys) must have `prev_arg` copied into its params so
+        // `defaults read <domain> <key>` can dispatch `defaults read
+        // <domain>`. An inverted `.contains` check or a dropped
+        // `params.insert` would pass the no-op tests above yet break
+        // here.
+        let listed = ProviderKind::DefaultsKeys;
+        assert!(
+            NEEDS_PREV_ARG.contains(&listed),
+            "test invariant: listed kind must be in NEEDS_PREV_ARG"
+        );
+        let mut resolutions = vec![ProviderResolution::from_kind(listed)];
+        inject_prev_arg(&mut resolutions, "com.apple.dock");
+        assert_eq!(
+            resolutions[0].params.get("prev_arg").map(String::as_str),
+            Some("com.apple.dock"),
+            "listed kind must receive prev_arg in its params"
+        );
+    }
+
+    #[test]
+    fn inject_prev_arg_preserves_existing_params_for_listed_kind() {
+        // Injecting prev_arg must be additive — pre-existing params keys
+        // declared on the resolution survive the merge.
+        let listed = ProviderKind::DefaultsKeys;
+        assert!(NEEDS_PREV_ARG.contains(&listed));
+        let mut resolutions = vec![ProviderResolution {
+            kind: listed,
+            params: Arc::new(BTreeMap::from([(
+                "existing".to_string(),
+                "kept".to_string(),
+            )])),
+        }];
+        inject_prev_arg(&mut resolutions, "com.apple.dock");
+        assert_eq!(
+            resolutions[0].params.get("prev_arg").map(String::as_str),
+            Some("com.apple.dock")
+        );
+        assert_eq!(
+            resolutions[0].params.get("existing").map(String::as_str),
+            Some("kept"),
+            "pre-existing params must be preserved alongside prev_arg"
+        );
+    }
+
+    #[test]
+    fn inject_prev_arg_empty_value_is_noop_even_for_listed_kinds() {
+        // Empty prev_arg means the cursor is at the first positional
+        // slot — there is no previous arg to thread. The helper must
+        // skip the whole sweep so we don't churn Arcs on the hot path.
+        let mut resolutions = vec![ProviderResolution::from_kind(ProviderKind::DefaultsDomains)];
+        let original_ptr = Arc::as_ptr(&resolutions[0].params);
+        inject_prev_arg(&mut resolutions, "");
+        assert!(std::ptr::eq(
+            Arc::as_ptr(&resolutions[0].params),
+            original_ptr
+        ));
     }
 }

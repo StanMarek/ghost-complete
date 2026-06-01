@@ -1,12 +1,8 @@
 {
   "args": {
-    "generators": [
-      {
-        "requires_js": true
-      }
-    ],
     "isOptional": true,
-    "name": "script"
+    "name": "script",
+    "template": "filepaths"
   },
   "description": "Execute OSA scripts (AppleScript, JavaScript, etc.)",
   "name": "osascript",
@@ -28,7 +24,17 @@
     },
     {
       "args": {
-        "name": "language"
+        "name": "language",
+        "suggestions": [
+          {
+            "description": "AppleScript (default OSA language)",
+            "name": "AppleScript"
+          },
+          {
+            "description": "JavaScript for Automation (JXA)",
+            "name": "JavaScript"
+          }
+        ]
       },
       "description": "Override the language for any plain text files",
       "name": [

@@ -3867,7 +3867,13 @@ mod tests {
         const MIN_REQUIRES_JS_WITH_RUNTIME: usize = 2_380;
         const MIN_LOWERED_TO_TRANSFORMS: usize = 1_250;
         const MIN_AWS_SDK_DISPATCHED: usize = 130;
-        const EXPECTED_UNSUPPORTED_WITHOUT_RUNTIME: usize = 295;
+        // 0.17 macOS smart completions dropped three `requires_js: true`
+        // generators without runtime metadata: osascript's script arg
+        // (now `template: "filepaths"`), codesign `-o`/`--options`
+        // (now static suggestions), and codesign `--resource-rules`
+        // (now `template: "filepaths"` + `_lowered_from_requires_js`).
+        // Previous baseline was 295.
+        const EXPECTED_UNSUPPORTED_WITHOUT_RUNTIME: usize = 292;
 
         fn count(v: &serde_json::Value) -> (usize, usize, usize, usize, usize) {
             // (requires_js_total, with_js_runtime, lowered, lowered_requires_js, aws_sdk)

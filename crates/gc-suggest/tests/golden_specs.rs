@@ -677,6 +677,23 @@ fn brew_install_routes_to_brew_packages_searchable() {
 }
 
 #[test]
+fn defaults_read_key_arg_routes_to_defaults_keys_provider() {
+    // `defaults read com.apple.dock <TAB>` — the key arg must dispatch
+    // the native `defaults_keys` provider so the engine threads
+    // `params["prev_arg"] = "com.apple.dock"` at runtime.
+    let engine = build_engine();
+    let buffer = "defaults read com.apple.dock ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let kinds: Vec<gc_suggest::providers::ProviderKind> =
+        result.provider_generators.iter().map(|p| p.kind).collect();
+    assert!(
+        kinds.contains(&gc_suggest::providers::ProviderKind::DefaultsKeys),
+        "defaults read <domain> <TAB> must schedule defaults_keys; got {kinds:?}"
+    );
+}
+
+#[test]
 fn brew_install_with_cask_flag_still_routes_to_packages_searchable() {
     // The Fig spec model cannot conditionally pick a generator based on
     // a previously-typed flag — install's arg generator is fixed at
@@ -696,6 +713,31 @@ fn brew_install_with_cask_flag_still_routes_to_packages_searchable() {
 }
 
 #[test]
+fn chown_first_arg_routes_to_chown_owner_group_provider() {
+    // `chown <TAB>` — the first positional must dispatch the single
+    // colon-aware provider, replacing the legacy `[dscl_users, dscl_groups]`
+    // pair with one that emits pre-prefixed `owner:group` candidates, so the
+    // colon-containing token still re-ranks cleanly (nucleo matches `:` as an
+    // ordinary subsequence character, not a delimiter) instead of stranding
+    // the user mid-token.
+    let engine = build_engine();
+    let buffer = "chown ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let kinds: Vec<gc_suggest::providers::ProviderKind> =
+        result.provider_generators.iter().map(|p| p.kind).collect();
+    assert!(
+        kinds.contains(&gc_suggest::providers::ProviderKind::ChownOwnerGroup),
+        "chown first arg must schedule chown_owner_group; got {kinds:?}"
+    );
+    assert!(
+        !kinds.contains(&gc_suggest::providers::ProviderKind::DsclUsers)
+            && !kinds.contains(&gc_suggest::providers::ProviderKind::DsclGroups),
+        "chown first arg must NOT keep the legacy [dscl_users, dscl_groups] pair; got {kinds:?}"
+    );
+}
+
+#[test]
 fn brew_search_routes_to_brew_packages_searchable() {
     let engine = build_engine();
     let buffer = "brew search ";
@@ -705,5 +747,81 @@ fn brew_search_routes_to_brew_packages_searchable() {
     assert!(
         kinds.contains(&ProviderKind::BrewPackagesSearchable),
         "brew search must route to BrewPackagesSearchable; got {kinds:?}"
+    );
+}
+
+#[test]
+fn defaults_write_key_arg_routes_to_defaults_keys_provider() {
+    let engine = build_engine();
+    let buffer = "defaults write com.apple.dock ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let kinds: Vec<gc_suggest::providers::ProviderKind> =
+        result.provider_generators.iter().map(|p| p.kind).collect();
+    assert!(
+        kinds.contains(&gc_suggest::providers::ProviderKind::DefaultsKeys),
+        "defaults write <domain> <TAB> must schedule defaults_keys; got {kinds:?}"
+    );
+}
+
+#[test]
+fn open_a_arg_routes_to_macos_applications_provider() {
+    let engine = build_engine();
+    let buffer = "open -a ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let kinds: Vec<gc_suggest::providers::ProviderKind> =
+        result.provider_generators.iter().map(|p| p.kind).collect();
+    assert!(
+        kinds.contains(&gc_suggest::providers::ProviderKind::MacosApplications),
+        "open -a must schedule macos_applications; got {kinds:?}"
+    );
+}
+
+#[test]
+fn open_b_arg_routes_to_macos_bundle_identifiers_provider() {
+    let engine = build_engine();
+    let buffer = "open -b ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let kinds: Vec<gc_suggest::providers::ProviderKind> =
+        result.provider_generators.iter().map(|p| p.kind).collect();
+    assert!(
+        kinds.contains(&gc_suggest::providers::ProviderKind::MacosBundleIdentifiers),
+        "open -b must schedule macos_bundle_identifiers; got {kinds:?}"
+    );
+}
+
+#[test]
+fn osascript_l_arg_suggests_applescript_and_javascript() {
+    let engine = build_engine();
+    let buffer = "osascript -l ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let texts: Vec<&str> = result.suggestions.iter().map(|s| s.text.as_str()).collect();
+    assert!(
+        texts.contains(&"AppleScript"),
+        "osascript -l must offer AppleScript; got {texts:?}"
+    );
+    assert!(
+        texts.contains(&"JavaScript"),
+        "osascript -l must offer JavaScript; got {texts:?}"
+    );
+}
+
+#[test]
+fn codesign_options_arg_suggests_runtime_and_hard() {
+    let engine = build_engine();
+    let buffer = "codesign -o ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let texts: Vec<&str> = result.suggestions.iter().map(|s| s.text.as_str()).collect();
+    assert!(
+        texts.contains(&"runtime"),
+        "codesign -o must offer runtime; got {texts:?}"
+    );
+    assert!(
+        texts.contains(&"hard"),
+        "codesign -o must offer hard; got {texts:?}"
     );
 }
