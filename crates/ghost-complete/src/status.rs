@@ -867,9 +867,27 @@ fn has_non_empty_raw_script_or_template(map: &serde_json::Map<String, serde_json
 fn run_status_inner(
     config_path: Option<&Path>,
     out: &mut dyn std::io::Write,
+    verbose: bool,
 ) -> Result<StatusOutcome> {
     let outcome = scan_specs(config_path)?;
+    render_status_text(out, &outcome, verbose)?;
+    Ok(outcome)
+}
 
+/// Render the human-readable status report from an already-computed
+/// [`StatusOutcome`]. Split out from [`run_status_inner`] so tests can pin
+/// the rendering contract (e.g. the `--verbose` js_commands gate) without
+/// running a full `scan_specs` against a fixture spec dir.
+///
+/// `verbose = false` hides the per-command `js_commands` dump (which can
+/// be ~17K lines once `aws` is loaded) and emits a single-line summary
+/// instead. `verbose = true` restores the historical full dump under the
+/// summary line.
+pub(crate) fn render_status_text(
+    out: &mut dyn std::io::Write,
+    outcome: &StatusOutcome,
+    verbose: bool,
+) -> Result<()> {
     if !outcome.parse_error_lines.is_empty() {
         writeln!(
             out,
@@ -1008,18 +1026,18 @@ fn run_status_inner(
         )?;
     }
 
-    if !outcome.js_commands.is_empty() {
-        writeln!(
-            out,
-            "\nCommands with requires_js generators ({}):",
-            outcome.js_commands.len()
-        )?;
+    writeln!(
+        out,
+        "\nJS-only commands: {} (use --verbose to list)",
+        outcome.js_commands.len()
+    )?;
+    if verbose {
         for cmd in &outcome.js_commands {
             writeln!(out, "  {}", sanitize_for_terminal(cmd))?;
         }
     }
 
-    Ok(outcome)
+    Ok(())
 }
 
 /// Like [`run_status_inner`] but also appends the Coverage-trend section.
@@ -1029,8 +1047,9 @@ fn run_status_inner_with_trend(
     config_path: Option<&Path>,
     baseline_path: Option<&Path>,
     out: &mut dyn Write,
+    verbose: bool,
 ) -> Result<StatusOutcome> {
-    let outcome = run_status_inner(config_path, out)?;
+    let outcome = run_status_inner(config_path, out, verbose)?;
     let baseline = load_baseline(baseline_path)?;
     render_coverage_trend(out, baseline.as_ref())?;
     Ok(outcome)
@@ -1425,12 +1444,19 @@ pub fn run_status_with_opts(
     strict: bool,
     json: bool,
     baseline_path: Option<&Path>,
+    verbose: bool,
 ) -> Result<()> {
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
 
-    let exit =
-        run_status_with_opts_to_writer(config_path, strict, json, baseline_path, &mut handle)?;
+    let exit = run_status_with_opts_to_writer(
+        config_path,
+        strict,
+        json,
+        baseline_path,
+        &mut handle,
+        verbose,
+    )?;
     if exit == StatusExit::Failure {
         std::process::exit(1);
     }
@@ -1450,11 +1476,15 @@ fn run_status_with_opts_to_writer(
     json: bool,
     baseline_path: Option<&Path>,
     out: &mut dyn Write,
+    verbose: bool,
 ) -> Result<StatusExit> {
+    // JSON path intentionally ignores `verbose` — the JSON contract is
+    // verbose-by-default for dashboards, and gating JSON fields on a CLI
+    // flag would silently break consumers.
     let outcome = if json {
         run_status_json(config_path, baseline_path, out)?
     } else {
-        run_status_inner_with_trend(config_path, baseline_path, out)?
+        run_status_inner_with_trend(config_path, baseline_path, out, verbose)?
     };
 
     if strict {
@@ -1717,7 +1747,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_status_inner(Some(&cfg), &mut out).unwrap();
+        run_status_inner(Some(&cfg), &mut out, /* verbose */ false).unwrap();
         let txt = String::from_utf8_lossy(&out);
 
         // The "failed to load" line is the only place user-supplied bytes
@@ -2011,7 +2041,8 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let exit = run_status_with_opts_to_writer(Some(&cfg), true, false, None, &mut out).unwrap();
+        let exit =
+            run_status_with_opts_to_writer(Some(&cfg), true, false, None, &mut out, false).unwrap();
         let txt = String::from_utf8_lossy(&out);
 
         assert_eq!(exit, StatusExit::Failure);
@@ -2053,7 +2084,8 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        let exit = run_status_with_opts_to_writer(Some(&cfg), true, false, None, &mut out).unwrap();
+        let exit =
+            run_status_with_opts_to_writer(Some(&cfg), true, false, None, &mut out, false).unwrap();
 
         assert_eq!(exit, StatusExit::Success);
     }
@@ -2070,7 +2102,7 @@ mod tests {
 
         let cfg = write_config_for_dirs(&[&primary_dir, &fallback_dir], &tmp);
         let mut out = Vec::new();
-        run_status_inner(Some(&cfg), &mut out).unwrap();
+        run_status_inner(Some(&cfg), &mut out, /* verbose */ false).unwrap();
         let txt = String::from_utf8_lossy(&out);
 
         assert!(
@@ -3384,7 +3416,7 @@ mod tests {
         let cfg = write_config_for(&spec_dir, &tmp);
 
         let mut out = Vec::new();
-        run_status_inner(Some(&cfg), &mut out).unwrap();
+        run_status_inner(Some(&cfg), &mut out, /* verbose */ false).unwrap();
         let txt = String::from_utf8_lossy(&out);
 
         // Coverage section
@@ -3459,7 +3491,7 @@ mod tests {
         std::fs::write(&cfg_path, body).unwrap();
 
         let mut out = Vec::new();
-        run_status_inner(Some(&cfg_path), &mut out).unwrap();
+        run_status_inner(Some(&cfg_path), &mut out, /* verbose */ false).unwrap();
         let txt = String::from_utf8_lossy(&out);
 
         assert!(
@@ -3871,6 +3903,103 @@ mod tests {
         assert!(
             super::supported_kind(&map).is_none(),
             "custom with non-bool self_contained must be unsupported"
+        );
+    }
+
+    /// Minimal `StatusOutcome` fixture with two `aws`-prefixed JS-only
+    /// commands and a non-zero embedded count so the "Completion specs:"
+    /// section still renders. The verbose split is a rendering concern and
+    /// doesn't depend on the surrounding stats, so the rest stay at
+    /// `Default::default()`.
+    fn sample_status_outcome() -> StatusOutcome {
+        StatusOutcome {
+            embedded_count: 711,
+            js_commands: vec!["aws s3".to_string(), "aws ec2".to_string()],
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn status_plain_does_not_dump_js_commands_list() {
+        let mut buf = Vec::<u8>::new();
+        let outcome = sample_status_outcome();
+        render_status_text(&mut buf, &outcome, /* verbose */ false).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+
+        assert!(
+            !s.contains("  aws s3") && !s.contains("  aws ec2"),
+            "plain status must hide the per-command js_commands list, got:\n{s}"
+        );
+        assert!(
+            s.contains("Completion specs:"),
+            "plain status still shows the spec summary header, got:\n{s}"
+        );
+        assert!(
+            s.contains("JS-only commands: 2 (use --verbose to list)"),
+            "plain status must surface the one-line js-commands summary, got:\n{s}"
+        );
+    }
+
+    #[test]
+    fn status_verbose_dumps_js_commands_list() {
+        let mut buf = Vec::<u8>::new();
+        let outcome = sample_status_outcome();
+        render_status_text(&mut buf, &outcome, /* verbose */ true).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+
+        assert!(
+            s.contains("  aws s3"),
+            "verbose mode dumps the AWS commands list, got:\n{s}"
+        );
+        assert!(
+            s.contains("  aws ec2"),
+            "verbose mode dumps the AWS commands list, got:\n{s}"
+        );
+    }
+
+    /// JSON output must be unchanged by `--verbose`. The JSON path runs
+    /// through `run_status_json`, which never consults the verbose flag —
+    /// gating fields on a CLI flag would silently break dashboards.
+    #[test]
+    fn status_json_payload_is_unchanged_by_verbose() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let spec_dir = tmp.path().join("specs");
+        std::fs::create_dir_all(&spec_dir).unwrap();
+        let cfg = write_config_for(&spec_dir, &tmp);
+
+        let mut plain = Vec::new();
+        let _ = run_status_with_opts_to_writer(
+            Some(&cfg),
+            false,
+            true,
+            None,
+            &mut plain,
+            /* verbose */ false,
+        )
+        .unwrap();
+        let mut verbose = Vec::new();
+        let _ = run_status_with_opts_to_writer(
+            Some(&cfg),
+            false,
+            true,
+            None,
+            &mut verbose,
+            /* verbose */ true,
+        )
+        .unwrap();
+
+        let plain_json: serde_json::Value = serde_json::from_slice(&plain).unwrap();
+        let verbose_json: serde_json::Value = serde_json::from_slice(&verbose).unwrap();
+        assert_eq!(
+            plain_json, verbose_json,
+            "--verbose must not affect the JSON payload shape"
+        );
+        // Sanity: assert the payload is the structured status object, not
+        // an empty `{}`. `spec_counts` is the canonical legacy block —
+        // present on every status JSON payload.
+        assert!(
+            plain_json.get("spec_counts").is_some(),
+            "JSON payload must include the spec_counts block, got: {plain_json}"
         );
     }
 }
