@@ -457,13 +457,34 @@ function applyNpmNativeProviderFixups(spec) {
 }
 
 function applyBrewNativeProviderFixups(spec) {
+  // Upstream Fig uses `brew formulae` (formula-only listing) for install,
+  // edit, home, abv. Those subcommands all accept casks too, so route to
+  // brew_packages_searchable (union of formulae + casks) for accuracy.
   walkSpecNodes(spec, (node) => {
     const gen = firstGenerator(node);
     if (!gen?.script || gen.script[0] !== 'brew' || gen.script[1] !== 'formulae') {
       return;
     }
-    setNodeProvider(node, provider('brew_formulae_searchable'));
+    setNodeProvider(node, provider('brew_packages_searchable'));
   });
+
+  // Upstream `brew search` has no args, but its positional argument is the
+  // search substring; completing it against the installable package universe
+  // (formulae + casks) is the whole point of `brew search`. Inject a variadic
+  // optional arg routed to brew_packages_searchable so the native provider
+  // drives completions for the search text.
+  const searchSub = (spec.subcommands ?? []).find((sub) =>
+    namesInclude(sub.name, 'search'),
+  );
+  if (searchSub && !searchSub.args) {
+    searchSub.args = {
+      name: 'text',
+      description: 'Substring to search for',
+      isOptional: true,
+      isVariadic: true,
+      generators: [provider('brew_packages_searchable')],
+    };
+  }
 }
 
 function applyTmuxNativeProviderFixups(spec) {
