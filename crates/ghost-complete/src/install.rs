@@ -47,6 +47,7 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # feedback_dismiss_ms = 1200  # Empty/error feedback auto-dismiss delay; 0 disables
 # spinner = true  # Animate async Loading feedback in wide popups
 # show_provider_errors = false  # Set true to show provider names in error feedback
+# render_block_ms = 80  # Pre-paint window (ms, 0-300); 0 paints immediately, higher races fast async generators into the first frame
 # min_width = 20  # Lower bound for popup width; clamped to [10, 500]
 # max_width = 60  # Upper bound for popup width; clamped to [min_width, 500]
 # description_box = \"off\"  # \"off\" for inline descriptions, \"side\" for wrapped adjacent box
@@ -64,6 +65,16 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # filesystem = true
 # specs = true
 # git = true
+# js_runtime = true  # Master kill switch for the QuickJS evaluator backing requires_js generators; restart required
+
+# [suggest.spec_cache]
+# idle_ttl_secs = 0  # Seconds idle before a parsed spec is evicted; 0 disables eviction
+# sweep_interval_secs = 60  # Background sweep cadence (seconds); ignored when idle_ttl_secs = 0
+# keep_warm = []  # Spec names (filename stem) that are never evicted; e.g. [\"git\", \"docker\"]
+# max_resident_mb = 0  # LRU backstop in MB after TTL eviction; 0 disables
+
+# [paths]
+# spec_dirs = []  # Additional spec source directories searched at startup (highest precedence first)
 
 # [keybindings]
 # accept = \"tab\"
@@ -89,6 +100,7 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # multi_terminal = false  # Set to true to enable unsupported/unknown terminals
 # aws_sdk_provider = false  # Opt in to native AWS SDK completions; may make outbound AWS calls
 # aws_sdk_fallback_to_cli = true  # Fall back to the aws CLI when SDK completions cannot run
+# brew_search_cap = 1000  # Cap on `brew search \"\"` results before fuzzy ranking; raise for unfiltered exploration
 ";
 
 pub(crate) const INIT_BEGIN: &str = "# >>> ghost-complete initialize >>>";
@@ -514,14 +526,22 @@ fn install_to_with_cache_hooks(
     let (content, _) = remove_block(&existing, INIT_BEGIN, INIT_END);
     let (content, _) = remove_block(&content, SHELL_BEGIN, SHELL_END);
 
-    // 5. Prepend init block, append shell integration block
-    let content = content.trim().to_string();
+    // 5. Prepend init block, append shell integration block.
+    // We preserve user .zshrc bytes outside managed blocks byte-for-byte:
+    // do NOT trim() the deduped middle, and only add a trailing newline
+    // when the user's content does not already end with one. Reinstalls
+    // are byte-identical to first installs because remove_block consumes
+    // one trailing '\n' after each managed block, mirroring the single
+    // '\n' that this code inserts between init_block and the middle.
+    // See install_preserves_user_blank_lines_around_managed_blocks.
     let mut new_zshrc = String::new();
     new_zshrc.push_str(&init_block(&init_path));
     new_zshrc.push('\n');
     if !content.is_empty() {
         new_zshrc.push_str(&content);
-        new_zshrc.push('\n');
+        if !content.ends_with('\n') {
+            new_zshrc.push('\n');
+        }
     }
     new_zshrc.push_str(&shell_integration_block(&script_path));
     new_zshrc.push('\n');
@@ -1127,6 +1147,55 @@ mod tests {
     }
 
     #[test]
+    fn install_preserves_user_blank_lines_around_managed_blocks() {
+        let tmp = TempDir::new().unwrap();
+        let zshrc = tmp.path().join(".zshrc");
+        let user_content = "\n\n# top comment\n\nalias g=git\n\n\n# bottom comment\n\n";
+        fs::write(&zshrc, user_content).unwrap();
+
+        let cfg_dir = tmp.path().join(".config/ghost-complete");
+        fs::create_dir_all(&cfg_dir).unwrap();
+
+        install_to(&zshrc, &cfg_dir, false).expect("install");
+
+        let after = fs::read_to_string(&zshrc).unwrap();
+
+        let after_init_end =
+            after.find(INIT_END).expect("init end marker present") + INIT_END.len();
+        let user_region =
+            &after[after_init_end..after.find(SHELL_BEGIN).expect("shell begin marker present")];
+        assert!(
+            user_region.contains("# top comment")
+                && user_region.contains("alias g=git")
+                && user_region.contains("# bottom comment"),
+            "user content survived in middle region:\n{user_region}",
+        );
+
+        // The user's leading and trailing blank lines must survive verbatim.
+        // `.trim()` on user content destroyed them on first install AND on
+        // every reinstall. Look for the original "\n\n# top comment" and
+        // "# bottom comment\n\n" framing inside the middle region.
+        assert!(
+            user_region.contains("\n\n# top comment"),
+            "leading blank line before user content lost:\n{user_region:?}",
+        );
+        assert!(
+            user_region.contains("# bottom comment\n\n"),
+            "trailing blank line after user content lost:\n{user_region:?}",
+        );
+
+        // Reinstall should not accumulate blank lines around the managed blocks.
+        install_to(&zshrc, &cfg_dir, false).expect("reinstall");
+        let after2 = fs::read_to_string(&zshrc).unwrap();
+        let triple_blank = after2.matches("\n\n\n").count();
+        let original_triple = after.matches("\n\n\n").count();
+        assert!(
+            triple_blank <= original_triple + 1,
+            "reinstall accumulated blank lines: original={original_triple}, after={triple_blank}",
+        );
+    }
+
+    #[test]
     fn test_idempotency() {
         let dir = TempDir::new().unwrap();
         let zshrc = dir.path().join(".zshrc");
@@ -1671,5 +1740,29 @@ mod tests {
         assert_eq!(content, "new\n");
         let entries: Vec<_> = std::fs::read_dir(tmp.path()).unwrap().collect();
         assert_eq!(entries.len(), 1);
+    }
+}
+
+#[cfg(test)]
+mod drift_tests {
+    use super::DEFAULT_CONFIG_TOML;
+    use gc_config::all_field_paths;
+
+    #[test]
+    fn install_template_contains_every_schema_field() {
+        let mut missing = Vec::new();
+        for path in all_field_paths() {
+            let (_section, key) = path.rsplit_once('.').expect("dotted path");
+            // Field is "present" if its bare key appears in the template
+            // (commented-out lines count — the template is documentation).
+            if !DEFAULT_CONFIG_TOML.contains(key) {
+                missing.push(path);
+            }
+        }
+        assert!(
+            missing.is_empty(),
+            "install template missing keys: {:#?}",
+            missing,
+        );
     }
 }

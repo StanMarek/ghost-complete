@@ -651,3 +651,28 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod drift_tests {
+    use super::all_fields;
+    use gc_config::all_field_paths;
+
+    #[test]
+    fn tui_editor_metadata_contains_every_schema_field() {
+        let editor_keys: Vec<String> = all_fields()
+            .iter()
+            .map(|f| format!("{}.{}", f.section, f.key))
+            .collect();
+        let mut missing = Vec::new();
+        for path in all_field_paths() {
+            if !editor_keys.iter().any(|k| k == path) {
+                missing.push(path);
+            }
+        }
+        assert!(
+            missing.is_empty(),
+            "TUI editor missing keys: {:#?}",
+            missing,
+        );
+    }
+}
