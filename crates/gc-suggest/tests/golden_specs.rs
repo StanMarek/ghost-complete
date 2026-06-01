@@ -17,9 +17,10 @@ use std::path::{Path, PathBuf};
 use gc_buffer::parse_command_context;
 use gc_suggest::commands::CommandsProvider;
 use gc_suggest::history::HistoryProvider;
+use gc_suggest::providers::ProviderKind;
 use gc_suggest::specs::SpecStore;
 use gc_suggest::types::Suggestion;
-use gc_suggest::{SuggestionEngine, SuggestionKind};
+use gc_suggest::{SuggestionEngine, SuggestionKind, SyncResult};
 
 fn spec_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../specs")
@@ -658,6 +659,23 @@ fn aws_empty_query_returns_subcommands_not_filesystem() {
     );
 }
 
+fn provider_kinds(result: &SyncResult) -> Vec<ProviderKind> {
+    result.provider_generators.iter().map(|r| r.kind).collect()
+}
+
+#[test]
+fn brew_install_routes_to_brew_packages_searchable() {
+    let engine = build_engine();
+    let buffer = "brew install ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let kinds = provider_kinds(&result);
+    assert!(
+        kinds.contains(&ProviderKind::BrewPackagesSearchable),
+        "brew install must route to BrewPackagesSearchable (formulae + casks union); got {kinds:?}"
+    );
+}
+
 #[test]
 fn defaults_read_key_arg_routes_to_defaults_keys_provider() {
     // `defaults read com.apple.dock <TAB>` — the key arg must dispatch
@@ -672,6 +690,25 @@ fn defaults_read_key_arg_routes_to_defaults_keys_provider() {
     assert!(
         kinds.contains(&gc_suggest::providers::ProviderKind::DefaultsKeys),
         "defaults read <domain> <TAB> must schedule defaults_keys; got {kinds:?}"
+    );
+}
+
+#[test]
+fn brew_install_with_cask_flag_still_routes_to_packages_searchable() {
+    // The Fig spec model cannot conditionally pick a generator based on
+    // a previously-typed flag — install's arg generator is fixed at
+    // brew_packages_searchable. That generator already returns both
+    // formulae and casks, so `--cask` users still get cask completions
+    // (just alongside formulae). Pinning the behaviour here so a future
+    // attempt at flag-conditional routing has to update this test too.
+    let engine = build_engine();
+    let buffer = "brew install --cask ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let kinds = provider_kinds(&result);
+    assert!(
+        kinds.contains(&ProviderKind::BrewPackagesSearchable),
+        "brew install --cask must route to BrewPackagesSearchable; got {kinds:?}"
     );
 }
 
@@ -697,6 +734,19 @@ fn chown_first_arg_routes_to_chown_owner_group_provider() {
         !kinds.contains(&gc_suggest::providers::ProviderKind::DsclUsers)
             && !kinds.contains(&gc_suggest::providers::ProviderKind::DsclGroups),
         "chown first arg must NOT keep the legacy [dscl_users, dscl_groups] pair; got {kinds:?}"
+    );
+}
+
+#[test]
+fn brew_search_routes_to_brew_packages_searchable() {
+    let engine = build_engine();
+    let buffer = "brew search ";
+    let ctx = ctx_from(buffer);
+    let result = engine.suggest_sync(&ctx, &tmp_cwd(), buffer).unwrap();
+    let kinds = provider_kinds(&result);
+    assert!(
+        kinds.contains(&ProviderKind::BrewPackagesSearchable),
+        "brew search must route to BrewPackagesSearchable; got {kinds:?}"
     );
 }
 

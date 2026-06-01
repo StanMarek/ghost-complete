@@ -608,6 +608,76 @@ const DESC_BOX_MAX_WIDTH_CEILING: u16 = 200;
 const DESC_BOX_LINES_CEILING: u16 = 20;
 const DESC_BOX_DEBOUNCE_CEILING: u16 = 500;
 
+/// Returns every leaf field path in dotted form, e.g. `popup.render_block_ms`.
+/// Used by drift tests in `ghost-complete` to verify the install template,
+/// TUI editor metadata, and `docs/CONFIGURATION.md` hot-reload table stay
+/// in sync with the schema.
+///
+/// New schema fields MUST appear here. Adding via copy-paste from
+/// `GhostConfig` is acceptable; the cost of forgetting is a failing
+/// drift test, not a runtime bug.
+pub fn all_field_paths() -> Vec<&'static str> {
+    vec![
+        // [trigger]
+        "trigger.auto_chars",
+        "trigger.delay_ms",
+        "trigger.auto_trigger",
+        // [popup]
+        "popup.max_visible",
+        "popup.borders",
+        "popup.feedback_dismiss_ms",
+        "popup.spinner",
+        "popup.show_provider_errors",
+        "popup.render_block_ms",
+        "popup.min_width",
+        "popup.max_width",
+        "popup.description_box",
+        "popup.description_box_max_width",
+        "popup.description_box_lines",
+        "popup.description_box_debounce_ms",
+        // [suggest]
+        "suggest.max_results",
+        "suggest.max_history_results",
+        "suggest.generator_timeout_ms",
+        // [suggest.providers]
+        "suggest.providers.commands",
+        "suggest.providers.filesystem",
+        "suggest.providers.specs",
+        "suggest.providers.git",
+        "suggest.providers.js_runtime",
+        // [suggest.spec_cache]
+        "suggest.spec_cache.idle_ttl_secs",
+        "suggest.spec_cache.sweep_interval_secs",
+        "suggest.spec_cache.keep_warm",
+        "suggest.spec_cache.max_resident_mb",
+        // [paths]
+        "paths.spec_dirs",
+        // [keybindings] — 6 fields
+        "keybindings.accept",
+        "keybindings.accept_and_enter",
+        "keybindings.dismiss",
+        "keybindings.navigate_up",
+        "keybindings.navigate_down",
+        "keybindings.trigger",
+        // [theme] — 10 fields
+        "theme.preset",
+        "theme.selected",
+        "theme.description",
+        "theme.match_highlight",
+        "theme.item_text",
+        "theme.scrollbar",
+        "theme.border",
+        "theme.feedback_loading",
+        "theme.feedback_empty",
+        "theme.feedback_error",
+        // [experimental]
+        "experimental.multi_terminal",
+        "experimental.aws_sdk_provider",
+        "experimental.aws_sdk_fallback_to_cli",
+        "experimental.brew_search_cap",
+    ]
+}
+
 impl GhostConfig {
     /// Clamp config values to sane bounds, logging warnings when clamping.
     ///
@@ -869,6 +939,38 @@ fn diff_unknown_keys(
 mod tests {
     use super::*;
     use std::io::Write;
+
+    #[test]
+    fn all_field_paths_covers_every_section() {
+        let paths = all_field_paths();
+        let expected_sections = &[
+            "trigger.",
+            "popup.",
+            "suggest.",
+            "suggest.providers.",
+            "suggest.spec_cache.",
+            "paths.",
+            "keybindings.",
+            "theme.",
+            "experimental.",
+        ];
+        for prefix in expected_sections {
+            assert!(
+                paths.iter().any(|p| p.starts_with(prefix)),
+                "missing section: {}",
+                prefix,
+            );
+        }
+    }
+
+    #[test]
+    fn all_field_paths_includes_render_block_ms() {
+        let paths = all_field_paths();
+        assert!(paths.contains(&"popup.render_block_ms"));
+        assert!(paths.contains(&"suggest.providers.js_runtime"));
+        assert!(paths.contains(&"experimental.brew_search_cap"));
+        assert!(paths.contains(&"suggest.spec_cache.idle_ttl_secs"));
+    }
 
     #[test]
     fn test_default_config_matches_hardcoded() {
@@ -1977,5 +2079,84 @@ auto_trigger = false
         cfg.popup.render_block_ms = 0;
         cfg.normalize();
         assert_eq!(cfg.popup.render_block_ms, 0);
+    }
+}
+
+#[cfg(test)]
+mod docs_drift_tests {
+    use super::all_field_paths;
+
+    /// Read docs/CONFIGURATION.md via the workspace root computed from
+    /// CARGO_MANIFEST_DIR (gc-config is at `<root>/crates/gc-config`,
+    /// so we go up two levels).
+    fn configuration_md() -> String {
+        let manifest = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let root = manifest
+            .parent()
+            .expect("crates/")
+            .parent()
+            .expect("repo root");
+        let path = root.join("docs/CONFIGURATION.md");
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {}", path.display(), e))
+    }
+
+    /// Decide whether a single field key is "documented" in CONFIGURATION.md.
+    ///
+    /// Accept any of three forms — all are how the docs reference fields:
+    ///   1. Markdown code span:        `key`
+    ///   2. TOML assignment with ws:   key = ...
+    ///   3. TOML assignment no ws:     key=...
+    ///
+    /// Bare prose matches don't count — many leaf keys (`background`,
+    /// `description`, `accept`) are common English and would false-positive
+    /// against unrelated docs text.
+    fn is_documented(doc: &str, key: &str) -> bool {
+        let backtick = format!("`{key}`");
+        let toml_eq_ws = format!("{key} =");
+        let toml_eq_tight = format!("{key}=");
+        doc.contains(&backtick) || doc.contains(&toml_eq_ws) || doc.contains(&toml_eq_tight)
+    }
+
+    /// Every schema field must be referenced in CONFIGURATION.md. This is
+    /// the actual drift guard — a section-only check would silently allow
+    /// a field to be removed from the docs as long as the section header
+    /// stayed.
+    #[test]
+    fn configuration_md_lists_every_field() {
+        let doc = configuration_md();
+        let mut missing: Vec<&str> = Vec::new();
+        for path in all_field_paths() {
+            let (_section, key) = path.rsplit_once('.').expect("dotted path");
+            if !is_documented(&doc, key) {
+                missing.push(path);
+            }
+        }
+        assert!(
+            missing.is_empty(),
+            "CONFIGURATION.md is missing these schema fields: {:#?}",
+            missing,
+        );
+    }
+
+    /// Section headers are a cheaper smoke check — useful if the field
+    /// test fails wholesale (entire section gone) to surface a clearer
+    /// failure first.
+    #[test]
+    fn configuration_md_mentions_every_section() {
+        let doc = configuration_md();
+        let sections = [
+            "[trigger]",
+            "[popup]",
+            "[suggest]",
+            "[suggest.providers]",
+            "[suggest.spec_cache]",
+            "[paths]",
+            "[keybindings]",
+            "[theme]",
+            "[experimental]",
+        ];
+        for s in sections {
+            assert!(doc.contains(s), "CONFIGURATION.md missing section {}", s);
+        }
     }
 }
