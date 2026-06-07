@@ -9,6 +9,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 _No unreleased changes._
 
+## [0.17.0] - 2026-06-07
+
+### Added
+
+- **Real clap subcommands** for the CLI (`install`, `uninstall`, `status`,
+  `validate-specs`, `doctor`, `config`, `config edit`), replacing the
+  hand-rolled argument parser. Non-UTF-8 paths and argv are preserved
+  end-to-end via `OsString`/`PathBuf`, and a `--log-level` value enum threads
+  through tracing init (#132).
+- **Adaptive TUI config editor**: 3/2/1-pane responsive layouts at width
+  ≥100 / ≥60 / narrow, scrollable field list (PgUp/PgDn/Home/End), a `/`
+  filter that narrows fields by key/help substring, and a collapsible preview
+  panel (toggle `p`) (#143).
+- **Static alias-file parser** that reads `.zshrc`/`.zprofile`/`.zshenv` and
+  oh-my-zsh custom drop-ins directly, preferred over the zsh subprocess —
+  quote-aware value scanning, dotted/hyphenated alias names, last-read-wins
+  cross-file precedence (#141).
+- **Query-aware Homebrew completion**: `brew_formulae_searchable` routes typed
+  queries through `brew search <q>`, plus new `brew_casks_searchable` and
+  `brew_packages_searchable` providers backing the cask/formula/union split on
+  `install`, `search`, `edit`, `home`, and `abv` (#142).
+- **macOS-native completion providers**: `defaults_keys` (read/write/delete/
+  rename key args), colon-aware `chown_owner_group`, and `macos_applications`
+  + `macos_bundle_identifiers`; `open`, `osascript`, and `codesign` specs now
+  use native providers instead of deferred JS (#146).
+- **History lane reservation**: up to 2 popup rows reserved for exact/prefix
+  history matches before candidate ranking, so high-confidence history no
+  longer vanishes when the popup saturates (#145).
+- **OSC 7774 runtime diagnostic channel**: the shell emits structured
+  diagnostics (`env_truncated`, `zle_hook_disabled`) the proxy logs instead of
+  failing silently; the proxy strips the full GC-private OSC range
+  (7770–7774). Budgeted env reporting (512 KiB total / 16 KiB per value) keeps
+  snapshots under the parser cap (#137).
+- **Hot-reloadable `popup.render_block_ms`** (was builder-time only, despite
+  being documented and editor-exposed as live) (#138).
+- **Deeper `doctor` shell-integration checks**: both managed blocks present,
+  no duplicates, referenced `init.zsh`/`ghost-complete.zsh` exist and match
+  the embedded version, legacy OSC 7770 migration warnings, source-path
+  validation against the actual `.zshrc` block (#139).
+- **Atomic, mode-preserving installs**: `.zshrc`, `init.zsh`, and
+  `ghost-complete.zsh` written via tempfile + rename so a crash mid-write
+  can't leave a truncated shell hook (#139).
+- **Config/docs drift test battery** driven by `gc_config::all_field_paths()`,
+  pinning the install template, TUI editor, and `CONFIGURATION.md` against the
+  schema so new fields can't silently go undocumented (#147).
+
+### Changed
+
+- Shell prompt-marker suppression (`_gc_native_osc133`) now covers Kitty,
+  WezTerm, and Rio, fixing double prompt markers; WezTerm is also detected via
+  `WEZTERM_UNIX_SOCKET` in the `init.zsh` direct branch to match the Rust
+  matrix (#137).
+- `status` hides the full `js_commands` list behind `--verbose` (plain
+  `status` prints a one-line summary), sparing users a ~17K-command flood on
+  every check; the JSON contract is unchanged (#144).
+- Overlay updates emit exactly one balanced DECSET 2026 sync frame around the
+  whole clear+render+detail cycle (was multiple sync windows, with the detail
+  box rendered entirely outside any frame) (#138).
+- CI hardening: the coverage-regression check is now a **blocking** gate,
+  `cargo-deny` runs alongside `cargo-audit`, a zsh/ZLE shell smoke gate runs
+  on macOS, and release artifacts are extracted and smoke-tested
+  (`--version`, `validate-specs`, `status --json`, `install --dry-run`) before
+  publish. `toml` bumped 0.8 → 1 (#139).
+- Documentation refresh: dropped the stale "keystroke required" README note
+  (contradicted by the dynamic merge loop), replaced SECURITY.md's hard-coded
+  version with a release-policy statement, and routed vulnerability reports
+  through GitHub private reporting (#144).
+
+### Fixed
+
+- Accepted filesystem paths are now shell-escaped with quote-context awareness
+  (unquoted, single-, double-quoted), and the escaped form is written into
+  both the live buffer and the chaining predicted buffer so the next
+  completion resolves the right directory (#145).
+- `&` now splits command segments in the buffer parser: `sleep 1 & git `
+  correctly parses `git` as the command instead of an argument to `sleep`
+  (#137).
+- `;` in OSC 7 CWD paths is percent-encoded before transmission, fixing silent
+  path truncation (vte splits OSC parameters on `;`) (#137).
+- User `.zshrc` blank lines and surrounding bytes are preserved on
+  install/reinstall; managed blocks are spliced in place instead of trimming
+  the whole file (#147).
+- A poisoned `token_only` demotion mutex now recovers (warn + reset +
+  `clear_poison`) instead of panicking and crashing the proxy on the keystroke
+  path (#139).
+- Buffer (`OSC 7772`) and env (`OSC 7773`) reports are gated on
+  `GHOST_COMPLETE_ACTIVE`, so they no longer leak as raw OSC sequences to the
+  terminal when the proxy is inactive (#137).
+
 ## [0.16.0] - 2026-05-13
 
 ### Added
@@ -974,6 +1063,7 @@ silently changed behaviour.
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.17.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.17.0
 [0.16.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.16.0
 [0.15.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.15.0
 [0.14.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.14.0
