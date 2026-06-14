@@ -77,7 +77,8 @@ pub fn rank_with_mode(
     // History is partitioned to the bottom regardless of fuzzy score so a
     // boosted history match can never outrank domain content. The two
     // merge paths in `gc-pty/src/handler.rs` that bypass `rank_with_history`
-    // and call `rank` directly depend on this guarantee.
+    // and rank via `rerank_live` (which calls `rank_with_mode`) depend on
+    // this guarantee.
     suggestions.sort_by(|a, b| {
         let a_hist = a.source == SuggestionSource::History;
         let b_hist = b.source == SuggestionSource::History;
