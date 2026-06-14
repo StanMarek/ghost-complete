@@ -5055,18 +5055,24 @@ mod tests {
 
     #[test]
     fn test_tab_accepts_top_accept_rebound_to_enter_accepts_top() {
-        // The documented "contradictory double-opt-in": rebinding the `accept`
-        // action onto Enter while tab_accepts_top is on makes Enter accept the
-        // top item, because process_key_visible checks `accept` before
-        // `accept_and_enter`. This pins the dispatch ordering — reversing the
-        // two checks would silently invert this behavior with no other failure.
+        // The documented "contradictory double-opt-in": both `accept` and
+        // `accept_and_enter` are bound to Enter (accept_and_enter's default),
+        // while tab_accepts_top is on and the user has not navigated. Because
+        // process_key_visible checks `accept` before `accept_and_enter`, Enter
+        // hits the `accept` branch — whose effective_selected() resolves the
+        // preselect fallback to Some(0) — and accepts the top item ("status ").
+        // Reversing the two checks would instead hit `accept_and_enter`, which
+        // reads the raw overlay.selected (None here) and returns a bare carriage
+        // return (vec![0x0D]) that runs the line WITHOUT accepting. This test
+        // therefore pins the dispatch ordering: a reorder flips the result from
+        // "accept top" to "bare CR" and trips the assertions below.
         let mut handler = make_visible_handler(vec![
             command_suggestion("status", None),
             command_suggestion("stash", None),
         ])
         .with_tab_accepts_top(true);
         handler.keybindings.accept = KeyEvent::Enter;
-        handler.keybindings.accept_and_enter = KeyEvent::Tab;
+        handler.keybindings.accept_and_enter = KeyEvent::Enter;
         assert_eq!(
             handler.overlay.selected, None,
             "precondition: no manual navigation"
@@ -5078,7 +5084,12 @@ mod tests {
 
         assert!(
             result.ends_with(b"status "),
-            "Enter rebound to `accept` should accept the top item, got {result:?}"
+            "Enter (accept checked before accept_and_enter) should accept the top item, got {result:?}"
+        );
+        assert_ne!(
+            result,
+            vec![0x0D],
+            "must not forward a bare carriage return — that is the reversed-dispatch behavior"
         );
         assert!(!handler.visible, "popup should dismiss after accepting");
     }
