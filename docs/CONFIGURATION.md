@@ -69,12 +69,14 @@ Controls the suggestion engine behavior.
 | `max_results` | integer | `50` | Maximum total candidates to consider |
 | `max_history_results` | integer | `5` | Maximum history entries shown in popup. Set to `0` to disable history. |
 | `generator_timeout_ms` | integer | `5000` | Per-invocation timeout (milliseconds) for script and git generators. |
+| `match_mode` | string | `"fuzzy"` | How the typed query filters candidates. `"fuzzy"` matches characters as an in-order subsequence (`gco` → `git checkout`); `"substring"` requires the characters to appear contiguously (`cl` → `clone`, `include`, but not `calendar`). Space-separated words are matched as independent substrings. Requires a restart. |
 
 ```toml
 [suggest]
 max_results = 50
 max_history_results = 5
 generator_timeout_ms = 5000
+match_mode = "fuzzy"  # or "substring" for contiguous matching
 ```
 
 Shell history loads up to 10,000 entries.

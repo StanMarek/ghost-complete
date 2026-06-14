@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_No unreleased changes._
+### Added
+
+- **Substring match mode** for the suggestion filter: set
+  `suggest.match_mode = "substring"` to require the typed characters to appear
+  contiguously (`cl` → `clone`/`include`, not `calendar`) instead of the
+  default fuzzy subsequence matching. Space-separated words are matched as
+  independent substrings. Configurable via `config.toml` or the TUI editor;
+  requires a restart (#149).
 
 ## [0.17.0] - 2026-06-07
 

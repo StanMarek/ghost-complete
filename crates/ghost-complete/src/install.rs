@@ -59,6 +59,7 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # max_results = 50
 # max_history_results = 5
 # generator_timeout_ms = 5000  # Per-invocation timeout (ms) for async script/git generators
+# match_mode = \"fuzzy\"  # \"fuzzy\" = subsequence (gco -> git checkout); \"substring\" = contiguous (cl -> clone, not calendar); restart required
 
 # [suggest.providers]
 # commands = true

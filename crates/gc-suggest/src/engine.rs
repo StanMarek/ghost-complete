@@ -358,6 +358,10 @@ pub struct SuggestionEngine {
     frecency_db: FrecencyDb,
     max_results: usize,
     max_history_results: usize,
+    /// Match strategy applied by every `fuzzy::rank_with_mode` call in this
+    /// engine (fuzzy subsequence vs contiguous substring). Mirrors
+    /// `SuggestConfig::match_mode` from `gc-config`.
+    match_mode: fuzzy::MatchMode,
     providers_commands: bool,
     providers_filesystem: bool,
     providers_specs: bool,
@@ -407,6 +411,7 @@ impl SuggestionEngine {
             frecency_db: FrecencyDb::load(),
             max_results: fuzzy::DEFAULT_MAX_RESULTS,
             max_history_results: 5,
+            match_mode: fuzzy::MatchMode::Fuzzy,
             providers_commands: true,
             providers_filesystem: true,
             providers_specs: true,
@@ -450,6 +455,19 @@ impl SuggestionEngine {
         self
     }
 
+    /// Set the query match strategy (fuzzy subsequence vs contiguous
+    /// substring). Baked at builder time; a change requires a proxy restart.
+    pub fn with_match_mode(mut self, mode: fuzzy::MatchMode) -> Self {
+        self.match_mode = mode;
+        self
+    }
+
+    /// The active query match strategy. Read by the PTY handler so its live
+    /// re-rank on keystrokes uses the same mode as the engine's own ranking.
+    pub fn match_mode(&self) -> fuzzy::MatchMode {
+        self.match_mode
+    }
+
     /// Test/bench constructor — inject providers directly for deterministic setup.
     pub fn with_providers(
         spec_store: SpecStore,
@@ -470,6 +488,7 @@ impl SuggestionEngine {
             frecency_db: FrecencyDb::empty(),
             max_results: fuzzy::DEFAULT_MAX_RESULTS,
             max_history_results: 5,
+            match_mode: fuzzy::MatchMode::Fuzzy,
             providers_commands: true,
             providers_filesystem: true,
             providers_specs: true,
@@ -1009,10 +1028,11 @@ impl SuggestionEngine {
         // higher under an extended query (e.g. mid-word `h` scoring low for
         // `"h"` but a contiguous mid-word `ho` scoring high for `"ho"`).
         // Full correctness here also requires Option B.
-        Ok(fuzzy::rank(
+        Ok(fuzzy::rank_with_mode(
             &ctx.current_word,
             all_results,
             MAX_DYNAMIC_CANDIDATES,
+            self.match_mode,
         ))
     }
 
@@ -1046,7 +1066,12 @@ impl SuggestionEngine {
         // guarantee false negatives past position ~1000 in large
         // monorepos. See `run_generators` for the full rationale and the
         // known edge-case limitation.
-        Ok(fuzzy::rank(query, all, MAX_DYNAMIC_CANDIDATES))
+        Ok(fuzzy::rank_with_mode(
+            query,
+            all,
+            MAX_DYNAMIC_CANDIDATES,
+            self.match_mode,
+        ))
     }
 
     /// Resolve native providers asynchronously. Mirrors `resolve_git`:
@@ -1093,7 +1118,12 @@ impl SuggestionEngine {
         if query.is_empty() {
             return Ok(all);
         }
-        Ok(fuzzy::rank(query, all, MAX_DYNAMIC_CANDIDATES))
+        Ok(fuzzy::rank_with_mode(
+            query,
+            all,
+            MAX_DYNAMIC_CANDIDATES,
+            self.match_mode,
+        ))
     }
 
     /// Resolve each provider resolution independently and preserve the
@@ -1132,7 +1162,12 @@ impl SuggestionEngine {
         if query.is_empty() {
             return Ok(suggestions);
         }
-        Ok(fuzzy::rank(query, suggestions, MAX_DYNAMIC_CANDIDATES))
+        Ok(fuzzy::rank_with_mode(
+            query,
+            suggestions,
+            MAX_DYNAMIC_CANDIDATES,
+            self.match_mode,
+        ))
     }
 
     /// Per-kind variant of [`Self::resolve_providers`] that surfaces errors instead of logging-and-swallowing.
@@ -1159,7 +1194,12 @@ impl SuggestionEngine {
         if query.is_empty() {
             return Ok(suggestions);
         }
-        Ok(fuzzy::rank(query, suggestions, MAX_DYNAMIC_CANDIDATES))
+        Ok(fuzzy::rank_with_mode(
+            query,
+            suggestions,
+            MAX_DYNAMIC_CANDIDATES,
+            self.match_mode,
+        ))
     }
 
     /// Convenience method that resolves the spec and runs script generators.
@@ -1694,7 +1734,12 @@ impl SuggestionEngine {
             .min(self.max_history_results);
         let normal_budget = self.max_results.saturating_sub(reserved_history);
 
-        let mut results = fuzzy::rank(&ctx.current_word, candidates, normal_budget);
+        let mut results = fuzzy::rank_with_mode(
+            &ctx.current_word,
+            candidates,
+            normal_budget,
+            self.match_mode,
+        );
 
         // History fuzzy-fill: with `normal_budget` shrunk above, there is
         // now at least `reserved_history` extra room for the entries that
@@ -1705,7 +1750,12 @@ impl SuggestionEngine {
                 .max_history_results
                 .min(self.max_results.saturating_sub(results.len()));
             if remaining > 0 {
-                results.extend(fuzzy::rank(buffer, history_entries, remaining));
+                results.extend(fuzzy::rank_with_mode(
+                    buffer,
+                    history_entries,
+                    remaining,
+                    self.match_mode,
+                ));
             }
         }
 
@@ -4653,6 +4703,49 @@ mod tests {
         assert_eq!(
             history_count, 2,
             "two prefix-matching history entries must survive: {results:?}"
+        );
+    }
+
+    #[test]
+    fn engine_substring_mode_drops_subsequence_only_candidates() {
+        // Issue #149 end-to-end: with match_mode = Substring the engine's
+        // rank_with_history must drop a candidate that only matches the query
+        // as a subsequence ("calendar" for "cl") while keeping the contiguous
+        // match ("clone"). The default fuzzy engine keeps both.
+        use crate::fuzzy::MatchMode;
+        let engine = SuggestionEngine::with_providers(
+            SpecStore::load_from_dir(&spec_dir()).unwrap().store,
+            HistoryProvider::from_entries(vec![]),
+            CommandsProvider::from_list(vec![]),
+        )
+        .with_match_mode(MatchMode::Substring);
+        assert_eq!(engine.match_mode(), MatchMode::Substring);
+
+        let ctx = make_ctx(Some("git"), vec![], "cl", 1);
+        let candidates = vec![
+            Suggestion {
+                text: "clone".into(),
+                kind: SuggestionKind::Subcommand,
+                source: SuggestionSource::Spec,
+                ..Default::default()
+            },
+            Suggestion {
+                text: "calendar".into(),
+                kind: SuggestionKind::Subcommand,
+                source: SuggestionSource::Spec,
+                ..Default::default()
+            },
+        ];
+        let results =
+            engine.rank_with_history(&ctx, Path::new("/tmp"), "git cl", candidates, false);
+        let texts: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+        assert!(
+            texts.contains(&"clone"),
+            "contiguous 'cl' match must survive: {texts:?}"
+        );
+        assert!(
+            !texts.contains(&"calendar"),
+            "subsequence-only 'c..l' must be dropped in substring mode: {texts:?}"
         );
     }
 

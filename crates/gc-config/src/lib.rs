@@ -212,6 +212,23 @@ impl Default for PopupConfig {
     }
 }
 
+/// How the typed query filters and ranks candidates.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum MatchMode {
+    /// Subsequence fuzzy matching: the typed characters must appear in order
+    /// but need not be adjacent — `gco` matches `git checkout`. This is the
+    /// default and preserves the historical behavior.
+    #[default]
+    Fuzzy,
+    /// Contiguous substring matching: the typed characters must appear
+    /// together, in order — `cl` matches `clone` and `include`, but not
+    /// `calendar`. Space-separated words are matched as independent
+    /// substrings (every word must be present). Less noisy and marginally
+    /// faster than fuzzy on large candidate pools.
+    Substring,
+}
+
 /// Behavior for the optional adjacent description box.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
@@ -249,6 +266,12 @@ pub struct SuggestConfig {
     /// stalled generator does not keep the loading indicator spinning
     /// indefinitely. Default: 5000 ms.
     pub generator_timeout_ms: u64,
+    /// How the typed query filters candidates: `fuzzy` (subsequence, default)
+    /// or `substring` (contiguous). See [`MatchMode`].
+    ///
+    /// **Hot-reload:** Changes require a proxy restart — the value is baked
+    /// into the `SuggestionEngine` at builder time alongside `max_results`.
+    pub match_mode: MatchMode,
     pub providers: ProvidersConfig,
     pub spec_cache: SpecCacheConfig,
 }
@@ -259,6 +282,7 @@ impl Default for SuggestConfig {
             max_results: 50,
             max_history_results: 5,
             generator_timeout_ms: 5000,
+            match_mode: MatchMode::default(),
             providers: ProvidersConfig::default(),
             spec_cache: SpecCacheConfig::default(),
         }
@@ -639,6 +663,7 @@ pub fn all_field_paths() -> Vec<&'static str> {
         "suggest.max_results",
         "suggest.max_history_results",
         "suggest.generator_timeout_ms",
+        "suggest.match_mode",
         // [suggest.providers]
         "suggest.providers.commands",
         "suggest.providers.filesystem",
@@ -1053,6 +1078,40 @@ max_visible = 5
     fn suggest_config_includes_spec_cache_with_defaults() {
         let config = SuggestConfig::default();
         assert_eq!(config.spec_cache.idle_ttl_secs, 0);
+    }
+
+    #[test]
+    fn match_mode_defaults_to_fuzzy() {
+        let config = SuggestConfig::default();
+        assert_eq!(config.match_mode, MatchMode::Fuzzy);
+    }
+
+    #[test]
+    fn match_mode_deserializes_from_toml() {
+        let toml = r#"
+[suggest]
+match_mode = "substring"
+"#;
+        let parsed: GhostConfig = toml::from_str(toml).unwrap();
+        assert_eq!(parsed.suggest.match_mode, MatchMode::Substring);
+    }
+
+    #[test]
+    fn match_mode_round_trips_through_serialization() {
+        // The two-pass loader serializes the strict view back to TOML; a
+        // non-default match_mode must survive that round-trip without being
+        // flagged as an unknown key.
+        let config = GhostConfig {
+            suggest: SuggestConfig {
+                match_mode: MatchMode::Substring,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let serialized = toml::to_string(&config).unwrap();
+        assert!(serialized.contains("match_mode = \"substring\""));
+        let reparsed: GhostConfig = toml::from_str(&serialized).unwrap();
+        assert_eq!(reparsed.suggest.match_mode, MatchMode::Substring);
     }
 
     #[test]

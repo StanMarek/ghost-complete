@@ -213,6 +213,14 @@ pub fn all_fields() -> Vec<FieldMeta> {
             reload: ReloadBehavior::RequiresRestart,
             help: "Timeout in ms for async script generators",
         },
+        FieldMeta {
+            section: "suggest",
+            key: "match_mode",
+            field_type: FieldType::Enum(&["fuzzy", "substring"]),
+            default: "fuzzy",
+            reload: ReloadBehavior::RequiresRestart,
+            help: "Query matching: fuzzy (subsequence) or substring (contiguous)",
+        },
         // suggest.providers
         FieldMeta {
             section: "suggest.providers",

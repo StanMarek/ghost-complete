@@ -740,6 +740,52 @@ impl InputHandler {
         }
     }
 
+    /// Set the query match strategy (fuzzy subsequence vs contiguous
+    /// substring) on the underlying engine. Builder-time only — must run
+    /// before the engine `Arc` is shared, like [`Self::with_suggest_config`].
+    pub fn with_match_mode(self, mode: gc_config::MatchMode) -> Self {
+        let engine = Arc::try_unwrap(self.engine)
+            .unwrap_or_else(|_| {
+                panic!("internal invariant: engine Arc was captured by shared reference")
+            })
+            .with_match_mode(mode);
+        Self {
+            engine: Arc::new(engine),
+            ..self
+        }
+    }
+
+    /// Re-rank a merged candidate `pool` against the live typed `word`.
+    ///
+    /// Shared by the two async merge paths (the bounded-block first paint and
+    /// `try_merge_dynamic`) so both honor the engine's [`MatchMode`] identically
+    /// — keeping them in lockstep instead of duplicating the branch at each
+    /// call site.
+    ///
+    /// An empty `word` keeps the FULL pool ordered by priority then text:
+    /// truncating on an empty query would alphabetically evict high-value
+    /// candidates from large dynamic pools (see the long rationale in
+    /// `try_merge_dynamic`), so a later non-empty re-rank can still recover
+    /// late arrivals. A non-empty `word` filters and ranks under the engine's
+    /// configured match mode, capped at `max_visible * 5`.
+    fn rerank_live(&self, word: &str, mut pool: Vec<Suggestion>) -> Vec<Suggestion> {
+        if word.is_empty() {
+            pool.sort_by(|a, b| {
+                gc_suggest::priority::effective(b)
+                    .cmp(&gc_suggest::priority::effective(a))
+                    .then_with(|| a.text.cmp(&b.text))
+            });
+            pool
+        } else {
+            gc_suggest::fuzzy::rank_with_mode(
+                word,
+                pool,
+                self.max_visible * 5,
+                self.engine.match_mode(),
+            )
+        }
+    }
+
     /// Update runtime-configurable fields without restarting the proxy.
     /// Called by the config file watcher when config.toml changes on disk.
     /// Returns cleanup bytes to write to stdout (e.g. popup clear on
@@ -1791,22 +1837,8 @@ impl InputHandler {
         all.extend(extras);
         // Mirror try_merge_dynamic: rank against the LIVE query so a
         // user keystroke during the bounded wait re-filters the pool
-        // instead of ranking against the stale spawn-time word. When the
-        // user has typed nothing we keep the full pool sorted by priority
-        // (truncating with an empty query would alphabetically evict
-        // high-value candidates from large dynamic pools — see the long
-        // comment in try_merge_dynamic). When they have typed, fuzzy rank
-        // against the query and cap at max_visible * 5.
-        all = if live_word.is_empty() {
-            all.sort_by(|a, b| {
-                gc_suggest::priority::effective(b)
-                    .cmp(&gc_suggest::priority::effective(a))
-                    .then_with(|| a.text.cmp(&b.text))
-            });
-            all
-        } else {
-            gc_suggest::fuzzy::rank(&live_word, all, self.max_visible * 5)
-        };
+        // instead of ranking against the stale spawn-time word.
+        let all = self.rerank_live(&live_word, all);
 
         self.replace_suggestions_and_reset_overlay(all);
         self.visible = true;
@@ -2264,19 +2296,7 @@ impl InputHandler {
             let extras = merge_dedup_against(&self.suggestions, dynamic_results);
             self.suggestions.extend(extras);
             let merged = std::mem::take(&mut self.suggestions);
-            // Empty query: keep the full pool untruncated so a non-empty re-rank can still recover late candidates.
-            self.suggestions = if current_word.is_empty() {
-                // Re-sort so higher-priority dynamic arrivals outrank residual sync items.
-                let mut m = merged;
-                m.sort_by(|a, b| {
-                    gc_suggest::priority::effective(b)
-                        .cmp(&gc_suggest::priority::effective(a))
-                        .then_with(|| a.text.cmp(&b.text))
-                });
-                m
-            } else {
-                gc_suggest::fuzzy::rank(&current_word, merged, self.max_visible * 5)
-            };
+            self.suggestions = self.rerank_live(&current_word, merged);
             // The rerank above reorders self.suggestions in place, so any
             // displayed_detail_idx captured pre-rerank now points at a
             // different suggestion. Clear the debounce state so a stale
@@ -4218,6 +4238,69 @@ mod tests {
         let mut h = make_visible_handler(vec![suggestion]);
         h.overlay.selected = Some(0);
         h
+    }
+
+    #[test]
+    fn rerank_live_honors_substring_match_mode() {
+        // The live keystroke filter (issue #149) runs through rerank_live,
+        // shared by both async merge paths. In Substring mode a candidate that
+        // only matches as a subsequence ("calendar" for "cl") must be dropped;
+        // the contiguous match ("clone") survives. This guards against either
+        // merge site silently reverting to fuzzy-only ranking.
+        use gc_config::MatchMode;
+
+        let substring = make_handler().with_match_mode(MatchMode::Substring);
+        let ranked = substring.rerank_live(
+            "cl",
+            vec![
+                command_suggestion("clone", None),
+                command_suggestion("calendar", None),
+            ],
+        );
+        let texts: Vec<&str> = ranked.iter().map(|s| s.text.as_str()).collect();
+        assert!(
+            texts.contains(&"clone"),
+            "contiguous 'cl' must survive substring mode: {texts:?}"
+        );
+        assert!(
+            !texts.contains(&"calendar"),
+            "subsequence-only 'c..l' must be dropped in substring mode: {texts:?}"
+        );
+
+        // Contrast: the default fuzzy handler keeps the subsequence match.
+        let fuzzy = make_handler();
+        let ranked = fuzzy.rerank_live(
+            "cl",
+            vec![
+                command_suggestion("clone", None),
+                command_suggestion("calendar", None),
+            ],
+        );
+        let texts: Vec<&str> = ranked.iter().map(|s| s.text.as_str()).collect();
+        assert!(
+            texts.contains(&"calendar"),
+            "default fuzzy mode keeps the c..l subsequence: {texts:?}"
+        );
+    }
+
+    #[test]
+    fn rerank_live_empty_word_keeps_full_pool_ordered() {
+        // Empty word must neither filter nor truncate — the full pool is
+        // preserved, ordered by priority then text. Guards the empty-query
+        // branch both merge paths share.
+        let handler = make_handler();
+        let ranked = handler.rerank_live(
+            "",
+            vec![
+                command_suggestion("zebra", None),
+                command_suggestion("alpha", None),
+            ],
+        );
+        assert_eq!(ranked.len(), 2, "empty word keeps every candidate");
+        assert_eq!(
+            ranked[0].text, "alpha",
+            "equal-priority candidates fall back to alphabetical order"
+        );
     }
 
     #[test]
