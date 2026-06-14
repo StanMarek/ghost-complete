@@ -764,10 +764,9 @@ impl InputHandler {
     ///
     /// An empty `word` keeps the FULL pool ordered by priority then text:
     /// truncating on an empty query would alphabetically evict high-value
-    /// candidates from large dynamic pools (see the long rationale in
-    /// `try_merge_dynamic`), so a later non-empty re-rank can still recover
-    /// late arrivals. A non-empty `word` filters and ranks under the engine's
-    /// configured match mode, capped at `max_visible * 5`.
+    /// candidates from large dynamic pools, so a later non-empty re-rank can
+    /// still recover late arrivals. A non-empty `word` filters and ranks under
+    /// the engine's configured match mode, capped at `max_visible * 5`.
     fn rerank_live(&self, word: &str, mut pool: Vec<Suggestion>) -> Vec<Suggestion> {
         if word.is_empty() {
             pool.sort_by(|a, b| {
