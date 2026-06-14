@@ -611,6 +611,12 @@ impl InputHandler {
         self.render_block_ms
     }
 
+    /// Whether the accept key accepts the top suggestion when nothing has been
+    /// navigated. Observable for the config-reload propagation test.
+    pub fn tab_accepts_top(&self) -> bool {
+        self.tab_accepts_top
+    }
+
     /// Enable/disable accepting the top suggestion on the accept key (Tab) when
     /// nothing has been navigated. Corresponds to `config.popup.tab_accepts_top`.
     pub fn with_tab_accepts_top(mut self, enabled: bool) -> Self {
@@ -2921,7 +2927,12 @@ impl InputHandler {
     /// pull from the same `TerminalState` snapshot and are consumed by
     /// `accept_with_chaining` when the selection is a directory.
     ///
-    /// Returns `None` when the overlay has no valid selection.
+    /// Returns `None` when there is nothing to accept: no effective selection
+    /// (no navigation and either `tab_accepts_top` is off or the list is
+    /// empty — see [`Self::effective_selected`]), or the resolved index is out
+    /// of range. With `tab_accepts_top` enabled and a non-empty list, an
+    /// un-navigated overlay resolves to the top item (index 0) rather than
+    /// short-circuiting.
     fn accept_suggestion_locked(&self, p: &TerminalParser) -> Option<AcceptLocked> {
         let selected_idx = self.effective_selected()?;
         if selected_idx >= self.suggestions.len() {
@@ -5043,6 +5054,36 @@ mod tests {
     }
 
     #[test]
+    fn test_tab_accepts_top_accept_rebound_to_enter_accepts_top() {
+        // The documented "contradictory double-opt-in": rebinding the `accept`
+        // action onto Enter while tab_accepts_top is on makes Enter accept the
+        // top item, because process_key_visible checks `accept` before
+        // `accept_and_enter`. This pins the dispatch ordering — reversing the
+        // two checks would silently invert this behavior with no other failure.
+        let mut handler = make_visible_handler(vec![
+            command_suggestion("status", None),
+            command_suggestion("stash", None),
+        ])
+        .with_tab_accepts_top(true);
+        handler.keybindings.accept = KeyEvent::Enter;
+        handler.keybindings.accept_and_enter = KeyEvent::Tab;
+        assert_eq!(
+            handler.overlay.selected, None,
+            "precondition: no manual navigation"
+        );
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        let result = handler.process_key(&KeyEvent::Enter, &parser, &mut buf);
+
+        assert!(
+            result.ends_with(b"status "),
+            "Enter rebound to `accept` should accept the top item, got {result:?}"
+        );
+        assert!(!handler.visible, "popup should dismiss after accepting");
+    }
+
+    #[test]
     fn test_tab_accepts_top_chains_into_top_directory() {
         // Accepting a directory at the top via the preselect fallback must still
         // drive cd-chaining (predict the buffer + re-trigger) exactly as an
@@ -5108,6 +5149,43 @@ mod tests {
             handler.effective_selected(),
             Some(0),
             "hot-reload should enable the top-item preselect fallback"
+        );
+    }
+
+    #[test]
+    fn test_update_config_disables_tab_accepts_top() {
+        // The on->off direction is the riskier reload: a stale `true` left
+        // behind would keep silently hijacking Tab. update_config must clear
+        // the field, not just set it.
+        let mut handler = make_visible_handler(vec![command_suggestion("status", None)])
+            .with_tab_accepts_top(true);
+        assert_eq!(
+            handler.effective_selected(),
+            Some(0),
+            "precondition: flag on yields the top-item preselect fallback"
+        );
+
+        handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/'],
+            DEFAULT_MAX_VISIBLE,
+            1200,
+            true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
+            80,
+            false, // tab_accepts_top
+        );
+
+        assert_eq!(
+            handler.effective_selected(),
+            None,
+            "hot-reload should clear the top-item preselect fallback"
         );
     }
 
