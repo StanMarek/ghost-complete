@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_No unreleased changes._
+
+## [0.18.0] - 2026-06-14
+
 ### Added
 
 - **Tab-accepts-top option**: set `popup.tab_accepts_top = true` to make the
@@ -1079,6 +1083,7 @@ silently changed behaviour.
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.18.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.18.0
 [0.17.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.17.0
 [0.16.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.16.0
 [0.15.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.15.0
