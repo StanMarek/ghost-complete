@@ -4,9 +4,41 @@ use nucleo::{Config, Matcher, Utf32String};
 use crate::priority;
 use crate::types::{Suggestion, SuggestionSource};
 
+/// How the typed query filters candidates. Re-exported from `gc-config` so
+/// callers in this crate (and the PTY handler) can pass it to [`rank_with_mode`]
+/// without depending on `gc-config` directly.
+pub use gc_config::MatchMode;
+
 pub const DEFAULT_MAX_RESULTS: usize = 50;
 
-pub fn rank(query: &str, mut suggestions: Vec<Suggestion>, max_results: usize) -> Vec<Suggestion> {
+/// Map a [`MatchMode`] to the corresponding nucleo atom kind.
+fn atom_kind(mode: MatchMode) -> AtomKind {
+    match mode {
+        MatchMode::Fuzzy => AtomKind::Fuzzy,
+        MatchMode::Substring => AtomKind::Substring,
+    }
+}
+
+/// Rank `suggestions` against `query` using the default fuzzy (subsequence)
+/// match mode. Thin wrapper over [`rank_with_mode`] preserved for callers and
+/// tests that always want fuzzy matching.
+pub fn rank(query: &str, suggestions: Vec<Suggestion>, max_results: usize) -> Vec<Suggestion> {
+    rank_with_mode(query, suggestions, max_results, MatchMode::Fuzzy)
+}
+
+/// Rank `suggestions` against `query` under the given [`MatchMode`].
+///
+/// In [`MatchMode::Substring`] only candidates that contain the typed
+/// characters as a contiguous run survive; in [`MatchMode::Fuzzy`] the
+/// characters may be spread out as a subsequence. Either way the surviving
+/// candidates are sorted by `(history-last, score, priority, text)` and
+/// truncated to `max_results`.
+pub fn rank_with_mode(
+    query: &str,
+    mut suggestions: Vec<Suggestion>,
+    max_results: usize,
+    mode: MatchMode,
+) -> Vec<Suggestion> {
     if query.is_empty() {
         // Empty query: priority alone determines order (score is 0 for all).
         suggestions.sort_by(|a, b| {
@@ -22,7 +54,7 @@ pub fn rank(query: &str, mut suggestions: Vec<Suggestion>, max_results: usize) -
         query,
         CaseMatching::Smart,
         Normalization::Smart,
-        AtomKind::Fuzzy,
+        atom_kind(mode),
     );
     let mut matcher = Matcher::new(Config::DEFAULT);
     let mut indices_buf = Vec::new();
@@ -45,7 +77,8 @@ pub fn rank(query: &str, mut suggestions: Vec<Suggestion>, max_results: usize) -
     // History is partitioned to the bottom regardless of fuzzy score so a
     // boosted history match can never outrank domain content. The two
     // merge paths in `gc-pty/src/handler.rs` that bypass `rank_with_history`
-    // and call `rank` directly depend on this guarantee.
+    // and rank via `rerank_live` (which calls `rank_with_mode`) depend on
+    // this guarantee.
     suggestions.sort_by(|a, b| {
         let a_hist = a.source == SuggestionSource::History;
         let b_hist = b.source == SuggestionSource::History;
@@ -177,6 +210,109 @@ mod tests {
         let items = vec![make("checkout")];
         let result = rank("", items, DEFAULT_MAX_RESULTS);
         assert!(result[0].match_indices.is_empty());
+    }
+
+    #[test]
+    fn test_substring_excludes_subsequence_only_matches() {
+        // The issue #149 case: typing "cl" should keep only candidates that
+        // contain "cl" contiguously, not every word that has a 'c' and an 'l'
+        // somewhere.
+        let items = vec![make("clone"), make("include"), make("calendar")];
+        let result = rank_with_mode("cl", items, DEFAULT_MAX_RESULTS, MatchMode::Substring);
+        let texts: Vec<&str> = result.iter().map(|s| s.text.as_str()).collect();
+        assert!(texts.contains(&"clone"), "clone contains 'cl'");
+        assert!(texts.contains(&"include"), "include contains 'cl'");
+        assert!(
+            !texts.contains(&"calendar"),
+            "calendar has c..l as a subsequence but not 'cl' contiguously"
+        );
+    }
+
+    #[test]
+    fn test_fuzzy_keeps_subsequence_matches_substring_drops() {
+        // Same candidate set, contrasting the two modes: fuzzy keeps the
+        // subsequence-only "calendar", substring drops it.
+        let fuzzy = rank_with_mode(
+            "cl",
+            vec![make("calendar")],
+            DEFAULT_MAX_RESULTS,
+            MatchMode::Fuzzy,
+        );
+        assert_eq!(fuzzy.len(), 1, "fuzzy keeps c..l subsequence");
+
+        let substring = rank_with_mode(
+            "cl",
+            vec![make("calendar")],
+            DEFAULT_MAX_RESULTS,
+            MatchMode::Substring,
+        );
+        assert!(
+            substring.is_empty(),
+            "substring rejects non-contiguous c..l"
+        );
+    }
+
+    #[test]
+    fn test_substring_multi_word_requires_every_word_as_substring() {
+        // Pins the documented contract: in substring mode, space-separated
+        // words are matched as independent substrings and EVERY word must be
+        // present. "git ch" keeps only the candidate containing both "git"
+        // and "ch" contiguously. This behavior rides on nucleo's Pattern::new
+        // whitespace tokenization — a regression there would otherwise pass
+        // silently.
+        let items = vec![
+            make("git checkout"), // has "git" and "ch"
+            make("git push"),     // has "git", lacks "ch"
+            make("touch change"), // has "ch" (twice), lacks "git"
+        ];
+        let result = rank_with_mode("git ch", items, DEFAULT_MAX_RESULTS, MatchMode::Substring);
+        let texts: Vec<&str> = result.iter().map(|s| s.text.as_str()).collect();
+        assert_eq!(
+            texts,
+            vec!["git checkout"],
+            "only the candidate containing every space-separated substring survives: {texts:?}"
+        );
+    }
+
+    #[test]
+    fn test_substring_smart_case_is_case_insensitive_for_lowercase_query() {
+        // Smart-case (inherited from the fuzzy path): an all-lowercase query
+        // matches case-insensitively, so "cl" still finds "CLONE".
+        let result = rank_with_mode(
+            "cl",
+            vec![make("CLONE")],
+            DEFAULT_MAX_RESULTS,
+            MatchMode::Substring,
+        );
+        assert_eq!(
+            result.len(),
+            1,
+            "lowercase query matches uppercase haystack"
+        );
+    }
+
+    #[test]
+    fn test_substring_match_indices_are_contiguous() {
+        let items = vec![make("include")];
+        let result = rank_with_mode("cl", items, DEFAULT_MAX_RESULTS, MatchMode::Substring);
+        assert_eq!(result.len(), 1);
+        // "in*cl*ude" — the 'c' and 'l' are at indices 2 and 3.
+        assert_eq!(result[0].match_indices, vec![2, 3]);
+    }
+
+    #[test]
+    fn test_rank_delegates_to_fuzzy_mode() {
+        // `rank` must remain a fuzzy alias: a subsequence-only candidate that
+        // substring mode would drop still survives through `rank`.
+        let result = rank("cl", vec![make("calendar")], DEFAULT_MAX_RESULTS);
+        assert_eq!(result.len(), 1, "rank() keeps fuzzy subsequence match");
+    }
+
+    #[test]
+    fn test_substring_empty_query_returns_all() {
+        let items: Vec<Suggestion> = (0..5).map(|i| make(&format!("item{i}"))).collect();
+        let result = rank_with_mode("", items, DEFAULT_MAX_RESULTS, MatchMode::Substring);
+        assert_eq!(result.len(), 5, "empty query is mode-agnostic");
     }
 
     #[test]
