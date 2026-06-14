@@ -191,6 +191,7 @@ fn apply_config_reload(handler: &Arc<Mutex<InputHandler>>, config: &GhostConfig)
             config.popup.description_box_lines,
             config.popup.description_box_debounce_ms,
             config.popup.render_block_ms as u64,
+            config.popup.tab_accepts_top,
         );
         (cleanup, h.overlay_write_ticket())
     };

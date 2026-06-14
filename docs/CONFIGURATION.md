@@ -41,6 +41,7 @@ Controls the popup appearance.
 | `description_box_max_width` | integer | `60` | Maximum width (display columns) for the description box. Clamped to `[20, 200]`. The actual rendered width adapts to the columns remaining beside the main popup. |
 | `description_box_lines` | integer | `5` | Maximum wrapped lines in the description box. Long descriptions are hard-truncated with an ellipsis on the final line. `0` resets to default `5`; values above `20` are clamped to `20`. |
 | `description_box_debounce_ms` | integer | `80` | Debounce window (ms) for description-box updates on selection change. Holding arrow keys causes the box to update at most once per window, avoiding flicker. Set to `0` to disable debounce. Clamped to `[0, 500]`. |
+| `tab_accepts_top` | bool | `false` | When `true`, the accept key (Tab) accepts the top-ranked suggestion even when you haven't navigated yet, instead of forwarding a literal tab to the shell. Restores the Fig/Kiro "type, glance, Tab" flow without the extra arrow-key press. Only the `accept` action is affected: with the default bindings the `accept_and_enter` action (Enter) is a separate binding and still runs the command line, so a stray Enter never silently accepts the top suggestion. (If you rebind the `accept` action itself onto Enter, Enter becomes the accept key and will accept the top item.) |
 
 ```toml
 [popup]
@@ -56,6 +57,7 @@ description_box = "off"
 description_box_max_width = 60
 description_box_lines = 5
 description_box_debounce_ms = 80
+tab_accepts_top = false
 ```
 
 Popup width is content-driven (sized to the longest visible suggestion) and clamped to `[min_width, max_width]`. Descriptions that don't fit are truncated with a single-column ellipsis (`…`). Set `description_box = "side"` to surface a wrapped description when the inline description would be hidden or truncated. The box is capped by `description_box_lines` and available rows without permanently widening the main popup.
@@ -410,7 +412,7 @@ match_highlight = "underline"
 | `[trigger]` | `auto_chars` | Yes |
 | `[trigger]` | `delay_ms` | No |
 | `[trigger]` | `auto_trigger` | Yes |
-| `[popup]` | `max_visible`, `borders`, `feedback_dismiss_ms`, `spinner`, `show_provider_errors`, `render_block_ms`, `min_width`, `max_width`, `description_box`, `description_box_max_width`, `description_box_lines`, `description_box_debounce_ms` | Yes |
+| `[popup]` | `max_visible`, `borders`, `feedback_dismiss_ms`, `spinner`, `show_provider_errors`, `render_block_ms`, `min_width`, `max_width`, `description_box`, `description_box_max_width`, `description_box_lines`, `description_box_debounce_ms`, `tab_accepts_top` | Yes |
 | `[suggest]` | All fields | No |
 | `[suggest.providers]` | All fields | No |
 | `[suggest.spec_cache]` | All fields | No |

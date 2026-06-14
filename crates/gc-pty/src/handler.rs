@@ -495,6 +495,20 @@ pub struct InputHandler {
     overlay_cleanup_generation: u64,
     /// Pending acknowledgement for cleanup bytes that clear committed overlay layouts.
     pending_overlay_cleanup: Option<PendingOverlayCleanup>,
+    /// When `true`, the accept key (Tab) accepts the top-ranked suggestion even
+    /// when the user has not navigated yet (`overlay.selected == None`), instead
+    /// of forwarding a literal tab to the shell. Opt-in via
+    /// `config.popup.tab_accepts_top`; default `false` preserves the historical
+    /// "navigate first, then accept" flow. See issue #150.
+    ///
+    /// Deliberately scoped to the `accept` action only. With the default
+    /// bindings (`accept` = Tab, `accept_and_enter` = Enter) this means Enter
+    /// still runs the command line — because it is a separate binding — so a
+    /// stray Enter never silently accepts a suggestion the user meant to run
+    /// verbatim. (Rebinding the `accept` action itself onto Enter makes Enter
+    /// the accept key, which then accepts the top item; the dispatch checks
+    /// `accept` before `accept_and_enter`.)
+    tab_accepts_top: bool,
 }
 
 impl InputHandler {
@@ -553,6 +567,7 @@ impl InputHandler {
             pending_overlay_render: None,
             overlay_cleanup_generation: 0,
             pending_overlay_cleanup: None,
+            tab_accepts_top: false,
         })
     }
 
@@ -594,6 +609,13 @@ impl InputHandler {
     /// Return the current render-block budget in milliseconds.
     pub fn render_block_ms(&self) -> u64 {
         self.render_block_ms
+    }
+
+    /// Enable/disable accepting the top suggestion on the accept key (Tab) when
+    /// nothing has been navigated. Corresponds to `config.popup.tab_accepts_top`.
+    pub fn with_tab_accepts_top(mut self, enabled: bool) -> Self {
+        self.tab_accepts_top = enabled;
+        self
     }
 
     /// Set popup min/max width bounds (display columns). Stored on the
@@ -806,6 +828,7 @@ impl InputHandler {
         detail_box_lines: u16,
         detail_box_debounce_ms: u16,
         render_block_ms: u64,
+        tab_accepts_top: bool,
     ) -> Vec<u8> {
         let mut cleanup = Vec::new();
         let mut cleanup_scope: Option<CleanupScope> = None;
@@ -881,6 +904,7 @@ impl InputHandler {
         self.detail_box_lines = detail_box_lines;
         self.detail_box_debounce_ms = detail_box_debounce_ms as u64;
         self.render_block_ms = render_block_ms;
+        self.tab_accepts_top = tab_accepts_top;
 
         cleanup
     }
@@ -1152,7 +1176,7 @@ impl InputHandler {
             return Vec::new();
         }
         if key == &self.keybindings.accept {
-            if self.overlay.selected.is_none() {
+            if self.effective_selected().is_none() {
                 self.dismiss(stdout);
                 return key_to_bytes(key);
             }
@@ -1246,13 +1270,30 @@ impl InputHandler {
         }
     }
 
+    /// The suggestion index the accept path should act on.
+    ///
+    /// Normally this is the navigated selection (`overlay.selected`). When
+    /// `tab_accepts_top` is enabled and the user has not navigated yet, it
+    /// falls back to the top item (index 0) so the accept key accepts the
+    /// top-ranked suggestion directly (issue #150).
+    ///
+    /// Returns `None` when there is genuinely nothing to accept: no navigation
+    /// and either the flag is off or the list is empty (e.g. a feedback-only
+    /// popup). The fallback is gated on a non-empty list so a `Some(0)` index
+    /// always points at a real suggestion.
+    fn effective_selected(&self) -> Option<usize> {
+        self.overlay
+            .selected
+            .or_else(|| (self.tab_accepts_top && !self.suggestions.is_empty()).then_some(0))
+    }
+
     /// Accept the current suggestion, with directory chaining for paths ending in '/'.
     fn accept_with_chaining(
         &mut self,
         parser: &Arc<Mutex<TerminalParser>>,
         stdout: &mut dyn Write,
     ) -> Vec<u8> {
-        let selected_idx = match self.overlay.selected {
+        let selected_idx = match self.effective_selected() {
             Some(idx) if idx < self.suggestions.len() => idx,
             _ => {
                 self.dismiss(stdout);
@@ -2882,7 +2923,7 @@ impl InputHandler {
     ///
     /// Returns `None` when the overlay has no valid selection.
     fn accept_suggestion_locked(&self, p: &TerminalParser) -> Option<AcceptLocked> {
-        let selected_idx = self.overlay.selected?;
+        let selected_idx = self.effective_selected()?;
         if selected_idx >= self.suggestions.len() {
             return None;
         }
@@ -4193,6 +4234,7 @@ mod tests {
             pending_overlay_render: None,
             overlay_cleanup_generation: 0,
             pending_overlay_cleanup: None,
+            tab_accepts_top: false,
         }
     }
 
@@ -4902,6 +4944,173 @@ mod tests {
         assert!(!handler.visible, "popup should be dismissed");
     }
 
+    // --- tab_accepts_top (issue #150) ---
+
+    #[test]
+    fn test_tab_accepts_top_accepts_first_when_enabled() {
+        let mut handler = make_visible_handler(vec![
+            command_suggestion("status", None),
+            command_suggestion("stash", None),
+        ])
+        .with_tab_accepts_top(true);
+        assert_eq!(
+            handler.overlay.selected, None,
+            "precondition: no manual navigation"
+        );
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        let result = handler.process_key(&KeyEvent::Tab, &parser, &mut buf);
+
+        assert_ne!(
+            result,
+            vec![0x09],
+            "Tab should accept the top item, not forward a literal tab"
+        );
+        assert!(
+            result.ends_with(b"status "),
+            "accepting the top command inserts it with a trailing space, got {result:?}"
+        );
+        assert!(!handler.visible, "popup should dismiss after accepting");
+    }
+
+    #[test]
+    fn test_tab_accepts_top_disabled_still_forwards_tab() {
+        // Default (flag off) preserves the historical "navigate first" flow.
+        let mut handler = make_visible_handler(vec![command_suggestion("status", None)]);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        let result = handler.process_key(&KeyEvent::Tab, &parser, &mut buf);
+
+        assert_eq!(
+            result,
+            vec![0x09],
+            "default behavior: forward literal tab when nothing navigated"
+        );
+        assert!(!handler.visible);
+    }
+
+    #[test]
+    fn test_tab_accepts_top_does_not_hijack_enter() {
+        // Enter must keep running the command line even with the flag on, so a
+        // stray Enter never silently accepts a suggestion into a command the
+        // user meant to run verbatim.
+        let mut handler = make_visible_handler(vec![command_suggestion("status", None)])
+            .with_tab_accepts_top(true);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        let result = handler.process_key(&KeyEvent::Enter, &parser, &mut buf);
+
+        assert_eq!(
+            result,
+            vec![0x0D],
+            "Enter forwards CR even with tab_accepts_top enabled"
+        );
+        assert!(!handler.visible);
+    }
+
+    #[test]
+    fn test_tab_accepts_top_with_no_suggestions_forwards_tab() {
+        // A feedback-only popup (Loading/Empty/Error, zero suggestions) has no
+        // top item to accept, so Tab still forwards a literal tab.
+        let mut handler = make_visible_handler(vec![]).with_tab_accepts_top(true);
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        let result = handler.process_key(&KeyEvent::Tab, &parser, &mut buf);
+
+        assert_eq!(result, vec![0x09]);
+    }
+
+    #[test]
+    fn test_tab_accepts_top_respects_existing_navigation() {
+        // A real selection wins over the preselect fallback: Tab accepts the
+        // navigated item, not the top.
+        let mut handler = make_visible_handler(vec![
+            command_suggestion("status", None),
+            command_suggestion("stash", None),
+        ])
+        .with_tab_accepts_top(true);
+        handler.overlay.selected = Some(1); // navigated to "stash"
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+        let result = handler.process_key(&KeyEvent::Tab, &parser, &mut buf);
+
+        assert!(
+            result.ends_with(b"stash "),
+            "should accept the navigated item, got {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_tab_accepts_top_chains_into_top_directory() {
+        // Accepting a directory at the top via the preselect fallback must still
+        // drive cd-chaining (predict the buffer + re-trigger) exactly as an
+        // explicitly-selected directory does, even though overlay.selected was
+        // never set.
+        let mut handler = make_visible_handler(vec![Suggestion {
+            text: "Desktop/".to_string(),
+            kind: SuggestionKind::Directory,
+            source: SuggestionSource::Filesystem,
+            ..Default::default()
+        }])
+        .with_tab_accepts_top(true);
+        assert_eq!(
+            handler.overlay.selected, None,
+            "precondition: no navigation"
+        );
+
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        {
+            let mut p = parser.lock().unwrap();
+            p.state_mut().predict_command_buffer("cd ".to_string(), 3);
+        }
+
+        let mut buf = Vec::new();
+        handler.process_key(&KeyEvent::Tab, &parser, &mut buf);
+
+        let p = parser.lock().unwrap();
+        assert_eq!(
+            p.state().command_buffer(),
+            Some("cd Desktop/"),
+            "preselected directory should chain like a navigated one"
+        );
+    }
+
+    #[test]
+    fn test_update_config_toggles_tab_accepts_top() {
+        // The flag hot-reloads through update_config like the other popup fields.
+        let mut handler = make_visible_handler(vec![command_suggestion("status", None)]);
+        assert_eq!(
+            handler.effective_selected(),
+            None,
+            "default: no preselect fallback"
+        );
+
+        handler.update_config(
+            PopupTheme::default(),
+            Keybindings::default(),
+            &[' ', '/'],
+            DEFAULT_MAX_VISIBLE,
+            1200,
+            true,
+            DEFAULT_MIN_POPUP_WIDTH,
+            DEFAULT_MAX_POPUP_WIDTH,
+            DescriptionBoxMode::Off,
+            60,
+            5,
+            80,
+            80,
+            true, // tab_accepts_top
+        );
+
+        assert_eq!(
+            handler.effective_selected(),
+            Some(0),
+            "hot-reload should enable the top-item preselect fallback"
+        );
+    }
+
     // --- parse_key_name tests ---
 
     #[test]
@@ -5081,6 +5290,7 @@ mod tests {
             5,
             80,
             80,
+            false,
         );
 
         assert_eq!(handler.theme.selected_on, vec![0x1B, b'[', b'1', b'm']);
@@ -5114,6 +5324,7 @@ mod tests {
             5,
             80,
             80,
+            false,
         );
 
         assert_eq!(handler.keybindings, new_kb);
@@ -5137,6 +5348,7 @@ mod tests {
             5,
             80,
             80,
+            false,
         );
 
         assert_eq!(handler.max_visible, 20);
@@ -5160,6 +5372,7 @@ mod tests {
             5,
             80,
             80,
+            false,
         );
 
         assert_eq!(handler.trigger_chars, vec!['@', '#', '!']);
@@ -5183,6 +5396,7 @@ mod tests {
             7,
             0,
             80,
+            false,
         );
 
         assert_eq!(handler.min_popup_width, 35);
@@ -5228,6 +5442,7 @@ mod tests {
             3,
             0,
             80,
+            false,
         );
 
         assert!(
@@ -5285,6 +5500,7 @@ mod tests {
             5,
             80,
             80,
+            false,
         );
 
         let output = String::from_utf8_lossy(&cleanup);
@@ -5332,6 +5548,7 @@ mod tests {
             5,
             80,
             80,
+            false,
         );
 
         let output = String::from_utf8_lossy(&cleanup);
@@ -5425,6 +5642,7 @@ mod tests {
             5,
             80,
             80,
+            false,
         );
 
         assert!(!handler.auto_trigger_enabled());
@@ -5454,6 +5672,7 @@ mod tests {
             5,
             80,
             80,
+            false,
         );
 
         assert!(!handler.visible);
@@ -5489,6 +5708,7 @@ mod tests {
             5,
             80,
             80,
+            false,
         );
 
         assert!(
@@ -5525,6 +5745,7 @@ mod tests {
             5,
             80,
             80,
+            false,
         );
 
         assert!(handler.visible);
@@ -7696,6 +7917,7 @@ mod tests {
             5,
             80,
             80,
+            false,
         );
 
         let output = String::from_utf8_lossy(&cleanup);
