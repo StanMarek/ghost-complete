@@ -85,6 +85,13 @@ print_head() {
         count=$((count + 1))
         (( count >= limit )) && return 0
     done <<< "${blob}"
+    # On the final iteration when the blob has fewer lines than `limit`, the
+    # arithmetic `(( count >= limit ))` evaluates false and exits 1; a bash
+    # `while` returns its body's last exit status, so without this explicit
+    # `return 0` print_head propagates that 1 and `set -e` aborts the smoke.
+    # Triggered by single-line `validate-specs --json` output (dirs_scanned:0)
+    # in the isolated HOME — the very condition this gate is designed to run.
+    return 0
 }
 
 echo "--version:"
