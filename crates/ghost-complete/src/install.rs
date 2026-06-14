@@ -54,6 +54,7 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # description_box_max_width = 60  # Max description-box width; clamped to [20, 200]
 # description_box_lines = 5  # Max wrapped description lines; 0 resets to 5, above 20 clamps to 20
 # description_box_debounce_ms = 80  # Description-box selection debounce; 0 disables
+# tab_accepts_top = false  # Set true to make Tab accept the top suggestion when nothing is navigated (Fig/Kiro-style); Enter still runs the line
 
 # [suggest]
 # max_results = 50

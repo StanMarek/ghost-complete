@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Tab-accepts-top option**: set `popup.tab_accepts_top = true` to make the
+  accept key (Tab) accept the top-ranked suggestion even when nothing has been
+  navigated yet, instead of forwarding a literal tab to the shell. Restores the
+  Fig/Kiro "type, glance, Tab" flow without the extra arrow-key press. Default
+  `false` preserves the historical "navigate first, then accept" behavior. Only
+  the `accept` action is affected: with the default bindings the `accept_and_enter`
+  action (Enter) is a separate binding and still runs the command line, so a stray
+  Enter never silently accepts the top suggestion. Hot-reloadable via `config.toml`
+  or the TUI editor (#150).
 - **Substring match mode** for the suggestion filter: set
   `suggest.match_mode = "substring"` to require the typed characters to appear
   contiguously (`cl` → `clone`/`include`, not `calendar`) instead of the

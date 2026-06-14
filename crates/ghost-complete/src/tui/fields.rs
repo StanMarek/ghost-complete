@@ -188,6 +188,14 @@ pub fn all_fields() -> Vec<FieldMeta> {
             reload: ReloadBehavior::Live,
             help: "Debounce window (ms) for description-box updates on selection change (0-500)",
         },
+        FieldMeta {
+            section: "popup",
+            key: "tab_accepts_top",
+            field_type: FieldType::Bool,
+            default: "false",
+            reload: ReloadBehavior::Live,
+            help: "Make Tab accept the top suggestion when nothing is navigated yet (Fig/Kiro-style); Enter still runs the command line",
+        },
         // suggest
         FieldMeta {
             section: "suggest",

@@ -191,6 +191,15 @@ pub struct PopupConfig {
     /// Default 80, matching `render_block_ms`.
     #[serde(deserialize_with = "deserialize_saturating_u16")]
     pub description_box_debounce_ms: u16,
+    /// When `true`, the accept key (Tab) accepts the top-ranked suggestion even
+    /// when nothing has been navigated yet, instead of forwarding a literal tab
+    /// to the shell. Lets users coming from Fig/Kiro keep a "type, glance, Tab"
+    /// flow without an extra arrow-key press. Default `false` preserves the
+    /// historical "navigate first, then accept" behavior. Only the `accept`
+    /// action is affected: with the default bindings the `accept_and_enter`
+    /// action (Enter) is a separate binding and still runs the command line, so
+    /// a stray Enter never silently accepts the top suggestion. See issue #150.
+    pub tab_accepts_top: bool,
 }
 
 impl Default for PopupConfig {
@@ -208,6 +217,7 @@ impl Default for PopupConfig {
             description_box_max_width: 60,
             description_box_lines: 5,
             description_box_debounce_ms: 80,
+            tab_accepts_top: false,
         }
     }
 }
@@ -659,6 +669,7 @@ pub fn all_field_paths() -> Vec<&'static str> {
         "popup.description_box_max_width",
         "popup.description_box_lines",
         "popup.description_box_debounce_ms",
+        "popup.tab_accepts_top",
         // [suggest]
         "suggest.max_results",
         "suggest.max_history_results",
@@ -1526,6 +1537,21 @@ max_width = 80
         let cfg = PopupConfig::default();
         assert_eq!(cfg.min_width, 20);
         assert_eq!(cfg.max_width, 60);
+    }
+
+    #[test]
+    fn test_popup_tab_accepts_top_defaults_false() {
+        assert!(
+            !PopupConfig::default().tab_accepts_top,
+            "tab_accepts_top must default off to preserve historical behavior"
+        );
+    }
+
+    #[test]
+    fn test_popup_tab_accepts_top_parses() {
+        let toml_str = "[popup]\ntab_accepts_top = true\n";
+        let config: GhostConfig = toml::from_str(toml_str).unwrap();
+        assert!(config.popup.tab_accepts_top);
     }
 
     #[test]

@@ -218,6 +218,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
             .with_trigger_chars(&config.trigger.auto_chars)
             .with_auto_trigger(config.trigger.auto_trigger)
             .with_render_block_ms(config.popup.render_block_ms as u64)
+            .with_tab_accepts_top(config.popup.tab_accepts_top)
             .with_suggest_config(
                 config.suggest.max_results,
                 config.suggest.providers.commands,

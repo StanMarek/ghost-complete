@@ -191,6 +191,7 @@ fn apply_config_reload(handler: &Arc<Mutex<InputHandler>>, config: &GhostConfig)
             config.popup.description_box_lines,
             config.popup.description_box_debounce_ms,
             config.popup.render_block_ms as u64,
+            config.popup.tab_accepts_top,
         );
         (cleanup, h.overlay_write_ticket())
     };
@@ -285,6 +286,36 @@ mod tests {
         apply_config_reload(&handler, &config).expect("config reload applies");
 
         assert_eq!(handler.lock().unwrap().render_block_ms(), 150);
+    }
+
+    /// `popup.tab_accepts_top` must travel the same `GhostConfig ->
+    /// config_watch -> InputHandler` seam as `render_block_ms` — it is the
+    /// last positional arg threaded through `update_config`, so this guards
+    /// against `apply_config_reload` dropping it on a live reload.
+    #[test]
+    fn tab_accepts_top_propagates_on_config_reload() {
+        let handler = Arc::new(Mutex::new(
+            InputHandler::new_with_embedded(
+                &[],
+                gc_terminal::TerminalProfile::for_ghostty(),
+                false,
+            )
+            .expect("handler builds"),
+        ));
+        assert!(
+            !handler.lock().unwrap().tab_accepts_top(),
+            "default tab_accepts_top should be false"
+        );
+
+        let mut config = GhostConfig::default();
+        config.popup.tab_accepts_top = true;
+
+        apply_config_reload(&handler, &config).expect("config reload applies");
+
+        assert!(
+            handler.lock().unwrap().tab_accepts_top(),
+            "reload should propagate tab_accepts_top = true into the handler"
+        );
     }
 
     /// Drives the full hot-reload seam end-to-end: an on-disk config.toml,
