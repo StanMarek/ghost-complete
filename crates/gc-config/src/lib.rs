@@ -1115,6 +1115,29 @@ match_mode = "substring"
     }
 
     #[test]
+    fn match_mode_rejects_unknown_variant() {
+        // An invalid match_mode must fail deserialization (an `unknown variant`
+        // serde error) rather than being silently defaulted — this pins the
+        // rejection contract so a future `#[serde(other)]` or variant rename
+        // can't quietly swallow a typo and take the proxy down on load.
+        let toml = r#"
+[suggest]
+match_mode = "contiguous"
+"#;
+        let result = toml::from_str::<GhostConfig>(toml);
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("unknown variant"),
+            "expected an `unknown variant` error, got: {err}"
+        );
+        assert!(
+            err.contains("fuzzy") && err.contains("substring"),
+            "error should list the valid variants, got: {err}"
+        );
+    }
+
+    #[test]
     fn spec_cache_deserializes_from_toml() {
         let toml = r#"
 [suggest.spec_cache]

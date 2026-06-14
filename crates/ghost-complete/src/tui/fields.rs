@@ -594,6 +594,7 @@ mod tests {
         for (section, key) in [
             ("popup", "render_block_ms"),
             ("popup", "feedback_dismiss_ms"),
+            ("suggest", "match_mode"),
             ("suggest.providers", "js_runtime"),
             ("experimental", "aws_sdk_provider"),
             ("experimental", "aws_sdk_fallback_to_cli"),
@@ -617,13 +618,23 @@ mod tests {
         for (section, key) in [
             ("popup", "render_block_ms"),
             ("popup", "feedback_dismiss_ms"),
+            ("suggest", "match_mode"),
             ("suggest.providers", "js_runtime"),
             ("experimental", "aws_sdk_provider"),
             ("experimental", "aws_sdk_fallback_to_cli"),
             ("experimental", "brew_search_cap"),
         ] {
             let field = find_field(section, key);
-            let doc = format!("[{section}]\n{key} = {}\n", field.default);
+            // Numeric / bool defaults are valid bare TOML scalars; string-valued
+            // field types (enum variants, plain strings, style strings) must be
+            // quoted to form a valid `key = "value"` document.
+            let rhs = match field.field_type {
+                FieldType::Enum(_) | FieldType::String | FieldType::StyleString => {
+                    format!("\"{}\"", field.default)
+                }
+                _ => field.default.to_string(),
+            };
+            let doc = format!("[{section}]\n{key} = {rhs}\n");
             let cfg: gc_config::GhostConfig = toml::from_str(&doc)
                 .unwrap_or_else(|e| panic!("{section}.{key} parse failed: {e}"));
             let round = toml::Value::try_from(&cfg).expect("config serializes");
@@ -633,6 +644,24 @@ mod tests {
                 "{section}.{key} did not survive serialize/deserialize round-trip"
             );
         }
+    }
+
+    #[test]
+    fn match_mode_default_is_a_valid_enum_member() {
+        // The editor seeds its selection from the index of `default` within the
+        // `Enum` options slice; if the default ever drifts outside that slice the
+        // start-index lookup would be wrong, so pin membership here.
+        let field = find_field("suggest", "match_mode");
+        let options = match field.field_type {
+            FieldType::Enum(opts) => opts,
+            other => panic!("suggest.match_mode should be an Enum field, got {other:?}"),
+        };
+        assert!(
+            options.contains(&field.default),
+            "match_mode default {:?} is not in its enum options {:?}",
+            field.default,
+            options
+        );
     }
 
     #[test]
