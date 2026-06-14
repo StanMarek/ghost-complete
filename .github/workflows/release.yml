@@ -266,6 +266,16 @@ jobs:
           shopt -s nullglob
           found=0
           for f in /tmp/artifacts/*.tar.gz /tmp/artifacts/*.tar.xz; do
+            # cargo-dist emits a `source.tar.gz` global artifact (the repo tree,
+            # no compiled binary). It is not a packaged app and must not be
+            # smoke-tested: smoking it fails with "no executable ghost-complete
+            # in archive" and (set -e) aborts the step before the real binary
+            # tarballs are ever checked. Skip it; `found` stays gated on real
+            # binaries so an all-source artifact set still fails closed below.
+            if [[ "$(basename "$f")" == "source.tar.gz" ]]; then
+              echo "skip: source tarball $(basename "$f") (not a packaged binary)"
+              continue
+            fi
             found=1
             ./scripts/check-release-artifact-smoke.sh "$f"
           done
