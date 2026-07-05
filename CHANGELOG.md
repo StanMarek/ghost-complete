@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_No unreleased changes._
+### Security
+
+- Bumped `anyhow` from 1.0.102 to 1.0.103 to clear **RUSTSEC-2026-0190**: an
+  unsoundness in `Error::downcast_mut()` that could trigger undefined behavior
+  when a mutable downcast follows an `Error::context` call. Lockfile-only change;
+  the workspace already required `anyhow = "1"` (#154).
 
 ## [0.18.0] - 2026-06-14
 
