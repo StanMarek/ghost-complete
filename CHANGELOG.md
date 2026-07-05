@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-07-05
+
 ### Added
 
 - **Otty terminal support**: Ghost Complete now recognizes Otty
@@ -20,12 +22,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   integration's native-OSC-133 gate were updated to match. Brings the supported
   terminal count to 10 (#153).
 
+### Changed
+
+- Dependency maintenance clearing the Dependabot backlog. Each bump was verified
+  against the full test / clippy `-D warnings` / fmt gate, and every
+  breaking-semver bump additionally passed an adversarial changelog-vs-usage
+  audit before merge:
+  - `shlex` 1.3.0 → 2.0.1 (#133) — the one API we use (`split`) is behaviorally
+    unchanged; 2.0 only removed convenience/`unsafe` APIs we never call.
+  - `sha2` 0.10.9 → 0.11.0 (#134) — RustCrypto digest 0.11 generation; SHA-256
+    output is byte-identical, now pinned by a FIPS-180-4 known-answer test.
+  - `rquickjs` 0.10.0 → 0.12.0 (#136) — bundled quickjs-ng advances to Unicode
+    17.0.0 with regex/TypedArray security fixes; a new tripwire test pins the
+    engine's Unicode behavior so a future bump that silently shifts `requires_js`
+    generator output for non-ASCII input is caught.
+  - `toml_edit` 0.22.27 → 0.25.12 (#90) — config round-trip output is
+    byte-identical; also gains TOML 1.1 input acceptance, aligning it with the
+    already-1.1 `toml` crate.
+  - CI actions: `actions/setup-node` 5 → 6 (#87), `dorny/paths-filter` 3 → 4
+    (#88).
+
 ### Security
 
 - Bumped `anyhow` from 1.0.102 to 1.0.103 to clear **RUSTSEC-2026-0190**: an
   unsoundness in `Error::downcast_mut()` that could trigger undefined behavior
   when a mutable downcast follows an `Error::context` call. Lockfile-only change;
   the workspace already required `anyhow = "1"` (#154).
+- Bumped the AWS SDK crates to clear Dependabot advisory **GHSA-g59m-gf8j-gjf5**
+  (AWS SDK for Rust v1 region-parameter defense-in-depth, low severity):
+  `aws-sdk-iam` 1.80.0 → 1.95.0 (direct pin) plus the transitive `aws-sdk-sts`
+  → 1.103.0, `aws-sdk-ssooidc` → 1.100.0, and `aws-sdk-sso` → 1.98.0, all past
+  their patched versions. Supersedes the partial Dependabot bump #135, which
+  stopped at 1.90.0 — short of the 1.95.0 patch line (#157).
 
 ## [0.18.0] - 2026-06-14
 
@@ -1101,6 +1129,7 @@ silently changed behaviour.
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.19.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.19.0
 [0.18.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.18.0
 [0.17.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.17.0
 [0.16.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.16.0
