@@ -49,7 +49,8 @@ __ghost_complete_init() {
        [[ -n "$ZED_TERM" ]] || \
        [[ -n "$VSCODE_IPC_HOOK_CLI" ]] || \
        [[ -n "$ITERM_SESSION_ID" ]] || \
-       [[ "$TERM_PROGRAM" == "rio" ]]; then
+       [[ "$TERM_PROGRAM" == "rio" ]] || \
+       [[ "$TERM_PROGRAM" == "otty" ]]; then
       if command -v ghost-complete >/dev/null 2>&1; then
         export GHOST_COMPLETE_ACTIVE=1
         exec ghost-complete
@@ -85,7 +86,7 @@ __ghost_complete_init() {
       supported=1
     else
       case "$TERM_PROGRAM" in
-        ghostty|WezTerm|rio|iTerm.app|Apple_Terminal|zed|vscode) supported=1 ;;
+        ghostty|otty|WezTerm|rio|iTerm.app|Apple_Terminal|zed|vscode) supported=1 ;;
       esac
     fi
     if [[ $supported -eq 1 ]] && command -v ghost-complete >/dev/null 2>&1; then

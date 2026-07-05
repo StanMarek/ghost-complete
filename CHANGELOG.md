@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Otty terminal support**: Ghost Complete now recognizes Otty
+  (`TERM_PROGRAM=otty`, bundle id `io.appmakes.otty`), a Ghostty fork, as a
+  first-class supported terminal. It
+  inherits Ghostty's exact capability profile — DECSET 2026 synchronized output
+  and native OSC 133 prompt markers — so popups render at the correct cursor
+  position with no configuration and **without** `[experimental] multi_terminal`.
+  Unlike Ghostty proper, Otty does not set `GHOSTTY_RESOURCES_DIR`, so it is
+  detected purely via `TERM_PROGRAM`; the zsh init whitelist and the shell
+  integration's native-OSC-133 gate were updated to match. Brings the supported
+  terminal count to 10 (#153).
+
 ### Security
 
 - Bumped `anyhow` from 1.0.102 to 1.0.103 to clear **RUSTSEC-2026-0190**: an

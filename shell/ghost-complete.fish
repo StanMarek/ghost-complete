@@ -22,10 +22,14 @@ end
 # OSC 633). In those terminals our OSC 7771 fallback is redundant — the
 # terminal already understands the OSC 133 we emit below, and OSC 7771
 # only exists for terminals that mangle OSC 133. Currently covers
-# Ghostty, Zed, and VSCode (the latter only once its shell integration
-# is active, signalled by VSCODE_INJECTION being set).
+# Ghostty, Otty (a Ghostty fork), Zed, and VSCode (the latter only once
+# its shell integration is active, signalled by VSCODE_INJECTION being set).
 function _gc_native_osc133
     if test "$TERM_PROGRAM" = ghostty -o -n "$GHOSTTY_RESOURCES_DIR"
+        return 0
+    end
+    # Otty is a Ghostty fork; it parses OSC 133 natively like Ghostty.
+    if test "$TERM_PROGRAM" = otty
         return 0
     end
     if test -n "$ZED_TERM"
