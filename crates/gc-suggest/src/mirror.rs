@@ -510,6 +510,27 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
+    fn sha256_hex_matches_fips_180_4_known_answers() {
+        // Pins the on-disk hash format. `list_user_edited_specs` and
+        // `write_embedded_mirror` compare freshly computed sha256 hashes
+        // against hashes a PRIOR binary persisted in the version stamp.
+        // If a future digest-crate bump (e.g. the sha2 0.10 -> 0.11
+        // RustCrypto generation shift) ever changed the output bytes for
+        // identical input, every mirrored spec would be falsely flagged
+        // "user-edited" on upgrade and auto-refresh would silently skip
+        // all overwrites. These canonical FIPS-180-4 / RFC-6234 vectors
+        // fail loudly the moment that happens.
+        assert_eq!(
+            sha256_hex(b""),
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+        assert_eq!(
+            sha256_hex(b"abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+    }
+
+    #[test]
     fn mirror_status_not_installed_when_dir_absent() {
         let dir = TempDir::new().unwrap();
         let missing = dir.path().join("does-not-exist");
