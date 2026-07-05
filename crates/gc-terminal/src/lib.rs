@@ -4,6 +4,13 @@ use std::fmt;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Terminal {
     Ghostty,
+    /// Otty — a Ghostty fork (bundle id `io.appmakes.otty`). Inherits
+    /// Ghostty's rendering pipeline, so it has the same capability profile
+    /// (Synchronized + native OSC 133). Detected via `TERM_PROGRAM=otty`;
+    /// unlike Ghostty proper it does NOT set `GHOSTTY_RESOURCES_DIR`, so it
+    /// gets no env-var-based tmux detection (best-effort via TERM_PROGRAM,
+    /// same as Rio).
+    Otty,
     Kitty,
     WezTerm,
     Alacritty,
@@ -31,6 +38,7 @@ impl Terminal {
     pub fn supported_terminals() -> &'static [&'static str] {
         &[
             "Ghostty",
+            "Otty",
             "Kitty",
             "WezTerm",
             "Alacritty",
@@ -47,6 +55,7 @@ impl fmt::Display for Terminal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Terminal::Ghostty => write!(f, "Ghostty"),
+            Terminal::Otty => write!(f, "Otty"),
             Terminal::Kitty => write!(f, "Kitty"),
             Terminal::WezTerm => write!(f, "WezTerm"),
             Terminal::Alacritty => write!(f, "Alacritty"),
@@ -266,6 +275,7 @@ impl TerminalProfile {
     fn from_term_program(term_program: &str, in_tmux: bool) -> Self {
         let terminal = match term_program {
             "ghostty" => Terminal::Ghostty,
+            "otty" => Terminal::Otty,
             "iTerm.app" => Terminal::ITerm2,
             "Apple_Terminal" => Terminal::TerminalApp,
             "WezTerm" => Terminal::WezTerm,
@@ -287,8 +297,10 @@ impl TerminalProfile {
 
     fn new(terminal: Terminal, in_tmux: bool) -> Self {
         let (render_strategy, prompt_detection) = match &terminal {
-            // Full native support: synchronized output + OSC 133 prompt markers
+            // Full native support: synchronized output + OSC 133 prompt markers.
+            // Otty is a Ghostty fork, so it shares Ghostty's profile exactly.
             Terminal::Ghostty
+            | Terminal::Otty
             | Terminal::Kitty
             | Terminal::WezTerm
             | Terminal::Rio
@@ -318,6 +330,12 @@ impl TerminalProfile {
     #[cfg(any(test, feature = "test-utils"))]
     pub fn for_ghostty() -> Self {
         Self::new(Terminal::Ghostty, false)
+    }
+
+    /// Test constructor: Otty profile (Synchronized, OSC 133) — Ghostty fork.
+    #[cfg(any(test, feature = "test-utils"))]
+    pub fn for_otty() -> Self {
+        Self::new(Terminal::Otty, false)
     }
 
     /// Test constructor: iTerm2 profile (PreRenderBuffer, ShellIntegration).
@@ -386,6 +404,7 @@ mod tests {
     #[test]
     fn test_terminal_is_known() {
         assert!(Terminal::Ghostty.is_known());
+        assert!(Terminal::Otty.is_known());
         assert!(Terminal::Kitty.is_known());
         assert!(Terminal::WezTerm.is_known());
         assert!(Terminal::Alacritty.is_known());
@@ -400,8 +419,8 @@ mod tests {
 
     #[test]
     fn test_supported_terminals_count() {
-        // 9 supported terminals: Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app, Zed, VSCode
-        assert_eq!(Terminal::supported_terminals().len(), 9);
+        // 10 supported terminals: Ghostty, Otty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app, Zed, VSCode
+        assert_eq!(Terminal::supported_terminals().len(), 10);
     }
 
     #[test]
@@ -410,6 +429,7 @@ mod tests {
             Terminal::supported_terminals(),
             &[
                 "Ghostty",
+                "Otty",
                 "Kitty",
                 "WezTerm",
                 "Alacritty",
@@ -431,6 +451,17 @@ mod tests {
         assert_eq!(profile.render_strategy(), RenderStrategy::Synchronized);
         assert_eq!(profile.prompt_detection(), PromptDetection::Osc133);
         assert!(!profile.in_tmux());
+    }
+
+    #[test]
+    fn test_otty_profile() {
+        // Otty is a Ghostty fork — same capability profile as Ghostty.
+        let profile = TerminalProfile::from_term_program("otty", false);
+        assert_eq!(*profile.terminal(), Terminal::Otty);
+        assert_eq!(profile.render_strategy(), RenderStrategy::Synchronized);
+        assert_eq!(profile.prompt_detection(), PromptDetection::Osc133);
+        assert!(!profile.in_tmux());
+        assert_eq!(profile.display_name(), "Otty");
     }
 
     #[test]
@@ -535,6 +566,7 @@ mod tests {
     #[test]
     fn test_terminal_display() {
         assert_eq!(Terminal::Ghostty.to_string(), "Ghostty");
+        assert_eq!(Terminal::Otty.to_string(), "Otty");
         assert_eq!(Terminal::Kitty.to_string(), "Kitty");
         assert_eq!(Terminal::WezTerm.to_string(), "WezTerm");
         assert_eq!(Terminal::Alacritty.to_string(), "Alacritty");
@@ -599,6 +631,30 @@ mod tests {
         );
         assert_eq!(*p.terminal(), Terminal::Ghostty);
         assert!(!p.in_tmux());
+    }
+
+    #[test]
+    fn test_detect_otty_direct() {
+        // Otty sets TERM_PROGRAM=otty and no dedicated env var — detected via
+        // the TERM_PROGRAM path. It notably does NOT set GHOSTTY_RESOURCES_DIR,
+        // so ghostty_res stays false here.
+        let p = detect(
+            "otty", false, false, false, false, false, false, false, false,
+        );
+        assert_eq!(*p.terminal(), Terminal::Otty);
+        assert!(!p.in_tmux());
+    }
+
+    #[test]
+    fn test_detect_otty_via_tmux_term_program_fallback() {
+        // Otty has no dedicated env var for tmux detection (it does not set
+        // GHOSTTY_RESOURCES_DIR) — falls back to TERM_PROGRAM, same as Rio.
+        let p = detect(
+            "otty", true, false, false, false, false, false, false, false,
+        );
+        assert_eq!(*p.terminal(), Terminal::Otty);
+        assert!(p.in_tmux());
+        assert_eq!(p.display_name(), "Otty (via tmux)");
     }
 
     #[test]
@@ -885,6 +941,14 @@ mod tests {
     }
 
     #[test]
+    fn test_for_otty() {
+        let p = TerminalProfile::for_otty();
+        assert_eq!(*p.terminal(), Terminal::Otty);
+        assert_eq!(p.render_strategy(), RenderStrategy::Synchronized);
+        assert_eq!(p.prompt_detection(), PromptDetection::Osc133);
+    }
+
+    #[test]
     fn test_for_kitty() {
         let p = TerminalProfile::for_kitty();
         assert_eq!(*p.terminal(), Terminal::Kitty);
@@ -958,6 +1022,14 @@ mod tests {
     #[test]
     fn test_capitalized_ghostty_is_unknown() {
         let profile = TerminalProfile::from_term_program("Ghostty", false);
+        assert!(matches!(profile.terminal(), Terminal::Unknown(_)));
+    }
+
+    #[test]
+    fn test_capitalized_otty_is_unknown() {
+        // Otty reports TERM_PROGRAM=otty (lowercase); match the strict-casing
+        // policy applied to every other terminal.
+        let profile = TerminalProfile::from_term_program("Otty", false);
         assert!(matches!(profile.terminal(), Terminal::Unknown(_)));
     }
 

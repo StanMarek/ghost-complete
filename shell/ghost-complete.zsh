@@ -143,11 +143,13 @@ _gc_report_env() {
 # OSC 633). In those terminals our OSC 7771 fallback is redundant — the
 # terminal already understands the OSC 133 we emit below, and OSC 7771
 # only exists for terminals that mangle OSC 133. Currently covers
-# Ghostty, Kitty, WezTerm, Rio, Zed, and VSCode (the latter only once
-# its shell integration is active, signalled by VSCODE_INJECTION being
-# set).
+# Ghostty, Otty (a Ghostty fork), Kitty, WezTerm, Rio, Zed, and VSCode
+# (the latter only once its shell integration is active, signalled by
+# VSCODE_INJECTION being set).
 _gc_native_osc133() {
     [[ "$TERM_PROGRAM" == "ghostty" || -n "$GHOSTTY_RESOURCES_DIR" ]] && return 0
+    # Otty is a Ghostty fork; it parses OSC 133 natively like Ghostty.
+    [[ "$TERM_PROGRAM" == "otty" ]] && return 0
     [[ -n "$KITTY_WINDOW_ID" ]] && return 0
     [[ -n "$WEZTERM_UNIX_SOCKET" || "$TERM_PROGRAM" == "WezTerm" ]] && return 0
     [[ "$TERM_PROGRAM" == "rio" ]] && return 0

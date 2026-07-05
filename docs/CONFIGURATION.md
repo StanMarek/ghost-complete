@@ -245,7 +245,7 @@ Opt-in features that are not yet considered stable.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `multi_terminal` | bool | `false` | Enable unsupported/unknown terminals. All 9 supported terminals (Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app, Zed, VSCode) work without this flag. Set to `true` only if you want to try Ghost Complete on an unlisted terminal. |
+| `multi_terminal` | bool | `false` | Enable unsupported/unknown terminals. All 10 supported terminals (Ghostty, Otty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app, Zed, VSCode) work without this flag. Set to `true` only if you want to try Ghost Complete on an unlisted terminal. |
 | `aws_sdk_provider` | bool | `false` | Opt in to native AWS SDK completions. Default `false` means Ghost Complete does not make outbound AWS SDK calls. |
 | `aws_sdk_fallback_to_cli` | bool | `true` | When native AWS SDK completions are enabled but cannot run, allow the existing `aws` CLI script path to produce slower fallback completions. |
 | `brew_search_cap` | integer | `1000` | Ceiling on `brew search ""` results considered by the searchable-formulae provider. Lower this on slower machines; raise for broader unfiltered exploration. |
@@ -279,7 +279,7 @@ reports the visible AWS env/file state without making live AWS calls.
 
 Ghost Complete auto-detects the terminal via `TERM_PROGRAM` and terminal-specific env vars (`KITTY_WINDOW_ID`, `WEZTERM_UNIX_SOCKET`, `ALACRITTY_SOCKET`, `ZED_TERM`, `VSCODE_IPC_HOOK_CLI`), then selects the appropriate rendering strategy:
 
-- **Ghostty, Kitty, WezTerm, Rio, Zed** — DECSET 2026 synchronized output, native OSC 133 prompt markers.
+- **Ghostty, Otty, Kitty, WezTerm, Rio, Zed** — DECSET 2026 synchronized output, native OSC 133 prompt markers. Otty is a Ghostty fork (`TERM_PROGRAM=otty`) and inherits Ghostty's exact capability profile; unlike Ghostty proper it does not set `GHOSTTY_RESOURCES_DIR`, so it is detected purely via `TERM_PROGRAM`.
 - **VSCode** (and forks: VSCodium, Cursor, Windsurf, Positron, Trae) — DECSET 2026 synchronized output via xterm.js, native OSC 133. Coexists with VSCode's own shell integration: the proxy forwards the editor's OSC 633 sequences untouched so command decorations / sticky scroll / "run recent command" keep working, and Ghost Complete's own shell integration suppresses its redundant OSC 7771 emission when `VSCODE_INJECTION=1` is set.
 - **Alacritty** — DECSET 2026 synchronized output, OSC 7771 shell integration prompt markers (Alacritty does not support OSC 133).
 - **iTerm2 / Terminal.app** — pre-render buffer (single `write()` atomicity), OSC 7771 shell integration prompt markers.

@@ -100,8 +100,8 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
     }
 
     // Gate unknown terminals behind experimental flag.
-    // Known terminals (Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app)
-    // work without any flag. Unknown terminals need multi_terminal = true.
+    // All known terminals (see `Terminal::supported_terminals`) work without
+    // any flag. Only Unknown terminals need multi_terminal = true.
     // Note: CommandExt::exec() is the Unix execvp() syscall — no shell
     // interpretation, no injection risk. `shell` comes from $SHELL or argv.
     if should_fallback_to_shell(
@@ -1686,6 +1686,9 @@ mod tests {
         // All known terminals work without the experimental flag
         let known = [
             Terminal::Ghostty,
+            // Otty (Ghostty fork) must work without multi_terminal — it is a
+            // known terminal, so it never falls back to a plain shell.
+            Terminal::Otty,
             Terminal::Kitty,
             Terminal::WezTerm,
             Terminal::Alacritty,

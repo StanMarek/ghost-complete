@@ -24,7 +24,7 @@ Zstd compression preserves the embedded 711-spec corpus while shrinking the benc
 
 Ghost Complete is under active development. Contributions and bug reports are welcome.
 
-- **9 supported terminals on macOS:** Ghostty, Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app, Zed, and VSCode (incl. VSCodium, Cursor, Windsurf, Positron, Trae) — all work out of the box with no additional configuration.
+- **10 supported terminals on macOS:** Ghostty, Otty (a Ghostty fork), Kitty, WezTerm, Alacritty, Rio, iTerm2, Terminal.app, Zed, and VSCode (incl. VSCodium, Cursor, Windsurf, Positron, Trae) — all work out of the box with no additional configuration.
 - **zsh is the primary shell.** Bash and fish support manual trigger only (Ctrl+/).
 - **macOS only.** No Linux or Windows support planned at this time.
 - **Pre-1.0.** Config format, spec format, and behavior may change between releases.
