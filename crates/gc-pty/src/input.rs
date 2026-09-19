@@ -13,6 +13,14 @@ pub enum KeyEvent {
     ArrowDown,
     ArrowLeft,
     ArrowRight,
+    /// SS3-encoded cursor keys (`ESC O A`..`ESC O D`), which terminals send in
+    /// place of the CSI forms while DECCKM (DECSET 1, application cursor keys)
+    /// is enabled. Kept distinct from the CSI variants so the encoding survives
+    /// the round trip to the wrapped program — see `KeyEvent::canonical`.
+    ArrowUpSs3,
+    ArrowDownSs3,
+    ArrowLeftSs3,
+    ArrowRightSs3,
     PageUp,
     PageDown,
     Home,
@@ -32,6 +40,29 @@ pub enum KeyEvent {
     CursorPositionReport(u16, u16),
     /// Unknown bytes — forward verbatim to PTY.
     Raw(Vec<u8>),
+}
+
+impl KeyEvent {
+    /// Fold terminal-specific cursor-key encodings onto their canonical form.
+    ///
+    /// DECCKM (DECSET 1) makes the terminal send arrows as SS3 (`ESC O A`)
+    /// rather than CSI (`ESC [ A`). Both are the same logical key, and
+    /// `[keybindings]` names logical keys (`arrow_up`), so binding comparisons
+    /// must ignore the encoding.
+    ///
+    /// Byte forwarding must NOT use this: pass the original event to
+    /// `key_to_bytes` so the wrapped program receives the same encoding the
+    /// terminal sent. Rewriting SS3 to CSI breaks any program that binds only
+    /// the terminfo `kcud1`/`kcuu1` (SS3) forms.
+    pub fn canonical(&self) -> &KeyEvent {
+        match self {
+            KeyEvent::ArrowUpSs3 => &KeyEvent::ArrowUp,
+            KeyEvent::ArrowDownSs3 => &KeyEvent::ArrowDown,
+            KeyEvent::ArrowLeftSs3 => &KeyEvent::ArrowLeft,
+            KeyEvent::ArrowRightSs3 => &KeyEvent::ArrowRight,
+            other => other,
+        }
+    }
 }
 
 /// Parse a buffer of raw stdin bytes into key events.
@@ -140,22 +171,23 @@ pub fn parse_keys(buf: &[u8]) -> Vec<KeyEvent> {
                         }
                     }
                 } else if i + 2 < buf.len() && buf[i + 1] == b'O' {
-                    // SS3 sequences (some terminals use ESC O A for arrow keys)
+                    // SS3 sequences — terminals send these for arrows and
+                    // Home/End while DECCKM (DECSET 1) is on.
                     match buf[i + 2] {
                         b'A' => {
-                            events.push(KeyEvent::ArrowUp);
+                            events.push(KeyEvent::ArrowUpSs3);
                             i += 3;
                         }
                         b'B' => {
-                            events.push(KeyEvent::ArrowDown);
+                            events.push(KeyEvent::ArrowDownSs3);
                             i += 3;
                         }
                         b'C' => {
-                            events.push(KeyEvent::ArrowRight);
+                            events.push(KeyEvent::ArrowRightSs3);
                             i += 3;
                         }
                         b'D' => {
-                            events.push(KeyEvent::ArrowLeft);
+                            events.push(KeyEvent::ArrowLeftSs3);
                             i += 3;
                         }
                         b'H' => {
@@ -342,8 +374,21 @@ mod tests {
 
     #[test]
     fn test_arrow_keys_ss3() {
-        assert_eq!(parse_keys(b"\x1BOA"), vec![KeyEvent::ArrowUp]);
-        assert_eq!(parse_keys(b"\x1BOB"), vec![KeyEvent::ArrowDown]);
+        assert_eq!(parse_keys(b"\x1BOA"), vec![KeyEvent::ArrowUpSs3]);
+        assert_eq!(parse_keys(b"\x1BOB"), vec![KeyEvent::ArrowDownSs3]);
+        assert_eq!(parse_keys(b"\x1BOC"), vec![KeyEvent::ArrowRightSs3]);
+        assert_eq!(parse_keys(b"\x1BOD"), vec![KeyEvent::ArrowLeftSs3]);
+    }
+
+    #[test]
+    fn test_ss3_arrows_are_canonically_arrows() {
+        assert_eq!(KeyEvent::ArrowUpSs3.canonical(), &KeyEvent::ArrowUp);
+        assert_eq!(KeyEvent::ArrowDownSs3.canonical(), &KeyEvent::ArrowDown);
+        assert_eq!(KeyEvent::ArrowLeftSs3.canonical(), &KeyEvent::ArrowLeft);
+        assert_eq!(KeyEvent::ArrowRightSs3.canonical(), &KeyEvent::ArrowRight);
+        // Non-cursor keys are returned unchanged.
+        assert_eq!(KeyEvent::Tab.canonical(), &KeyEvent::Tab);
+        assert_eq!(KeyEvent::HomeSs3.canonical(), &KeyEvent::HomeSs3);
     }
 
     #[test]
