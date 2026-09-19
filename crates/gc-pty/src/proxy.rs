@@ -155,6 +155,22 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
 
     let SpawnedShell { master, mut child } = spawn_shell(shell, args)?;
 
+    // Register signal handlers immediately after spawning, before the
+    // (potentially slow) suggestion-engine/spec loading and task setup
+    // below. Terminals that finalize their window size asynchronously
+    // (e.g. Ghostty settling font/DPI metrics right after window creation)
+    // can fire a SIGWINCH within that startup window. SIGWINCH has no
+    // default handler, so the kernel silently drops it if nothing is
+    // listening yet — leaving the PTY stuck at its startup size until the
+    // user manually resizes. Registering here means tokio's signal
+    // machinery queues any such early delivery instead of losing it; the
+    // main select! loop below will process it as soon as it starts polling.
+    let mut sigwinch =
+        signal(SignalKind::window_change()).context("failed to register SIGWINCH handler")?;
+    let mut sigterm =
+        signal(SignalKind::terminate()).context("failed to register SIGTERM handler")?;
+    let mut sighup = signal(SignalKind::hangup()).context("failed to register SIGHUP handler")?;
+
     let mut reader = master
         .try_clone_reader()
         .context("failed to clone PTY reader")?;
@@ -845,12 +861,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
     // Drop the sender we cloned from — we only need the ones in the tasks
     drop(shutdown_tx);
 
-    // Task C: Signal handling
-    let mut sigwinch =
-        signal(SignalKind::window_change()).context("failed to register SIGWINCH handler")?;
-    let mut sigterm =
-        signal(SignalKind::terminate()).context("failed to register SIGTERM handler")?;
-    let mut sighup = signal(SignalKind::hangup()).context("failed to register SIGHUP handler")?;
+    // Task C: Signal handling (handlers registered earlier, right after spawn_shell)
 
     // Wait for either an I/O task to finish or a signal
     let mut signal_shutdown = false;
