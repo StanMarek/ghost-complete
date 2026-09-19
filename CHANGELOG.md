@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **SS3 cursor keys are no longer rewritten to CSI.** With DECCKM (DECSET 1,
+  application cursor keys) enabled, the terminal sends `ESC O A`..`ESC O D` for
+  the arrows, but the proxy decoded those to the same internal event as the CSI
+  forms and could only re-emit `ESC [ A`..`ESC [ D`. Programs that bind arrows
+  from terminfo (`kcuu1=\EOA`, `kcud1=\EOB`) — `less`, `man`, `git log`, `bat`
+  and most TUIs — therefore received an encoding they never registered. The
+  encoding is now preserved end to end; `[keybindings]` entries such as
+  `navigate_up = "arrow_up"` continue to match either form (#173).
+
 ## [0.19.0] - 2026-07-05
 
 ### Added

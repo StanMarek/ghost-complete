@@ -3604,7 +3604,7 @@ mod tests {
     }
 
     #[test]
-    fn test_arrow_encoding_round_trips_through_the_proxy() {
+    fn test_arrow_encoding_round_trips_through_decode_encode() {
         for seq in [
             &b"\x1B[A"[..],
             b"\x1B[B",
@@ -4670,6 +4670,61 @@ mod tests {
             let result = handler.process_key(&events[0], &parser, &mut buf);
 
             assert_eq!(result, raw, "hidden popup must forward {raw:?} unchanged");
+        }
+    }
+
+    /// Regression: the hidden-popup path must forward arrows byte-for-byte.
+    /// The rewrite this guards against (SS3 decoded, CSI re-emitted) happened
+    /// inside `process_key`, so asserting only on `parse_keys`/`key_to_bytes`
+    /// would not catch it coming back. Mirrors
+    /// `test_hidden_home_end_alternate_encodings_forward_verbatim`.
+    #[test]
+    fn test_hidden_arrow_encodings_forward_verbatim() {
+        for raw in [
+            b"\x1B[A".as_slice(),
+            b"\x1B[B",
+            b"\x1B[C",
+            b"\x1B[D",
+            b"\x1BOA",
+            b"\x1BOB",
+            b"\x1BOC",
+            b"\x1BOD",
+        ] {
+            let events = crate::input::parse_keys(raw);
+            assert_eq!(events.len(), 1, "expected one parsed event for {raw:?}");
+
+            let mut handler = make_handler();
+            let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+            let mut buf = Vec::new();
+
+            let result = handler.process_key(&events[0], &parser, &mut buf);
+
+            assert_eq!(result, raw, "hidden popup must forward {raw:?} unchanged");
+        }
+    }
+
+    /// The visible popup swallows up/down (navigation) and dismisses on
+    /// left/right — in either encoding — and what it does forward keeps the
+    /// encoding it arrived in.
+    #[test]
+    fn test_visible_popup_arrow_encodings() {
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        for raw in [b"\x1BOA".as_slice(), b"\x1BOB"] {
+            let events = crate::input::parse_keys(raw);
+            let mut handler = make_visible_handler(numbered_suggestions(50));
+            let result = handler.process_key(&events[0], &parser, &mut buf);
+            assert!(result.is_empty(), "{raw:?} must be consumed by the popup");
+            assert!(handler.visible, "{raw:?} must not dismiss the popup");
+        }
+
+        for raw in [b"\x1BOC".as_slice(), b"\x1BOD"] {
+            let events = crate::input::parse_keys(raw);
+            let mut handler = make_visible_handler(numbered_suggestions(50));
+            let result = handler.process_key(&events[0], &parser, &mut buf);
+            assert_eq!(result, raw, "{raw:?} must be forwarded unchanged");
+            assert!(!handler.visible, "{raw:?} must dismiss the popup");
         }
     }
 
