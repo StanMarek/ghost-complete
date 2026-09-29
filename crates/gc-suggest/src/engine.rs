@@ -1659,7 +1659,7 @@ impl SuggestionEngine {
             // here — that path goes through SpecArg context, never reaches
             // this fallback.
             if ctx.current_word.ends_with("../") {
-                let parent_text = format!("{}../", &ctx.current_word);
+                let parent_text = format!("{}../", ctx.current_word);
                 let effective = cwd.join(&ctx.current_word);
                 let at_boundary = effective.canonicalize().ok().is_none_or(|resolved| {
                     resolved == Path::new("/")
