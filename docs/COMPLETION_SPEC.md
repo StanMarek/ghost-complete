@@ -221,7 +221,7 @@ Some Fig specs contain generators that require JavaScript execution. All `js_run
 
 | `js_runtime.kind` | Behaviour | Status |
 |-------------------|-----------|--------|
-| `post_process`    | Run `script` (or `script_template`) as a normal script generator, then pass stdout through the JS function in `js_runtime.source`. The function returns the suggestion list. | Active. |
+| `post_process`    | Run `script` (or `script_template`) as a normal script generator, then call the JS function in `js_runtime.source` as Fig does: `(stdout, tokens)`, where `tokens` is `[command, ...completedArgs, currentToken]`. The function returns the suggestion list. | Active. |
 | `script_function` | Evaluate `js_runtime.source` to produce an `argv`, spawn that argv, then parse stdout with the generator transforms or default line splitting. | Active. |
 | `custom`          | No script — `js_runtime.source` is an async function that returns suggestions directly (the Fig `custom: async () => [...]` shape). | Active. |
 | `token_only`      | Evaluate `js_runtime.source` with only `tokens`, `currentToken`, and `previousToken` installed. It returns suggestions directly and cannot access `fig`, `__ghost`, cwd/env, or `executeShellCommand`. | Active. |
@@ -229,7 +229,7 @@ Some Fig specs contain generators that require JavaScript execution. All `js_run
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `kind` | string | Yes | One of `post_process`, `script_function`, `custom`, `token_only` (see table above). |
-| `source` | string | Yes | The JS function source or expression. For `post_process` it receives stdout and returns suggestions; for `custom` it returns suggestions directly; for `script_function` its evaluation yields the argv to spawn; for `token_only` it may be a direct expression or a function receiving `(tokens, ctx)`. |
+| `source` | string | Yes | The JS function source or expression. For `post_process` it receives `(stdout, tokens)` and returns suggestions; for `custom` it returns suggestions directly; for `script_function` its evaluation yields the argv to spawn; for `token_only` it may be a direct expression or a function receiving `(tokens, ctx)`. |
 | `timeout_ms` | integer | No | Per-generator override of the global JS execution timeout. |
 | `allow_shell_command` | boolean | No | Default `false`. Currently effective only for `custom` generators that call the host `executeShellCommand` binding with a shell string. `script_function` generators return argv for the engine to spawn and are not given a shell runner. Required only for explicitly-audited shipped specs. |
 | `self_contained` | boolean | No | Default `false`. Required for `script_function` and `custom` dispatch; the converter sets it only after proving the source has no unresolved helper/module bindings. Not required for `token_only`, because that runtime exposes no host API. |

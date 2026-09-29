@@ -10,7 +10,9 @@ use tokio::sync::Semaphore;
 
 use crate::alias::AliasStore;
 use crate::alias_expand::expand_alias_for_spec;
-use crate::cache::{hash_env, hash_js_source, CacheKey, GeneratorCache};
+use crate::cache::{
+    hash_env, hash_js_source, hash_js_source_with_tokens, CacheKey, GeneratorCache,
+};
 use crate::commands::CommandsProvider;
 use crate::env::EnvProvider;
 use crate::filesystem::FilesystemProvider;
@@ -812,6 +814,14 @@ impl SuggestionEngine {
             // that path because two different `js_runtime.source` bodies on
             // the same script must NOT share results; we partition them with
             // `CacheKey::JsProcessed { source_hash }` instead.
+            // Fig passes `tokens` as postProcess's second argument. Built
+            // once here so the cache peek, the JS call, and the cache insert
+            // all see the same tokenization.
+            let js_tokens: Vec<String> = if js_dispatch.is_some() {
+                js_tokens(ctx)
+            } else {
+                Vec::new()
+            };
             if let Some(rt) = js_dispatch.as_ref() {
                 // For JS dispatch, peek the post-processed cache up front so a
                 // warm hit avoids both the script spawn AND the JS evaluation.
@@ -819,7 +829,7 @@ impl SuggestionEngine {
                     command,
                     &argv,
                     cache_cwd,
-                    hash_js_source(&rt.source),
+                    post_process_source_hash(rt, &js_tokens),
                     env_hash,
                 );
                 if let Some(cached) = self.generator_cache.get(&js_key) {
@@ -888,7 +898,13 @@ impl SuggestionEngine {
                     let timeout = Duration::from_millis(rt.timeout_ms.unwrap_or(timeout_ms));
                     let generator_id = format!("{cmd_name}#{generator_index}");
                     match js_runtime
-                        .post_process(&rt.source, output.clone(), timeout, generator_id)
+                        .post_process(
+                            &rt.source,
+                            output.clone(),
+                            &js_tokens,
+                            timeout,
+                            generator_id,
+                        )
                         .await
                     {
                         Ok(js_output) => match js_output.into_suggestions() {
@@ -951,7 +967,7 @@ impl SuggestionEngine {
                                 &cmd_name,
                                 &argv,
                                 cache_cwd,
-                                hash_js_source(&rt.source),
+                                post_process_source_hash(rt, &js_tokens),
                                 env_hash,
                             )
                         } else {
@@ -2057,11 +2073,34 @@ fn filter_supported_script_generators(
         .collect()
 }
 
-/// Pack the parsed command line into the host-API context for a JS
-/// dispatch. The token slice is `[command, ...completed_args,
+/// Fig's `tokens` for a JS dispatch: `[command, ...completed_args,
 /// current_word]`, including an empty final slot at a word boundary, so
 /// Fig-style code that reads `tokens[tokens.length - 1]` sees the live
-/// cursor token.
+/// cursor token. Every JS kind gets this same tokenization.
+fn js_tokens(ctx: &CommandContext) -> Vec<String> {
+    let mut tokens: Vec<String> = Vec::with_capacity(2 + ctx.args.len());
+    if let Some(cmd) = ctx.command.as_ref() {
+        tokens.push(cmd.clone());
+    }
+    tokens.extend(ctx.args.iter().cloned());
+    tokens.push(ctx.current_word.clone());
+    tokens
+}
+
+/// Cache-key source slot for a `post_process` generator. A body that
+/// declares Fig's `tokens` parameter can vary with the command line, so
+/// the tokens join the source hash; one that declares only `out` keeps
+/// the token-free slot and stays cached across keystrokes.
+fn post_process_source_hash(rt: &JsRuntimeSpec, tokens: &[String]) -> u64 {
+    if rt.post_process_reads_tokens {
+        hash_js_source_with_tokens(&rt.source, tokens)
+    } else {
+        hash_js_source(&rt.source)
+    }
+}
+
+/// Pack the parsed command line into the host-API context for a JS
+/// dispatch. Tokens come from [`js_tokens`].
 ///
 /// Mirrors the full process environment except `GHOST_COMPLETE_ACTIVE`
 /// (matching `script::run_script`).
@@ -2070,12 +2109,7 @@ fn make_js_exec_context(
     cwd: &Path,
     shell_env: Option<&HashMap<String, String>>,
 ) -> JsExecContext {
-    let mut tokens: Vec<String> = Vec::with_capacity(2 + ctx.args.len());
-    if let Some(cmd) = ctx.command.as_ref() {
-        tokens.push(cmd.clone());
-    }
-    tokens.extend(ctx.args.iter().cloned());
-    tokens.push(ctx.current_word.clone());
+    let tokens = js_tokens(ctx);
 
     // Snapshot the live shell env when available, otherwise fall back to the
     // proxy process env so generators that read `env.HOME` / `env.PATH` keep
@@ -3941,6 +3975,7 @@ mod tests {
             timeout_ms: None,
             allow_shell_command: false,
             self_contained: false,
+            post_process_reads_tokens: false,
         });
         let empty_script = crate::specs::GeneratorSpec {
             generator_type: None,
@@ -4497,6 +4532,7 @@ mod tests {
                 self_contained: true,
                 timeout_ms: None,
                 allow_shell_command: false,
+                post_process_reads_tokens: false,
             })),
             corrected_in: None,
             template: None,

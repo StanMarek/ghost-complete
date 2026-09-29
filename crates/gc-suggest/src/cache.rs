@@ -140,6 +140,19 @@ pub fn hash_js_source(source: &str) -> u64 {
     hasher.finish()
 }
 
+/// [`hash_js_source`] for a JS body whose result also depends on the
+/// command-line tokens it is invoked with (a Fig `postProcess(out,
+/// tokens)` that declares `tokens`). Folding the tokens into the same
+/// slot keeps results computed for different command lines apart.
+pub fn hash_js_source_with_tokens(source: &str, tokens: &[String]) -> u64 {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+    let mut hasher = DefaultHasher::new();
+    source.hash(&mut hasher);
+    tokens.hash(&mut hasher);
+    hasher.finish()
+}
+
 pub fn hash_env(env: &HashMap<String, String>) -> u64 {
     use std::hash::{Hash, Hasher};
     let mut entries = env.iter().collect::<Vec<_>>();

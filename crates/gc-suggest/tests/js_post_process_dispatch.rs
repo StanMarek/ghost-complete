@@ -147,6 +147,7 @@ fn post_process_generator(script: &[&str], source: &str) -> Arc<GeneratorSpec> {
             self_contained: true,
             timeout_ms: None,
             allow_shell_command: false,
+            post_process_reads_tokens: false,
         })),
         corrected_in: None,
         template: None,
@@ -269,6 +270,7 @@ async fn unsupported_kind_skipped_when_source_empty() {
             self_contained: false,
             timeout_ms: None,
             allow_shell_command: false,
+            post_process_reads_tokens: false,
         })),
         corrected_in: None,
         template: None,
@@ -317,6 +319,7 @@ async fn js_timeout_diagnostic_logged() {
             self_contained: true,
             timeout_ms: Some(50),
             allow_shell_command: false,
+            post_process_reads_tokens: false,
         })),
         corrected_in: None,
         template: None,
@@ -378,6 +381,7 @@ async fn js_exception_diagnostic_logged() {
             self_contained: true,
             timeout_ms: None,
             allow_shell_command: false,
+            post_process_reads_tokens: false,
         })),
         corrected_in: None,
         template: None,
@@ -522,6 +526,7 @@ async fn custom_zero_ttl_skips_cache_insert() {
             self_contained: true,
             timeout_ms: None,
             allow_shell_command: false,
+            post_process_reads_tokens: false,
         })),
         corrected_in: None,
         template: None,
@@ -581,6 +586,7 @@ async fn post_process_ttl_zero_means_no_caching() {
             self_contained: true,
             timeout_ms: None,
             allow_shell_command: false,
+            post_process_reads_tokens: false,
         })),
         corrected_in: None,
         template: None,
@@ -764,5 +770,266 @@ async fn aws_iam_list_roles_principal_returns_role_suggestions() {
         "`f` must filter roles by Principal.Service; only the eks-trusted \
          role should remain. The helper `f` preamble in \
          gc-jsrt/src/helpers.js is the source of truth."
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Fig `postProcess(out, tokens)` arity. Fig calls every postProcess body with
+// the command-line tokens as a second argument, and corpus bodies depend on
+// it: they destructure it (`function(e,[n])`), index it (`e[1].match(...)`),
+// or filter by it (`n.some(...)`). A one-argument call makes the first two
+// shapes throw — silently, as an empty popup — and makes the third ignore
+// what the user already typed.
+// ---------------------------------------------------------------------------
+
+/// Verbatim `package.json#scripts` extractor that the pnpm/yarn/bun/nr/rushx/
+/// meteor specs carried before those generators were routed to the native
+/// `npm_scripts` provider. Specs installed from older converter releases
+/// still ship it, so the JS path must keep running it.
+const PACKAGE_JSON_SCRIPTS_EXTRACTOR: &str = r#"function(e,[n]){if(e.trim()=="")return[];try{let t=JSON.parse(e),i=t.scripts,a=t.fig||{};if(i)return Object.entries(i).map(([r,s])=>{let d=n==="yarn"?"fig://icon?type=yarn":"fig://icon?type=npm",l=a[r];return{name:r,icon:d,description:s,priority:51,...l}})}catch(t){console.error(t)}return[]}"#;
+
+/// Build a post_process generator through serde — the same path `SpecStore`
+/// takes — so load-time derived `js_runtime` fields match production.
+fn post_process_generator_from_json(
+    script: &[String],
+    source: &str,
+    ttl_seconds: u64,
+) -> Arc<GeneratorSpec> {
+    let json = serde_json::json!({
+        "script": script,
+        "requires_js": true,
+        "cache": { "ttl_seconds": ttl_seconds },
+        "js_runtime": { "kind": "post_process", "source": source },
+    });
+    Arc::new(serde_json::from_value(json).expect("generator JSON deserializes"))
+}
+
+/// Return the first `post_process` source in the committed `specs/<spec>.json`
+/// that satisfies `pred`. Reading the corpus (instead of pasting the body)
+/// keeps these tests pinned to what actually ships.
+fn corpus_post_process_source(spec: &str, pred: impl Fn(&str) -> bool) -> String {
+    fn walk(node: &serde_json::Value, out: &mut Vec<String>) {
+        match node {
+            serde_json::Value::Array(items) => items.iter().for_each(|item| walk(item, out)),
+            serde_json::Value::Object(map) => {
+                if let Some(rt) = map.get("js_runtime") {
+                    if rt.get("kind").and_then(|k| k.as_str()) == Some("post_process") {
+                        if let Some(src) = rt.get("source").and_then(|s| s.as_str()) {
+                            out.push(src.to_string());
+                        }
+                    }
+                }
+                map.values().for_each(|value| walk(value, out));
+            }
+            _ => {}
+        }
+    }
+
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../specs")
+        .join(format!("{spec}.json"));
+    let raw = std::fs::read_to_string(&path).expect("corpus spec readable");
+    let value: serde_json::Value = serde_json::from_str(&raw).expect("corpus spec is JSON");
+    let mut sources = Vec::new();
+    walk(&value, &mut sources);
+    sources
+        .into_iter()
+        .find(|src| pred(src))
+        .unwrap_or_else(|| panic!("no matching post_process source in specs/{spec}.json"))
+}
+
+#[tokio::test]
+async fn package_json_scripts_extractor_receives_tokens_argument() {
+    let stdout = r#"{"name":"demo","scripts":{"build":"tsc -p .","test":"vitest run"}}"#;
+    let gen = post_process_generator_from_json(
+        &printf_json_argv(stdout),
+        PACKAGE_JSON_SCRIPTS_EXTRACTOR,
+        0,
+    );
+    let engine = make_engine();
+    let ctx = make_ctx("pnpm", vec!["run"], "");
+
+    let results = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch");
+
+    let rows: Vec<(&str, Option<&str>)> = results
+        .iter()
+        .map(|s| (s.text.as_str(), s.description.as_deref()))
+        .collect();
+    assert_eq!(
+        rows,
+        [("build", Some("tsc -p .")), ("test", Some("vitest run"))],
+        "`function(e,[n])` destructures Fig's tokens argument; calling it with \
+         stdout alone throws `undefined is not iterable` and empties the popup"
+    );
+}
+
+#[tokio::test]
+async fn lsof_service_generator_indexes_tokens() {
+    let source = corpus_post_process_source("lsof", |src| src.contains("\"https\""));
+    let gen = post_process_generator_from_json(&["echo".to_string()], &source, 0);
+    let engine = make_engine();
+    // `lsof -i <TAB>` — the body reads `e[1]` (the `-i` flag) and `e[2]` (the
+    // in-progress token) to decide which `host:` prefix to offer.
+    let ctx = make_ctx("lsof", vec!["-i"], "");
+
+    let results = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch");
+
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(
+        names,
+        [":http", ":https", ":who", ":time"],
+        "lsof's body indexes tokens (`e[1].match(...)`), so it needs the real \
+         command-line tokens, not a placeholder"
+    );
+}
+
+#[tokio::test]
+async fn lsof_service_generator_sees_in_progress_token() {
+    let source = corpus_post_process_source("lsof", |src| src.contains("\"https\""));
+    let gen = post_process_generator_from_json(&["echo".to_string()], &source, 0);
+    let engine = make_engine();
+    // `lsof -i localhost:h<TAB>` — the `localhost:` prefix can only come from
+    // the in-progress token, which Fig passes as the last element of tokens.
+    let ctx = make_ctx("lsof", vec!["-i"], "localhost:h");
+
+    let results = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch");
+
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert!(
+        names.contains(&"localhost:http") && names.contains(&"localhost:https"),
+        "expected host-prefixed services from the in-progress token, got {names:?}"
+    );
+    assert!(
+        names.iter().all(|name| name.starts_with("localhost:")),
+        "every service must carry the typed host prefix, got {names:?}"
+    );
+}
+
+#[tokio::test]
+async fn pnpm_dependency_list_filters_packages_already_on_the_line() {
+    let source = corpus_post_process_source("pnpm", |src| {
+        src.starts_with("function(e,n=[])") && src.contains("devDependencies")
+    });
+    let stdout = r#"{"dependencies":{"lodash":"^4.17.21"},"devDependencies":{"vitest":"^1.6.0"}}"#;
+    let gen = post_process_generator_from_json(&printf_json_argv(stdout), &source, 0);
+    let engine = make_engine();
+    let ctx = make_ctx("pnpm", vec!["remove", "lodash"], "");
+
+    let results = engine
+        .run_generators(&[gen], &ctx, Path::new("/tmp"), 5_000)
+        .await
+        .expect("dispatch");
+
+    let names: Vec<&str> = results.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(
+        names,
+        ["vitest"],
+        "`function(e,n=[])` filters out packages already typed; with no tokens \
+         argument it falls back to `[]` and re-offers `lodash`"
+    );
+}
+
+#[tokio::test]
+async fn token_dependent_post_process_is_not_served_stale_from_cache() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let counter = tmp.path().join("count");
+    let script = vec![
+        "sh".to_string(),
+        "-c".to_string(),
+        format!("echo run >> {}; printf v", counter.display()),
+    ];
+    let gen = post_process_generator_from_json(
+        &script,
+        // The in-progress token leads the name so the spawn-time fuzzy rank
+        // against `current_word` keeps it.
+        "(out, tokens) => [{ name: tokens[tokens.length - 1] + out.trim() }]",
+        3600,
+    );
+    let engine = make_engine();
+
+    let first = engine
+        .run_generators(
+            std::slice::from_ref(&gen),
+            &make_ctx("tok-cache-test", Vec::new(), "a"),
+            Path::new("/tmp"),
+            5_000,
+        )
+        .await
+        .expect("first dispatch");
+    let first: Vec<&str> = first.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(first, ["av"]);
+
+    let second = engine
+        .run_generators(
+            std::slice::from_ref(&gen),
+            &make_ctx("tok-cache-test", Vec::new(), "b"),
+            Path::new("/tmp"),
+            5_000,
+        )
+        .await
+        .expect("second dispatch");
+    let second: Vec<&str> = second.iter().map(|s| s.text.as_str()).collect();
+    assert_eq!(
+        second,
+        ["bv"],
+        "a body that declares Fig's tokens parameter must not be served the \
+         result cached for different tokens"
+    );
+
+    // Tokens only reach the JS step; the script's stdout doesn't depend on
+    // them, so the stdout cache must still spare the second spawn.
+    let runs = std::fs::read_to_string(&counter)
+        .expect("counter file written")
+        .lines()
+        .count();
+    assert_eq!(runs, 1, "stdout cache must still be shared across tokens");
+}
+
+#[tokio::test]
+async fn single_param_post_process_still_hits_cache_across_token_changes() {
+    // One-argument bodies can't observe tokens, so a token change must not
+    // cost them their cached result. `Math.random()` makes a re-evaluation
+    // visible: a cache hit returns the first run's value verbatim. Tokens vary
+    // through a completed arg so the spawn-time fuzzy rank (which only runs
+    // for a non-empty `current_word`) can't filter the random name out.
+    let gen = post_process_generator_from_json(
+        &["echo".to_string(), "v".to_string()],
+        "out => [{ name: String(Math.random()) }]",
+        3600,
+    );
+    let engine = make_engine();
+
+    let first = engine
+        .run_generators(
+            std::slice::from_ref(&gen),
+            &make_ctx("one-param-cache-test", vec!["a"], ""),
+            Path::new("/tmp"),
+            5_000,
+        )
+        .await
+        .expect("first dispatch");
+    let second = engine
+        .run_generators(
+            std::slice::from_ref(&gen),
+            &make_ctx("one-param-cache-test", vec!["b"], ""),
+            Path::new("/tmp"),
+            5_000,
+        )
+        .await
+        .expect("second dispatch");
+
+    assert_eq!(first.len(), 1);
+    assert_eq!(
+        first[0].text, second[0].text,
+        "one-param post_process bodies must keep their token-independent cache slot"
     );
 }

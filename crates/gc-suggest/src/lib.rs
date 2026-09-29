@@ -17,6 +17,7 @@ pub mod frecency;
 pub mod fuzzy;
 pub mod git;
 pub mod history;
+mod js_arity;
 pub mod js_runtime;
 pub mod json_path;
 pub mod mirror;

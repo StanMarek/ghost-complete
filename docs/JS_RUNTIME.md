@@ -35,13 +35,22 @@ The live count is reported by `ghost-complete status --json`:
 
 | Class | Kind             | Pattern                                            | Status |
 | ----- | ---------------- | -------------------------------------------------- | ------ |
-| A     | `PostProcess`    | `script: [...]` + `postProcess: out => [...]`      | Active |
+| A     | `PostProcess`    | `script: [...]` + `postProcess: (out, tokens) => [...]` | Active |
 | B     | `ScriptFunction` | `script: (tokens) => [...args]`                    | Active |
 | C     | `Custom`         | `custom: async (tokens) => [{name, description?}]` | Active |
 | D     | `TokenOnly`      | token/string/array JS with no host API             | Active |
 
 All four reduce to the same `JsWorker.evaluate(program, input,
 deadline)` primitive — only the input shape and call-site differ.
+
+`PostProcess` bodies are called with Fig's two arguments: the script's
+stdout and the `tokens` array (`[command, ...completedArgs,
+currentToken]`, the same tokenization the other classes get). Tokens
+reach the body only through that argument; the `tokens` /
+`currentToken` host globals stay empty for this class. So a body's
+declared parameters tell the engine whether its result can depend on
+the command line, and the spec loader records that once per generator
+(see [Cache key composition](#cache-key-composition)).
 
 ## TokenOnly
 
@@ -193,8 +202,13 @@ partitions so two generators that share an argv but use different JS
 sources cannot share post-processed suggestions. `post_process` and
 `script_function` suggestion caches are keyed by the command, resolved
 argv, optional cache directory, and a hash of the JS source namespaced
-by runtime kind. Their raw stdout cache remains keyed by the resolved
-argv. `custom` generators have no argv; their suggestion cache keys
+by runtime kind. A `post_process` body that declares a second
+parameter (Fig's `tokens`), mentions `arguments`, or has a parameter
+list the loader can't parse also folds the token list into that hash,
+and the PTY handler treats it as depending on the current word. One-
+parameter bodies keep the token-free key and stay cached across
+keystrokes. Their raw stdout cache remains keyed by the resolved argv,
+so a token-dependent body re-runs its JS, not its script. `custom` generators have no argv; their suggestion cache keys
 the command, optional cache directory, JS source, and token
 fingerprint.
 

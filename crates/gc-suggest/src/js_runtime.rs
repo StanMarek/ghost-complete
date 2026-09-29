@@ -23,7 +23,7 @@
 //! no source-hashing. Those live in the engine; we only run JS.
 //!
 //! Four public methods route on [`gc_jsrt::JsExecutionKind`]:
-//! [`JsRuntimeAdapter::post_process`] (script stdout in, suggestions out),
+//! [`JsRuntimeAdapter::post_process`] (script stdout + tokens in, suggestions out),
 //! [`JsRuntimeAdapter::script_function`] (returns argv for an engine-side
 //! script invocation), [`JsRuntimeAdapter::custom`] (returns suggestions
 //! directly via host-API calls), and [`JsRuntimeAdapter::token_only`]
@@ -103,21 +103,28 @@ impl JsRuntimeAdapter {
         Ok(self.worker.get().expect("OnceLock populated above"))
     }
 
-    /// Run a `post_process` JS source over `stdout`. Returns the normalised
+    /// Run a `post_process` JS source over `stdout`, invoking it as Fig
+    /// does: `postProcess(stdout, tokens)`. Returns the normalised
     /// runtime output (suggestions + any diagnostics). Errors only surface
     /// for unrecoverable conditions (worker thread dead, spawn failure);
     /// soft conditions (timeout, exception, oversized output) are returned
     /// as diagnostics on a successful [`JsRuntimeOutput`] with an empty
     /// `suggestions` vec.
+    ///
+    /// `tokens` reaches the body only as that second argument. The
+    /// `tokens` / `currentToken` host globals stay empty for this kind, so
+    /// a body's declared arity (`JsRuntimeSpec::post_process_reads_tokens`)
+    /// fully describes whether its result depends on the command line.
     pub async fn post_process(
         &self,
         source: &str,
         stdout: String,
+        tokens: &[String],
         timeout: Duration,
         generator_id: String,
     ) -> Result<JsRuntimeOutput, JsRuntimeError> {
         let worker = self.worker()?;
-        let program = build_post_process_program(source, &stdout);
+        let program = build_post_process_program(source, &stdout, tokens);
         let input = JsRuntimeInput {
             stdout: Some(stdout),
             generator_id: generator_id.clone(),
@@ -240,18 +247,16 @@ impl JsExecContext {
 }
 
 /// Construct the wrapper expression that invokes the generator body with
-/// the script's stdout. The stdout bytes are embedded as a JSON-encoded
-/// string literal that doubles as a valid JS string token; the encoded
-/// form is spliced directly into the program text without a runtime
+/// Fig's `(out, tokens)` arguments: the script's stdout and the
+/// command-line tokens. Both are embedded as JSON literals (a string and
+/// an array of strings) that double as valid JS expressions; the encoded
+/// forms are spliced directly into the program text without a runtime
 /// `JSON.parse` call. See [`json_string_literal`] for the encoding
 /// invariant the splice relies on.
-fn build_post_process_program(source: &str, stdout: &str) -> String {
+fn build_post_process_program(source: &str, stdout: &str, tokens: &[String]) -> String {
     let stdout_literal = json_string_literal(stdout);
-    format!(
-        "(({source})({stdout_literal}))",
-        source = source,
-        stdout_literal = stdout_literal,
-    )
+    let tokens_literal = json_string_array_literal(tokens);
+    format!("(({source})({stdout_literal}, {tokens_literal}))")
 }
 
 /// Encode a Rust string as a JSON string literal that is also a safe JS
@@ -265,6 +270,13 @@ fn build_post_process_program(source: &str, stdout: &str) -> String {
 /// trip.
 fn json_string_literal(s: &str) -> String {
     serde_json::Value::String(s.to_string()).to_string()
+}
+
+/// Encode a string slice as a JSON array literal. Each element uses the
+/// same encoding as [`json_string_literal`], so the same splice invariant
+/// holds.
+fn json_string_array_literal(items: &[String]) -> String {
+    serde_json::Value::from(items.to_vec()).to_string()
 }
 
 /// Construct the wrapper expression for a `script_function` generator.
@@ -496,7 +508,7 @@ mod tests {
 
     #[test]
     fn build_post_process_program_invokes_source_with_string_literal() {
-        let program = build_post_process_program("out => out.split('\\n')", "a\nb");
+        let program = build_post_process_program("out => out.split('\\n')", "a\nb", &[]);
         // Sanity: the program is a single self-invocation passing the
         // encoded stdout literal to the body. The JSON encoder picks the
         // exact escape style; we just need the embedded string token to
@@ -507,6 +519,40 @@ mod tests {
             program.contains("\"a"),
             "expected encoded stdout literal in program: {program}"
         );
+    }
+
+    /// Fig's contract is `postProcess(out, tokens)`. Corpus bodies
+    /// destructure (`function(e,[n])`) or index (`e[1]`) the second
+    /// argument, so omitting it makes them throw.
+    #[test]
+    fn build_post_process_program_passes_tokens_as_second_argument() {
+        let tokens = vec!["pnpm".to_string(), "run".to_string(), String::new()];
+        let program = build_post_process_program("(out, tokens) => tokens", "{}", &tokens);
+        assert_eq!(
+            program,
+            r#"(((out, tokens) => tokens)("{}", ["pnpm","run",""]))"#
+        );
+    }
+
+    #[test]
+    fn build_post_process_program_encodes_hostile_tokens_as_json() {
+        let tokens = vec![
+            "cmd".to_string(),
+            "a\"b".to_string(),
+            "))); throw 1; ((".to_string(),
+            "line\nbreak\u{2028}sep".to_string(),
+            "back\\slash`${x}`".to_string(),
+        ];
+        let source = "(o, t) => t";
+        let program = build_post_process_program(source, "", &tokens);
+        let prefix = format!("(({source})(\"\", ");
+        let literal = program
+            .strip_prefix(&prefix)
+            .and_then(|rest| rest.strip_suffix("))"))
+            .unwrap_or_else(|| panic!("unexpected program shape: {program}"));
+        let decoded: Vec<String> =
+            serde_json::from_str(literal).expect("tokens literal is a JSON array");
+        assert_eq!(decoded, tokens);
     }
 
     #[test]
