@@ -21,6 +21,12 @@ const NATIVE_GENERATOR_MAP = {
   'ansible-doc --list': { type: 'ansible_doc_modules' },
 };
 
+/** `bash -c` package.json walker whose postProcess projects `scripts`. */
+const PACKAGE_JSON_SCRIPTS = {
+  type: 'npm_scripts',
+  requirePostProcessMatch: /JSON\.parse[\s\S]*\.scripts/,
+};
+
 /**
  * Spec-scoped mappings: `(specName, scriptKey)` → provider. Used when the
  * same subprocess appears in multiple specs but we only want to route one
@@ -41,10 +47,29 @@ const SPEC_SCOPED_MAP = {
   // looking at the package.json scripts extractor — not some unrelated
   // bash invocation that happens to share the prefix.
   npm: {
-    'bash -c': {
-      type: 'npm_scripts',
-      requirePostProcessMatch: /JSON\.parse[\s\S]*\.scripts/,
-    },
+    'bash -c': PACKAGE_JSON_SCRIPTS,
+  },
+  // pnpm/yarn/bun/nr/rushx/meteor ship npm's package.json walker and
+  // `scripts` extractor verbatim for their script-name arguments. The
+  // same regex keeps their `.dependencies` extractors (which share the
+  // `bash -c` walker) on the JS path.
+  pnpm: {
+    'bash -c': PACKAGE_JSON_SCRIPTS,
+  },
+  yarn: {
+    'bash -c': PACKAGE_JSON_SCRIPTS,
+  },
+  bun: {
+    'bash -c': PACKAGE_JSON_SCRIPTS,
+  },
+  nr: {
+    'bash -c': PACKAGE_JSON_SCRIPTS,
+  },
+  rushx: {
+    'bash -c': PACKAGE_JSON_SCRIPTS,
+  },
+  meteor: {
+    'bash -c': PACKAGE_JSON_SCRIPTS,
   },
 };
 

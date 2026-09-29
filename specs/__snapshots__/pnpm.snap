@@ -5,16 +5,7 @@
         "cache": {
           "cache_by_directory": true
         },
-        "js_runtime": {
-          "kind": "post_process",
-          "source": "function(e,[n]){if(e.trim()==\"\")return[];try{let t=JSON.parse(e),i=t.scripts,a=t.fig||{};if(i)return Object.entries(i).map(([r,s])=>{let d=n===\"yarn\"?\"fig://icon?type=yarn\":\"fig://icon?type=npm\",l=a[r];return{name:r,icon:d,description:s,priority:51,...l}})}catch(t){console.error(t)}return[]}"
-        },
-        "requires_js": true,
-        "script": [
-          "bash",
-          "-c",
-          "until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json"
-        ]
+        "type": "npm_scripts"
       }
     ],
     "isVariadic": true,
@@ -966,16 +957,7 @@
             "cache": {
               "cache_by_directory": true
             },
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "function(e,[n]){if(e.trim()==\"\")return[];try{let t=JSON.parse(e),i=t.scripts,a=t.fig||{};if(i)return Object.entries(i).map(([r,s])=>{let d=n===\"yarn\"?\"fig://icon?type=yarn\":\"fig://icon?type=npm\",l=a[r];return{name:r,icon:d,description:s,priority:51,...l}})}catch(t){console.error(t)}return[]}"
-            },
-            "requires_js": true,
-            "script": [
-              "bash",
-              "-c",
-              "until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json"
-            ]
+            "type": "npm_scripts"
           }
         ],
         "isVariadic": true,
@@ -1853,16 +1835,7 @@
                 "cache": {
                   "cache_by_directory": true
                 },
-                "js_runtime": {
-                  "kind": "post_process",
-                  "source": "function(e,[n]){if(e.trim()==\"\")return[];try{let t=JSON.parse(e),i=t.scripts,a=t.fig||{};if(i)return Object.entries(i).map(([r,s])=>{let d=n===\"yarn\"?\"fig://icon?type=yarn\":\"fig://icon?type=npm\",l=a[r];return{name:r,icon:d,description:s,priority:51,...l}})}catch(t){console.error(t)}return[]}"
-                },
-                "requires_js": true,
-                "script": [
-                  "bash",
-                  "-c",
-                  "until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json"
-                ]
+                "type": "npm_scripts"
               }
             ],
             "isVariadic": true,

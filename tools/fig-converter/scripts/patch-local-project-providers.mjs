@@ -16,6 +16,8 @@
  * priorities elsewhere in the file — survives untouched. Run once
  * after the converter + provider code lands; the same path will handle
  * future local-project-provider additions.
+ *
+ * Usage: node scripts/patch-local-project-providers.mjs [spec ...]
  */
 
 import { readFile, writeFile } from 'node:fs/promises';
@@ -25,13 +27,45 @@ import { dirname, resolve } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..', '..', '..');
 
+/** The generator's JS body: `js_runtime.source` in current specs, the
+ *  legacy `js_source` field in specs from older converter releases. */
+function jsSource(g) {
+  if (typeof g.js_runtime?.source === 'string') return g.js_runtime.source;
+  if (typeof g.js_source === 'string') return g.js_source;
+  return null;
+}
+
+/** Native replacement carrying the original `cache`, with keys in the
+ *  converter's sorted order so the rewrite serializes like a regen. */
+function nativeReplacement(type, g) {
+  const out = {};
+  if (g.cache) out.cache = g.cache;
+  out.type = type;
+  return out;
+}
+
 function isCargoWorkspaceMembersGenerator(g) {
   if (!Array.isArray(g.script)) return false;
   if (g.script[0] !== 'cargo' || g.script[1] !== 'metadata') return false;
   if (!g.script.includes('--no-deps')) return false;
-  if (typeof g.js_source !== 'string') return false;
-  if (/\.dependencies\b/.test(g.js_source)) return false;
-  return /JSON\.parse[\s\S]*\.packages[\s\S]*\.map\s*\(/.test(g.js_source);
+  const source = jsSource(g);
+  if (source === null) return false;
+  if (/\.dependencies\b/.test(source)) return false;
+  return /JSON\.parse[\s\S]*\.packages[\s\S]*\.map\s*\(/.test(source);
+}
+
+/** npm's `bash -c` package.json walker + `scripts` extractor, which
+ *  pnpm/yarn/bun/nr/rushx/meteor reuse verbatim. The `.scripts` check
+ *  keeps their `.dependencies` extractors (same walker) on the JS path. */
+function packageJsonScripts(g) {
+  if (!Array.isArray(g.script)) return null;
+  if (g.script[0] !== 'bash' || g.script[1] !== '-c') return null;
+  const body = typeof g.script[2] === 'string' ? g.script[2] : '';
+  if (!/package\.json/.test(body)) return null;
+  const source = jsSource(g);
+  if (source === null) return null;
+  if (!/JSON\.parse[\s\S]*\.scripts/.test(source)) return null;
+  return nativeReplacement('npm_scripts', g);
 }
 
 /** Recognizers — each takes a generator object, returns the replacement
@@ -41,32 +75,23 @@ export const RECOGNIZERS = {
   make: [
     (g) => {
       if (!g.requires_js) return null;
-      if (typeof g.js_source !== 'string') return null;
-      if (!/make\s+-qp/.test(g.js_source)) return null;
-      const out = { type: 'makefile_targets' };
-      if (g.cache) out.cache = g.cache;
-      return out;
+      const source = jsSource(g);
+      if (source === null) return null;
+      if (!/make\s+-qp/.test(source)) return null;
+      return nativeReplacement('makefile_targets', g);
     },
   ],
-  npm: [
-    (g) => {
-      if (!Array.isArray(g.script)) return null;
-      if (g.script[0] !== 'bash' || g.script[1] !== '-c') return null;
-      const body = typeof g.script[2] === 'string' ? g.script[2] : '';
-      if (!/package\.json/.test(body)) return null;
-      if (typeof g.js_source !== 'string') return null;
-      if (!/JSON\.parse[\s\S]*\.scripts/.test(g.js_source)) return null;
-      const out = { type: 'npm_scripts' };
-      if (g.cache) out.cache = g.cache;
-      return out;
-    },
-  ],
+  npm: [packageJsonScripts],
+  pnpm: [packageJsonScripts],
+  yarn: [packageJsonScripts],
+  bun: [packageJsonScripts],
+  nr: [packageJsonScripts],
+  rushx: [packageJsonScripts],
+  meteor: [packageJsonScripts],
   cargo: [
     (g) => {
       if (!isCargoWorkspaceMembersGenerator(g)) return null;
-      const out = { type: 'cargo_workspace_members' };
-      if (g.cache) out.cache = g.cache;
-      return out;
+      return nativeReplacement('cargo_workspace_members', g);
     },
   ],
 };
@@ -108,11 +133,19 @@ export async function patchSpec(specName) {
 }
 
 // CLI entry-point: only run when invoked directly (not when imported by tests).
-// Each spec is patched in its own try/catch so a failure in one doesn't
-// leave the disk in a partially-rewritten state with no diagnostic for
-// the others. We still exit non-zero if any patch failed.
+// Patches the specs named on the command line, or every spec with a
+// recognizer when none are named. Each spec is patched in its own
+// try/catch so a failure in one doesn't leave the disk in a partially-
+// rewritten state with no diagnostic for the others. We still exit
+// non-zero if any patch failed.
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const specs = ['make', 'npm', 'cargo'];
+  const requested = process.argv.slice(2);
+  const unknown = requested.filter((spec) => !RECOGNIZERS[spec]);
+  if (unknown.length > 0) {
+    console.error(`no recognizers for: ${unknown.join(', ')}`);
+    process.exit(1);
+  }
+  const specs = requested.length > 0 ? requested : Object.keys(RECOGNIZERS);
   let failures = 0;
   for (const spec of specs) {
     try {

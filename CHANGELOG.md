@@ -17,6 +17,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and most TUIs — therefore received an encoding they never registered. The
   encoding is now preserved end to end; `[keybindings]` entries such as
   `navigate_up = "arrow_up"` continue to match either form (#173).
+- **JS `postProcess` generators now receive Fig's `tokens` argument.** The
+  runtime called every `postProcess(out, tokens)` body with stdout alone, so
+  bodies that destructure or index `tokens` threw and showed an empty popup:
+  script names for `pnpm`/`yarn`/`bun` (bare and `run`), `pnpm recursive run`,
+  `nr`, `rushx`, and `meteor npm run`; `lsof -i` protocols and services; and
+  `git-cliff` commit ranges. The dependency lists for `pnpm remove`/`update`/
+  `why`/… and `yarn remove`/`upgrade` also stop re-offering packages already
+  on the line.
+  Bodies that declare `tokens` get a token-aware cache key; one-argument
+  bodies stay cached across keystrokes. The package-manager script lists now
+  use the native `npm_scripts` provider (the one behind `npm run`), with no
+  JS evaluation and no `bash` subprocess. Reported in #166 by @shifenis.
 
 ## [0.19.0] - 2026-07-05
 
