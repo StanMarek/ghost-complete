@@ -1170,25 +1170,30 @@ impl InputHandler {
     ) -> Vec<u8> {
         let visible_rows = self.effective_navigation_visible_rows(parser);
 
-        // Configurable actions checked first via if-chain
-        if key == &self.keybindings.navigate_up {
+        // Configurable actions checked first via if-chain. Compare the logical
+        // key: `[keybindings]` names keys (`arrow_up`), so an SS3-encoded arrow
+        // must match an `arrow_up` binding. Forwarding below still uses `key`,
+        // preserving the encoding the terminal sent.
+        let binding = key.canonical();
+
+        if binding == &self.keybindings.navigate_up {
             self.overlay.move_up();
             self.render(parser, stdout);
             return Vec::new();
         }
-        if key == &self.keybindings.navigate_down {
+        if binding == &self.keybindings.navigate_down {
             self.overlay.move_down(self.suggestions.len(), visible_rows);
             self.render(parser, stdout);
             return Vec::new();
         }
-        if key == &self.keybindings.accept {
+        if binding == &self.keybindings.accept {
             if self.effective_selected().is_none() {
                 self.dismiss(stdout);
                 return key_to_bytes(key);
             }
             return self.accept_with_chaining(parser, stdout);
         }
-        if key == &self.keybindings.accept_and_enter {
+        if binding == &self.keybindings.accept_and_enter {
             if self.overlay.selected.is_some() {
                 let mut forward = self.accept_suggestion(parser);
                 self.dismiss(stdout);
@@ -1199,7 +1204,7 @@ impl InputHandler {
                 return vec![0x0D];
             }
         }
-        if key == &self.keybindings.dismiss {
+        if binding == &self.keybindings.dismiss {
             self.dismiss(stdout);
             return Vec::new();
         }
@@ -1234,7 +1239,10 @@ impl InputHandler {
 
         // Remaining structural keys/default visible-popup handling.
         match key {
-            KeyEvent::ArrowLeft | KeyEvent::ArrowRight => {
+            KeyEvent::ArrowLeft
+            | KeyEvent::ArrowRight
+            | KeyEvent::ArrowLeftSs3
+            | KeyEvent::ArrowRightSs3 => {
                 self.dismiss(stdout);
                 key_to_bytes(key)
             }
@@ -1435,7 +1443,7 @@ impl InputHandler {
         parser: &Arc<Mutex<TerminalParser>>,
         stdout: &mut dyn Write,
     ) -> Vec<u8> {
-        if key == &self.keybindings.trigger {
+        if key.canonical() == &self.keybindings.trigger {
             // Manual trigger — fire immediately (no PTY roundtrip needed)
             self.debounce_suppressed = false;
             self.trigger(parser, stdout);
@@ -1452,7 +1460,10 @@ impl InputHandler {
                 }
                 forward
             }
-            KeyEvent::ArrowUp | KeyEvent::ArrowDown => {
+            KeyEvent::ArrowUp
+            | KeyEvent::ArrowDown
+            | KeyEvent::ArrowUpSs3
+            | KeyEvent::ArrowDownSs3 => {
                 // History navigation — suppress debounce so the popup doesn't
                 // trigger on buffer changes from shell history recall.
                 self.debounce_suppressed = true;
@@ -3506,6 +3517,10 @@ pub fn key_to_bytes(key: &KeyEvent) -> Vec<u8> {
         KeyEvent::ArrowDown => vec![0x1B, b'[', b'B'],
         KeyEvent::ArrowRight => vec![0x1B, b'[', b'C'],
         KeyEvent::ArrowLeft => vec![0x1B, b'[', b'D'],
+        KeyEvent::ArrowUpSs3 => vec![0x1B, b'O', b'A'],
+        KeyEvent::ArrowDownSs3 => vec![0x1B, b'O', b'B'],
+        KeyEvent::ArrowRightSs3 => vec![0x1B, b'O', b'C'],
+        KeyEvent::ArrowLeftSs3 => vec![0x1B, b'O', b'D'],
         KeyEvent::PageUp => vec![0x1B, b'[', b'5', b'~'],
         KeyEvent::PageDown => vec![0x1B, b'[', b'6', b'~'],
         KeyEvent::Home => vec![0x1B, b'[', b'H'],
@@ -3577,6 +3592,39 @@ mod tests {
         assert_eq!(key_to_bytes(&KeyEvent::ArrowUp), vec![0x1B, b'[', b'A']);
     }
 
+    /// Regression: the proxy used to decode SS3 arrows and re-emit them as CSI,
+    /// so a program that had enabled DECCKM (`less`, `man`, anything using
+    /// terminfo `kcud1`) received an encoding it never asked for.
+    #[test]
+    fn test_key_to_bytes_ss3_arrows_stay_ss3() {
+        assert_eq!(key_to_bytes(&KeyEvent::ArrowUpSs3), b"\x1BOA");
+        assert_eq!(key_to_bytes(&KeyEvent::ArrowDownSs3), b"\x1BOB");
+        assert_eq!(key_to_bytes(&KeyEvent::ArrowRightSs3), b"\x1BOC");
+        assert_eq!(key_to_bytes(&KeyEvent::ArrowLeftSs3), b"\x1BOD");
+    }
+
+    #[test]
+    fn test_arrow_encoding_round_trips_through_decode_encode() {
+        for seq in [
+            &b"\x1B[A"[..],
+            b"\x1B[B",
+            b"\x1B[C",
+            b"\x1B[D",
+            b"\x1BOA",
+            b"\x1BOB",
+            b"\x1BOC",
+            b"\x1BOD",
+        ] {
+            let events = crate::input::parse_keys(seq);
+            assert_eq!(events.len(), 1, "{seq:?} did not parse to one key");
+            assert_eq!(
+                key_to_bytes(&events[0]),
+                seq,
+                "{seq:?} was re-encoded as a different sequence"
+            );
+        }
+    }
+
     #[test]
     fn test_key_to_bytes_page_up_round_trip() {
         assert_eq!(key_to_bytes(&KeyEvent::PageUp), b"\x1B[5~");
@@ -3624,6 +3672,10 @@ mod tests {
             KeyEvent::ArrowDown,
             KeyEvent::ArrowLeft,
             KeyEvent::ArrowRight,
+            KeyEvent::ArrowUpSs3,
+            KeyEvent::ArrowDownSs3,
+            KeyEvent::ArrowLeftSs3,
+            KeyEvent::ArrowRightSs3,
             KeyEvent::PageUp,
             KeyEvent::PageDown,
             KeyEvent::Home,
@@ -4618,6 +4670,61 @@ mod tests {
             let result = handler.process_key(&events[0], &parser, &mut buf);
 
             assert_eq!(result, raw, "hidden popup must forward {raw:?} unchanged");
+        }
+    }
+
+    /// Regression: the hidden-popup path must forward arrows byte-for-byte.
+    /// The rewrite this guards against (SS3 decoded, CSI re-emitted) happened
+    /// inside `process_key`, so asserting only on `parse_keys`/`key_to_bytes`
+    /// would not catch it coming back. Mirrors
+    /// `test_hidden_home_end_alternate_encodings_forward_verbatim`.
+    #[test]
+    fn test_hidden_arrow_encodings_forward_verbatim() {
+        for raw in [
+            b"\x1B[A".as_slice(),
+            b"\x1B[B",
+            b"\x1B[C",
+            b"\x1B[D",
+            b"\x1BOA",
+            b"\x1BOB",
+            b"\x1BOC",
+            b"\x1BOD",
+        ] {
+            let events = crate::input::parse_keys(raw);
+            assert_eq!(events.len(), 1, "expected one parsed event for {raw:?}");
+
+            let mut handler = make_handler();
+            let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+            let mut buf = Vec::new();
+
+            let result = handler.process_key(&events[0], &parser, &mut buf);
+
+            assert_eq!(result, raw, "hidden popup must forward {raw:?} unchanged");
+        }
+    }
+
+    /// The visible popup swallows up/down (navigation) and dismisses on
+    /// left/right — in either encoding — and what it does forward keeps the
+    /// encoding it arrived in.
+    #[test]
+    fn test_visible_popup_arrow_encodings() {
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut buf = Vec::new();
+
+        for raw in [b"\x1BOA".as_slice(), b"\x1BOB"] {
+            let events = crate::input::parse_keys(raw);
+            let mut handler = make_visible_handler(numbered_suggestions(50));
+            let result = handler.process_key(&events[0], &parser, &mut buf);
+            assert!(result.is_empty(), "{raw:?} must be consumed by the popup");
+            assert!(handler.visible, "{raw:?} must not dismiss the popup");
+        }
+
+        for raw in [b"\x1BOC".as_slice(), b"\x1BOD"] {
+            let events = crate::input::parse_keys(raw);
+            let mut handler = make_visible_handler(numbered_suggestions(50));
+            let result = handler.process_key(&events[0], &parser, &mut buf);
+            assert_eq!(result, raw, "{raw:?} must be forwarded unchanged");
+            assert!(!handler.visible, "{raw:?} must dismiss the popup");
         }
     }
 
