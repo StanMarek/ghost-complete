@@ -37,7 +37,8 @@ fn formal_param_count(source: &str) -> Option<usize> {
         let rest = rest.trim_start();
         let rest = rest.strip_prefix('*').unwrap_or(rest).trim_start();
         let rest = rest[identifier_len(rest)..].trim_start();
-        return param_list(rest).map(|(count, _)| count);
+        let (count, after) = param_list(rest)?;
+        return after.trim_start().starts_with('{').then_some(count);
     }
 
     if s.starts_with('(') {
@@ -191,6 +192,16 @@ mod tests {
         assert_eq!(formal_param_count("postProcess(e){return[]}"), None);
         assert_eq!(formal_param_count("(function(e,t){})"), None);
         assert_eq!(formal_param_count("function(e,t"), None);
+    }
+
+    #[test]
+    fn rejects_lists_that_close_somewhere_other_than_a_body() {
+        // A `)` the scanner can't see into (here, inside a regex literal)
+        // ends the list early. Requiring `{` / `=>` right after it turns
+        // that into "unrecognised" instead of an undercount.
+        assert_eq!(formal_param_count("function(e=/)/,t){return t}"), None);
+        assert_eq!(formal_param_count("(e=/)/,t)=>t"), None);
+        assert!(post_process_reads_tokens("function(e=/)/,t){return t}"));
     }
 
     #[test]

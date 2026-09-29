@@ -808,20 +808,21 @@ impl SuggestionEngine {
                 .filter(|c| c.cache_by_directory)
                 .map(|_| cwd);
 
+            // Fig passes `tokens` as postProcess's second argument. Built
+            // once here so the cache peek, the JS call, and the cache insert
+            // all see the same tokenization.
+            let post_process_tokens: Vec<String> = if js_dispatch.is_some() {
+                js_tokens(ctx)
+            } else {
+                Vec::new()
+            };
+
             // For non-JS generators, the legacy single-key cache already holds
             // the post-transform suggestion vector — try it first and skip the
             // spawn entirely on a hit. JS-post-process generators can't reuse
             // that path because two different `js_runtime.source` bodies on
             // the same script must NOT share results; we partition them with
             // `CacheKey::JsProcessed { source_hash }` instead.
-            // Fig passes `tokens` as postProcess's second argument. Built
-            // once here so the cache peek, the JS call, and the cache insert
-            // all see the same tokenization.
-            let js_tokens: Vec<String> = if js_dispatch.is_some() {
-                js_tokens(ctx)
-            } else {
-                Vec::new()
-            };
             if let Some(rt) = js_dispatch.as_ref() {
                 // For JS dispatch, peek the post-processed cache up front so a
                 // warm hit avoids both the script spawn AND the JS evaluation.
@@ -829,7 +830,7 @@ impl SuggestionEngine {
                     command,
                     &argv,
                     cache_cwd,
-                    post_process_source_hash(rt, &js_tokens),
+                    post_process_source_hash(rt, &post_process_tokens),
                     env_hash,
                 );
                 if let Some(cached) = self.generator_cache.get(&js_key) {
@@ -901,7 +902,7 @@ impl SuggestionEngine {
                         .post_process(
                             &rt.source,
                             output.clone(),
-                            &js_tokens,
+                            &post_process_tokens,
                             timeout,
                             generator_id,
                         )
@@ -967,7 +968,7 @@ impl SuggestionEngine {
                                 &cmd_name,
                                 &argv,
                                 cache_cwd,
-                                post_process_source_hash(rt, &js_tokens),
+                                post_process_source_hash(rt, &post_process_tokens),
                                 env_hash,
                             )
                         } else {
