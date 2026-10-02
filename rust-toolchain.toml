@@ -1,2 +1,8 @@
 [toolchain]
-channel = "stable"
+# Pinned to an exact release, not "stable": a floating channel lets a new Rust
+# release (and its new clippy lints) break CI with no code change. This file is
+# the single source of truth — CI runs `rustup toolchain install`, which reads
+# it. Bump together with `rust-version` in Cargo.toml and `msrv` in clippy.toml.
+channel = "1.99.0"
+profile = "minimal"
+components = ["clippy", "rustfmt"]

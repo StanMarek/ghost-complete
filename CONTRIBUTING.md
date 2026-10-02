@@ -4,7 +4,7 @@ Thanks for your interest in contributing! Here's how to get started.
 
 ## Prerequisites
 
-- **Rust 1.86+** (install via [rustup](https://rustup.rs))
+- **Rust 1.99+** (install via [rustup](https://rustup.rs))
 - **macOS** (the PTY proxy uses macOS-specific APIs)
 - **Ghostty** (for manual testing)
 

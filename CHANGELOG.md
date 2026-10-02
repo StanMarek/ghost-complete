@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependabot now also proposes compatible bumps of transitive crates, grouped
   with direct minor and patch bumps into one weekly PR, so lockfile-only
   RustSec fixes arrive without a manual `cargo update`.
+- **Building from source now needs Rust 1.99+** (was 1.86+). The toolchain is
+  pinned to 1.99.0 in `rust-toolchain.toml` instead of the floating `stable`
+  channel, so a new Rust release can no longer break CI on its own, and every
+  CI job installs it from that file. The `MSRV (1.86)` CI job is removed: the
+  toolchain file overrode its `rustup default 1.86`, so it compiled with
+  stable and never tested 1.86. The tree has not built on 1.86 since the AWS
+  SDK crates started requiring rustc 1.91.1.
 
 ### Fixed
 
@@ -62,6 +69,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   connector that `aws-smithy-runtime`'s `test-util` feature enables, so the
   AWS replay tests now take `StaticReplayClient` from `aws-smithy-http-client`
   instead. Otherwise lockfile-only (#164, #168, #169, #171).
+- Cleared **RUSTSEC-2026-0253** (`lru` 0.16.3 → 0.18.5, use-after-free when a
+  key's `Drop` panics inside `LruCache::pop()`). `lru` comes only from
+  `ratatui`'s layout cache, whose `(Rect, Layout)` keys never panic on drop,
+  so the bug was not reachable here. `ratatui` 0.30.0 → 0.30.2 moves
+  `ratatui-core` onto `lru` 0.18, and the workspace now requires
+  `ratatui >= 0.30.2` so the lockfile cannot fall back (#167).
 
 ## [0.19.0] - 2026-07-05
 

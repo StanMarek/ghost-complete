@@ -37,7 +37,8 @@ jobs:
           # On a PR, HEAD is the merge commit and HEAD^1 the base it was
           # built on; the advisory gate audits both lockfiles.
           fetch-depth: 2
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust (pinned in rust-toolchain.toml)
+        run: rustup toolchain install --no-self-update
       - name: Advisory gate (self-test)
         run: bash scripts/check-new-advisories.test.sh
       # Master is audited as a whole: any advisory fails, and the scheduled
