@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The `cargo audit` CI job fails a pull request only on RustSec advisories
+  that its lockfile introduces. Advisories already on master, which used to
+  fail every dependency PR, show as warnings instead; master itself is still
+  audited in full on push and every week
+  (`scripts/check-new-advisories.sh`).
+- Dependabot now also proposes compatible bumps of transitive crates, grouped
+  with direct minor and patch bumps into one weekly PR, so lockfile-only
+  RustSec fixes arrive without a manual `cargo update`.
+
 ### Fixed
 
 - **SS3 cursor keys are no longer rewritten to CSI.** With DECCKM (DECSET 1,
@@ -29,6 +40,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bodies stay cached across keystrokes. The package-manager script lists now
   use the native `npm_scripts` provider (the one behind `npm run`), with no
   JS evaluation and no `bash` subprocess. Reported in #166 by @shifenis.
+
+### Security
+
+- Cleared three RustSec advisories in transitive dependencies:
+  **RUSTSEC-2026-0204** (`crossbeam-epoch` 0.9.18 → 0.9.21, invalid pointer
+  dereference in `fmt::Pointer`), **RUSTSEC-2026-0258** (`h2` 0.4.14 → 0.4.19,
+  unbounded empty DATA frames) and **RUSTSEC-2026-0285** (`rustls` 0.23.40 →
+  0.23.45, TLS 1.3 handshake messages accepted across encryption levels).
+  `h2` 0.3 has no patched release. It came only from the legacy hyper 0.14
+  connector that `aws-smithy-runtime`'s `test-util` feature enables, so the
+  AWS replay tests now take `StaticReplayClient` from `aws-smithy-http-client`
+  instead. Otherwise lockfile-only (#164, #168, #169, #171).
 
 ## [0.19.0] - 2026-07-05
 

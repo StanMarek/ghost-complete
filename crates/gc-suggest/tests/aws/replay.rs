@@ -1,6 +1,6 @@
 use aws_credential_types::Credentials;
 use aws_sdk_iam::config::Region;
-use aws_smithy_runtime::client::http::test_util::{ReplayEvent, StaticReplayClient};
+use aws_smithy_http_client::test_util::{ReplayEvent, StaticReplayClient};
 use aws_smithy_types::body::SdkBody;
 
 pub fn iam_client_for(
