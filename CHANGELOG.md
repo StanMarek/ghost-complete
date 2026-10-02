@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The `cargo audit` CI job fails a pull request only on RustSec advisories
+  that its lockfile introduces. Advisories already on master, which used to
+  fail every dependency PR, show as warnings instead; master itself is still
+  audited in full on push and every week
+  (`scripts/check-new-advisories.sh`).
+- Dependabot now also proposes compatible bumps of transitive crates, grouped
+  with direct minor and patch bumps into one weekly PR, so lockfile-only
+  RustSec fixes arrive without a manual `cargo update`.
+
 ### Fixed
 
 - **New Zellij panes and tabs open in the shell's directory again.** The proxy
