@@ -40,10 +40,11 @@ async fn run(worker: &JsWorker, program: &str) -> gc_jsrt::JsRuntimeOutput {
 }
 
 /// Drive the helper via a representative post_process body shape. The
-/// program is what `build_post_process_program` would emit at runtime.
+/// program is what `build_post_process_program` would emit at runtime
+/// (with an empty Fig `tokens` argument — these bodies don't read it).
 fn post_process_program(body: &str, stdout: &str) -> String {
     let stdout_lit = serde_json::Value::String(stdout.into()).to_string();
-    format!("(({body})({stdout_lit}))")
+    format!("(({body})({stdout_lit}, []))")
 }
 
 // --- l: 3-arg list extractor ----------------------------------------------

@@ -93,6 +93,27 @@ fn suggest_sync_routes_workspace_specs_to_local_project_providers() {
     }
 }
 
+#[test]
+fn suggest_sync_routes_package_manager_script_args_to_npm_scripts() {
+    // pnpm/yarn/bun/nr/rushx/meteor share npm's package.json scripts
+    // extractor upstream; each script-name position must reach the native
+    // provider rather than the JS post_process path.
+    for buffer in [
+        "pnpm ",
+        "pnpm run ",
+        "pnpm recursive run ",
+        "yarn ",
+        "yarn run ",
+        "bun ",
+        "bun run ",
+        "nr ",
+        "rushx ",
+        "meteor npm run ",
+    ] {
+        assert_workspace_spec_routes_provider(buffer, ProviderKind::NpmScripts);
+    }
+}
+
 #[tokio::test]
 async fn make_tab_lists_makefile_targets() {
     let tmp = TempDir::new().unwrap();

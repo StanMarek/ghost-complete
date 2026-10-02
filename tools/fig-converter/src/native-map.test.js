@@ -375,12 +375,44 @@ describe('matchNativeGenerator', () => {
     );
   });
 
-  it('does not map bash-c for non-npm specs even when post-process matches', () => {
+  it('does not map bash-c for specs outside the package-manager allowlist even when post-process matches', () => {
     const npmShape = 'function(n){let c=JSON.parse(n);return c.scripts}';
     assert.equal(
-      matchNativeGenerator('yarn', ['bash', '-c', 'cat package.json'], npmShape),
+      matchNativeGenerator('docker', ['bash', '-c', 'cat package.json'], npmShape),
       null,
     );
+  });
+
+  // Upstream pnpm/yarn/bun/nr/rushx/meteor reuse npm's package.json walker
+  // and `scripts` extractor verbatim (modulo minifier names). Source copied
+  // from specs/pnpm.json before these generators were routed natively.
+  const PACKAGE_JSON_WALKER = [
+    'bash',
+    '-c',
+    "until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json",
+  ];
+  const SCRIPTS_EXTRACTOR = 'function(e,[n]){if(e.trim()=="")return[];try{let t=JSON.parse(e),i=t.scripts,a=t.fig||{};if(i)return Object.entries(i).map(([r,s])=>{let d=n==="yarn"?"fig://icon?type=yarn":"fig://icon?type=npm",l=a[r];return{name:r,icon:d,description:s,priority:51,...l}})}catch(t){console.error(t)}return[]}';
+  const DEPENDENCIES_EXTRACTOR = 'function(e,n=[]){if(e.trim()==="")return[];try{let t=JSON.parse(e),i=t.dependencies??{},a=t.devDependencies,r=t.optionalDependencies??{};return Object.assign(i,a,r),Object.keys(i).filter(s=>!n.some(l=>l===s)).map(s=>({name:s,icon:"\u{1F4E6}",description:i[s]?"dependency":r[s]?"optionalDependency":"devDependency"}))}catch(t){return console.error(t),[]}}';
+  const PACKAGE_MANAGERS = ['pnpm', 'yarn', 'bun', 'nr', 'rushx', 'meteor'];
+
+  it('maps package-manager script lists to npm_scripts', () => {
+    for (const spec of PACKAGE_MANAGERS) {
+      assert.deepStrictEqual(
+        matchNativeGenerator(spec, PACKAGE_JSON_WALKER, SCRIPTS_EXTRACTOR),
+        { type: 'npm_scripts' },
+        `${spec}: package.json scripts extractor should route to npm_scripts`,
+      );
+    }
+  });
+
+  it('does not map package-manager dependency lists to npm_scripts', () => {
+    for (const spec of PACKAGE_MANAGERS) {
+      assert.equal(
+        matchNativeGenerator(spec, PACKAGE_JSON_WALKER, DEPENDENCIES_EXTRACTOR),
+        null,
+        `${spec}: dependency extractor reads .dependencies, not .scripts`,
+      );
+    }
   });
 });
 

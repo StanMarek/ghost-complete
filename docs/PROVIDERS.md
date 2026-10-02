@@ -123,7 +123,7 @@ A subset of providers do not shell out at all — they parse a project file in t
 | Type string | File | Replaces |
 |---|---|---|
 | `makefile_targets` | `GNUmakefile` / `makefile` / `Makefile` (GNU make's documented precedence) | `requires_js: true` generator that shells out to `make -qp` and post-processes the output |
-| `npm_scripts` | `package.json` | `bash -c "until [[ -f package.json ]]..."` script with a JS post-processor that projects `scripts` keys |
+| `npm_scripts` | `package.json` | `bash -c "until [[ -f package.json ]]..."` script with a JS post-processor that projects `scripts` keys (`npm`, `pnpm`, `yarn`, `bun`, `nr`, `rushx`, `meteor npm run`) |
 | `cargo_workspace_members` | `Cargo.toml` (nearest ancestor with `[workspace]`, falls back to nearest `Cargo.toml` for single-package crates) | `cargo metadata --format-version 1 --no-deps` invocation that JSON-parses to extract `packages[].name` |
 
 ### ux-14 tool providers

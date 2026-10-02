@@ -9,16 +9,7 @@
           "cache": {
             "cache_by_directory": true
           },
-          "js_runtime": {
-            "kind": "post_process",
-            "source": "function(e,[n]){if(e.trim()==\"\")return[];try{let t=JSON.parse(e),a=t.scripts,i=t.fig||{};if(a)return Object.entries(a).map(([s,o])=>{let c=n===\"yarn\"?\"fig://icon?type=yarn\":\"fig://icon?type=npm\",p=i[s];return{name:s,icon:c,description:o,priority:51,...p}})}catch(t){console.error(t)}return[]}"
-          },
-          "requires_js": true,
-          "script": [
-            "bash",
-            "-c",
-            "until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json"
-          ]
+          "type": "npm_scripts"
         }
       ],
       "name": "file"
@@ -245,16 +236,7 @@
             "cache": {
               "cache_by_directory": true
             },
-            "js_runtime": {
-              "kind": "post_process",
-              "source": "function(e,[n]){if(e.trim()==\"\")return[];try{let t=JSON.parse(e),a=t.scripts,i=t.fig||{};if(a)return Object.entries(a).map(([s,o])=>{let c=n===\"yarn\"?\"fig://icon?type=yarn\":\"fig://icon?type=npm\",p=i[s];return{name:s,icon:c,description:o,priority:51,...p}})}catch(t){console.error(t)}return[]}"
-            },
-            "requires_js": true,
-            "script": [
-              "bash",
-              "-c",
-              "until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json"
-            ]
+            "type": "npm_scripts"
           }
         ],
         "name": "script"

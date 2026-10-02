@@ -320,3 +320,73 @@ describe('rewriteGenerators — null/primitive safety', () => {
     assert.equal(stats.rewrites, 2);
   });
 });
+
+// Current specs store post_process bodies at `js_runtime.source`; only
+// specs from older converter releases carry the legacy `js_source`.
+const PACKAGE_JSON_WALKER = [
+  'bash',
+  '-c',
+  "until [[ -f package.json ]] || [[ $PWD = '/' ]]; do cd ..; done; cat package.json",
+];
+const SCRIPTS_EXTRACTOR = 'function(e,[n]){if(e.trim()=="")return[];try{let t=JSON.parse(e),i=t.scripts,a=t.fig||{};if(i)return Object.entries(i).map(([r,s])=>({name:r,description:s}))}catch(t){console.error(t)}return[]}';
+const DEPENDENCIES_EXTRACTOR = 'function(e,n=[]){if(e.trim()==="")return[];try{let t=JSON.parse(e),i=t.dependencies??{};return Object.keys(i).filter(s=>!n.some(l=>l===s)).map(s=>({name:s}))}catch(t){return console.error(t),[]}}';
+
+function jsRuntimeGenerator(source) {
+  return {
+    cache: { cache_by_directory: true },
+    js_runtime: { kind: 'post_process', source },
+    requires_js: true,
+    script: [...PACKAGE_JSON_WALKER],
+  };
+}
+
+describe('rewriteGenerators — js_runtime.source generators', () => {
+  it('npm recognizer reads js_runtime.source, not only the legacy js_source', () => {
+    const spec = { args: { generators: [jsRuntimeGenerator(SCRIPTS_EXTRACTOR)] } };
+    const stats = { rewrites: 0 };
+    rewriteGenerators(spec, RECOGNIZERS.npm, stats);
+    assert.equal(stats.rewrites, 1);
+    assert.deepStrictEqual(spec.args.generators[0], {
+      cache: { cache_by_directory: true },
+      type: 'npm_scripts',
+    });
+  });
+
+  for (const specName of ['pnpm', 'yarn', 'bun', 'nr', 'rushx', 'meteor']) {
+    it(`${specName}: rewrites the package.json scripts extractor to npm_scripts`, () => {
+      const spec = {
+        args: {
+          generators: [jsRuntimeGenerator(SCRIPTS_EXTRACTOR)],
+          isVariadic: true,
+          name: 'Scripts',
+        },
+      };
+      const stats = { rewrites: 0 };
+      rewriteGenerators(spec, RECOGNIZERS[specName], stats);
+
+      assert.equal(stats.rewrites, 1);
+      // Byte-level shape, key order included: it must serialize exactly
+      // like the converter's `npm run` output in specs/npm.json.
+      assert.equal(
+        JSON.stringify(spec),
+        JSON.stringify({
+          args: {
+            generators: [{ cache: { cache_by_directory: true }, type: 'npm_scripts' }],
+            isVariadic: true,
+            name: 'Scripts',
+          },
+        }),
+      );
+    });
+
+    it(`${specName}: leaves the package.json dependency extractor alone`, () => {
+      const original = jsRuntimeGenerator(DEPENDENCIES_EXTRACTOR);
+      const spec = { args: { generators: [original] } };
+      const stats = { rewrites: 0 };
+      rewriteGenerators(spec, RECOGNIZERS[specName], stats);
+
+      assert.equal(stats.rewrites, 0);
+      assert.equal(spec.args.generators[0], original);
+    });
+  }
+});

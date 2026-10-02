@@ -3457,20 +3457,23 @@ fn generator_depends_on_current_word(gen: &gc_suggest::specs::GeneratorSpec) -> 
         return true;
     }
 
-    // PostProcess JS bodies receive only the script's stdout — the live
-    // current_word never reaches them. Pin the dependency only for the
-    // shapes that actually read it: Custom and ScriptFunction get the
-    // raw tokens via `ctx`; TokenOnly bodies receive `tokens`,
-    // `currentToken`, and `previousToken` as the only globals (see
-    // `install_token_only_globals`) so their suggestions go stale the
-    // moment the user types another character.
+    // Pin the dependency only for the shapes that actually read the live
+    // current_word. Custom and ScriptFunction get the raw tokens via
+    // `ctx`; TokenOnly bodies receive `tokens`, `currentToken`, and
+    // `previousToken` as the only globals (see
+    // `install_token_only_globals`), so their suggestions go stale the
+    // moment the user types another character. PostProcess bodies get
+    // Fig's `tokens` (ending in current_word) only as their optional
+    // second argument: a body that declares it pins, one that declares
+    // only `out` sees nothing but stdout and must not. The flag is
+    // derived once at spec load, not per keystroke.
     gen.requires_js
-        && matches!(
-            gen.js_runtime.as_ref().map(|rt| rt.kind.clone()),
-            Some(JsRuntimeKind::Custom)
-                | Some(JsRuntimeKind::ScriptFunction)
-                | Some(JsRuntimeKind::TokenOnly)
-        )
+        && gen.js_runtime.as_ref().is_some_and(|rt| match rt.kind {
+            JsRuntimeKind::Custom | JsRuntimeKind::ScriptFunction | JsRuntimeKind::TokenOnly => {
+                true
+            }
+            JsRuntimeKind::PostProcess => rt.post_process_reads_tokens,
+        })
 }
 
 fn is_aws_sdk_fallback_generator(gen: &gc_suggest::specs::GeneratorSpec) -> bool {
@@ -7041,6 +7044,15 @@ mod tests {
     fn js_runtime_generator(
         kind: Option<gc_suggest::specs::JsRuntimeKind>,
     ) -> gc_suggest::specs::GeneratorSpec {
+        js_runtime_generator_reading_tokens(kind, false)
+    }
+
+    /// Like [`js_runtime_generator`], but sets the load-time derived
+    /// `post_process_reads_tokens` flag the pin decision consumes.
+    fn js_runtime_generator_reading_tokens(
+        kind: Option<gc_suggest::specs::JsRuntimeKind>,
+        post_process_reads_tokens: bool,
+    ) -> gc_suggest::specs::GeneratorSpec {
         gc_suggest::specs::GeneratorSpec {
             generator_type: None,
             script: None,
@@ -7058,6 +7070,7 @@ mod tests {
                     self_contained: true,
                     timeout_ms: None,
                     allow_shell_command: false,
+                    post_process_reads_tokens,
                 })
             }),
             corrected_in: None,
@@ -7086,13 +7099,31 @@ mod tests {
 
     #[test]
     fn js_runtime_post_process_does_not_pin_current_word() {
-        // PostProcess JS bodies receive only the upstream script's stdout —
-        // the live current_word never reaches them, so pinning it would
-        // re-introduce the prefix-extension staleness bug.
+        // A PostProcess body that declares only `out` sees nothing but the
+        // upstream script's stdout — the live current_word never reaches
+        // it, so pinning it would re-introduce the prefix-extension
+        // staleness bug.
         let gen = js_runtime_generator(Some(gc_suggest::specs::JsRuntimeKind::PostProcess));
         assert!(
             !generator_depends_on_current_word(&gen),
-            "PostProcess only sees stdout — must not pin current_word"
+            "one-param PostProcess only sees stdout — must not pin current_word"
+        );
+    }
+
+    #[test]
+    fn js_runtime_post_process_reading_tokens_pins_current_word() {
+        // Fig passes `tokens` — ending in the in-progress word — as the
+        // second postProcess argument. A body that declares it (lsof's
+        // `e[1].match(...)`, git-cliff's `c.pop()`) can produce different
+        // results per keystroke, so results spawned for one word must not
+        // merge into the popup for another.
+        let gen = js_runtime_generator_reading_tokens(
+            Some(gc_suggest::specs::JsRuntimeKind::PostProcess),
+            true,
+        );
+        assert!(
+            generator_depends_on_current_word(&gen),
+            "PostProcess bodies that read tokens must pin current_word"
         );
     }
 

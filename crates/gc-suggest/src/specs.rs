@@ -238,7 +238,13 @@ fn deserialize_arc_js_runtime<'de, D>(
 where
     D: serde::Deserializer<'de>,
 {
-    Ok(Option::<JsRuntimeSpec>::deserialize(deserializer)?.map(Arc::new))
+    Ok(
+        Option::<JsRuntimeSpec>::deserialize(deserializer)?.map(|mut runtime| {
+            runtime.post_process_reads_tokens = runtime.kind == JsRuntimeKind::PostProcess
+                && crate::js_arity::post_process_reads_tokens(&runtime.source);
+            Arc::new(runtime)
+        }),
+    )
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -505,6 +511,15 @@ pub struct JsRuntimeSpec {
     /// Custom/script_function sources without this proof remain unsupported.
     #[serde(default)]
     pub self_contained: bool,
+    /// Derived when the spec loads, never read from JSON: true when a
+    /// `post_process` body can observe Fig's second `tokens` argument
+    /// (see `js_arity::post_process_reads_tokens`). Such a result depends
+    /// on the command line, so the engine folds the tokens into its cache
+    /// key and the PTY handler pins `current_word` for it. Always false
+    /// for the other kinds, which receive tokens unconditionally and are
+    /// routed by kind.
+    #[serde(skip)]
+    pub post_process_reads_tokens: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -3831,6 +3846,65 @@ mod tests {
                 || msg.contains("unknown"),
             "deserialization should fail with a variant-rejection error: {msg}"
         );
+    }
+
+    fn post_process_reads_tokens_after_load(kind: &str, source: &str) -> bool {
+        let gen: GeneratorSpec = serde_json::from_value(serde_json::json!({
+            "requires_js": true,
+            "script": ["cat", "package.json"],
+            "js_runtime": { "kind": kind, "source": source },
+        }))
+        .unwrap();
+        gen.js_runtime
+            .expect("js_runtime should parse")
+            .post_process_reads_tokens
+    }
+
+    #[test]
+    fn test_load_derives_post_process_reads_tokens_from_declared_params() {
+        // Fig calls `postProcess(out, tokens)`. Bodies that declare the
+        // second parameter can vary with the command line; the flag is
+        // derived once at load so neither cache keys nor staleness pins
+        // re-parse the source per keystroke.
+        assert!(post_process_reads_tokens_after_load(
+            "post_process",
+            "function(e,[n]){return JSON.parse(e).scripts}"
+        ));
+        assert!(post_process_reads_tokens_after_load(
+            "post_process",
+            "function(e,n=[]){return n}"
+        ));
+        assert!(!post_process_reads_tokens_after_load(
+            "post_process",
+            "out => [{ name: out }]"
+        ));
+    }
+
+    #[test]
+    fn test_load_leaves_post_process_reads_tokens_false_for_other_kinds() {
+        // Only post_process bodies get tokens through an optional second
+        // argument; the other kinds always receive them and are routed
+        // by kind instead.
+        for kind in ["script_function", "custom", "token_only"] {
+            assert!(
+                !post_process_reads_tokens_after_load(kind, "(tokens, ctx) => tokens"),
+                "{kind} must not set post_process_reads_tokens"
+            );
+        }
+    }
+
+    #[test]
+    fn test_post_process_reads_tokens_cannot_be_set_from_json() {
+        // Derived field: a spec file must not be able to assert it.
+        let bad = r#"{
+            "requires_js": true,
+            "js_runtime": {
+                "kind": "post_process",
+                "source": "x => x",
+                "post_process_reads_tokens": false
+            }
+        }"#;
+        assert!(serde_json::from_str::<GeneratorSpec>(bad).is_err());
     }
 
     #[test]
