@@ -352,9 +352,9 @@ impl Perform for TerminalState {
                 if params.len() < 2 {
                     return;
                 }
-                if let Some(path) = parse_osc7_path(params[1]) {
-                    tracing::debug!(?path, "OSC 7 — cwd update");
-                    self.set_cwd(path);
+                if let Some((host, path)) = parse_osc7_uri(params[1]) {
+                    tracing::debug!(%host, ?path, "OSC 7 — cwd update");
+                    self.set_cwd(host, path);
                 } else {
                     tracing::debug!(
                         raw = %String::from_utf8_lossy(params[1]),
@@ -461,22 +461,24 @@ fn is_valid_env_name(name: &str) -> bool {
     chars.all(|ch| ch == '_' || ch.is_ascii_alphanumeric())
 }
 
-/// Parse a `file://{host}/{path}` URI from OSC 7 into a `PathBuf`.
+/// Parse a `file://{host}/{path}` URI from OSC 7 into its raw host and a
+/// decoded `PathBuf`. The host is empty for `file:///path`.
 ///
 /// Returns `None` if the URI is malformed, the decoded path is not absolute,
 /// or contains traversal components (`.` or `..`). Legitimate shells always
 /// report fully-resolved absolute paths in OSC 7 — traversal components in
 /// the decoded path indicate hostile input and are rejected outright.
-fn parse_osc7_path(uri: &[u8]) -> Option<PathBuf> {
+fn parse_osc7_uri(uri: &[u8]) -> Option<(String, PathBuf)> {
     let s = std::str::from_utf8(uri).ok()?;
-    let path_part = s.strip_prefix("file://")?;
-    // Skip the hostname — find the first '/' after the authority
-    let slash_idx = path_part.find('/')?;
-    let path = &path_part[slash_idx..];
+    let authority_and_path = s.strip_prefix("file://")?;
+    // The authority ends at the first '/', which starts the path
+    let slash_idx = authority_and_path.find('/')?;
+    let (host, path) = authority_and_path.split_at(slash_idx);
     // Percent-decode the path (handles all percent-encoded bytes)
     let decoded = percent_decode_path(path);
     // Reject non-absolute paths and any path with traversal components
-    validate_osc7_cwd(&decoded)
+    let path = validate_osc7_cwd(&decoded)?;
+    Some((host.to_string(), path))
 }
 
 /// Validate an OSC 7 CWD path: must be absolute with no `.` or `..` components.
@@ -1184,51 +1186,59 @@ mod tests {
     // -- Helper unit tests --
 
     #[test]
-    fn test_parse_osc7_path() {
+    fn test_parse_osc7_uri() {
         assert_eq!(
-            parse_osc7_path(b"file://hostname/some/path"),
-            Some(PathBuf::from("/some/path"))
+            parse_osc7_uri(b"file://hostname/some/path"),
+            Some(("hostname".to_string(), PathBuf::from("/some/path")))
         );
     }
 
     #[test]
-    fn test_parse_osc7_path_percent_encoding() {
+    fn test_parse_osc7_uri_empty_host() {
         assert_eq!(
-            parse_osc7_path(b"file://host/path%20with%20spaces"),
-            Some(PathBuf::from("/path with spaces"))
+            parse_osc7_uri(b"file:///some/path"),
+            Some((String::new(), PathBuf::from("/some/path")))
         );
     }
 
     #[test]
-    fn test_parse_osc7_path_invalid() {
-        assert_eq!(parse_osc7_path(b"not-a-file-uri"), None);
+    fn test_parse_osc7_uri_percent_encoding() {
+        assert_eq!(
+            parse_osc7_uri(b"file://host/path%20with%20spaces"),
+            Some(("host".to_string(), PathBuf::from("/path with spaces")))
+        );
     }
 
     #[test]
-    fn test_parse_osc7_path_traversal_percent_encoded_rejected() {
+    fn test_parse_osc7_uri_invalid() {
+        assert_eq!(parse_osc7_uri(b"not-a-file-uri"), None);
+    }
+
+    #[test]
+    fn test_parse_osc7_uri_traversal_percent_encoded_rejected() {
         // %2e%2e decodes to ".." — must be REJECTED, not normalized
         assert_eq!(
-            parse_osc7_path(b"file://host/home/user/%2e%2e/%2e%2e/etc/passwd"),
+            parse_osc7_uri(b"file://host/home/user/%2e%2e/%2e%2e/etc/passwd"),
             None
         );
     }
 
     #[test]
-    fn test_parse_osc7_path_traversal_past_root_rejected() {
+    fn test_parse_osc7_uri_traversal_past_root_rejected() {
         assert_eq!(
-            parse_osc7_path(b"file://host/%2e%2e/%2e%2e/%2e%2e/%2e%2e"),
+            parse_osc7_uri(b"file://host/%2e%2e/%2e%2e/%2e%2e/%2e%2e"),
             None
         );
     }
 
     #[test]
-    fn test_parse_osc7_path_traversal_literal_dotdot_rejected() {
-        assert_eq!(parse_osc7_path(b"file://host/a/b/../c"), None);
+    fn test_parse_osc7_uri_traversal_literal_dotdot_rejected() {
+        assert_eq!(parse_osc7_uri(b"file://host/a/b/../c"), None);
     }
 
     #[test]
-    fn test_parse_osc7_path_dot_segment_rejected() {
-        assert_eq!(parse_osc7_path(b"file://host/a/./b"), None);
+    fn test_parse_osc7_uri_dot_segment_rejected() {
+        assert_eq!(parse_osc7_uri(b"file://host/a/./b"), None);
     }
 
     #[test]
@@ -1290,6 +1300,27 @@ mod tests {
         p.process_bytes(b"\x1b]7;file://localhost/Users/test\x07");
         assert!(p.state_mut().take_cwd_dirty());
         assert!(!p.state_mut().take_cwd_dirty());
+    }
+
+    #[test]
+    fn test_osc7_records_reported_host() {
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b]7;file://myhost/Users/test\x07");
+        assert_eq!(p.state().cwd_host(), Some("myhost"));
+        p.process_bytes(b"\x1b]7;file:///Users/test\x07");
+        assert_eq!(p.state().cwd_host(), Some(""));
+    }
+
+    #[test]
+    fn test_osc7_host_change_same_path_is_dirty() {
+        // `ssh` into a box that reports the same path string must still be
+        // observed, or the proxy would keep acting on the stale host.
+        let mut p = make_parser();
+        p.process_bytes(b"\x1b]7;file://local/Users/test\x07");
+        assert!(p.state_mut().take_cwd_dirty());
+        p.process_bytes(b"\x1b]7;file://remote/Users/test\x07");
+        assert!(p.state_mut().take_cwd_dirty());
+        assert_eq!(p.state().cwd_host(), Some("remote"));
     }
 
     #[test]

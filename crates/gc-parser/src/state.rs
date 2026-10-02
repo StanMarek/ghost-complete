@@ -91,6 +91,9 @@ pub struct TerminalState {
     display_dirty: bool,
     viewport_scroll_count: u16,
     cwd: Option<PathBuf>,
+    /// Host authority of the OSC 7 report that set `cwd` (empty for
+    /// `file:///path`). Lets the proxy tell local reports from remote ones.
+    cwd_host: Option<String>,
     shell_env: Option<HashMap<String, String>>,
     in_prompt: bool,
     command_buffer: Option<String>,
@@ -148,6 +151,7 @@ impl TerminalState {
             display_dirty: false,
             viewport_scroll_count: 0,
             cwd: None,
+            cwd_host: None,
             shell_env: None,
             in_prompt: false,
             command_buffer: None,
@@ -204,6 +208,12 @@ impl TerminalState {
 
     pub fn cwd(&self) -> Option<&PathBuf> {
         self.cwd.as_ref()
+    }
+
+    /// Host from the OSC 7 report that set [`Self::cwd`], verbatim — empty
+    /// for `file:///path`. `None` until the first report arrives.
+    pub fn cwd_host(&self) -> Option<&str> {
+        self.cwd_host.as_deref()
     }
 
     pub fn shell_env(&self) -> Option<&HashMap<String, String>> {
@@ -566,9 +576,10 @@ impl TerminalState {
         self.in_prompt = in_prompt;
     }
 
-    pub(crate) fn set_cwd(&mut self, path: PathBuf) {
-        if self.cwd.as_ref() != Some(&path) {
+    pub(crate) fn set_cwd(&mut self, host: String, path: PathBuf) {
+        if self.cwd.as_ref() != Some(&path) || self.cwd_host.as_ref() != Some(&host) {
             self.cwd = Some(path);
+            self.cwd_host = Some(host);
             self.cwd_dirty = true;
         }
     }

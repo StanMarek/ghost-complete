@@ -533,3 +533,110 @@ fn test_popup_renders_for_osc_with_inline_display_byte() {
     proc.send_line("");
     proc.exit_with_code(0);
 }
+
+/// Read the OS-level working directory of `pid` — the value multiplexers
+/// (Zellij, tmux `pane_current_path`) consult when seeding a new pane.
+fn process_cwd(pid: u32) -> Option<std::path::PathBuf> {
+    if let Ok(path) = std::fs::read_link(format!("/proc/{pid}/cwd")) {
+        return Some(path);
+    }
+    // macOS has no procfs; `lsof -Fn` prints the cwd as an `n<path>` field.
+    let output = std::process::Command::new("lsof")
+        .args(["-a", "-p", &pid.to_string(), "-d", "cwd", "-Fn"])
+        .output()
+        .ok()?;
+    String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .find_map(|line| line.strip_prefix('n'))
+        .map(std::path::PathBuf::from)
+}
+
+fn wait_for_process_cwd(pid: u32, expected: &std::path::Path, timeout: Duration) -> bool {
+    let start = std::time::Instant::now();
+    while start.elapsed() < timeout {
+        if process_cwd(pid).as_deref() == Some(expected) {
+            return true;
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+    false
+}
+
+/// Have the inner shell emit an OSC 7 cwd report. `host` is spliced in
+/// unquoted so callers can pass a command substitution like `$(hostname)`.
+fn emit_osc7(proc: &mut GhostProcess, host: &str, path: &std::path::Path) {
+    proc.send_line(&format!(
+        "printf '\\033]7;file://%s%s\\007' {host} '{}'",
+        path.display()
+    ));
+}
+
+/// Canonicalized so the expected path matches what the OS reports back
+/// (macOS temp dirs live under the `/var` -> `/private/var` symlink).
+fn canonical_tempdir() -> (tempfile::TempDir, std::path::PathBuf) {
+    let dir = tempfile::tempdir().expect("failed to create tempdir");
+    let path = dir.path().canonicalize().expect("failed to canonicalize");
+    (dir, path)
+}
+
+/// Regression for #172: the proxy is the pane's direct child, so it must
+/// follow the shell's OSC 7 reports with a real `chdir` — otherwise Zellij
+/// opens every new pane/tab in the directory the proxy was launched from.
+#[test]
+fn test_osc7_moves_proxy_process_cwd() {
+    let (_dir_a, dir_a) = canonical_tempdir();
+    let (_dir_b, dir_b) = canonical_tempdir();
+    let mut proc = GhostProcess::spawn();
+    let pid = proc.child_pid().expect("ghost-complete pid");
+
+    // `$(hostname)` mirrors what the shell integration sends (`$HOST`).
+    emit_osc7(&mut proc, "\"$(hostname)\"", &dir_a);
+    assert!(
+        wait_for_process_cwd(pid, &dir_a, Duration::from_secs(5)),
+        "proxy cwd should follow OSC 7 to {dir_a:?}, got {:?}",
+        process_cwd(pid)
+    );
+
+    // An empty authority (`file:///path`) is local by definition (RFC 8089).
+    emit_osc7(&mut proc, "''", &dir_b);
+    assert!(
+        wait_for_process_cwd(pid, &dir_b, Duration::from_secs(5)),
+        "proxy cwd should follow host-less OSC 7 to {dir_b:?}, got {:?}",
+        process_cwd(pid)
+    );
+
+    proc.exit_with_code(0);
+}
+
+/// A remote shell (e.g. inside `ssh`) reports paths from another machine.
+/// The proxy must not `chdir` into a same-named local directory: new panes
+/// should still open where the local shell is.
+#[test]
+fn test_osc7_from_foreign_host_does_not_move_proxy_cwd() {
+    let (_dir_a, dir_a) = canonical_tempdir();
+    let (_dir_b, dir_b) = canonical_tempdir();
+    let mut proc = GhostProcess::spawn();
+    let pid = proc.child_pid().expect("ghost-complete pid");
+
+    emit_osc7(&mut proc, "''", &dir_a);
+    assert!(
+        wait_for_process_cwd(pid, &dir_a, Duration::from_secs(5)),
+        "baseline: proxy cwd should follow local OSC 7 to {dir_a:?}, got {:?}",
+        process_cwd(pid)
+    );
+
+    emit_osc7(&mut proc, "remote-host.invalid", &dir_b);
+    // `$((1+1))` keeps the marker out of the echoed command line, so the
+    // match proves the shell ran past the foreign report.
+    proc.send_line("echo foreign_osc7_$((1+1))_marker");
+    proc.expect_output("foreign_osc7_2_marker");
+    thread::sleep(NO_RENDER_WINDOW);
+
+    assert_eq!(
+        process_cwd(pid).as_deref(),
+        Some(dir_a.as_path()),
+        "foreign-host OSC 7 must not move the proxy cwd"
+    );
+
+    proc.exit_with_code(0);
+}

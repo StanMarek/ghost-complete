@@ -178,20 +178,23 @@ autoload -Uz add-zsh-hook
 add-zsh-hook precmd _gc_precmd
 add-zsh-hook preexec _gc_preexec
 
-# Report current working directory via OSC 7 on directory change.
-# This enables the proxy to track CWD and provide correct filesystem completions.
-_gc_chpwd() {
-    printf '\e]7;file://%s%s\a' "$HOST" "$(_gc_urlencode_path "$PWD")"
+# Report current working directory via OSC 7 on directory change and at every
+# prompt. The proxy uses it for filesystem completions and follows it with a
+# real chdir so multiplexers open new panes here (#172). The per-prompt report
+# matters because zsh runs chpwd inside subshells: `( cd /tmp )` reports a
+# directory this shell never entered. The encoding is cached per $PWD so the
+# prompt path stays fork-free; a subshell only updates its own copy.
+typeset -g _GC_OSC7_PWD _GC_OSC7_ENCODED
+_gc_osc7() {
+    if [[ "$PWD" != "$_GC_OSC7_PWD" ]]; then
+        _GC_OSC7_PWD="$PWD"
+        _GC_OSC7_ENCODED="$(_gc_urlencode_path "$PWD")"
+    fi
+    printf '\e]7;file://%s%s\a' "$HOST" "$_GC_OSC7_ENCODED"
 }
 
-add-zsh-hook chpwd _gc_chpwd
-# Also emit on first prompt in case the shell started in a non-default directory
-add-zsh-hook precmd _gc_osc7_precmd
-_gc_osc7_precmd() {
-    printf '\e]7;file://%s%s\a' "$HOST" "$(_gc_urlencode_path "$PWD")"
-    # Remove self after first run — chpwd hook handles subsequent changes
-    add-zsh-hook -d precmd _gc_osc7_precmd
-}
+add-zsh-hook chpwd _gc_osc7
+add-zsh-hook precmd _gc_osc7
 
 # Report current command buffer to the proxy via OSC 7772 (secure framing).
 # Fires after every buffer modification (typing, deletion, cursor movement, paste).

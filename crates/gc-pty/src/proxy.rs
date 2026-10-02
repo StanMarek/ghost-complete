@@ -15,6 +15,7 @@ use gc_suggest::spec_dirs::{resolve_spec_dirs_with_provenance, SpecDirResolution
 use gc_terminal::TerminalProfile;
 
 use crate::config_watch::spawn_config_watcher;
+use crate::cwd_sync::ProcessCwdSync;
 use crate::handler::{InputHandler, Keybindings, OverlayWriteTicket, TriggerPrepared};
 use crate::input::KeyParser;
 use crate::resize::{get_terminal_size, resize_pty};
@@ -555,6 +556,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
         let mut buf = [0u8; 8192];
         let mut pending_trigger = PendingTrigger::new();
         let mut private_osc_filter = PrivateOscFilter::default();
+        let process_cwd = ProcessCwdSync::new();
         loop {
             let n = match reader.read(&mut buf) {
                 Ok(0) => break, // PTY closed
@@ -777,11 +779,20 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
 
             // CD/env chaining: trigger suggestions on CWD or exported env changes,
             // gated by auto_trigger.
-            let (cwd_dirty, shell_env_dirty) = {
+            let (cwd_dirty, shell_env_dirty, reported_cwd) = {
                 match parser_for_stdout.lock() {
                     Ok(mut p) => {
                         let state = p.state_mut();
-                        (state.take_cwd_dirty(), state.take_shell_env_dirty())
+                        let cwd_dirty = state.take_cwd_dirty();
+                        let reported_cwd = if cwd_dirty {
+                            state
+                                .cwd()
+                                .cloned()
+                                .zip(state.cwd_host().map(str::to_owned))
+                        } else {
+                            None
+                        };
+                        (cwd_dirty, state.take_shell_env_dirty(), reported_cwd)
                     }
                     Err(e) => {
                         tracing::warn!("parser mutex poisoned in stdout task: {e}");
@@ -789,6 +800,11 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                     }
                 }
             };
+
+            // Independent of auto_trigger: multiplexers read our process cwd.
+            if let Some((path, host)) = reported_cwd {
+                process_cwd.follow(&host, &path);
+            }
 
             if cwd_dirty || shell_env_dirty {
                 let mut render_buf = Vec::new();
