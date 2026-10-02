@@ -7,11 +7,13 @@ on:
       - "**/Cargo.toml"
       - "**/Cargo.lock"
       - ".github/workflows/audit.yml"
+      - "scripts/check-new-advisories*.sh"
   pull_request:
     paths:
       - "**/Cargo.toml"
       - "**/Cargo.lock"
       - ".github/workflows/audit.yml"
+      - "scripts/check-new-advisories*.sh"
   schedule:
     # Mondays at 12:00 UTC — catches new advisories filed mid-week.
     - cron: "0 12 * * 1"
@@ -32,10 +34,38 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          # On a PR, HEAD is the merge commit and HEAD^1 the base it was
+          # built on; the advisory gate audits both lockfiles.
+          fetch-depth: 2
       - uses: dtolnay/rust-toolchain@stable
-      - uses: rustsec/audit-check@v2
+      - name: Advisory gate (self-test)
+        run: bash scripts/check-new-advisories.test.sh
+      # Master is audited as a whole: any advisory fails, and the scheduled
+      # run opens an issue per advisory.
+      - name: Audit master
+        if: github.event_name != 'pull_request'
+        uses: rustsec/audit-check@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+      # A PR fails only on advisories its lockfile introduces. The advisory
+      # DB changes independently of the code, so a full audit failed every
+      # dependency PR on advisories already on master; those now show as
+      # warnings instead.
+      - name: Install cargo-audit
+        if: github.event_name == 'pull_request'
+        run: cargo install cargo-audit --locked
+      - name: Audit advisories introduced by this PR
+        if: github.event_name == 'pull_request'
+        run: |
+          git show HEAD^1:Cargo.lock > "$RUNNER_TEMP/base.lock"
+          # cargo audit exits non-zero when it finds advisories. The gate
+          # rejects a report that is not valid cargo-audit JSON, so a failed
+          # DB fetch still fails the job.
+          cargo audit --json > "$RUNNER_TEMP/head.json" || true
+          cargo audit --json --no-fetch --file "$RUNNER_TEMP/base.lock" \
+            > "$RUNNER_TEMP/base.json" || true
+          scripts/check-new-advisories.sh \
+            --base "$RUNNER_TEMP/base.json" --head "$RUNNER_TEMP/head.json"
       - name: Run cargo-deny
         uses: EmbarkStudios/cargo-deny-action@v2
         with:
@@ -44,3 +74,5 @@ jobs:
           # opt-in features still surface. The warn-vs-deny ladder for
           # multiple-versions is governed by deny.toml, not by this flag.
           arguments: --all-features
+          # On a PR, advisories are judged by the gate above.
+          command-arguments: ${{ github.event_name == 'pull_request' && 'bans licenses sources' || '' }}

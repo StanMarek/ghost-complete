@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The `cargo audit` CI job fails a pull request only on RustSec advisories
+  that its lockfile introduces. Advisories already on master, which used to
+  fail every dependency PR, show as warnings instead; master itself is still
+  audited in full on push and every week
+  (`scripts/check-new-advisories.sh`).
+
 ### Fixed
 
 - **SS3 cursor keys are no longer rewritten to CSI.** With DECCKM (DECSET 1,
