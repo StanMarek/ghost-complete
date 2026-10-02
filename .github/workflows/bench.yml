@@ -12,7 +12,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust (pinned in rust-toolchain.toml)
+        run: rustup toolchain install --no-self-update
       - uses: Swatinem/rust-cache@v2
       - name: Run benchmarks
         run: cargo bench --workspace

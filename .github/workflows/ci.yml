@@ -15,7 +15,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust (pinned in rust-toolchain.toml)
+        run: rustup toolchain install --no-self-update
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --all-targets
 
@@ -24,7 +25,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust (pinned in rust-toolchain.toml)
+        run: rustup toolchain install --no-self-update
       - uses: Swatinem/rust-cache@v2
       - run: cargo test
 
@@ -42,9 +44,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
+      - name: Install Rust (pinned in rust-toolchain.toml)
+        run: rustup toolchain install --no-self-update
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy --all-targets -- -D warnings
 
@@ -53,21 +54,9 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
+      - name: Install Rust (pinned in rust-toolchain.toml)
+        run: rustup toolchain install --no-self-update
       - run: cargo fmt --check
-
-  msrv:
-    name: MSRV (1.86)
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: "1.86"
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo check --all-targets
 
   # Linux tripwire: macOS is the primary target, but we compile-check on Linux
   # so PRs can't land code that uses macOS-only APIs without review. Not a
@@ -77,7 +66,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust (pinned in rust-toolchain.toml)
+        run: rustup toolchain install --no-self-update
       - uses: Swatinem/rust-cache@v2
       - run: cargo check --workspace --all-targets
 
@@ -93,7 +83,8 @@ jobs:
       LABEL_OVERRIDE_BUDGET: 5MB
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust (pinned in rust-toolchain.toml)
+        run: rustup toolchain install --no-self-update
       - uses: Swatinem/rust-cache@v2
       - name: Build release binary
         run: cargo build --release
@@ -269,7 +260,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust (pinned in rust-toolchain.toml)
+        run: rustup toolchain install --no-self-update
       - uses: Swatinem/rust-cache@v2
       - name: Build release binary
         run: cargo build --release

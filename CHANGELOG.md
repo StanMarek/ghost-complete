@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependabot now also proposes compatible bumps of transitive crates, grouped
   with direct minor and patch bumps into one weekly PR, so lockfile-only
   RustSec fixes arrive without a manual `cargo update`.
+- **Building from source now needs Rust 1.99+** (was 1.86+). The toolchain is
+  pinned to 1.99.0 in `rust-toolchain.toml` instead of the floating `stable`
+  channel, so a new Rust release can no longer break CI on its own, and every
+  CI job installs it from that file. The `MSRV (1.86)` CI job is removed: the
+  toolchain file overrode its `rustup default 1.86`, so it compiled with
+  stable and never tested 1.86. The tree has not built on 1.86 since the AWS
+  SDK crates started requiring rustc 1.91.1.
 
 ### Fixed
 

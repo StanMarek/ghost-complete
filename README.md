@@ -36,7 +36,7 @@ Found a bug? [Open an issue](https://github.com/StanMarek/ghost-complete/issues)
 - **Terminal:** [Ghostty](https://ghostty.org), [Kitty](https://sw.kovidgoyal.net/kitty/), [WezTerm](https://wezfurlong.org/wezterm/), [Alacritty](https://alacritty.org), [Rio](https://raphamorim.io/rio/), [iTerm2](https://iterm2.com), Terminal.app, [Zed](https://zed.dev), or [VSCode](https://code.visualstudio.com) (and forks: VSCodium, Cursor, Windsurf, Positron, Trae)
 - **OS:** macOS
 - **Shell:** zsh (primary), bash and fish (Ctrl+/ trigger only)
-- **Rust:** 1.86+ (for building from source)
+- **Rust:** 1.99+ (for building from source)
 
 ## Installation
 

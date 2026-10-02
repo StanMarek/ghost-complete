@@ -315,7 +315,7 @@ These steps require repo admin access. Without them the gates run but **do not b
 4. In the status check search box, add the checks listed as "Ready to add" in the table below by their **exact display names** (the human-readable `name:` values from the CI YAML, not the YAML job keys).
 5. Save the rule.
 
-These checks are added **alongside** any existing required checks (e.g. `Check`, `Test`, `Clippy`, `Format`, `MSRV (1.86)`, `Linux tripwire (compile-check only)`). They replace nothing.
+These checks are added **alongside** any existing required checks (e.g. `Check`, `Test`, `Clippy`, `Format`, `Linux tripwire (compile-check only)`). They replace nothing.
 
 ### Readiness table
 
