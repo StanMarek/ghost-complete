@@ -4,6 +4,18 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Transitive crates too. RustSec fixes usually ship as a compatible
+    # release of a crate we only depend on indirectly (crossbeam-epoch, h2,
+    # rustls), which direct-only updates never pick up.
+    allow:
+      - dependency-type: all
+    groups:
+      # One weekly PR for minor and patch bumps; majors still get a PR each.
+      # Semver treats a 0.x minor bump as breaking, so one can land here;
+      # `@dependabot ignore <crate> minor version` keeps it out of the group.
+      cargo-compatible:
+        patterns: ["*"]
+        update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     schedule:
