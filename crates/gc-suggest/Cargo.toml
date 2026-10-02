@@ -11,13 +11,13 @@ publish = false
 gc-buffer = { path = "../gc-buffer" }
 gc-config = { path = "../gc-config" }
 gc-jsrt = { path = "../gc-jsrt" }
-aws-config = { version = "=1.6.3", default-features = false, features = [
+aws-config = { version = "=1.8.16", default-features = false, features = [
     "behavior-version-latest",
     "rt-tokio",
     "default-https-client",
     "sso",
 ] }
-aws-sdk-iam = { version = "=1.95.0", default-features = false, features = [
+aws-sdk-iam = { version = "=1.108.1", default-features = false, features = [
     "behavior-version-latest",
     "rt-tokio",
     "default-https-client",
@@ -47,7 +47,7 @@ aws-credential-types = "=1.2.14"
 # Not aws-smithy-runtime's `test-util`: it pulls the legacy hyper 0.14
 # connector and h2 0.3, which has no fix for RUSTSEC-2026-0258.
 aws-smithy-http-client = { version = "=1.1.12", features = ["test-util"] }
-aws-smithy-types = "=1.4.7"
+aws-smithy-types = "=1.8.1"
 http = "1"
 criterion = { version = "0.8", features = ["html_reports"] }
 proptest = "1"
