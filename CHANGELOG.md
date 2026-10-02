@@ -20,6 +20,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **New Zellij panes and tabs open in the shell's directory again.** The proxy
+  replaces the shell as the pane's direct child, and Zellij seeds new panes
+  from that child's working directory, which stayed wherever the proxy was
+  launched (usually `$HOME`). The same applied to tmux `#{pane_current_path}`.
+  The proxy now `chdir`s to follow each OSC 7 cwd report from the local host.
+  Reports from a remote host, such as a shell inside `ssh`, are ignored.
+  The zsh integration now reports the cwd at every prompt, like bash and fish
+  already did. Before, a `cd` inside a subshell could leave the proxy, and the
+  completion cwd, in a directory the shell never entered. Re-run
+  `ghost-complete install` to pick up the zsh change (#172).
 - **SS3 cursor keys are no longer rewritten to CSI.** With DECCKM (DECSET 1,
   application cursor keys) enabled, the terminal sends `ESC O A`..`ESC O D` for
   the arrows, but the proxy decoded those to the same internal event as the CSI

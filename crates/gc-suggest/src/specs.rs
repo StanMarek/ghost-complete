@@ -1998,6 +1998,12 @@ fn load_dir_into_pending(
 ) -> Result<Vec<PendingSpec>> {
     let mut pending: Vec<PendingSpec> = Vec::new();
 
+    // Spec files are read lazily, long after registration, and the proxy
+    // chdirs to follow the shell (#172). Pin a relative dir (`specs`, `.`,
+    // a relative `spec_dirs` entry) to the cwd it was configured against.
+    let dir = std::path::absolute(dir).unwrap_or_else(|_| dir.to_path_buf());
+    let dir = dir.as_path();
+
     if !dir.exists() {
         tracing::warn!("spec directory does not exist: {}", dir.display());
         return Ok(pending);
@@ -6168,6 +6174,28 @@ mod tests {
             .expect("bad primary remains visible for diagnostics");
         assert!(bad_entry.load_error().is_some());
         assert_eq!(store.iter().count(), 1);
+    }
+
+    #[test]
+    fn filesystem_spec_paths_are_absolute_for_relative_dirs() {
+        // Spec files are read lazily and the proxy chdirs to follow the shell
+        // (#172), so a relative spec dir must not resolve against a later cwd.
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(dir.path().join("foo.json"), r#"{"name": "foo"}"#).unwrap();
+        // `../` up to the root, then down to the tempdir: relative to the
+        // test's cwd without chdir-ing the shared test process.
+        let cwd = std::env::current_dir().unwrap();
+        let relative = PathBuf::from("../".repeat(cwd.components().count() - 1))
+            .join(dir.path().strip_prefix("/").unwrap());
+        assert!(relative.is_relative() && relative.is_dir());
+
+        let result = SpecStore::load_from_dirs(&[relative]).unwrap();
+
+        let entry = result.store.entries().first().expect("foo.json registered");
+        let SpecSource::Filesystem(path) = &entry.source else {
+            panic!("expected a filesystem source");
+        };
+        assert!(path.is_absolute(), "spec path must be absolute: {path:?}");
     }
 
     #[test]

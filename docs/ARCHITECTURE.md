@@ -102,6 +102,8 @@ Ghost Complete runs as a PTY proxy rather than a zsh/fish plugin. The proxy sits
 
 The tradeoff is complexity: we have to maintain our own VT parser to track cursor position, rather than asking the shell where it is.
 
+The proxy also takes the shell's place as the pane's direct child, and multiplexers seed new panes from that child's working directory (Zellij `NewPane`/`NewTab`, tmux `#{pane_current_path}`). So the proxy follows every OSC 7 report from the local host with a real `chdir`. Reports from another host (a shell inside `ssh`) are ignored. The shell integrations report the cwd at every prompt, so a `cd` inside a subshell cannot leave the proxy in the wrong directory. Because spec files are read lazily, filesystem spec dirs are made absolute when they are registered.
+
 ### Parser-Only VT Tracking (vte)
 
 We use the `vte` crate — a parser-only VT state machine that fires callbacks per escape sequence. We do NOT maintain a full screen buffer (like `alacritty_terminal` or `vt100`). We only track:
