@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Closing a terminal window no longer leaks the proxy and its shell.** When
+  the terminal went away, the proxy usually noticed its dead stdin before the
+  `SIGHUP`, then waited with no bound for a shell that could never exit,
+  because the proxy still held the PTY. Both processes stayed alive under
+  `launchd` for good. However the shutdown starts, the proxy now reaps the
+  shell with a bounded wait. When its terminal is gone, or on `SIGTERM`, it
+  sends the shell `SIGHUP` at once, as a terminal emulator does, and gives it
+  2 s to run its exit hooks and save history before killing it. A shell that
+  exits on `SIGHUP` takes the proxy down in under 0.1 s (#185).
+- **Closing a terminal window no longer runs the half-typed command.** On the
+  way out, the proxy's PTY writer typed a newline and EOF into the shell
+  (portable-pty does this when the writer is dropped), which submitted
+  whatever sat on the command line. The proxy now writes through its own
+  descriptor, so pending input is discarded, as it is without the proxy.
+
 ## [0.19.1] - 2026-10-03
 
 ### Changed

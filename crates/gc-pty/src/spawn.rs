@@ -1,4 +1,7 @@
 use std::ffi::{OsStr, OsString};
+use std::fs::File;
+use std::io::Write;
+use std::os::fd::BorrowedFd;
 
 use anyhow::{Context, Result};
 use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtyPair};
@@ -70,9 +73,80 @@ pub fn spawn_shell(shell: &OsStr, args: &[OsString]) -> Result<SpawnedShell> {
     Ok(SpawnedShell { master, child })
 }
 
+/// Open a writer onto the PTY master.
+///
+/// Deliberately not `MasterPty::take_writer`: portable-pty's writer types
+/// `\n` + VEOF into the PTY when dropped. Task A drops its writer when our
+/// terminal goes away, so whatever sat on the shell's command line would run
+/// as the window closed. A plain dup of the master fd has no drop side effect.
+pub fn pty_writer(master: &dyn MasterPty) -> Result<Box<dyn Write + Send>> {
+    let fd = master
+        .as_raw_fd()
+        .context("PTY master has no file descriptor")?;
+    // SAFETY: `fd` is owned by `master`, which outlives this borrow;
+    // `try_clone_to_owned` dups it, so the writer owns an fd of its own.
+    let fd = unsafe { BorrowedFd::borrow_raw(fd) }
+        .try_clone_to_owned()
+        .context("failed to duplicate PTY master fd")?;
+    Ok(Box::new(File::from(fd)))
+}
+
 #[cfg(test)]
 mod tests {
-    use portable_pty::CommandBuilder;
+    use std::io::{Read, Write};
+    use std::os::fd::AsRawFd;
+    use std::os::unix::fs::OpenOptionsExt;
+
+    use portable_pty::{native_pty_system, CommandBuilder, PtySize};
+
+    use super::pty_writer;
+
+    /// Wait up to 200 ms for `fd` to turn readable.
+    fn readable(fd: std::os::fd::RawFd) -> bool {
+        let mut pfd = libc::pollfd {
+            fd,
+            events: libc::POLLIN,
+            revents: 0,
+        };
+        // SAFETY: `pfd` is a valid pollfd for the duration of the call.
+        let ready = unsafe { libc::poll(&mut pfd, 1, 200) };
+        ready > 0
+    }
+
+    /// Task A drops its PTY writer when the proxy's terminal goes away. If
+    /// that drop types anything into the shell, a half-typed command line is
+    /// submitted on window close. The slave is in canonical mode, so it only
+    /// turns readable once a line ends (`\n`) or VEOF arrives.
+    #[test]
+    fn dropping_pty_writer_types_nothing_into_the_shell() {
+        let pair = native_pty_system()
+            .openpty(PtySize::default())
+            .expect("openpty");
+        let tty = pair.master.tty_name().expect("slave tty name");
+        let mut slave = std::fs::OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_NOCTTY)
+            .open(&tty)
+            .expect("open slave tty");
+
+        let mut writer = pty_writer(pair.master.as_ref()).expect("pty_writer");
+        writer.write_all(b"ok\n").expect("write to PTY");
+        assert!(
+            readable(slave.as_raw_fd()),
+            "written line never reached the shell"
+        );
+        let mut line = [0u8; 16];
+        let n = slave.read(&mut line).expect("read slave");
+        assert_eq!(&line[..n], b"ok\n");
+
+        drop(writer);
+
+        assert!(
+            !readable(slave.as_raw_fd()),
+            "dropping the PTY writer typed more input into the shell \
+             (portable-pty's writer sends `\\n` + VEOF on drop)"
+        );
+    }
 
     /// Reproduces the bug Codex flagged: `CommandBuilder::new`
     /// pre-snapshots the parent process env at construction time, so
