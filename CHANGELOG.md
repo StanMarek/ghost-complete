@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.1] - 2026-10-03
+
 ### Changed
 
 - The `cargo audit` CI job fails a pull request only on RustSec advisories
@@ -24,6 +26,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   toolchain file overrode its `rustup default 1.86`, so it compiled with
   stable and never tested 1.86. The tree has not built on 1.86 since the AWS
   SDK crates started requiring rustc 1.91.1.
+- Dependency maintenance:
+  - AWS SDK pins `aws-config` 1.6.3 → 1.8.16, `aws-sdk-iam` 1.95.0 → 1.108.1
+    and `aws-smithy-types` 1.4.7 → 1.8.1, part of a grouped bump of 121
+    compatible crates (#184).
+  - `zstd` 0.13 → 0.14 (#181). Build-time spec compression and runtime
+    decompression use the same crate, so the embedded spec archive needs no
+    migration.
+  - `rquickjs` 0.12.0 → 0.12.1 (#159), `rquickjs-core` 0.12.1 → 0.12.2 (#180),
+    `http` 1.4.0 → 1.4.2 (#162), `serde_json` 1.0.149 → 1.0.150 (#163),
+    `wasip2` 1.0.2 → 1.0.4 (#179).
+  - CI actions: `actions/checkout` 6 → 7 (#158),
+    `actions/attest-build-provenance` 2 → 4 (#72), `actions/setup-node` 6 → 7
+    (#165), `actions/upload-artifact` 4 → 7 (#35),
+    `actions/download-artifact` 7 → 8 (#36).
 
 ### Fixed
 
@@ -75,6 +91,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so the bug was not reachable here. `ratatui` 0.30.0 → 0.30.2 moves
   `ratatui-core` onto `lru` 0.18, and the workspace now requires
   `ratatui >= 0.30.2` so the lockfile cannot fall back (#167).
+- Bumped `aws-smithy-json` 0.62.5 → 0.62.7 to clear **GHSA-8ffr-xgwf-xj56**
+  (CVE-2026-18140, high): uncontrolled recursion in the unknown-key skip path
+  lets a crafted JSON document overflow the stack. The advisory targets
+  smithy-rs generated servers; here the crate comes in only through the AWS SDK
+  client crates behind the `aws_sdk` provider (`aws-config`, `aws-sdk-iam`,
+  `aws-sdk-sso`, `aws-sdk-ssooidc`, `aws-sdk-sts`). Lockfile-only (#187).
 
 ## [0.19.0] - 2026-07-05
 
@@ -1198,6 +1220,7 @@ silently changed behaviour.
 - **Shell integration** for zsh (full), bash (Ctrl+/), and fish (Ctrl+/)
 - **`validate-specs` subcommand** with colored output and item counts
 
+[0.19.1]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.19.1
 [0.19.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.19.0
 [0.18.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.18.0
 [0.17.0]: https://github.com/StanMarek/ghost-complete/releases/tag/v0.17.0
