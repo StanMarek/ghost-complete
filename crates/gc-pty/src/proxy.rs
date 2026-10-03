@@ -19,7 +19,7 @@ use crate::cwd_sync::ProcessCwdSync;
 use crate::handler::{InputHandler, Keybindings, OverlayWriteTicket, TriggerPrepared};
 use crate::input::KeyParser;
 use crate::resize::{get_terminal_size, resize_pty};
-use crate::spawn::{spawn_shell, SpawnedShell};
+use crate::spawn::{pty_writer, spawn_shell, SpawnedShell};
 
 /// Upper bound on how long a queued CPR entry may sit before we prune it.
 /// A misbehaving terminal that silently drops `CSI 6n` would otherwise leak
@@ -159,7 +159,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
     let mut reader = master
         .try_clone_reader()
         .context("failed to clone PTY reader")?;
-    let writer = master.take_writer().context("failed to take PTY writer")?;
+    let writer = pty_writer(master.as_ref())?;
 
     // Enter raw mode with a drop guard so it's ALWAYS restored
     let _raw_guard = RawModeGuard::enable()?;
@@ -339,8 +339,8 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
         h.spawn_spec_cache_sweep(config.suggest.spec_cache.clone())
     };
 
-    // Channel to signal that one of the I/O tasks has finished
-    let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<()>(1);
+    // Channel to signal that one of the I/O tasks has finished, and why
+    let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<ShutdownCause>(1);
 
     // Task A: stdin → PTY (user keystrokes to shell, with popup interception)
     let stdin_shutdown = shutdown_tx.clone();
@@ -351,12 +351,12 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
         let mut stdin = std::io::stdin().lock();
         let mut buf = [0u8; 4096];
         let mut key_parser = KeyParser::new();
-        'stdin: loop {
+        let cause = 'stdin: loop {
             let n = match stdin.read(&mut buf) {
-                Ok(0) => break, // EOF
+                Ok(0) => break ShutdownCause::TerminalLost, // EOF
                 Ok(n) => n,
                 Err(ref e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
-                Err(_) => break,
+                Err(_) => break ShutdownCause::TerminalLost,
             };
 
             let keys = key_parser.parse(&buf[..n]);
@@ -371,7 +371,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                             Ok(p) => p,
                             Err(e) => {
                                 tracing::warn!("parser mutex poisoned in stdin task: {e}");
-                                break 'stdin;
+                                break 'stdin ShutdownCause::TerminalLost;
                             }
                         };
                         dispatch_cpr_response(p.state_mut(), *row, *col)
@@ -387,7 +387,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                                 Ok(p) => p,
                                 Err(e) => {
                                     tracing::warn!("parser mutex poisoned in stdin task: {e}");
-                                    break 'stdin;
+                                    break 'stdin ShutdownCause::TerminalLost;
                                 }
                             };
                             let state = p.state_mut();
@@ -485,7 +485,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                             )
                             .is_err()
                             {
-                                break 'stdin;
+                                break 'stdin ShutdownCause::ShellExited;
                             }
                         }
                         CprAction::DropEmpty(r, c) => {
@@ -502,7 +502,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                             )
                             .is_err()
                             {
-                                break 'stdin;
+                                break 'stdin ShutdownCause::ShellExited;
                             }
                         }
                     }
@@ -518,7 +518,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                         Ok(h) => h,
                         Err(e) => {
                             tracing::warn!("handler mutex poisoned in stdin task: {e}");
-                            break 'stdin;
+                            break 'stdin ShutdownCause::TerminalLost;
                         }
                     };
                     let forward = h.process_key(key, &parser_for_stdin, &mut render_buf);
@@ -529,7 +529,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                         write_overlay_if_current(&handler_for_stdin, render_ticket, &render_buf)
                     {
                         tracing::debug!("Task A overlay write/flush failed: {e}");
-                        break 'stdin;
+                        break 'stdin ShutdownCause::TerminalLost;
                     }
                 }
                 if !forward.is_empty()
@@ -540,11 +540,11 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                     )
                     .is_err()
                 {
-                    break 'stdin;
+                    break 'stdin ShutdownCause::ShellExited;
                 }
             }
-        }
-        let _ = stdin_shutdown.try_send(());
+        };
+        let _ = stdin_shutdown.try_send(cause);
     });
 
     // Task B: PTY → stdout (shell output to terminal)
@@ -557,12 +557,12 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
         let mut pending_trigger = PendingTrigger::new();
         let mut private_osc_filter = PrivateOscFilter::default();
         let process_cwd = ProcessCwdSync::new();
-        loop {
+        let cause = loop {
             let n = match reader.read(&mut buf) {
-                Ok(0) => break, // PTY closed
+                Ok(0) => break ShutdownCause::ShellExited, // PTY closed
                 Ok(n) => n,
                 Err(ref e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
-                Err(_) => break,
+                Err(_) => break ShutdownCause::ShellExited,
             };
 
             // Feed bytes through the VT parser to track terminal state
@@ -571,7 +571,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                     Ok(p) => p,
                     Err(e) => {
                         tracing::warn!("parser mutex poisoned in stdout task: {e}");
-                        break;
+                        break ShutdownCause::TerminalLost;
                     }
                 };
                 p.process_bytes(&buf[..n]);
@@ -617,7 +617,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                         tracing::warn!(
                             "handler mutex poisoned before terminal output cleanup: {e}"
                         );
-                        break;
+                        break ShutdownCause::TerminalLost;
                     }
                 }
             }
@@ -661,12 +661,12 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                                 "parser mutex poisoned during CPR rollback: {poison_err} \
                                  — orphan entry leaked, exiting Task B"
                             );
-                            break;
+                            break ShutdownCause::TerminalLost;
                         }
                     }
                 }
                 tracing::debug!("Task B stdout write/flush failed: {e}");
-                break;
+                break ShutdownCause::TerminalLost;
             }
 
             {
@@ -690,7 +690,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                     }
                     Err(e) => {
                         tracing::warn!("parser mutex poisoned in stdout task: {e}");
-                        break;
+                        break ShutdownCause::TerminalLost;
                     }
                 }
             };
@@ -702,7 +702,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                         Ok(h) => h,
                         Err(e) => {
                             tracing::warn!("handler mutex poisoned in stdout task: {e}");
-                            break;
+                            break ShutdownCause::TerminalLost;
                         }
                     };
                     let had_pending_trigger = h.has_pending_trigger();
@@ -739,7 +739,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                         write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
                     {
                         tracing::debug!("Task B overlay write/flush failed: {e}");
-                        break;
+                        break ShutdownCause::TerminalLost;
                     }
                 }
             }
@@ -751,7 +751,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                         Ok(h) => h,
                         Err(e) => {
                             tracing::warn!("handler mutex poisoned in stdout task: {e}");
-                            break;
+                            break ShutdownCause::TerminalLost;
                         }
                     };
                     let resolved = pending_trigger
@@ -772,7 +772,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                         write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
                     {
                         tracing::debug!("Task B deferred overlay write/flush failed: {e}");
-                        break;
+                        break ShutdownCause::TerminalLost;
                     }
                 }
             }
@@ -796,7 +796,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                     }
                     Err(e) => {
                         tracing::warn!("parser mutex poisoned in stdout task: {e}");
-                        break;
+                        break ShutdownCause::TerminalLost;
                     }
                 }
             };
@@ -813,7 +813,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                         Ok(h) => h,
                         Err(e) => {
                             tracing::warn!("handler mutex poisoned in stdout task: {e}");
-                            break;
+                            break ShutdownCause::TerminalLost;
                         }
                     };
                     if h.auto_trigger_enabled() {
@@ -826,7 +826,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                         write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
                     {
                         tracing::debug!("Task B overlay write/flush failed: {e}");
-                        break;
+                        break ShutdownCause::TerminalLost;
                     }
                 }
             }
@@ -839,7 +839,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                         Ok(h) => h,
                         Err(e) => {
                             tracing::warn!("handler mutex poisoned in stdout task: {e}");
-                            break;
+                            break ShutdownCause::TerminalLost;
                         }
                     };
                     h.try_merge_dynamic(&parser_for_stdout, &mut render_buf);
@@ -850,12 +850,12 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                         write_overlay_if_current(&handler_for_stdout, render_ticket, &render_buf)
                     {
                         tracing::debug!("Task B overlay write/flush failed: {e}");
-                        break;
+                        break ShutdownCause::TerminalLost;
                     }
                 }
             }
-        }
-        let _ = pty_shutdown.try_send(());
+        };
+        let _ = pty_shutdown.try_send(cause);
     });
 
     // Drop the sender we cloned from — we only need the ones in the tasks
@@ -868,23 +868,24 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
         signal(SignalKind::terminate()).context("failed to register SIGTERM handler")?;
     let mut sighup = signal(SignalKind::hangup()).context("failed to register SIGHUP handler")?;
 
-    // Wait for either an I/O task to finish or a signal
-    let mut signal_shutdown = false;
-    loop {
+    // Wait for either an I/O task to finish or a signal. Closing the terminal
+    // readies the I/O and SIGHUP branches together and `select!` picks one at
+    // random, so both must lead to the same outcome.
+    let cause = loop {
         tokio::select! {
-            _ = shutdown_rx.recv() => {
-                tracing::debug!("I/O task finished, shutting down");
-                break;
+            cause = shutdown_rx.recv() => {
+                // `None`: both I/O tasks died without reporting (panic).
+                let cause = cause.unwrap_or(ShutdownCause::TerminalLost);
+                tracing::debug!(?cause, "I/O task finished, shutting down");
+                break cause;
             }
             _ = sigterm.recv() => {
                 tracing::info!("received SIGTERM, shutting down");
-                signal_shutdown = true;
-                break;
+                break ShutdownCause::Terminated;
             }
             _ = sighup.recv() => {
                 tracing::info!("received SIGHUP, shutting down");
-                signal_shutdown = true;
-                break;
+                break ShutdownCause::TerminalLost;
             }
             _ = sigwinch.recv() => {
                 match get_terminal_size() {
@@ -923,7 +924,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                                 write_overlay_if_current(&handler, render_ticket, &render_buf)
                             {
                                 tracing::debug!("signal overlay write/flush failed: {e}");
-                                break;
+                                break ShutdownCause::TerminalLost;
                             }
                         }
                     }
@@ -933,7 +934,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                 }
             }
         }
-    }
+    };
 
     // Clean up: abort I/O tasks (they'll be blocked on reads)
     stdin_handle.abort();
@@ -964,39 +965,64 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
         }
     }
 
-    // Drop the raw-mode guard eagerly on signal shutdown so the terminal is
-    // returned to cooked mode *before* the bounded `try_wait` loop. Holding
-    // the guard across the 2 s deadline leaves the user staring at a broken
-    // prompt while we wait for the shell to exit. On the normal path the
-    // guard falls out of scope at function return, which is fine — `child.
-    // wait()` there blocks until the shell actually closes the PTY.
-    if signal_shutdown {
-        drop(_raw_guard);
-    }
+    // Return the terminal to cooked mode *before* the bounded reap below, so
+    // nobody stares at a broken prompt while we wait for the shell.
+    drop(_raw_guard);
 
-    // Wait for child and get exit status.
-    //
-    // On signal-driven shutdown, the shell may be blocked on a read of the
-    // inherited master PTY fd. A plain `wait()` would hang forever. Poll
-    // `try_wait` with a bounded deadline, then escalate to `kill()` if the
-    // shell hasn't exited on its own.
-    let exit_code = if signal_shutdown {
-        wait_with_timeout(child.as_mut(), Duration::from_secs(2))
-    } else {
-        let status = child.wait().context("failed to wait for shell process")?;
-        status.exit_code().try_into().unwrap_or(1)
-    };
-
-    Ok(exit_code)
+    // Reap the shell. Never a plain `wait()`: we still hold the PTY master,
+    // so a shell that hasn't exited on its own never sees a hangup and would
+    // block us forever (#185).
+    Ok(reap_shell(child.as_mut(), cause))
 }
 
-/// Poll `try_wait` until `deadline`, then `kill()` and re-poll with a bounded
-/// reap deadline. Returns the shell's exit code, or a signal-style
-/// `128 + SIGTERM = 143` if we had to kill it (or if the child is still alive
-/// after the reap deadline).
+/// Why the main loop stopped, which decides how the shell is reaped.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ShutdownCause {
+    /// The PTY reached EOF (or rejected a write): the shell has exited, so
+    /// reaping it is immediate.
+    ShellExited,
+    /// Our terminal is gone (SIGHUP, EOF on stdin, a failed stdout write), or
+    /// an I/O task died so we can no longer relay it. Nobody will ever drive
+    /// the shell again: hang it up now, as a terminal emulator does when its
+    /// window closes.
+    TerminalLost,
+    /// SIGTERM: we were asked to stop, so hang the shell up too.
+    Terminated,
+}
+
+/// How long the shell gets to exit on its own, after its PTY closed or after
+/// SIGHUP, before `wait_with_timeout` kills it.
+const SHELL_EXIT_GRACE: Duration = Duration::from_secs(2);
+
+/// Reap the shell, hanging it up first unless it has already exited.
 ///
-/// Every wait path is bounded — no plain blocking `wait()` on the signal path,
-/// because the shell can be stuck on an inherited PTY fd and hang forever.
+/// The hangup is what a terminal emulator delivers when its window closes:
+/// SIGHUP, on which the shell passes SIGHUP on to its jobs, runs its exit
+/// hooks and saves history. It gets `SHELL_EXIT_GRACE` for that; only a
+/// shell still alive afterwards is killed.
+fn reap_shell(child: &mut (dyn portable_pty::Child + Send + Sync), cause: ShutdownCause) -> i32 {
+    if cause != ShutdownCause::ShellExited {
+        if let Some(pid) = child.process_id() {
+            // SAFETY: plain kill(2). Nothing has reaped the child yet, so
+            // `pid` still names the shell.
+            if unsafe { libc::kill(pid as libc::pid_t, libc::SIGHUP) } != 0 {
+                tracing::warn!(
+                    "failed to hang up shell: {}",
+                    std::io::Error::last_os_error()
+                );
+            }
+        }
+    }
+    wait_with_timeout(child, SHELL_EXIT_GRACE)
+}
+
+/// Poll `try_wait` until `deadline`, then `kill()` (SIGHUP, then SIGKILL
+/// ~200 ms later) and re-poll with a bounded reap deadline. Returns the
+/// shell's exit code (portable-pty reports death by signal as 1), or 143 if
+/// the child is still alive after the reap deadline.
+///
+/// Every wait path is bounded — no plain blocking `wait()`, because a shell
+/// that never sees a hangup never exits.
 fn wait_with_timeout(
     child: &mut (dyn portable_pty::Child + Send + Sync),
     deadline: Duration,
@@ -1010,7 +1036,7 @@ fn wait_with_timeout(
     }
 
     if let Err(e) = child.kill() {
-        tracing::warn!("failed to kill shell on signal shutdown: {e}");
+        tracing::warn!("failed to kill shell on shutdown: {e}");
     }
 
     if let Some(code) = poll_until(child, reap_deadline, poll_interval) {
@@ -1043,7 +1069,7 @@ fn poll_until(
                 std::thread::sleep(poll_interval);
             }
             Err(e) => {
-                tracing::warn!("try_wait failed during signal shutdown: {e}");
+                tracing::warn!("try_wait failed during shutdown: {e}");
                 return None;
             }
         }
@@ -2705,6 +2731,39 @@ mod tests {
         assert_ne!(
             code, 143,
             "SIGKILL path must reap the child, not leave it orphaned"
+        );
+    }
+
+    #[test]
+    fn hangup_gives_shell_time_to_run_its_exit_hooks() {
+        // Stands in for zsh running `zshexit` or saving history on SIGHUP:
+        // the trap needs ~0.5 s, longer than portable-pty's 200 ms between
+        // its own SIGHUP and SIGKILL.
+        let mut spawned = spawn_child(&[
+            "sh",
+            "-c",
+            "trap 'sleep 0.5; exit 3' HUP; while :; do sleep 0.05; done",
+        ]);
+        // Let sh install the trap before we hang it up.
+        std::thread::sleep(Duration::from_millis(200));
+        let code = reap_shell(spawned.child.as_mut(), ShutdownCause::TerminalLost);
+        assert_eq!(code, 3, "the shell's SIGHUP handler must run to completion");
+    }
+
+    #[test]
+    fn hangup_kills_shell_that_ignores_sighup_within_bound() {
+        let mut spawned = spawn_child(&["sh", "-c", "trap '' HUP; exec sleep 30"]);
+        std::thread::sleep(Duration::from_millis(200));
+        let start = std::time::Instant::now();
+        reap_shell(spawned.child.as_mut(), ShutdownCause::TerminalLost);
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < Duration::from_secs(4),
+            "a shell ignoring SIGHUP must still be reaped within bound, took {elapsed:?}"
+        );
+        assert!(
+            matches!(spawned.child.try_wait(), Ok(Some(_))),
+            "a shell ignoring SIGHUP must have been SIGKILLed and reaped"
         );
     }
 
