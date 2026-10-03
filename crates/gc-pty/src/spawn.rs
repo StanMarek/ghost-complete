@@ -12,7 +12,8 @@ use crate::resize::get_terminal_size;
 
 /// Set on a shell that runs in place of a proxy that failed to start, to the
 /// pid the shell inherited from that proxy. `init.zsh` leaves the proxy alone
-/// when it matches `$$`. Subshells and new tabs have their own pid, so they
+/// when that pid is the shell itself or one of its ancestors (a `$SHELL`
+/// wrapper that forks zsh), then unsets the marker, so subshells and new tabs
 /// still launch the proxy.
 pub const FALLBACK_PID_ENV: &str = "GHOST_COMPLETE_FALLBACK_PID";
 
