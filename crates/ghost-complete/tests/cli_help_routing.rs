@@ -681,14 +681,15 @@ fn config_edit_attempts_tui_not_dump() {
 /// environment.
 ///
 /// The positive signal is the `--log-file` log, not the process's
-/// stdout/stderr. `run_proxy` records `starting ghost-complete proxy` with
+/// stdout/stderr. `start_proxy` records `starting ghost-complete proxy` with
 /// `shell=<argv[0]>` before handing off to `gc_pty::run_proxy` — before any
 /// terminal detection or terminal I/O — so it is captured wherever the
-/// proxy later bails. The proxy's failure *message* is environment
-/// dependent (`failed to spawn shell process` / `failed to exec shell` /
-/// `failed to query terminal size`, depending on terminal detection and
-/// whether `crossterm` can size a headless runner), so asserting on it
-/// would re-couple this routing test to terminal state. Mirrors the
+/// proxy later fails and falls back to exec'ing the shell. The failure
+/// *message* is environment dependent (`failed to spawn shell process` /
+/// `failed to enable raw mode` / `failed to query terminal size`, depending
+/// on terminal detection and whether `crossterm` can size a headless
+/// runner), so asserting on it would re-couple this routing test to
+/// terminal state. Mirrors the
 /// log-based signal in `proxy_with_no_args_uses_default_shell_from_env`.
 #[test]
 fn dash_dash_escape_routes_subcommand_named_shell_to_external() {
@@ -746,7 +747,7 @@ fn dash_dash_escape_routes_subcommand_named_shell_to_external() {
         );
     }
 
-    // Positive signal: the `External` arm reached `run_proxy`, which logs
+    // Positive signal: the `External` arm reached `start_proxy`, which logs
     // `starting ghost-complete proxy` with `shell=<argv[0]>`. Both strings
     // present prove the `--`-escaped subcommand name was forwarded into
     // proxy mode as the shell. Reading the log keeps the assertion
@@ -790,10 +791,10 @@ fn dash_dash_escape_routes_subcommand_named_shell_to_external() {
 /// Pins the `None => run_proxy(..., Vec::new())` routing arm in `main.rs`.
 /// Invokes ghost-complete with NO positional argv and no subcommand. The
 /// proxy reads `$SHELL` via `resolve_default_shell()`, logs `"starting
-/// ghost-complete proxy"` with that shell, then bails when `enable_raw_mode`
+/// ghost-complete proxy"` with that shell, then fails when `enable_raw_mode`
 /// fails (stdin is routed through `Stdio::null()` and stdout/stderr through
 /// `Stdio::piped()` — none of them is a TTY, so `enable_raw_mode` fails
-/// fast). The log file is the deterministic signal: if the `None` arm
+/// fast) and its fallback exec of the nonexistent marker shell fails too. The log file is the deterministic signal: if the `None` arm
 /// regressed (e.g. swapped with `External`, hard-coded a different shell,
 /// or panicked), the recorded `shell=` line would not match the $SHELL
 /// value we set — or the log would be empty because tracing never
@@ -825,8 +826,9 @@ fn proxy_with_no_args_uses_default_shell_from_env() {
         .output()
         .unwrap();
 
-    // Process exits non-zero because raw mode fails outside a TTY; this is
-    // expected and indicates the None arm reached `run_proxy`. (A 0 exit
+    // Process exits non-zero because raw mode fails outside a TTY and the
+    // marker shell it falls back to doesn't exist; this is expected and
+    // indicates the None arm reached `start_proxy`. (A 0 exit
     // here would suggest a different code path ran — for example, a
     // refactor that turned the None arm into a no-op.)
     assert!(

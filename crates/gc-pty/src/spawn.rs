@@ -1,18 +1,32 @@
 use std::ffi::{OsStr, OsString};
 use std::fs::File;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::os::fd::BorrowedFd;
+use std::os::unix::process::CommandExt;
+use std::path::Path;
 
 use anyhow::{Context, Result};
 use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtyPair};
 
 use crate::resize::get_terminal_size;
 
+/// Set on a shell that runs in place of a proxy that failed to start, to the
+/// pid the shell inherited from that proxy. `init.zsh` leaves the proxy alone
+/// when it matches `$$`. Subshells and new tabs have their own pid, so they
+/// still launch the proxy.
+pub const FALLBACK_PID_ENV: &str = "GHOST_COMPLETE_FALLBACK_PID";
+
 pub struct SpawnedShell {
     pub master: Box<dyn MasterPty + Send>,
     pub child: Box<dyn Child + Send + Sync>,
+    pub reader: Box<dyn Read + Send>,
+    pub writer: Box<dyn Write + Send>,
 }
 
+/// Open a PTY sized like our terminal and start `shell` on it.
+///
+/// Everything that can fail runs before the shell starts, so an `Err` never
+/// leaves a shell behind.
 pub fn spawn_shell(shell: &OsStr, args: &[OsString]) -> Result<SpawnedShell> {
     let size = get_terminal_size().context("failed to query terminal size")?;
 
@@ -20,6 +34,10 @@ pub fn spawn_shell(shell: &OsStr, args: &[OsString]) -> Result<SpawnedShell> {
     let PtyPair { master, slave } = pty_system
         .openpty(size)
         .context("failed to open PTY pair")?;
+    let reader = master
+        .try_clone_reader()
+        .context("failed to clone PTY reader")?;
+    let writer = pty_writer(master.as_ref())?;
 
     let mut cmd = CommandBuilder::new(shell);
     cmd.args(args);
@@ -70,7 +88,49 @@ pub fn spawn_shell(shell: &OsStr, args: &[OsString]) -> Result<SpawnedShell> {
     // Drop slave — parent must not hold the slave FD
     drop(slave);
 
-    Ok(SpawnedShell { master, child })
+    Ok(SpawnedShell {
+        master,
+        child,
+        reader,
+        writer,
+    })
+}
+
+/// Replace this process with `shell`, run without the proxy. Returns only if
+/// that fails.
+///
+/// Refuses when this process, or its parent, already did it once: the shell
+/// it ran then started the proxy again (directly, or from a zsh it started),
+/// which means the `init.zsh` involved predates [`FALLBACK_PID_ENV`], and
+/// another fallback would loop forever.
+pub fn exec_plain_shell(shell: &OsStr, args: &[OsString]) -> anyhow::Error {
+    let shell_display = Path::new(shell).display();
+    let pid = std::process::id().to_string();
+    // SAFETY: getppid(2) has no preconditions and cannot fail.
+    let parent = unsafe { libc::getppid() }.to_string();
+    if std::env::var_os(FALLBACK_PID_ENV)
+        .is_some_and(|marker| marker == pid.as_str() || marker == parent.as_str())
+    {
+        return anyhow::anyhow!(
+            "not starting {shell_display} again: it already ran in place of the proxy \
+             and started the proxy back up, so the init.zsh it sourced is out of date \
+             (run `ghost-complete install`)"
+        );
+    }
+
+    let mut cmd = std::process::Command::new(shell);
+    cmd.args(args)
+        // No proxy is listening. With this set, ghost-complete.zsh would send
+        // its private OSC frames straight to the terminal on every keystroke.
+        .env_remove("GHOST_COMPLETE_ACTIVE")
+        .env(FALLBACK_PID_ENV, &pid);
+    // Same reason as in `spawn_shell`: the IMDS override is ours, not the user's.
+    if gc_suggest::aws::imds_disabled_was_injected() {
+        cmd.env_remove(gc_suggest::aws::IMDS_DISABLED_ENV);
+    }
+    // `exec` is execvp(3): `shell` is never interpreted by a shell.
+    let err = cmd.exec();
+    anyhow::Error::new(err).context(format!("failed to exec {shell_display}"))
 }
 
 /// Open a writer onto the PTY master.

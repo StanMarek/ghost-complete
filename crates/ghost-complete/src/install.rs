@@ -697,6 +697,59 @@ pub fn run_install(dry_run: bool) -> Result<()> {
     install_to(&zshrc, &config_dir, dry_run)
 }
 
+/// The zsh scripts `install` writes into `<config_dir>/shell/`.
+const SHELL_SCRIPTS: [(&str, &str); 2] = [
+    ("init.zsh", ZSH_INIT),
+    ("ghost-complete.zsh", ZSH_INTEGRATION),
+];
+
+/// Bring the shell scripts `install` wrote under `config_dir` up to date with
+/// the copies embedded in this binary, so upgrading the binary can't leave
+/// old scripts behind.
+///
+/// Only regular files that already exist are rewritten. A missing script was
+/// never installed or has been uninstalled, and a symlinked one is managed by
+/// the user. Runs at proxy startup, so it reports through `tracing` only and
+/// never fails.
+pub(crate) fn refresh_installed_shell_scripts(config_dir: &Path) {
+    let shell_dir = config_dir.join("shell");
+    for (name, embedded) in SHELL_SCRIPTS {
+        let path = shell_dir.join(name);
+        if !fs::symlink_metadata(&path).is_ok_and(|meta| meta.file_type().is_file()) {
+            continue;
+        }
+        match fs::read(&path) {
+            Ok(installed) if installed == embedded.as_bytes() => continue,
+            Ok(_) => {}
+            Err(e) => {
+                tracing::warn!(path = %path.display(), "cannot read installed shell script: {e}");
+                continue;
+            }
+        }
+        match atomic_write::atomic_write_preserving_mode(&path, embedded.as_bytes()) {
+            // `warn`, the default level, so that hand edits this reverts
+            // leave a trace in the log. It fires once per upgrade.
+            Ok(()) => tracing::warn!(path = %path.display(), "refreshed stale shell script"),
+            Err(e) => tracing::warn!(
+                path = %path.display(),
+                "could not refresh stale shell script: {e:#}"
+            ),
+        }
+    }
+}
+
+/// [`refresh_installed_shell_scripts`] on the real install. Skipped as root,
+/// for the same reason `run_install` refuses root.
+pub(crate) fn refresh_installed_shell_scripts_at_startup() {
+    // SAFETY: getuid(2) has no preconditions and cannot fail.
+    if unsafe { libc::getuid() } == 0 {
+        return;
+    }
+    if let Some(config_dir) = gc_config::config_dir() {
+        refresh_installed_shell_scripts(&config_dir);
+    }
+}
+
 pub fn run_uninstall() -> Result<()> {
     let home = dirs::home_dir().context("could not determine home directory")?;
     let zshrc = home.join(".zshrc");
@@ -1766,5 +1819,118 @@ mod drift_tests {
             "install template missing keys: {:#?}",
             missing,
         );
+    }
+}
+
+#[cfg(test)]
+mod refresh_tests {
+    use super::{refresh_installed_shell_scripts, ZSH_INIT, ZSH_INTEGRATION};
+    use std::fs;
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+    use std::path::Path;
+
+    const STALE: &str = "# installed by an older ghost-complete\n";
+
+    fn shell_dir(config_dir: &Path) -> std::path::PathBuf {
+        let dir = config_dir.join("shell");
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn stale_installed_scripts_are_rewritten() {
+        let tmp = tempfile::tempdir().unwrap();
+        let shell = shell_dir(tmp.path());
+        fs::write(shell.join("init.zsh"), STALE).unwrap();
+        fs::write(shell.join("ghost-complete.zsh"), STALE).unwrap();
+
+        refresh_installed_shell_scripts(tmp.path());
+
+        assert_eq!(
+            fs::read_to_string(shell.join("init.zsh")).unwrap(),
+            ZSH_INIT
+        );
+        assert_eq!(
+            fs::read_to_string(shell.join("ghost-complete.zsh")).unwrap(),
+            ZSH_INTEGRATION
+        );
+    }
+
+    #[test]
+    fn current_installed_script_is_not_rewritten() {
+        let tmp = tempfile::tempdir().unwrap();
+        let init = shell_dir(tmp.path()).join("init.zsh");
+        fs::write(&init, ZSH_INIT).unwrap();
+        let inode = fs::metadata(&init).unwrap().ino();
+
+        refresh_installed_shell_scripts(tmp.path());
+
+        // A rewrite renames a fresh file into place, which changes the inode.
+        assert_eq!(fs::metadata(&init).unwrap().ino(), inode);
+    }
+
+    /// Absent scripts mean "not installed" (never installed, or uninstalled),
+    /// which a repair must not undo.
+    #[test]
+    fn missing_scripts_are_not_created() {
+        let tmp = tempfile::tempdir().unwrap();
+        refresh_installed_shell_scripts(tmp.path());
+        assert!(!tmp.path().join("shell").exists());
+
+        let shell = shell_dir(tmp.path());
+        fs::write(shell.join("init.zsh"), STALE).unwrap();
+        refresh_installed_shell_scripts(tmp.path());
+        assert!(!shell.join("ghost-complete.zsh").exists());
+    }
+
+    #[test]
+    fn rewritten_script_keeps_its_mode() {
+        let tmp = tempfile::tempdir().unwrap();
+        let init = shell_dir(tmp.path()).join("init.zsh");
+        fs::write(&init, STALE).unwrap();
+        fs::set_permissions(&init, fs::Permissions::from_mode(0o600)).unwrap();
+
+        refresh_installed_shell_scripts(tmp.path());
+
+        assert_eq!(fs::read_to_string(&init).unwrap(), ZSH_INIT);
+        assert_eq!(
+            fs::metadata(&init).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+    }
+
+    /// A symlinked script is managed by the user (a dotfiles repo, say).
+    /// Rewriting it would replace their link with a plain file.
+    #[test]
+    fn symlinked_script_is_left_alone() {
+        let tmp = tempfile::tempdir().unwrap();
+        let target = tmp.path().join("dotfiles-init.zsh");
+        fs::write(&target, STALE).unwrap();
+        let init = shell_dir(tmp.path()).join("init.zsh");
+        std::os::unix::fs::symlink(&target, &init).unwrap();
+
+        refresh_installed_shell_scripts(tmp.path());
+
+        assert!(fs::symlink_metadata(&init)
+            .unwrap()
+            .file_type()
+            .is_symlink());
+        assert_eq!(fs::read_to_string(&target).unwrap(), STALE);
+    }
+
+    /// The repair runs on every proxy start; a failed write must not take
+    /// startup down with it.
+    #[test]
+    fn unwritable_shell_dir_is_tolerated() {
+        let tmp = tempfile::tempdir().unwrap();
+        let shell = shell_dir(tmp.path());
+        let init = shell.join("init.zsh");
+        fs::write(&init, STALE).unwrap();
+        fs::set_permissions(&shell, fs::Permissions::from_mode(0o555)).unwrap();
+
+        refresh_installed_shell_scripts(tmp.path());
+
+        fs::set_permissions(&shell, fs::Permissions::from_mode(0o755)).unwrap();
+        assert_eq!(fs::read_to_string(&init).unwrap(), STALE);
     }
 }

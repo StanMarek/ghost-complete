@@ -206,7 +206,7 @@ fn apply_config_reload(handler: &Arc<Mutex<InputHandler>>, config: &GhostConfig)
 
 /// Build a `PopupTheme` from a [`gc_config::ResolvedTheme`] (preset merged
 /// with user overrides), parsing each style string.
-fn build_popup_theme(
+pub(crate) fn build_popup_theme(
     resolved: &gc_config::ResolvedTheme,
     borders: bool,
     spinner: bool,

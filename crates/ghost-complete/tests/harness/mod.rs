@@ -35,6 +35,7 @@ pub struct GhostProcess {
     child: Box<dyn portable_pty::Child + Send + Sync>,
     pid: Option<u32>,
     _pty_process_guard: MutexGuard<'static, ()>,
+    _home: tempfile::TempDir,
 }
 
 impl GhostProcess {
@@ -62,6 +63,19 @@ impl GhostProcess {
         // (see should_fallback_to_shell in proxy.rs — Unknown terminals
         // require `[experimental] multi_terminal = true`).
         cmd.env("TERM_PROGRAM", "ghostty");
+        // Keep the proxy's config, installed shell scripts (which it rewrites
+        // when they are stale), spec mirror and frecency store out of the
+        // developer's real home.
+        let home = tempfile::tempdir().expect("failed to create temp HOME");
+        cmd.env("HOME", home.path());
+        for var in [
+            "XDG_CONFIG_HOME",
+            "XDG_DATA_HOME",
+            "XDG_STATE_HOME",
+            "XDG_CACHE_HOME",
+        ] {
+            cmd.env_remove(var);
+        }
 
         let child = pty_pair
             .slave
@@ -109,6 +123,7 @@ impl GhostProcess {
             child,
             pid,
             _pty_process_guard: pty_process_guard,
+            _home: home,
         }
     }
 
