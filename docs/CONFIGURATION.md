@@ -83,6 +83,26 @@ match_mode = "fuzzy"  # or "substring" for contiguous matching
 
 Shell history loads up to 10,000 entries.
 
+### `[suggest.introspection]`
+
+Fallback completions for commands that have no bundled or user spec. The
+conservative default never executes a target command.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `mode` | string | `"off"` | `"off"` disables introspection, `"ask"` offers a generation action, and `"auto"` runs help introspection after a spec miss. |
+| `timeout_ms` | integer | `750` | Maximum duration of each direct (non-shell) help invocation. |
+
+```toml
+[suggest.introspection]
+mode = "off" # "ask" or "auto"
+timeout_ms = 750
+```
+
+Results are cached in memory by executable path, modification time, size, and
+lazy subcommand path. Failed attempts are also cached for the daemon lifetime.
+Curated specs always take precedence.
+
 ### `[suggest.spec_cache]`
 
 Cache eviction policy for parsed completion specs. Eviction is opt-in; the
@@ -416,6 +436,7 @@ match_highlight = "underline"
 | `[suggest]` | All fields | No |
 | `[suggest.providers]` | All fields | No |
 | `[suggest.spec_cache]` | All fields | No |
+| `[suggest.introspection]` | All fields | No |
 | `[paths]` | All fields | No |
 | `[experimental]` | All fields | No |
 

@@ -231,6 +231,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
                 config.suggest.generator_timeout_ms,
             )
             .with_match_mode(config.suggest.match_mode)
+            .with_introspection_config(config.suggest.introspection.clone())
             .with_aws_sdk_config(
                 config.experimental.aws_sdk_provider,
                 config.experimental.aws_sdk_fallback_to_cli,

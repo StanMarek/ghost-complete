@@ -863,6 +863,8 @@ pub(crate) fn kind_icon(kind: SuggestionKind) -> char {
         SuggestionKind::EnvVar => '$',
         SuggestionKind::ProviderValue => '\u{F0AD}', // nf-fa-wrench — dynamic arg value from a native provider
         SuggestionKind::EnumValue => '\u{F0CB}',     // nf-fa-list_ol — enumerated arg value
+        SuggestionKind::Introspection => '\u{F02D}', // nf-fa-book
+        SuggestionKind::IntrospectionAction => '\u{F013}', // nf-fa-gear
     }
 }
 

@@ -768,6 +768,18 @@ impl InputHandler {
         }
     }
 
+    pub fn with_introspection_config(self, config: gc_config::IntrospectionConfig) -> Self {
+        let engine = Arc::try_unwrap(self.engine)
+            .unwrap_or_else(|_| {
+                panic!("internal invariant: engine Arc was captured by shared reference")
+            })
+            .with_introspection_config(config);
+        Self {
+            engine: Arc::new(engine),
+            ..self
+        }
+    }
+
     /// Set the query match strategy (fuzzy subsequence vs contiguous
     /// substring) on the underlying engine. Builder-time only — must run
     /// before the engine `Arc` is shared, like [`Self::with_suggest_config`].
@@ -1191,10 +1203,16 @@ impl InputHandler {
                 self.dismiss(stdout);
                 return key_to_bytes(key);
             }
+            if self.accept_introspection_action(parser, stdout) {
+                return Vec::new();
+            }
             return self.accept_with_chaining(parser, stdout);
         }
         if binding == &self.keybindings.accept_and_enter {
             if self.overlay.selected.is_some() {
+                if self.accept_introspection_action(parser, stdout) {
+                    return Vec::new();
+                }
                 let mut forward = self.accept_suggestion(parser);
                 self.dismiss(stdout);
                 forward.push(0x0D);
@@ -1558,12 +1576,14 @@ impl InputHandler {
 
         match sync_result {
             Ok(result) if !result.suggestions.is_empty() => {
+                let introspect = self.engine.should_auto_introspect(&ctx);
                 self.replace_suggestions_and_reset_overlay(result.suggestions);
                 self.visible = true;
                 self.spawn_generators(
                     result.script_generators,
                     result.git_generators,
                     result.provider_generators,
+                    introspect,
                     &ctx,
                     &cwd,
                     shell_env.clone(),
@@ -1574,7 +1594,8 @@ impl InputHandler {
             Ok(result) => {
                 let has_async = !result.script_generators.is_empty()
                     || !result.git_generators.is_empty()
-                    || !result.provider_generators.is_empty();
+                    || !result.provider_generators.is_empty()
+                    || self.engine.should_auto_introspect(&ctx);
                 if has_async {
                     // No static suggestions but generators are pending.
                     // If a popup is currently visible (e.g. from a previous
@@ -1593,6 +1614,7 @@ impl InputHandler {
                         result.script_generators,
                         result.git_generators,
                         result.provider_generators,
+                        self.engine.should_auto_introspect(&ctx),
                         &ctx,
                         &cwd,
                         shell_env.clone(),
@@ -1701,7 +1723,8 @@ impl InputHandler {
 
         let has_async = !result.script_generators.is_empty()
             || !result.git_generators.is_empty()
-            || !result.provider_generators.is_empty();
+            || !result.provider_generators.is_empty()
+            || self.engine.should_auto_introspect(&ctx);
         let needs_block = block_ms > 0 && has_async && result.has_pending_high_priority();
 
         let sync_suggestions = result.suggestions;
@@ -1720,6 +1743,7 @@ impl InputHandler {
                 result.script_generators,
                 result.git_generators,
                 result.provider_generators,
+                self.engine.should_auto_introspect(&ctx),
                 &ctx,
                 &cwd,
                 shell_env.clone(),
@@ -1921,6 +1945,7 @@ impl InputHandler {
         script_generators: Vec<std::sync::Arc<gc_suggest::specs::GeneratorSpec>>,
         git_generators: Vec<gc_suggest::git::GitQueryKind>,
         provider_generators: Vec<gc_suggest::providers::ProviderResolution>,
+        introspect: bool,
         ctx: &gc_buffer::CommandContext,
         cwd: &std::path::Path,
         shell_env: Option<HashMap<String, String>>,
@@ -1928,6 +1953,7 @@ impl InputHandler {
         if script_generators.is_empty()
             && git_generators.is_empty()
             && provider_generators.is_empty()
+            && !introspect
         {
             return;
         }
@@ -2025,7 +2051,21 @@ impl InputHandler {
                     )
                     .await
             };
-            let (script_res, git_results, provider_results) = tokio::join!(
+            let introspection_engine = Arc::clone(&engine);
+            let introspection_ctx = ctx.clone();
+            let introspection_cwd = cwd.clone();
+            let introspection_fut = async move {
+                if introspect {
+                    Some(
+                        introspection_engine
+                            .introspect(&introspection_ctx, &introspection_cwd)
+                            .await,
+                    )
+                } else {
+                    None
+                }
+            };
+            let (script_res, git_results, provider_results, introspection_result) = tokio::join!(
                 engine.run_generators_with_env(
                     &script_generators,
                     &ctx,
@@ -2035,7 +2075,25 @@ impl InputHandler {
                 ),
                 git_fut,
                 provider_fut,
+                introspection_fut,
             );
+            if let Some(result) = introspection_result {
+                let provider = ProviderTag::Script("help introspection".into());
+                let message = match result {
+                    Ok(results) if results.is_empty() => DynamicResult::Empty { provider },
+                    Ok(results) => DynamicResult::Loaded {
+                        provider,
+                        suggestions: results,
+                    },
+                    Err(e) => DynamicResult::Error {
+                        provider,
+                        message: e.to_string(),
+                    },
+                };
+                if tx.send(message).await.is_err() {
+                    return;
+                }
+            }
             let should_run_aws_sdk_fallback = !aws_sdk_fallback_generators.is_empty()
                 && provider_results
                     .iter()
@@ -2928,6 +2986,30 @@ impl InputHandler {
         self.output_epoch = self.output_epoch.wrapping_add(1);
     }
 
+    fn accept_introspection_action(
+        &mut self,
+        parser: &Arc<Mutex<TerminalParser>>,
+        stdout: &mut dyn Write,
+    ) -> bool {
+        let Some(index) = self.effective_selected() else {
+            return false;
+        };
+        if self.suggestions.get(index).map(|s| s.kind)
+            != Some(gc_suggest::SuggestionKind::IntrospectionAction)
+        {
+            return false;
+        }
+        if let Ok(p) = parser.lock() {
+            let state = p.state();
+            let buffer = state.command_buffer().unwrap_or("");
+            let ctx = parse_command_context(buffer, state.buffer_cursor());
+            self.engine.request_introspection(&ctx);
+        }
+        self.teardown_popup(stdout, true);
+        self.trigger_requested = true;
+        true
+    }
+
     /// Compute the accept bytes for the currently-selected suggestion using
     /// an already-locked parser. Caller owns the lock so additional reads
     /// (e.g. for CD chaining prediction) can happen under the same critical
@@ -2955,6 +3037,10 @@ impl InputHandler {
         let buffer = state.command_buffer().unwrap_or("");
         let cursor = state.buffer_cursor();
         let ctx = parse_command_context(buffer, cursor);
+        if selected.kind == gc_suggest::SuggestionKind::IntrospectionAction {
+            self.engine.request_introspection(&ctx);
+            return None;
+        }
         let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
         // Construct the newtypes directly from the parser tuples at the read
         // site so the bare-`u16` window where a row/col (or rows/cols) swap is

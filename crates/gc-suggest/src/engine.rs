@@ -20,6 +20,7 @@ use crate::frecency::FrecencyDb;
 use crate::fuzzy;
 use crate::git;
 use crate::history::{HistoryProvider, DEFAULT_MAX_HISTORY_ENTRIES};
+use crate::introspection::HelpIntrospector;
 use crate::js_runtime::{JsExecContext, JsRuntimeAdapter};
 use crate::priority;
 use crate::provider::Provider;
@@ -375,6 +376,10 @@ pub struct SuggestionEngine {
     /// `js_runtime` were missing — they're dropped from the generator
     /// pool. Mirrors `ProvidersConfig::js_runtime` from `gc-config`.
     providers_js_runtime: bool,
+    introspector: Arc<HelpIntrospector>,
+    introspection_mode: gc_config::IntrospectionMode,
+    introspection_timeout_ms: u64,
+    requested_introspection: Arc<std::sync::Mutex<std::collections::HashSet<String>>>,
 }
 
 impl SuggestionEngine {
@@ -421,6 +426,12 @@ impl SuggestionEngine {
             providers_aws_sdk: false,
             aws_sdk_fallback_to_cli: true,
             providers_js_runtime: true,
+            introspector: Arc::new(HelpIntrospector::new()),
+            introspection_mode: gc_config::IntrospectionMode::Off,
+            introspection_timeout_ms: 750,
+            requested_introspection: Arc::new(std::sync::Mutex::new(
+                std::collections::HashSet::new(),
+            )),
         })
     }
 
@@ -498,7 +509,43 @@ impl SuggestionEngine {
             providers_aws_sdk: false,
             aws_sdk_fallback_to_cli: true,
             providers_js_runtime: true,
+            introspector: Arc::new(HelpIntrospector::new()),
+            introspection_mode: gc_config::IntrospectionMode::Off,
+            introspection_timeout_ms: 750,
+            requested_introspection: Arc::new(std::sync::Mutex::new(
+                std::collections::HashSet::new(),
+            )),
         }
+    }
+
+    pub fn with_introspection_config(mut self, config: gc_config::IntrospectionConfig) -> Self {
+        self.introspection_mode = config.mode;
+        self.introspection_timeout_ms = config.timeout_ms;
+        self
+    }
+
+    pub fn should_auto_introspect(&self, ctx: &CommandContext) -> bool {
+        (self.introspection_mode == gc_config::IntrospectionMode::Auto
+            || self
+                .requested_introspection
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .contains(&introspection_key(ctx)))
+            && ctx.word_index > 0
+            && self.spec_for_ctx(ctx).is_none()
+    }
+
+    pub fn request_introspection(&self, ctx: &CommandContext) {
+        self.requested_introspection
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .insert(introspection_key(ctx));
+    }
+
+    pub async fn introspect(&self, ctx: &CommandContext, cwd: &Path) -> Result<Vec<Suggestion>> {
+        self.introspector
+            .suggestions(ctx, cwd, self.introspection_timeout_ms)
+            .await
     }
 
     #[doc(hidden)]
@@ -1309,6 +1356,18 @@ impl SuggestionEngine {
                 let mut candidates = Vec::new();
                 self.extend_with_env_vars(ctx, cwd, shell_env, &mut candidates);
                 self.extend_with_ssh_hosts(ctx, &mut candidates);
+                if self.introspection_mode == gc_config::IntrospectionMode::Ask {
+                    candidates.push(Suggestion {
+                        text: "Generate completions from --help".to_string(),
+                        description: Some(
+                            "Run this command's help safely and cache discovered completions"
+                                .to_string(),
+                        ),
+                        kind: SuggestionKind::IntrospectionAction,
+                        source: SuggestionSource::Introspection,
+                        ..Default::default()
+                    });
+                }
                 Ok(self.suggest_filesystem_fallback(ctx, cwd, buffer, candidates, "fallback"))
             }
         }
@@ -1801,6 +1860,15 @@ impl SuggestionEngine {
 
         results
     }
+}
+
+fn introspection_key(ctx: &CommandContext) -> String {
+    let mut key = ctx.command.clone().unwrap_or_default();
+    for arg in ctx.args.iter().filter(|arg| !arg.starts_with('-')) {
+        key.push('\0');
+        key.push_str(arg);
+    }
+    key
 }
 
 /// Helper: resolve the cwd argument used by the cache key based on the
@@ -4996,6 +5064,46 @@ mod tests {
         assert_eq!(
             history_count, 0,
             "empty history provider yields no history rows: {results:?}"
+        );
+    }
+
+    #[test]
+    fn introspection_modes_and_curated_precedence() {
+        let unknown = make_ctx(Some("definitely-unspecced-command"), vec![], "", 1);
+        let off = SuggestionEngine::new(&[]).unwrap();
+        assert!(!off.should_auto_introspect(&unknown));
+        let off_result = off
+            .suggest_sync(&unknown, Path::new("/tmp"), "definitely-unspecced-command ")
+            .unwrap();
+        assert!(!off_result
+            .iter()
+            .any(|s| s.kind == SuggestionKind::IntrospectionAction));
+
+        let ask = SuggestionEngine::new(&[])
+            .unwrap()
+            .with_introspection_config(gc_config::IntrospectionConfig {
+                mode: gc_config::IntrospectionMode::Ask,
+                timeout_ms: 100,
+            });
+        let ask_result = ask
+            .suggest_sync(&unknown, Path::new("/tmp"), "definitely-unspecced-command ")
+            .unwrap();
+        assert!(ask_result
+            .iter()
+            .any(|s| s.kind == SuggestionKind::IntrospectionAction));
+        assert!(!ask.should_auto_introspect(&unknown));
+
+        let auto = SuggestionEngine::new(&[])
+            .unwrap()
+            .with_introspection_config(gc_config::IntrospectionConfig {
+                mode: gc_config::IntrospectionMode::Auto,
+                timeout_ms: 100,
+            });
+        assert!(auto.should_auto_introspect(&unknown));
+        let curated = make_ctx(Some("git"), vec![], "", 1);
+        assert!(
+            !auto.should_auto_introspect(&curated),
+            "bundled specs must win"
         );
     }
 }

@@ -284,6 +284,8 @@ pub struct SuggestConfig {
     pub match_mode: MatchMode,
     pub providers: ProvidersConfig,
     pub spec_cache: SpecCacheConfig,
+    /// Generic completion fallback for commands without a curated spec.
+    pub introspection: IntrospectionConfig,
 }
 
 impl Default for SuggestConfig {
@@ -295,6 +297,33 @@ impl Default for SuggestConfig {
             match_mode: MatchMode::default(),
             providers: ProvidersConfig::default(),
             spec_cache: SpecCacheConfig::default(),
+            introspection: IntrospectionConfig::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum IntrospectionMode {
+    #[default]
+    Off,
+    Ask,
+    Auto,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct IntrospectionConfig {
+    pub mode: IntrospectionMode,
+    /// Maximum runtime of one help invocation.
+    pub timeout_ms: u64,
+}
+
+impl Default for IntrospectionConfig {
+    fn default() -> Self {
+        Self {
+            mode: IntrospectionMode::Off,
+            timeout_ms: 750,
         }
     }
 }
@@ -686,6 +715,9 @@ pub fn all_field_paths() -> Vec<&'static str> {
         "suggest.spec_cache.sweep_interval_secs",
         "suggest.spec_cache.keep_warm",
         "suggest.spec_cache.max_resident_mb",
+        // [suggest.introspection]
+        "suggest.introspection.mode",
+        "suggest.introspection.timeout_ms",
         // [paths]
         "paths.spec_dirs",
         // [keybindings] — 6 fields
