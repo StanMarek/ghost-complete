@@ -17,3 +17,4 @@ mod spawn;
 pub use gc_overlay::parse_style;
 pub use handler::parse_key_name;
 pub use proxy::run_proxy;
+pub use spawn::exec_plain_shell;

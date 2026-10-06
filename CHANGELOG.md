@@ -7,8 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The installed shell scripts now update themselves.** `install` copies
+  `init.zsh` and `ghost-complete.zsh` into `~/.config/ghost-complete/shell/`,
+  and until now only another `install` refreshed them, so a binary upgrade
+  kept running the old scripts. The proxy now rewrites either one at startup
+  when it differs from the copy built into the binary. Scripts that are
+  missing (never installed, or uninstalled) or symlinked (managed by you) are
+  left alone, and nothing runs as root. Edits made directly to those two
+  files are reverted, as `install` already did; make a file a symlink to
+  keep your own version (#186).
+
 ### Fixed
 
+- **A startup error no longer leaves a terminal tab without a shell.** An
+  invalid `config.toml` or keybinding made the proxy exit, and since
+  `init.zsh` had already replaced the shell with the proxy, the tab was left
+  with nothing. Any error before the proxy is running now prints the reason
+  and starts your shell in its place, without completions; a log file that
+  can't be opened no longer stops startup at all. The fallback shell is
+  marked so that `init.zsh` doesn't start the proxy again, which would fail
+  the same way and loop; that includes a zsh it starts on the way, such as
+  from a `$SHELL` wrapper script. If an outdated `init.zsh` starts it
+  anyway, the proxy exits with an error rather than looping (#186).
 - **Closing a terminal window no longer leaks the proxy and its shell.** When
   the terminal went away, the proxy usually noticed its dead stdin before the
   `SIGHUP`, then waited with no bound for a shell that could never exit,

@@ -10,16 +10,15 @@ use tokio::sync::{mpsc, Notify};
 
 use gc_config::GhostConfig;
 
-use gc_overlay::{parse_style, PopupTheme};
 use gc_suggest::spec_dirs::{resolve_spec_dirs_with_provenance, SpecDirResolution};
 use gc_terminal::TerminalProfile;
 
-use crate::config_watch::spawn_config_watcher;
+use crate::config_watch::{build_popup_theme, spawn_config_watcher};
 use crate::cwd_sync::ProcessCwdSync;
 use crate::handler::{InputHandler, Keybindings, OverlayWriteTicket, TriggerPrepared};
 use crate::input::KeyParser;
 use crate::resize::{get_terminal_size, resize_pty};
-use crate::spawn::{pty_writer, spawn_shell, SpawnedShell};
+use crate::spawn::{spawn_shell, SpawnedShell};
 
 /// Upper bound on how long a queued CPR entry may sit before we prune it.
 /// A misbehaving terminal that silently drops `CSI 6n` would otherwise leak
@@ -72,7 +71,9 @@ fn input_handler_for_resolution(
 /// stdin/stdout and the PTY until the shell exits. Keystrokes are routed
 /// through the InputHandler for suggestion popup interception.
 ///
-/// Returns the shell's exit code.
+/// Returns the shell's exit code. An `Err` means the proxy did not start and
+/// no shell is running (one already spawned has been reaped), so the caller
+/// can run the shell itself.
 pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -> Result<i32> {
     // Detect terminal capabilities
     let terminal_profile = gc_terminal::TerminalProfile::detect();
@@ -103,27 +104,30 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
     // Gate unknown terminals behind experimental flag.
     // All known terminals (see `Terminal::supported_terminals`) work without
     // any flag. Only Unknown terminals need multi_terminal = true.
-    // Note: CommandExt::exec() is the Unix execvp() syscall — no shell
-    // interpretation, no injection risk. `shell` comes from $SHELL or argv.
     if should_fallback_to_shell(
         terminal_profile.terminal(),
         config.experimental.multi_terminal,
     ) {
-        tracing::warn!(
-            terminal = %terminal_profile.terminal(),
-            "unknown terminal requires [experimental] multi_terminal = true — falling back to plain shell"
-        );
-        eprintln!(
-            "ghost-complete: {} is not a supported terminal.\n\
+        anyhow::bail!(
+            "{} is not a supported terminal.\n\
              To try anyway, add to ~/.config/ghost-complete/config.toml:\n\n  \
              [experimental]\n  \
              multi_terminal = true\n",
             terminal_profile.terminal()
         );
-        use std::os::unix::process::CommandExt;
-        let err = std::process::Command::new(shell).args(args).exec();
-        anyhow::bail!("failed to exec shell: {}", err);
     }
+
+    // Check what the config can get wrong before anything has side effects.
+    let keybindings =
+        Keybindings::from_config(&config.keybindings).context("invalid keybindings")?;
+    let resolved_theme = config.theme.resolve().context("invalid theme preset")?;
+    let theme = build_popup_theme(
+        &resolved_theme,
+        config.popup.borders,
+        config.popup.spinner,
+        config.popup.show_provider_errors,
+    )
+    .context("invalid theme")?;
 
     // Log tmux detection and propagate recursion guard to future panes
     if std::env::var("TMUX").is_ok() {
@@ -154,15 +158,23 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
         }
     }
 
-    let SpawnedShell { master, mut child } = spawn_shell(shell, args)?;
-
-    let mut reader = master
-        .try_clone_reader()
-        .context("failed to clone PTY reader")?;
-    let writer = pty_writer(master.as_ref())?;
+    // Registered before the shell starts, so that this can't fail with a
+    // shell running, and a hangup that arrives during startup isn't lost.
+    let mut sigwinch =
+        signal(SignalKind::window_change()).context("failed to register SIGWINCH handler")?;
+    let mut sigterm =
+        signal(SignalKind::terminate()).context("failed to register SIGTERM handler")?;
+    let mut sighup = signal(SignalKind::hangup()).context("failed to register SIGHUP handler")?;
 
     // Enter raw mode with a drop guard so it's ALWAYS restored
-    let _raw_guard = RawModeGuard::enable()?;
+    let raw_guard = RawModeGuard::enable()?;
+
+    let SpawnedShell {
+        master,
+        mut child,
+        mut reader,
+        writer,
+    } = spawn_shell(shell, args)?;
 
     // Initialize terminal parser with current screen dimensions
     let (cols, rows) = crossterm::terminal::size().unwrap_or((80, 24));
@@ -172,71 +184,59 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
     // supplement them with embedded specs.
     let spec_dir_resolution = resolve_spec_dirs_with_provenance(&config.paths.spec_dirs);
 
-    // Resolve keybindings from config (fail fast on invalid key names)
-    let keybindings = Keybindings::from_config(&config.keybindings)?;
-
-    // Resolve theme from config (fail fast on invalid preset or style strings)
-    let resolved_theme = config.theme.resolve().context("invalid theme preset")?;
-    let theme = PopupTheme {
-        selected_on: parse_style(&resolved_theme.selected)
-            .context("invalid theme.selected style")?,
-        description_on: parse_style(&resolved_theme.description)
-            .context("invalid theme.description style")?,
-        feedback_loading_on: parse_style(&resolved_theme.feedback_loading)
-            .context("invalid theme.feedback_loading style")?,
-        feedback_empty_on: parse_style(&resolved_theme.feedback_empty)
-            .context("invalid theme.feedback_empty style")?,
-        feedback_error_on: parse_style(&resolved_theme.feedback_error)
-            .context("invalid theme.feedback_error style")?,
-        match_highlight_on: parse_style(&resolved_theme.match_highlight)
-            .context("invalid theme.match_highlight style")?,
-        item_text_on: parse_style(&resolved_theme.item_text)
-            .context("invalid theme.item_text style")?,
-        scrollbar_on: parse_style(&resolved_theme.scrollbar)
-            .context("invalid theme.scrollbar style")?,
-        border_on: parse_style(&resolved_theme.border).context("invalid theme.border style")?,
-        borders: config.popup.borders,
-        spinner: config.popup.spinner,
-        show_provider_errors: config.popup.show_provider_errors,
-    };
-
     gc_suggest::providers::brew::set_brew_search_cap(config.experimental.brew_search_cap);
 
-    // Initialize suggestion handler with config
-    let handler = Arc::new(Mutex::new(
-        input_handler_for_resolution(&spec_dir_resolution, terminal_profile)?
-            .with_keybindings(keybindings)
-            .with_theme(theme)
-            .with_popup_config(config.popup.max_visible)
-            .with_popup_widths(config.popup.min_width, config.popup.max_width)
-            .with_description_box(
-                config.popup.description_box,
-                config.popup.description_box_max_width,
-                config.popup.description_box_lines,
-                config.popup.description_box_debounce_ms,
-            )
-            .with_feedback_dismiss_ms(config.popup.feedback_dismiss_ms)
-            .with_trigger_chars(&config.trigger.auto_chars)
-            .with_auto_trigger(config.trigger.auto_trigger)
-            .with_render_block_ms(config.popup.render_block_ms as u64)
-            .with_tab_accepts_top(config.popup.tab_accepts_top)
-            .with_suggest_config(
-                config.suggest.max_results,
-                config.suggest.providers.commands,
-                config.suggest.max_history_results,
-                config.suggest.providers.filesystem,
-                config.suggest.providers.specs,
-                config.suggest.providers.git,
-                config.suggest.providers.js_runtime,
-                config.suggest.generator_timeout_ms,
-            )
-            .with_match_mode(config.suggest.match_mode)
-            .with_introspection_config(config.suggest.introspection.clone())
-            .with_aws_sdk_config(
-                config.experimental.aws_sdk_provider,
-                config.experimental.aws_sdk_fallback_to_cli,
-            ),
-    ));
+    // The suggestion engine is built after the shell starts so that loading
+    // specs overlaps the shell's own startup. That makes it the one setup
+    // step whose failure has to take the shell down with it.
+    let handler = match input_handler_for_resolution(&spec_dir_resolution, terminal_profile) {
+        Ok(handler) => handler,
+        Err(e) => {
+            drop(raw_guard);
+            reap_shell(child.as_mut(), ShutdownCause::Terminated);
+            return Err(e);
+        }
+    };
+    let handler = handler
+        .with_keybindings(keybindings)
+        .with_theme(theme)
+        .with_popup_config(config.popup.max_visible)
+        .with_popup_widths(config.popup.min_width, config.popup.max_width)
+        .with_description_box(
+            config.popup.description_box,
+            config.popup.description_box_max_width,
+            config.popup.description_box_lines,
+            config.popup.description_box_debounce_ms,
+        )
+        .with_feedback_dismiss_ms(config.popup.feedback_dismiss_ms)
+        .with_trigger_chars(&config.trigger.auto_chars)
+        .with_auto_trigger(config.trigger.auto_trigger)
+        .with_render_block_ms(config.popup.render_block_ms as u64)
+        .with_tab_accepts_top(config.popup.tab_accepts_top)
+        .with_suggest_config(
+            config.suggest.max_results,
+            config.suggest.providers.commands,
+            config.suggest.max_history_results,
+            config.suggest.providers.filesystem,
+            config.suggest.providers.specs,
+            config.suggest.providers.git,
+            config.suggest.providers.js_runtime,
+            config.suggest.generator_timeout_ms,
+        )
+        .with_match_mode(config.suggest.match_mode)
+        .with_introspection_config(config.suggest.introspection.clone())
+        .with_aws_sdk_config(
+            config.experimental.aws_sdk_provider,
+            config.experimental.aws_sdk_fallback_to_cli,
+        );
+    let dynamic_notify = handler.dynamic_notify();
+    let feedback_notify = handler.feedback_tick_notify();
+    let detail_notify = handler.detail_redraw_notify();
+    // Background sweep task for the spec cache. Held in scope for the
+    // duration of the proxy event loop; dropped when run_proxy returns,
+    // which cancels the task.
+    let _spec_cache_sweep = handler.spawn_spec_cache_sweep(config.suggest.spec_cache.clone());
+    let handler = Arc::new(Mutex::new(handler));
 
     // Config hot-reload: watch config.toml for changes
     let config_watcher_handle = if let Some(config_dir) = gc_config::config_dir() {
@@ -268,36 +268,12 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
     };
 
     // Task E: dynamic merge loop — renders script generator results when shell is idle.
-    let dynamic_notify = {
-        // This lock runs during startup before the handler `Arc` is shared
-        // with any other task, so poison is extremely unlikely. We still
-        // use the match-with-warn pattern for consistency with every other
-        // lock site in this file.
-        let h = match handler.lock() {
-            Ok(h) => h,
-            Err(e) => {
-                tracing::warn!("handler mutex poisoned during setup: {e}");
-                anyhow::bail!("handler mutex poisoned during setup — cannot start proxy");
-            }
-        };
-        h.dynamic_notify()
-    };
     let handler_for_merge = Arc::clone(&handler);
     let parser_for_merge = Arc::clone(&parser);
     let merge_handle = tokio::spawn(async move {
         dynamic_merge_loop(dynamic_notify, handler_for_merge, parser_for_merge).await;
     });
 
-    let feedback_notify = {
-        let h = match handler.lock() {
-            Ok(h) => h,
-            Err(e) => {
-                tracing::warn!("handler mutex poisoned during feedback setup: {e}");
-                anyhow::bail!("handler mutex poisoned during feedback setup — cannot start proxy");
-            }
-        };
-        h.feedback_tick_notify()
-    };
     let handler_for_feedback = Arc::clone(&handler);
     let feedback_handle = tokio::spawn(async move {
         feedback_tick_loop(feedback_notify, handler_for_feedback).await;
@@ -306,39 +282,11 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
     // Detail-box debounce loop: re-renders the popup after the
     // description-box debounce window expires so the box catches up to a
     // settled selection.
-    let detail_notify = {
-        let h = match handler.lock() {
-            Ok(h) => h,
-            Err(e) => {
-                tracing::warn!("handler mutex poisoned during detail-redraw setup: {e}");
-                anyhow::bail!(
-                    "handler mutex poisoned during detail-redraw setup — cannot start proxy"
-                );
-            }
-        };
-        h.detail_redraw_notify()
-    };
     let handler_for_detail = Arc::clone(&handler);
     let parser_for_detail = Arc::clone(&parser);
     let detail_handle = tokio::spawn(async move {
         detail_redraw_loop(detail_notify, handler_for_detail, parser_for_detail).await;
     });
-
-    // Background sweep task for the spec cache. Held in scope for the
-    // duration of the proxy event loop; dropped when run_proxy returns,
-    // which cancels the task.
-    let _spec_cache_sweep = {
-        let h = match handler.lock() {
-            Ok(h) => h,
-            Err(e) => {
-                tracing::warn!("handler mutex poisoned during spec-cache sweep setup: {e}");
-                anyhow::bail!(
-                    "handler mutex poisoned during spec-cache sweep setup — cannot start proxy"
-                );
-            }
-        };
-        h.spawn_spec_cache_sweep(config.suggest.spec_cache.clone())
-    };
 
     // Channel to signal that one of the I/O tasks has finished, and why
     let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<ShutdownCause>(1);
@@ -862,13 +810,8 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
     // Drop the sender we cloned from — we only need the ones in the tasks
     drop(shutdown_tx);
 
-    // Task C: Signal handling
-    let mut sigwinch =
-        signal(SignalKind::window_change()).context("failed to register SIGWINCH handler")?;
-    let mut sigterm =
-        signal(SignalKind::terminate()).context("failed to register SIGTERM handler")?;
-    let mut sighup = signal(SignalKind::hangup()).context("failed to register SIGHUP handler")?;
-
+    // Task C: Signal handling, on the handlers registered before the spawn.
+    //
     // Wait for either an I/O task to finish or a signal. Closing the terminal
     // readies the I/O and SIGHUP branches together and `select!` picks one at
     // random, so both must lead to the same outcome.
@@ -968,7 +911,7 @@ pub async fn run_proxy(shell: &OsStr, args: &[OsString], config: &GhostConfig) -
 
     // Return the terminal to cooked mode *before* the bounded reap below, so
     // nobody stares at a broken prompt while we wait for the shell.
-    drop(_raw_guard);
+    drop(raw_guard);
 
     // Reap the shell. Never a plain `wait()`: we still hold the PTY master,
     // so a shell that hasn't exited on its own never sees a hangup and would
@@ -987,7 +930,8 @@ enum ShutdownCause {
     /// the shell again: hang it up now, as a terminal emulator does when its
     /// window closes.
     TerminalLost,
-    /// SIGTERM: we were asked to stop, so hang the shell up too.
+    /// We are stopping on our own (SIGTERM, or startup failed after the
+    /// spawn), so hang the shell up too.
     Terminated,
 }
 
