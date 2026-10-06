@@ -6,7 +6,7 @@ mod status;
 mod tui;
 mod validate;
 
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
@@ -337,7 +337,14 @@ fn run_proxy(
 ) -> Result<()> {
     // Proxy mode — default to log file, never stderr
     let log_file = cli_log_file.or_else(default_log_file);
-    init_tracing(log_level, log_file.as_deref())?;
+    if let Err(e) = init_tracing(log_level, log_file.as_deref()) {
+        // Not worth losing completions over. Logging stays off: the proxy is
+        // about to own the terminal, so stderr is no place for it.
+        eprintln!(
+            "ghost-complete: {} — continuing without a log file",
+            sanitize::sanitize_for_terminal(&format!("{e:#}"))
+        );
+    }
 
     let (shell, args) = if argv.is_empty() {
         (resolve_default_shell(), vec![])
@@ -348,6 +355,35 @@ fn run_proxy(
         (shell, args)
     };
 
+    // First, before anything that can fail: the shell we fall back to below
+    // sources the installed init.zsh, and only a current one recognises it.
+    install::refresh_installed_shell_scripts_at_startup();
+
+    // Fail open. `init.zsh` exec'd the user's shell away to start us, so if
+    // we exit now the tab is left with no shell at all.
+    let exit_code = match start_proxy(config_path, &shell, &args) {
+        Ok(code) => code,
+        Err(e) => {
+            tracing::warn!("proxy failed to start, falling back to plain shell: {e:#}");
+            eprintln!(
+                "ghost-complete: {}\n\
+                 ghost-complete: starting {} without completions \
+                 (run `ghost-complete doctor` for details)",
+                sanitize::sanitize_preserving_whitespace(&format!("{e:#}")),
+                sanitize::sanitize_path(Path::new(&shell)),
+            );
+            let e = gc_pty::exec_plain_shell(&shell, &args);
+            tracing::error!("could not fall back to plain shell: {e:#}");
+            return Err(e);
+        }
+    };
+
+    std::process::exit(exit_code);
+}
+
+/// Everything between "we know which shell to run" and "the shell has
+/// exited". An `Err` means no shell is running.
+fn start_proxy(config_path: Option<&Path>, shell: &OsStr, args: &[OsString]) -> Result<i32> {
     let config = gc_config::GhostConfig::load(config_path).context("failed to load config")?;
 
     // Auto-refresh the install mirror (`~/.config/ghost-complete/specs/`)
@@ -361,10 +397,10 @@ fn run_proxy(
     // for the full rationale.
     auto_refresh_install_mirror_if_stale(&config);
 
-    tracing::info!(shell = %Path::new(&shell).display(), "starting ghost-complete proxy");
+    tracing::info!(shell = %Path::new(shell).display(), "starting ghost-complete proxy");
 
     // SAFETY: must run while the process is still single-threaded.
-    // We're in `fn run_proxy`, called synchronously from `fn main`
+    // We're in `fn start_proxy`, called synchronously (via `run_proxy`) from `fn main`
     // before any `std::thread::spawn` or tokio runtime construction;
     // the AWS SDK reads this env var later from many threads but never
     // writes it, and nothing else in our process mutates the
@@ -375,9 +411,11 @@ fn run_proxy(
     }
 
     let rt = tokio::runtime::Runtime::new().context("failed to create tokio runtime")?;
-    let exit_code = rt.block_on(gc_pty::run_proxy(&shell, &args, &config))?;
-
-    std::process::exit(exit_code);
+    let result = rt.block_on(gc_pty::run_proxy(shell, args, &config));
+    // Dropping the runtime would wait for blocking tasks (the stdin reader
+    // never finishes on its own); the caller exits or execs next anyway.
+    rt.shutdown_background();
+    result
 }
 
 #[cfg(test)]

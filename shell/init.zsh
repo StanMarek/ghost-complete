@@ -25,7 +25,41 @@ _gc_ancestor_is_proxy() {
   return 1
 }
 
+# Returns 0 if PID $1 is this shell or one of its ancestors, 1 if it is
+# neither, 2 if the walk could not complete. Callers should treat 2 like 0.
+_gc_is_self_or_ancestor() {
+  local target=$1 pid=$PPID
+  local -i depth=0
+  [[ "$target" == "$$" ]] && return 0
+  while [[ "$pid" != "1" && "$pid" != "0" && -n "$pid" ]]; do
+    [[ "$pid" == "$target" ]] && return 0
+    if ! pid=$(ps -o ppid= -p "$pid" 2>/dev/null); then
+      return 2
+    fi
+    pid="${pid// /}"
+    [[ -z "$pid" ]] && return 2
+    (( depth++ ))
+    (( depth > 32 )) && return 2
+  done
+  return 1
+}
+
 __ghost_complete_init() {
+  # A proxy that fails to start execs the shell in its place, marked with
+  # its pid. That shell (exec keeps the pid), and any zsh it starts on the
+  # way to .zshrc (a $SHELL wrapper script, a .bashrc that runs zsh), must
+  # not start the proxy again: it would fail the same way and fall back
+  # again, forever. A marker from outside our ancestry was inherited from
+  # elsewhere (a tmux server, an editor) and means nothing here.
+  if [[ -n "$GHOST_COMPLETE_FALLBACK_PID" ]]; then
+    local marker=$GHOST_COMPLETE_FALLBACK_PID
+    unset GHOST_COMPLETE_FALLBACK_PID
+    _gc_is_self_or_ancestor "$marker"
+    case $? in
+      1) ;;
+      *) return ;;
+    esac
+  fi
   if [[ -n "$TMUX" ]]; then
     # Inside tmux: two guards prevent stacking proxies.
     #

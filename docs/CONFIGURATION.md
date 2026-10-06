@@ -153,7 +153,7 @@ spec_dirs = ["~/.config/ghost-complete/specs", "/usr/local/share/ghost-complete/
 
 ### `[keybindings]`
 
-Customize keyboard shortcuts. Each value is a key name string. Invalid key names cause a startup error (fail-fast).
+Customize keyboard shortcuts. Each value is a key name string. An invalid key name is a startup error: your shell starts without completions (see [Startup errors](#startup-errors)).
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -183,7 +183,7 @@ trigger = "ctrl+/"
 
 ### `[theme]`
 
-Customize popup colors and styles. Values are space-separated SGR token strings. Invalid styles cause a startup error (fail-fast). Changes are applied live when config hot-reload is active.
+Customize popup colors and styles. Values are space-separated SGR token strings. An invalid style is a startup error: your shell starts without completions (see [Startup errors](#startup-errors)). Changes are applied live when config hot-reload is active.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -311,7 +311,7 @@ When `XDG_STATE_HOME` is unset, it falls back to:
 ~/.local/state/ghost-complete/ghost-complete.log
 ```
 
-The parent directory is created automatically on startup. If directory creation fails, Ghost Complete prints a one-line warning to stderr and falls back to stderr logging for the duration of that run.
+The parent directory is created automatically on startup. If directory creation fails, Ghost Complete prints a one-line warning to stderr and falls back to stderr logging for the duration of that run. If the log file itself can't be opened, it prints a one-line warning and runs without logging.
 
 Subcommands (`status`, `doctor`, `validate-specs`, `config`, `install`, `uninstall`) log to stderr by default; pass `--log-file` to redirect them.
 
@@ -402,6 +402,11 @@ match_highlight = "underline"
 - **Nerd Font icons:** The popup gutter uses Nerd Font icons. If your terminal font doesn't include Nerd Font patches, you'll see placeholder characters. Use a [Nerd Font](https://www.nerdfonts.com/) for the best experience.
 - **History control:** Use `max_history_results` (not `providers.history`) to control history. Set to `0` to disable history entirely.
 - **Popup navigation:** PageUp, PageDown, Home, and End navigate the popup when it is visible and are forwarded to the shell when it is hidden. These structural keys are not user-configurable.
+- **Installed shell scripts:** `ghost-complete install` copies `init.zsh` and `ghost-complete.zsh` into `~/.config/ghost-complete/shell/`. At startup the proxy rewrites either file when it differs from the copy built into the binary, so the scripts always match the binary you run, and edits made to them directly are reverted. To keep your own version of a script, make that file a symlink; symlinked scripts are never rewritten.
+
+### Startup errors
+
+If the proxy can't start (a `config.toml` that doesn't parse, an invalid key name or style, an unsupported terminal), it prints the reason and starts your shell in its place, without completions. Run `ghost-complete doctor` to find the problem, fix it, and open a new tab. A broken edit picked up by hot-reload is different: it is rejected, and the running proxy keeps its previous config.
 
 ### Hot-Reload Behavior
 
