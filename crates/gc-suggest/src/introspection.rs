@@ -14,6 +14,7 @@ use crate::{Suggestion, SuggestionKind, SuggestionSource};
 
 const MAX_CACHE_ENTRIES: usize = 256;
 const GENERATED_CACHE_TTL: Duration = Duration::from_secs(300);
+const FAILED_CACHE_TTL: Duration = Duration::from_secs(15);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct LogicalKey {
@@ -83,11 +84,17 @@ impl CacheState {
             .map(|entry| &entry.value)
     }
 
-    fn insert(&mut self, key: LogicalKey, resolution: ResolutionKey, value: Cached) {
+    fn insert_with_ttl(
+        &mut self,
+        key: LogicalKey,
+        resolution: ResolutionKey,
+        value: Cached,
+        ttl: Duration,
+    ) {
         let new_entry = CacheEntry {
             resolution,
             value,
-            expires_at: Instant::now() + GENERATED_CACHE_TTL,
+            expires_at: Instant::now() + ttl,
         };
         if let std::collections::hash_map::Entry::Occupied(mut occupied) =
             self.entries.entry(key.clone())
@@ -135,6 +142,10 @@ impl IntrospectionPlan {
 
     pub(crate) fn is_cache_miss(&self) -> bool {
         self.cached.is_none()
+    }
+
+    pub(crate) fn is_resolvable(&self) -> bool {
+        self.lookup.executable.is_some()
     }
 }
 
@@ -233,11 +244,15 @@ impl HelpIntrospector {
         let executable = match lookup.executable.clone() {
             Some(executable) => executable,
             None => {
-                self.cache.lock().unwrap_or_else(|e| e.into_inner()).insert(
-                    lookup.key,
-                    lookup.resolution,
-                    Cached::Failed,
-                );
+                self.cache
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .insert_with_ttl(
+                        lookup.key,
+                        lookup.resolution,
+                        Cached::Failed,
+                        GENERATED_CACHE_TTL,
+                    );
                 anyhow::bail!("command not found on shell PATH");
             }
         };
@@ -261,25 +276,20 @@ impl HelpIntrospector {
         tokio::spawn(async move {
             let result = run_help(&executable, &path, &cwd, timeout_ms, shell_env.as_deref()).await;
             let shared = match result {
-                Ok(output) if !output.is_empty() => {
-                    let output = Arc::new(output);
-                    cache.lock().unwrap_or_else(|e| e.into_inner()).insert(
-                        logical,
-                        resolution,
-                        Cached::Success(Arc::clone(&output)),
-                    );
-                    Ok(output)
-                }
+                Ok(output) if !output.is_empty() => Ok(Arc::new(output)),
                 Ok(_) => Err(Arc::new(
                     "help introspection produced no usable completions".to_string(),
                 )),
                 Err(error) => Err(Arc::new(error.to_string())),
             };
-            cache
-                .lock()
-                .unwrap_or_else(|e| e.into_inner())
-                .in_flight
-                .remove(&operation_key);
+            let (cached, ttl) = match &shared {
+                Ok(output) => (Cached::Success(Arc::clone(output)), GENERATED_CACHE_TTL),
+                Err(_) => (Cached::Failed, FAILED_CACHE_TTL),
+            };
+            let mut state = cache.lock().unwrap_or_else(|e| e.into_inner());
+            state.insert_with_ttl(logical, resolution, cached, ttl);
+            state.in_flight.remove(&operation_key);
+            drop(state);
             let _ = sender.send(Some(shared));
         });
         Ok(Some(IntrospectionWaiter { receiver }))
@@ -320,6 +330,16 @@ impl HelpIntrospector {
             .entries
             .len()
     }
+
+    #[cfg(test)]
+    pub(crate) fn expire_failures(&self) {
+        let mut cache = self.cache.lock().unwrap_or_else(|error| error.into_inner());
+        for entry in cache.entries.values_mut() {
+            if matches!(entry.value, Cached::Failed) {
+                entry.expires_at = Instant::now();
+            }
+        }
+    }
 }
 
 async fn run_help(
@@ -329,73 +349,55 @@ async fn run_help(
     timeout_ms: u64,
     shell_env: Option<&HashMap<String, String>>,
 ) -> Result<Vec<Suggestion>> {
-    // Prefer the ubiquitous `subcommand --help`; try `help subcommand` only
-    // when it did not produce usable output. No shell is involved.
-    let mut attempts = Vec::with_capacity(2);
-    let mut first = path.to_vec();
-    first.push("--help".into());
-    attempts.push(first);
-    let mut second = vec!["help".to_string()];
-    second.extend_from_slice(path);
-    attempts.push(second);
+    let mut args = path.to_vec();
+    args.push("--help".into());
     let executable = executable
         .to_str()
         .context("resolved help executable path is not valid UTF-8")?
         .to_string();
-    let mut failures = Vec::with_capacity(2);
-    for args in attempts {
-        let mut argv = Vec::with_capacity(args.len() + 1);
-        argv.push(executable.as_str());
-        argv.extend(args.iter().map(String::as_str));
-        match run_introspection_with_env(&argv, cwd, timeout_ms.max(1), shell_env).await {
-            Ok(output) => {
-                if output.exit_code.is_none()
-                    || output.stdout.len() >= MAX_GENERATOR_STDOUT_BYTES
-                    || output.stderr.len() >= MAX_GENERATOR_STDOUT_BYTES
-                {
-                    failures.push(format!(
-                        "{}: help output exceeded the capture limit",
-                        args.join(" ")
-                    ));
-                    continue;
-                }
-                let text = combined_output(&output.stdout, &output.stderr);
-                let parsed = parse_help(&text);
-                if !parsed.is_empty() {
-                    return Ok(parsed);
-                }
-                failures.push(format!("{}: produced no parseable help", args.join(" ")));
+    let mut argv = Vec::with_capacity(args.len() + 1);
+    argv.push(executable.as_str());
+    argv.extend(args.iter().map(String::as_str));
+    match run_introspection_with_env(&argv, cwd, timeout_ms.max(1), shell_env).await {
+        Ok(output) => {
+            if output.exit_code.is_none()
+                || output.stdout.len() >= MAX_GENERATOR_STDOUT_BYTES
+                || output.stderr.len() >= MAX_GENERATOR_STDOUT_BYTES
+            {
+                anyhow::bail!("{}: help output exceeded the capture limit", args.join(" "));
             }
-            Err(ShellRunError::NonZeroExit {
-                exit_code,
-                stdout,
-                stderr,
-            }) => {
-                let text = combined_output(&stdout, &stderr);
-                let parsed = parse_help(&text);
-                if !parsed.is_empty() {
-                    return Ok(parsed);
-                }
-                failures.push(format!(
-                    "{}: exited with status {} without parseable help",
-                    args.join(" "),
-                    exit_code
-                        .map(|code| code.to_string())
-                        .unwrap_or_else(|| "signal".to_string())
-                ));
+            let text = combined_output(&output.stdout, &output.stderr);
+            let parsed = parse_help(&text);
+            if parsed.is_empty() {
+                anyhow::bail!("{}: produced no parseable help", args.join(" "));
             }
-            Err(ShellRunError::Timeout) => failures.push(format!(
-                "{}: timed out after {}ms",
-                args.join(" "),
-                timeout_ms.max(1)
-            )),
-            Err(error) => failures.push(format!("{}: {error}", args.join(" "))),
+            Ok(parsed)
         }
+        Err(ShellRunError::NonZeroExit {
+            exit_code,
+            stdout,
+            stderr,
+        }) => {
+            let text = combined_output(&stdout, &stderr);
+            let parsed = parse_help(&text);
+            if !parsed.is_empty() {
+                return Ok(parsed);
+            }
+            anyhow::bail!(
+                "{}: exited with status {} without parseable help",
+                args.join(" "),
+                exit_code
+                    .map(|code| code.to_string())
+                    .unwrap_or_else(|| "signal".to_string())
+            );
+        }
+        Err(ShellRunError::Timeout) => Err(anyhow!(
+            "{}: timed out after {}ms",
+            args.join(" "),
+            timeout_ms.max(1)
+        )),
+        Err(error) => Err(anyhow!("{}: {error}", args.join(" "))),
     }
-    Err(anyhow!(
-        "help introspection failed: {}",
-        failures.join("; ")
-    ))
 }
 
 fn combined_output(stdout: &str, stderr: &str) -> String {
@@ -425,6 +427,10 @@ pub fn parse_help(help: &str) -> Vec<Suggestion> {
             section = "options";
             continue;
         }
+        if line.ends_with(':') {
+            section = "";
+            continue;
+        }
         if line.is_empty() {
             continue;
         }
@@ -435,20 +441,30 @@ pub fn parse_help(help: &str) -> Vec<Suggestion> {
             let names = left
                 .split(',')
                 .map(str::trim)
-                .filter_map(|part| part.split_whitespace().next())
+                .filter_map(normalize_option_name)
                 .filter(|n| n.starts_with('-') && n.len() > 1)
                 .collect::<Vec<_>>();
             for name in names {
                 push_unique(&mut out, name, desc, SuggestionKind::Flag);
             }
-        } else if section == "commands" {
-            let name = left.split_whitespace().next().unwrap_or("");
-            if valid_command_name(name) {
-                push_unique(&mut out, name, desc, SuggestionKind::Subcommand);
-            }
+        } else if section == "commands"
+            && raw.starts_with(char::is_whitespace)
+            && !left.chars().any(char::is_whitespace)
+            && valid_command_name(left)
+        {
+            push_unique(&mut out, left, desc, SuggestionKind::Subcommand);
         }
     }
     out
+}
+
+fn normalize_option_name(part: &str) -> Option<&str> {
+    let token = part.split_whitespace().next()?;
+    let end = token
+        .char_indices()
+        .find_map(|(index, ch)| matches!(ch, '=' | '[').then_some(index))
+        .unwrap_or(token.len());
+    Some(&token[..end])
 }
 
 fn split_columns(line: &str) -> Option<(&str, &str)> {
@@ -636,6 +652,37 @@ mod tests {
             .any(|s| s.text == "--config" && s.kind == SuggestionKind::Flag));
     }
 
+    #[test]
+    fn parser_resets_on_other_headings_and_rejects_prose_rows() {
+        let got = parse_help(
+            "Commands:\n  real  Real command\nArguments:\n  fake  Argument prose\nExamples:\n  deploy  This is example prose\nEnvironment:\n  hidden  Environment prose\nAliases:\n  alias  Alias prose\nCommands:\nwrapped  Not an indented table row\n  final  Final command\n",
+        );
+        assert_eq!(
+            got.iter()
+                .filter(|item| item.kind == SuggestionKind::Subcommand)
+                .map(|item| item.text.as_str())
+                .collect::<Vec<_>>(),
+            ["real", "final"]
+        );
+    }
+
+    #[test]
+    fn parser_normalizes_gnu_option_placeholders() {
+        let got = parse_help(
+            "Options:\n  --block-size=SIZE  Scale sizes\n  --color[=WHEN]  Colorize\n  -a, --all  Include all\n",
+        );
+        let flags = got
+            .iter()
+            .filter(|item| item.kind == SuggestionKind::Flag)
+            .map(|item| item.text.as_str())
+            .collect::<Vec<_>>();
+        assert!(flags.contains(&"--block-size"));
+        assert!(flags.contains(&"--color"));
+        assert!(flags.contains(&"-a"));
+        assert!(flags.contains(&"--all"));
+        assert!(!flags.iter().any(|flag| flag.contains(['=', '['])));
+    }
+
     #[cfg(unix)]
     fn fake_cli(body: &str) -> (tempfile::TempDir, PathBuf) {
         use std::os::unix::fs::PermissionsExt;
@@ -731,7 +778,7 @@ printf 'Commands:\n  real-subcommand  A real child\nOptions:\n  --config FILE  C
 
     #[cfg(unix)]
     #[tokio::test]
-    async fn accepts_stderr_and_leaves_timeout_failure_retryable() {
+    async fn accepts_stderr_and_negative_caches_timeout_failure() {
         let (dir, cli) = fake_cli(
             r#"echo x >> "$0.count"
 if [ "$1" = "slow" ] || [ "$2" = "slow" ]; then sleep 2; fi
@@ -757,14 +804,36 @@ printf 'Commands:\n  slow  Slow child\nOptions:\n  --quiet  Be quiet\n' >&2"#,
         assert!(introspector
             .suggestions(&slow, dir.path(), 10, None)
             .await
-            .is_err());
-        // Root once, then both safe help forms for each retryable slow attempt.
+            .unwrap()
+            .is_empty());
+        // Root once and slow once; the second slow lookup is a negative hit.
         assert_eq!(
             std::fs::read_to_string(format!("{}.count", cli.display()))
                 .unwrap()
                 .lines()
                 .count(),
-            5
+            2
+        );
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn never_falls_back_to_positional_help() {
+        let (dir, cli) = fake_cli(
+            r#"if [ "$1" = "help" ]; then rm -f help; fi
+exit 0"#,
+        );
+        let victim = dir.path().join("help");
+        std::fs::write(&victim, "must survive").unwrap();
+        let buffer = format!("{} ", cli.display());
+        let ctx = parse_command_context(&buffer, buffer.chars().count());
+        assert!(HelpIntrospector::new()
+            .suggestions(&ctx, dir.path(), 500, None)
+            .await
+            .is_err());
+        assert!(
+            victim.exists(),
+            "introspection must never invoke the positional `help` action that removes ./help"
         );
     }
 
@@ -846,7 +915,13 @@ fi"#,
                 resolve_command(&ctx, missing_dir.path(), Some(missing_env.as_ref())).unwrap();
             let mut cache = introspector.cache.lock().unwrap();
             let lookup = lookup(&ctx, missing_dir.path(), resolved, &mut cache);
-            cache.entries.get_mut(&lookup.key).unwrap().expires_at = Instant::now();
+            let entry = cache.entries.get_mut(&lookup.key).unwrap();
+            let remaining = entry.expires_at.saturating_duration_since(Instant::now());
+            assert!(
+                remaining > Duration::from_secs(290) && remaining <= GENERATED_CACHE_TTL,
+                "resolution misses must retain the five-minute cache lifetime: {remaining:?}"
+            );
+            entry.expires_at = Instant::now();
         }
         assert!(
             introspector
@@ -1084,7 +1159,7 @@ fi"#,
 
     #[cfg(unix)]
     #[tokio::test]
-    async fn failed_producer_is_removed_and_a_new_request_can_retry() {
+    async fn failed_producer_is_negative_cached_then_retries_after_expiry() {
         let (dir, cli) = fake_cli(
             "echo run >> \"$0.count\"\nif [ -f \"$0.succeed\" ]; then printf 'Commands:\\n  recovered  Recovered\\n'; fi",
         );
@@ -1102,8 +1177,34 @@ fi"#,
             introspector.cache.lock().unwrap().in_flight.is_empty(),
             "failed producer must remove its in-flight entry"
         );
+        {
+            let cache = introspector.cache.lock().unwrap();
+            let entry = cache.entries.values().next().unwrap();
+            let remaining = entry.expires_at.saturating_duration_since(Instant::now());
+            assert!(
+                remaining > Duration::from_secs(14) && remaining <= FAILED_CACHE_TTL,
+                "producer failures must use the 15-second cache lifetime: {remaining:?}"
+            );
+        }
 
         std::fs::write(format!("{}.succeed", cli.display()), "yes").unwrap();
+        let cached_failure = introspector.plan(&ctx, dir.path(), None).unwrap();
+        assert!(!cached_failure.is_cache_miss());
+        assert!(introspector
+            .prepare(cached_failure, 500, None)
+            .unwrap()
+            .is_none());
+        assert_eq!(
+            std::fs::read_to_string(format!("{}.count", cli.display())).unwrap(),
+            "run\n",
+            "cached failure must suppress immediate re-execution"
+        );
+
+        {
+            let mut cache = introspector.cache.lock().unwrap();
+            let entry = cache.entries.values_mut().next().unwrap();
+            entry.expires_at = Instant::now();
+        }
         let retry_plan = introspector.plan(&ctx, dir.path(), None).unwrap();
         let retry = introspector
             .prepare(retry_plan, 500, None)
@@ -1117,8 +1218,8 @@ fi"#,
             .any(|suggestion| suggestion.text == "recovered"));
         assert_eq!(
             std::fs::read_to_string(format!("{}.count", cli.display())).unwrap(),
-            "run\nrun\nrun\n",
-            "the failed producer tries both help forms and the retry starts once"
+            "run\nrun\n",
+            "the retry starts exactly once after the failure TTL expires"
         );
     }
 }

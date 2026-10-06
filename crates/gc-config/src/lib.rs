@@ -317,6 +317,8 @@ pub struct IntrospectionConfig {
     pub mode: IntrospectionMode,
     /// Maximum runtime of one help invocation.
     pub timeout_ms: u64,
+    /// Alias-expanded executable names permitted to run automatically.
+    pub auto_commands: Vec<String>,
 }
 
 impl Default for IntrospectionConfig {
@@ -324,6 +326,7 @@ impl Default for IntrospectionConfig {
         Self {
             mode: IntrospectionMode::Off,
             timeout_ms: 750,
+            auto_commands: Vec::new(),
         }
     }
 }
@@ -718,6 +721,7 @@ pub fn all_field_paths() -> Vec<&'static str> {
         // [suggest.introspection]
         "suggest.introspection.mode",
         "suggest.introspection.timeout_ms",
+        "suggest.introspection.auto_commands",
         // [paths]
         "paths.spec_dirs",
         // [keybindings] — 6 fields
@@ -1041,6 +1045,7 @@ mod tests {
         assert!(paths.contains(&"suggest.spec_cache.idle_ttl_secs"));
         assert!(paths.contains(&"suggest.introspection.mode"));
         assert!(paths.contains(&"suggest.introspection.timeout_ms"));
+        assert!(paths.contains(&"suggest.introspection.auto_commands"));
     }
 
     #[test]
@@ -1061,6 +1066,7 @@ mod tests {
         assert!(config.suggest.providers.git);
         assert_eq!(config.suggest.introspection.mode, IntrospectionMode::Off);
         assert_eq!(config.suggest.introspection.timeout_ms, 750);
+        assert!(config.suggest.introspection.auto_commands.is_empty());
         assert!(config.paths.spec_dirs.is_empty());
         assert_eq!(config.keybindings.accept, "tab");
         assert_eq!(config.keybindings.accept_and_enter, "enter");

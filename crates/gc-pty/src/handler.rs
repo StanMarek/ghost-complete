@@ -7518,6 +7518,7 @@ mod tests {
             .with_introspection_config(gc_config::IntrospectionConfig {
                 mode: gc_config::IntrospectionMode::Auto,
                 timeout_ms: 500,
+                auto_commands: vec!["cached-intro-cli".to_string()],
             });
         let intro_ctx = ctx("cached-intro-cli", &[], None, 1, "");
         let env = Arc::new(HashMap::from([(
@@ -7598,6 +7599,7 @@ mod tests {
                 .with_introspection_config(gc_config::IntrospectionConfig {
                     mode: gc_config::IntrospectionMode::Ask,
                     timeout_ms: 500,
+                    auto_commands: Vec::new(),
                 }),
         );
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
