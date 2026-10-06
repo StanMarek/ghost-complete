@@ -1,5 +1,7 @@
 # Ghost Complete — Zsh integration
-# Source this file in your .zshrc for richer completion features.
+# init.zsh loads this file at the first prompt of a shell running behind the
+# proxy; there is no need to source it from .zshrc. It is sourced inside a
+# function, so a top-level `typeset` needs -g to stay global.
 #
 # Provides prompt boundary markers so the proxy can detect prompt
 # boundaries and track the current command buffer.
