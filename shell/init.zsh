@@ -92,8 +92,9 @@ _gc_exec_proxy() {
   exec ghost-complete
 }
 
-# This file's directory. install puts the hooks script next to it.
-typeset -g _GC_SHELL_DIR=${${(%):-%x}:A:h}
+# This file's directory, as .zshrc names it: install puts the hooks script
+# next to it. Not resolved through symlinks, which may point elsewhere.
+typeset -g _GC_SHELL_DIR=${${(%):-%x}:a:h}
 
 # Load the hooks that report prompts, the working directory and the command
 # line to the proxy. Runs as a precmd hook, so the hooks load at the first

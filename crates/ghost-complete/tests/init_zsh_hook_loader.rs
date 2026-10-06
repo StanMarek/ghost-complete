@@ -31,6 +31,9 @@ struct Setup<'a> {
     first_command: &'a str,
     /// Whether `ghost-complete.zsh` is installed next to `init.zsh`.
     hooks_script: bool,
+    /// Whether `init.zsh` is a symlink to a copy in another directory, as
+    /// a dotfiles manager would leave it.
+    init_symlinked: bool,
 }
 
 impl Default for Setup<'_> {
@@ -41,6 +44,7 @@ impl Default for Setup<'_> {
             after_init: "",
             first_command: ":",
             hooks_script: true,
+            init_symlinked: false,
         }
     }
 }
@@ -70,7 +74,14 @@ fn run(setup: Setup) -> Run {
     let shell_dir = home.join("shell");
     std::fs::create_dir(&shell_dir).unwrap();
     let repo_shell = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../shell");
-    std::fs::copy(repo_shell.join("init.zsh"), shell_dir.join("init.zsh")).unwrap();
+    if setup.init_symlinked {
+        let dotfiles = home.join("dotfiles");
+        std::fs::create_dir(&dotfiles).unwrap();
+        std::fs::copy(repo_shell.join("init.zsh"), dotfiles.join("init.zsh")).unwrap();
+        std::os::unix::fs::symlink(dotfiles.join("init.zsh"), shell_dir.join("init.zsh")).unwrap();
+    } else {
+        std::fs::copy(repo_shell.join("init.zsh"), shell_dir.join("init.zsh")).unwrap();
+    }
     if setup.hooks_script {
         std::fs::copy(
             repo_shell.join("ghost-complete.zsh"),
@@ -226,6 +237,18 @@ fn hooks_a_zshrc_already_loaded_are_left_alone() {
 fn sourcing_zshrc_again_loads_nothing_twice() {
     let run = run(Setup {
         first_command: "source $ZDOTDIR/.zshrc",
+        ..Setup::default()
+    });
+    assert_hooks_ran_once_per_prompt(&run);
+    assert_eq!(run.state, LOADED);
+}
+
+#[test]
+fn symlinked_init_zsh_finds_the_hooks_script_beside_the_link() {
+    // install, doctor and .zshrc all name the file by the link's path;
+    // the hooks script sits next to the link, not next to its target.
+    let run = run(Setup {
+        init_symlinked: true,
         ..Setup::default()
     });
     assert_hooks_ran_once_per_prompt(&run);
