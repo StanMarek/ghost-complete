@@ -396,8 +396,156 @@ preset = "catppuccin"
 match_highlight = "underline"
 ```
 
+## Terminal-launched mode
+
+By default, `ghost-complete install` starts Ghost Complete from your `.zshrc`: the shell your terminal opens replaces itself with Ghost Complete, which then starts your shell a second time. You can instead have the terminal start Ghost Complete directly. Your shell then:
+
+- starts once per tab instead of twice;
+- is a real login shell, so `.zprofile` and `.zlogin` run in the shell you type into;
+- gets the terminal's own shell integration where the terminal provides one.
+
+Keep the `ghost-complete install` setup in place. Inside Ghost Complete, the block at the top of `.zshrc` sees it is already running and does nothing, and it still starts Ghost Complete in tmux panes and in terminals you haven't configured. The block at the bottom installs the hooks that report prompts and the command line to Ghost Complete, so it is still needed.
+
+Three rules apply to every terminal:
+
+1. **Use the absolute path.** Apps started from the Dock or Spotlight don't get the `PATH` your shell sets up. Use the output of `command -v ghost-complete`, for example `/opt/homebrew/bin/ghost-complete`.
+2. **Pass your shell and `-l`.** Ghost Complete runs its arguments as the shell. Without them it starts `$SHELL` as a non-login shell, and none of the terminals below make it a login shell for you.
+3. **Turn on the terminal's own zsh integration explicitly.** Terminals that inject one decide from the name of the program they start, and `ghost-complete` isn't a shell they know. Ghostty has a setting for this; for the others, add the terminal's snippet below to `~/.zshrc` if you want its integration.
+
+The examples use `/opt/homebrew/bin/ghost-complete` and `/bin/zsh`; use your own paths.
+
+### Ghostty
+
+In `~/.config/ghostty/config.ghostty` (or `~/.config/ghostty/config`):
+
+```
+command = /opt/homebrew/bin/ghost-complete /bin/zsh -l
+shell-integration = zsh
+```
+
+`shell-integration = zsh` makes Ghostty inject its zsh integration although the command isn't `zsh`. On macOS Ghostty runs the command line through a shell; prefix it with `direct:` (Ghostty 1.2 or later) to have the arguments split on spaces without any shell parsing.
+
+### Kitty
+
+In `~/.config/kitty/kitty.conf`:
+
+```
+shell /opt/homebrew/bin/ghost-complete /bin/zsh -l
+```
+
+Kitty doesn't inject its shell integration into a program it doesn't recognise as a shell. To keep it, add Kitty's manual setup to `~/.zshrc` (Kitty's documentation also recommends `shell_integration disabled` in `kitty.conf` when you do):
+
+```zsh
+if test -n "$KITTY_INSTALLATION_DIR"; then
+    export KITTY_SHELL_INTEGRATION="enabled"
+    autoload -Uz -- "$KITTY_INSTALLATION_DIR"/shell-integration/zsh/kitty-integration
+    kitty-integration
+    unfunction kitty-integration
+fi
+```
+
+### WezTerm
+
+In `~/.wezterm.lua` (or `~/.config/wezterm/wezterm.lua`):
+
+```lua
+config.default_prog = { '/opt/homebrew/bin/ghost-complete', '/bin/zsh', '-l' }
+```
+
+On macOS, WezTerm's shell integration is always sourced from `~/.zshrc` by hand (`source /Applications/WezTerm.app/Contents/Resources/wezterm.sh`), so nothing changes.
+
+### Alacritty
+
+In `~/.config/alacritty/alacritty.toml` (Alacritty 0.14 or later; 0.13 calls the table `[shell]`):
+
+```toml
+[terminal.shell]
+program = "/opt/homebrew/bin/ghost-complete"
+args = ["/bin/zsh", "-l"]
+```
+
+Alacritty has no shell integration of its own.
+
+### Rio
+
+In `~/.config/rio/config.toml`:
+
+```toml
+[shell]
+program = "/opt/homebrew/bin/ghost-complete"
+args = ["/bin/zsh", "-l"]
+```
+
+Rio's own shell integration only reports the working directory, which Ghost Complete's hooks already do.
+
+### iTerm2
+
+In Settings → Profiles → General → Command, choose **Command** and enter:
+
+```
+/opt/homebrew/bin/ghost-complete /bin/zsh -l
+```
+
+**Custom Shell** drops the arguments, so it can't be used. iTerm2 doesn't load its shell integration automatically for a command; install it into `~/.zshrc` with iTerm2 → Install Shell Integration.
+
+### Terminal.app
+
+Terminal's "Shells open with" setting takes the path of a program, without arguments. Save this as an executable script, for example `~/.local/bin/ghost-complete-shell` (`chmod +x` it):
+
+```sh
+#!/bin/sh
+exec /opt/homebrew/bin/ghost-complete /bin/zsh -l
+```
+
+Then choose Settings → General → Shells open with → **Command (complete path)** and enter the script's full path. Terminal's working-directory tracking comes from `/etc/zshrc` and keeps working.
+
+### Zed
+
+In `~/.config/zed/settings.json`:
+
+```json
+"terminal": {
+  "shell": {
+    "with_arguments": {
+      "program": "/opt/homebrew/bin/ghost-complete",
+      "args": ["/bin/zsh", "-l"]
+    }
+  }
+}
+```
+
+Zed has no zsh integration of its own.
+
+### VS Code
+
+In `~/Library/Application Support/Code/User/settings.json`:
+
+```jsonc
+"terminal.integrated.profiles.osx": {
+  "ghost-complete": {
+    "path": "/opt/homebrew/bin/ghost-complete",
+    "args": ["/bin/zsh", "-l"]
+  }
+},
+"terminal.integrated.defaultProfile.osx": "ghost-complete",
+"terminal.integrated.automationProfile.osx": { "path": "/bin/zsh" }
+```
+
+The automation profile keeps tasks and debug sessions out of Ghost Complete. VS Code injects its shell integration only when the profile's program is a shell, so add its manual setup to `~/.zshrc`:
+
+```zsh
+[[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
+```
+
+Forks such as Cursor use the same `terminal.integrated.*` settings in their own settings file.
+
+### If something goes wrong
+
+If Ghost Complete can't start (see [Startup errors](#startup-errors)), it starts your shell in its place, without completions. In a terminal it doesn't support, it starts your shell directly. To go back to the default setup, remove the setting: the `.zshrc` block takes over again.
+
 ## Notes
 
+- **Terminal shell integration:** Ghostty's and Kitty's own zsh integration (cursor shape, titles, `jump_to_prompt`, the sudo and ssh helpers) keeps working in the shell behind Ghost Complete. `init.zsh` hands it over before starting Ghost Complete, and while it is loaded Ghost Complete leaves marking prompts to the terminal.
 - **Config hot-reload:** Some fields are applied live without restarting your shell. Others require a shell restart. See the table below.
 - **Nerd Font icons:** The popup gutter uses Nerd Font icons. If your terminal font doesn't include Nerd Font patches, you'll see placeholder characters. Use a [Nerd Font](https://www.nerdfonts.com/) for the best experience.
 - **History control:** Use `max_history_results` (not `providers.history`) to control history. Set to `0` to disable history entirely.

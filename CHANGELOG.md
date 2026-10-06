@@ -21,6 +21,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Ghostty's and Kitty's own shell integration now works in the shell you
+  type into.** Both terminals inject their zsh integration through
+  `ZDOTDIR`, and it only finishes loading at the first prompt. `init.zsh`
+  replaced the shell with the proxy before that prompt, so the shell behind
+  the proxy started without it: no cursor shape changes, no title updates,
+  no `jump_to_prompt`, no sudo and ssh helpers. `init.zsh` now hands the
+  integration to that shell. While it is loaded, Ghost Complete keeps its
+  own prompt marks private to the proxy, so the terminal sees each prompt
+  marked once, in order (#186).
+- **A proxy started by the terminal no longer starts a second one.**
+  `init.zsh` recognised its parent proxy by name, and a terminal that
+  launches the proxy the way `login` starts a shell names it
+  `-ghost-complete` (Rio before 0.5.8, or Ghostty with a command that is
+  not an absolute path). The name check now allows the leading dash and a
+  full path (#186).
 - **A startup error no longer leaves a terminal tab without a shell.** An
   invalid `config.toml` or keybinding made the proxy exit, and since
   `init.zsh` had already replaced the shell with the proxy, the tab was left
@@ -45,6 +60,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (portable-pty does this when the writer is dropped), which submitted
   whatever sat on the command line. The proxy now writes through its own
   descriptor, so pending input is discarded, as it is without the proxy.
+
+### Documentation
+
+- **Terminal-launched mode.** `docs/CONFIGURATION.md` now shows how to have
+  each supported terminal start `ghost-complete` directly. Your shell then
+  starts once, as a login shell, with the terminal's own integration where
+  it has one, and the `.zshrc` setup keeps covering tmux and terminals you
+  haven't configured (#186).
 
 ## [0.19.1] - 2026-10-03
 

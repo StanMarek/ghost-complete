@@ -78,6 +78,8 @@ ghost-complete install
 - Installs 711 completion specs to `~/.config/ghost-complete/specs/`
 - Creates default config at `~/.config/ghost-complete/config.toml` (never overwrites existing)
 
+Prefer to have your terminal start Ghost Complete directly, so your shell starts once per tab as a real login shell? See [terminal-launched mode](docs/CONFIGURATION.md#terminal-launched-mode).
+
 ### Uninstall
 
 ```bash
@@ -115,6 +117,7 @@ Ghost Complete auto-detects your terminal and selects the best rendering strateg
 | [VSCode](https://code.visualstudio.com) (and forks) | Synchronized (DECSET 2026) | OSC 133 (native) | Yes |
 
 **Notes:**
+- Ghostty's and Kitty's own zsh integration (cursor shape, titles, jump to prompt) keeps working behind the proxy.
 - Terminal.app inside tmux is not detected (it sets no env var that leaks through tmux).
 - Alacritty does not support OSC 133 natively; Ghost Complete uses its own shell integration markers instead. No functional difference — just a different detection path.
 - VSCode detection covers **all Electron-based VSCode forks**: VSCodium, Cursor, Windsurf, Positron, Trae. They share the xterm.js frontend and shell integration model. Ghost Complete coexists with VSCode's own shell integration (OSC 633) — the proxy forwards editor sequences untouched so command decorations, sticky scroll, and "run recent command" continue to work.
