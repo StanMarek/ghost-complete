@@ -173,7 +173,8 @@ _gc_terminal_marks_prompts() {
 _gc_precmd() {
     # Mark: prompt is about to be displayed
     if _gc_terminal_marks_prompts; then
-        printf '\e]7771;A\a'
+        # Only the proxy needs it, and only the proxy strips it.
+        if [[ -n "$GHOST_COMPLETE_ACTIVE" ]]; then printf '\e]7771;A\a'; fi
     else
         printf '\e]133;A\a'
         _gc_native_osc133 || printf '\e]7771;A\a'
@@ -184,7 +185,8 @@ _gc_precmd() {
 _gc_preexec() {
     # Mark: command is about to execute
     if _gc_terminal_marks_prompts; then
-        printf '\e]7771;C\a'
+        # Only the proxy needs it, and only the proxy strips it.
+        if [[ -n "$GHOST_COMPLETE_ACTIVE" ]]; then printf '\e]7771;C\a'; fi
     else
         printf '\e]133;C\a'
         _gc_native_osc133 || printf '\e]7771;C\a'

@@ -3,11 +3,18 @@
 //! prompts itself, and its precmd hook runs last: our `133;A` would reach the
 //! terminal before its `133;D` for the previous command. Our hooks must then
 //! send the proxy only the private OSC 7771, which never reaches the
-//! terminal, and otherwise keep sending exactly what they send today.
+//! terminal, and otherwise keep sending exactly what they send today. With no
+//! proxy (the shell it falls back to, or one started without it) nothing
+//! would strip 7771, so they send nothing.
 
 use std::process::Command;
 
 const PRIVATE_ONLY: &str = "\x1b]7771;A\x07\x1b]7771;C\x07";
+
+/// Behind the proxy. The environment report it also turns on is not what
+/// these tests are about, so it is silenced.
+const PROXY: (&str, &str) = ("GHOST_COMPLETE_ACTIVE", "1");
+const NO_ENV_REPORT: &str = "_gc_report_env() { :; }";
 
 fn zsh_available() -> bool {
     Command::new("zsh")
@@ -53,8 +60,8 @@ fn hook_output(setup: &str, env: &[(&str, &str)]) -> Option<String> {
 fn ghostty_integration_gets_only_private_marks() {
     for hook in ["_ghostty_precmd", "_ghostty_deferred_init"] {
         let Some(out) = hook_output(
-            &format!("{hook}() {{ :; }}"),
-            &[("TERM_PROGRAM", "ghostty")],
+            &format!("{hook}() {{ :; }}\n{NO_ENV_REPORT}"),
+            &[("TERM_PROGRAM", "ghostty"), PROXY],
         ) else {
             return;
         };
@@ -65,11 +72,26 @@ fn ghostty_integration_gets_only_private_marks() {
 #[test]
 fn kitty_integration_gets_only_private_marks() {
     for hook in ["_ksi_precmd", "_ksi_deferred_init"] {
-        let Some(out) = hook_output(&format!("{hook}() {{ :; }}"), &[("KITTY_WINDOW_ID", "1")])
-        else {
+        let Some(out) = hook_output(
+            &format!("{hook}() {{ :; }}\n{NO_ENV_REPORT}"),
+            &[("KITTY_WINDOW_ID", "1"), PROXY],
+        ) else {
             return;
         };
         assert_eq!(out, PRIVATE_ONLY, "with {hook} defined");
+    }
+}
+
+#[test]
+fn terminal_integration_without_proxy_gets_nothing() {
+    for (hook, env) in [
+        ("_ghostty_precmd", ("TERM_PROGRAM", "ghostty")),
+        ("_ksi_precmd", ("KITTY_WINDOW_ID", "1")),
+    ] {
+        let Some(out) = hook_output(&format!("{hook}() {{ :; }}"), &[env]) else {
+            return;
+        };
+        assert_eq!(out, "", "with {hook} defined");
     }
 }
 
