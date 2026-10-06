@@ -44,6 +44,46 @@ _gc_is_self_or_ancestor() {
   return 1
 }
 
+# A terminal that injects its zsh integration through ZDOTDIR (Ghostty,
+# kitty) loses it in the shell behind the proxy: its .zshenv already ran here
+# and put the user's ZDOTDIR back, and the hook it left for the first prompt
+# never runs, because we exec before that prompt. Point ZDOTDIR at the
+# integration again so the shell the proxy starts loads it too. A no-op in
+# shells the terminal didn't inject, such as tmux panes.
+_gc_rearm_terminal_integration() {
+  emulate -L zsh
+  local hook var dir
+  # Each terminal's first-prompt hook, and the variable its .zshenv restores
+  # the user's ZDOTDIR from.
+  for hook var in \
+      _ghostty_deferred_init GHOSTTY_ZSH_ZDOTDIR \
+      _ksi_deferred_init KITTY_ORIG_ZDOTDIR; do
+    # Still pending: the terminal injected this shell, no prompt has run yet.
+    (( ${precmd_functions[(Ie)$hook]:-0} )) || continue
+    dir=${functions_source[$hook]:A:h}
+    # That .zshenv is what puts the user's ZDOTDIR back. Without it zsh would
+    # look for the user's startup files in the integration directory.
+    [[ -n $dir && -r $dir/.zshenv ]] || return
+    # Hand over only the ZDOTDIR the new shell would inherit anyway. One set
+    # without export (typically by ~/.zshenv) is not inherited: the new shell
+    # must find ~/.zshenv again to set it.
+    if [[ ${parameters[ZDOTDIR]-} == *export* ]]; then
+      export $var="$ZDOTDIR"
+    else
+      unset $var
+    fi
+    export ZDOTDIR=$dir
+    return
+  done
+}
+
+# Replace this shell with the proxy.
+_gc_exec_proxy() {
+  export GHOST_COMPLETE_ACTIVE=1
+  _gc_rearm_terminal_integration
+  exec ghost-complete
+}
+
 __ghost_complete_init() {
   # A proxy that fails to start execs the shell in its place, marked with
   # its pid. That shell (exec keeps the pid), and any zsh it starts on the
@@ -86,8 +126,7 @@ __ghost_complete_init() {
        [[ "$TERM_PROGRAM" == "rio" ]] || \
        [[ "$TERM_PROGRAM" == "otty" ]]; then
       if command -v ghost-complete >/dev/null 2>&1; then
-        export GHOST_COMPLETE_ACTIVE=1
-        exec ghost-complete
+        _gc_exec_proxy
       fi
     fi
   else
@@ -124,8 +163,7 @@ __ghost_complete_init() {
       esac
     fi
     if [[ $supported -eq 1 ]] && command -v ghost-complete >/dev/null 2>&1; then
-      export GHOST_COMPLETE_ACTIVE=1
-      exec ghost-complete
+      _gc_exec_proxy
     fi
   fi
 }
