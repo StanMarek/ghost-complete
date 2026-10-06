@@ -1,6 +1,14 @@
 # Ghost Complete — terminal init (sourced near the top of .zshrc)
 # Detects the terminal emulator and exec's ghost-complete as a PTY proxy.
 
+# True if a `ps -o comm` value, which on macOS is argv0, names the proxy: by
+# name or by path, with or without the leading dash of a login-style launch
+# (a terminal that starts its command the way login(1) starts a shell).
+_gc_is_proxy_comm() {
+  local name=${1##*/}
+  [[ "${name#-}" == "ghost-complete" ]]
+}
+
 # Walk PPID ancestry looking for the ghost-complete binary. Returns 0 if
 # found, 1 if confirmed absent (walk reached init/root), 2 if the walk could
 # not complete (ps failure, disappeared PID, pathological depth). Callers
@@ -13,7 +21,7 @@ _gc_ancestor_is_proxy() {
       return 2
     fi
     [[ -z "$comm" ]] && return 2
-    [[ "${comm##*/}" == "ghost-complete" ]] && return 0
+    _gc_is_proxy_comm "$comm" && return 0
     if ! pid=$(ps -o ppid= -p "$pid" 2>/dev/null); then
       return 2
     fi
@@ -114,7 +122,7 @@ __ghost_complete_init() {
     # We cannot use GHOST_COMPLETE_ACTIVE here because it is always present
     # in tmux — set by proxy.rs (tmux setenv) for future-pane propagation,
     # and inherited from the outer terminal shell that launched tmux.
-    [[ "$(ps -o comm= -p "$PPID" 2>/dev/null)" == "ghost-complete" ]] && return
+    _gc_is_proxy_comm "$(ps -o comm= -p "$PPID" 2>/dev/null)" && return
     [[ -n "$GHOST_COMPLETE_PANE" && "$GHOST_COMPLETE_PANE" == "$TMUX_PANE" ]] && return
     if [[ -n "$GHOSTTY_RESOURCES_DIR" ]] || \
        [[ -n "$KITTY_WINDOW_ID" ]] || \
