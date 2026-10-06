@@ -39,6 +39,7 @@ pub const SECTIONS: &[&str] = &[
     "suggest",
     "suggest.providers",
     "suggest.spec_cache",
+    "suggest.introspection",
     "keybindings",
     "theme",
     "paths",
@@ -56,6 +57,7 @@ pub fn section_label(section: &str) -> &'static str {
         "suggest" => "Suggest",
         "suggest.providers" => "Providers",
         "suggest.spec_cache" => "Spec Cache",
+        "suggest.introspection" => "Introspection",
         "keybindings" => "Keybindings",
         "theme" => "Theme",
         "paths" => "Paths",
@@ -303,6 +305,31 @@ pub fn all_fields() -> Vec<FieldMeta> {
             reload: ReloadBehavior::RequiresRestart,
             help: "LRU backstop cap in MiB after TTL eviction (0 disables)",
         },
+        // suggest.introspection
+        FieldMeta {
+            section: "suggest.introspection",
+            key: "mode",
+            field_type: FieldType::Enum(&["off", "ask", "auto"]),
+            default: "off",
+            reload: ReloadBehavior::RequiresRestart,
+            help: "Help-based completion discovery for commands without a curated spec: off, ask, or auto",
+        },
+        FieldMeta {
+            section: "suggest.introspection",
+            key: "timeout_ms",
+            field_type: FieldType::U64,
+            default: "750",
+            reload: ReloadBehavior::RequiresRestart,
+            help: "Maximum runtime in milliseconds for each help invocation",
+        },
+        FieldMeta {
+            section: "suggest.introspection",
+            key: "auto_commands",
+            field_type: FieldType::StringArray,
+            default: "[]",
+            reload: ReloadBehavior::RequiresRestart,
+            help: "Alias-expanded executable names allowed to run automatically",
+        },
         // keybindings
         FieldMeta {
             section: "keybindings",
@@ -526,6 +553,16 @@ mod tests {
     }
 
     #[test]
+    fn introspection_section_exposes_all_config_fields() {
+        let keys: Vec<&str> = all_fields()
+            .iter()
+            .filter(|field| field.section == "suggest.introspection")
+            .map(|field| field.key)
+            .collect();
+        assert_eq!(keys, ["mode", "timeout_ms", "auto_commands"]);
+    }
+
+    #[test]
     fn popup_section_exposes_description_box_fields() {
         let fields = all_fields();
         let keys: Vec<&str> = fields
@@ -604,6 +641,9 @@ mod tests {
             ("popup", "feedback_dismiss_ms"),
             ("suggest", "match_mode"),
             ("suggest.providers", "js_runtime"),
+            ("suggest.introspection", "mode"),
+            ("suggest.introspection", "timeout_ms"),
+            ("suggest.introspection", "auto_commands"),
             ("experimental", "aws_sdk_provider"),
             ("experimental", "aws_sdk_fallback_to_cli"),
             ("experimental", "brew_search_cap"),
@@ -628,6 +668,9 @@ mod tests {
             ("popup", "feedback_dismiss_ms"),
             ("suggest", "match_mode"),
             ("suggest.providers", "js_runtime"),
+            ("suggest.introspection", "mode"),
+            ("suggest.introspection", "timeout_ms"),
+            ("suggest.introspection", "auto_commands"),
             ("experimental", "aws_sdk_provider"),
             ("experimental", "aws_sdk_fallback_to_cli"),
             ("experimental", "brew_search_cap"),

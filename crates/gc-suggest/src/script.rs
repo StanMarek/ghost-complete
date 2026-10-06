@@ -61,13 +61,12 @@ fn shell_run_error_to_anyhow(e: &ShellRunError, argv: &[&str]) -> anyhow::Error 
 /// captured stdout/stderr and real exit code), spawn failure, and argv
 /// validation failure.
 ///
-/// Stdout is read into a 1 MiB-bounded buffer (`MAX_GENERATOR_STDOUT_BYTES`).
-/// If the cap is hit the child is killed, a warning is logged, and the
-/// truncated bytes are still returned (`exit_code: None`) so the downstream
-/// transform pipeline can process what was collected.
+/// Stdout is hard-limited to 1 MiB (`MAX_GENERATOR_STDOUT_BYTES`): hitting the
+/// cap kills the child and returns the captured prefix with `exit_code: None`.
 ///
-/// Stderr is drained concurrently (also capped at 1 MiB) to avoid pipe-fill
-/// deadlock. On non-zero exit with non-empty stderr, the stderr contents
+/// Stderr is drained concurrently to avoid pipe-fill deadlock. Retention is
+/// capped at 1 MiB, but excess stderr is discarded while ordinary generators
+/// continue running. On non-zero exit with non-empty stderr, the contents
 /// are logged at `warn!` — this is the primary diagnostic path for
 /// generator failures like `gh auth status` without credentials. On
 /// non-zero exit with empty stderr, the exit code is logged at `debug!`
@@ -93,6 +92,28 @@ pub async fn run_script_full_with_env(
     cwd: &Path,
     timeout_ms: u64,
     env: Option<&HashMap<String, String>>,
+) -> std::result::Result<ShellRunOutput, ShellRunError> {
+    run_script_full_with_env_policy(argv, cwd, timeout_ms, env, false, false).await
+}
+
+/// Introspection-only execution policy: both captured streams are hard-limited
+/// and the child is detached from the proxy's controlling terminal.
+pub(crate) async fn run_introspection_with_env(
+    argv: &[&str],
+    cwd: &Path,
+    timeout_ms: u64,
+    env: Option<&HashMap<String, String>>,
+) -> std::result::Result<ShellRunOutput, ShellRunError> {
+    run_script_full_with_env_policy(argv, cwd, timeout_ms, env, true, true).await
+}
+
+async fn run_script_full_with_env_policy(
+    argv: &[&str],
+    cwd: &Path,
+    timeout_ms: u64,
+    env: Option<&HashMap<String, String>>,
+    hard_stderr_limit: bool,
+    detach_session: bool,
 ) -> std::result::Result<ShellRunOutput, ShellRunError> {
     if argv.is_empty() {
         return Err(ShellRunError::ArgvParse("empty script command".to_string()));
@@ -140,6 +161,30 @@ pub async fn run_script_full_with_env(
     }
     cmd.stdout(std::process::Stdio::piped());
     cmd.stderr(std::process::Stdio::piped());
+    // Completion subprocesses are background data providers. They must never
+    // consume keystrokes from the user's terminal.
+    cmd.stdin(std::process::Stdio::null());
+
+    #[cfg(unix)]
+    if detach_session {
+        // SAFETY: `pre_exec` runs after fork and before exec. `setsid` takes no
+        // pointers or shared Rust state and is async-signal-safe on POSIX.
+        unsafe {
+            cmd.pre_exec(|| {
+                if libc::setsid() == -1 {
+                    Err(std::io::Error::last_os_error())
+                } else {
+                    Ok(())
+                }
+            });
+        }
+    }
+    #[cfg(not(unix))]
+    if detach_session {
+        return Err(ShellRunError::Spawn(
+            "detached introspection is unsupported on this platform".to_string(),
+        ));
+    }
 
     cmd.kill_on_drop(true);
 
@@ -150,7 +195,8 @@ pub async fn run_script_full_with_env(
     let mut stdout = child.stdout.take().expect("stdout was configured as piped");
     let mut stderr = child.stderr.take().expect("stderr was configured as piped");
 
-    // Drive stdout and stderr concurrently with a hard byte cap on stdout.
+    // Drive stdout and stderr concurrently. Stdout is always a hard limit;
+    // stderr is a hard limit only for the introspection-specific policy.
     // Stderr must be drained in parallel — otherwise a chatty generator can
     // fill the stderr pipe and block on its next stderr write, deadlocking
     // our stdout reader. `kill_on_drop(true)` reaps the child if the future
@@ -186,12 +232,12 @@ pub async fn run_script_full_with_env(
                     if n == 0 {
                         stderr_done = true;
                     } else {
-                        // Drain the pipe but cap retained bytes so a
-                        // chatty stderr can't grow unbounded either.
                         let cap = MAX_GENERATOR_STDOUT_BYTES;
-                        if stderr_buf.len() < cap {
-                            let take = n.min(cap - stderr_buf.len());
-                            stderr_buf.extend_from_slice(&err_chunk[..take]);
+                        let remaining = cap.saturating_sub(stderr_buf.len());
+                        let take = n.min(remaining);
+                        stderr_buf.extend_from_slice(&err_chunk[..take]);
+                        if hard_stderr_limit && stderr_buf.len() >= cap {
+                            truncated = true;
                         }
                     }
                 }
@@ -205,7 +251,7 @@ pub async fn run_script_full_with_env(
         Ok(Ok((stdout_buf, stderr_buf, truncated))) => {
             if truncated {
                 tracing::warn!(
-                    "script generator stdout exceeded {} bytes; truncating and killing process: {:?}",
+                    "script generator output exceeded {} bytes; truncating and killing process: {:?}",
                     MAX_GENERATOR_STDOUT_BYTES,
                     argv
                 );
@@ -282,7 +328,11 @@ pub async fn run_script_full_with_env(
                 exit_code: Some(0),
             })
         }
-        Ok(Err(e)) => Err(ShellRunError::Internal(format!("I/O error: {e}"))),
+        Ok(Err(e)) => {
+            let _ = child.kill().await;
+            let _ = child.wait().await;
+            Err(ShellRunError::Internal(format!("I/O error: {e}")))
+        }
         Err(_) => {
             // Explicit kill + reap for belt-and-suspenders safety alongside
             // kill_on_drop(true). Dropping the future on timeout cancellation
@@ -535,6 +585,82 @@ mod tests {
         .unwrap();
 
         assert_eq!(result.len(), 1024);
+    }
+
+    #[tokio::test]
+    async fn test_run_script_stderr_is_bounded() {
+        let result = run_script_full(
+            &["sh", "-c", "head -c 2000000 /dev/zero >&2; printf complete"],
+            Path::new("/tmp"),
+            10_000,
+        )
+        .await
+        .expect("excess stderr must not kill an ordinary generator");
+
+        assert_eq!(result.stderr.len(), MAX_GENERATOR_STDOUT_BYTES);
+        assert_eq!(result.stdout, "complete");
+        assert_eq!(result.exit_code, Some(0));
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn test_introspection_runner_detaches_session() {
+        let parent_session = unsafe { libc::getsid(0) };
+        assert_ne!(parent_session, -1);
+        let dir = tempfile::tempdir().unwrap();
+        let probe = dir.path().join("session");
+        let executable = std::env::current_exe().unwrap();
+        let executable = executable.to_str().unwrap();
+        let env = HashMap::from([("GC_SESSION_PROBE".to_string(), probe.display().to_string())]);
+        let result = run_introspection_with_env(
+            &[executable, "--exact", "script::tests::session_probe_helper"],
+            Path::new("/tmp"),
+            5_000,
+            Some(&env),
+        )
+        .await
+        .unwrap();
+        assert_eq!(result.exit_code, Some(0));
+        let values = std::fs::read_to_string(probe).unwrap();
+        let (child_pid, child_session) = values.split_once(' ').unwrap();
+        let child_pid: libc::pid_t = child_pid.parse().unwrap();
+        let child_session: libc::pid_t = child_session.parse().unwrap();
+        assert_eq!(
+            child_session, child_pid,
+            "setsid must make the child session leader"
+        );
+        assert_ne!(
+            child_session, parent_session,
+            "child must leave the test session"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn session_probe_helper() {
+        let Ok(path) = std::env::var("GC_SESSION_PROBE") else {
+            return;
+        };
+        let pid = unsafe { libc::getpid() };
+        let session = unsafe { libc::getsid(0) };
+        std::fs::write(path, format!("{pid} {session}")).unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_run_script_stdin_is_null() {
+        let result = run_script(
+            &[
+                "sh",
+                "-c",
+                "if read value; then echo inherited; else echo closed; fi",
+            ],
+            Path::new("/tmp"),
+            5_000,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(result.trim(), "closed");
     }
 
     #[tokio::test]

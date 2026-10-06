@@ -768,6 +768,18 @@ impl InputHandler {
         }
     }
 
+    pub fn with_introspection_config(self, config: gc_config::IntrospectionConfig) -> Self {
+        let engine = Arc::try_unwrap(self.engine)
+            .unwrap_or_else(|_| {
+                panic!("internal invariant: engine Arc was captured by shared reference")
+            })
+            .with_introspection_config(config);
+        Self {
+            engine: Arc::new(engine),
+            ..self
+        }
+    }
+
     /// Set the query match strategy (fuzzy subsequence vs contiguous
     /// substring) on the underlying engine. Builder-time only — must run
     /// before the engine `Arc` is shared, like [`Self::with_suggest_config`].
@@ -1191,10 +1203,16 @@ impl InputHandler {
                 self.dismiss(stdout);
                 return key_to_bytes(key);
             }
+            if self.accept_introspection_action(parser, stdout) {
+                return Vec::new();
+            }
             return self.accept_with_chaining(parser, stdout);
         }
         if binding == &self.keybindings.accept_and_enter {
             if self.overlay.selected.is_some() {
+                if self.accept_introspection_action(parser, stdout) {
+                    return Vec::new();
+                }
                 let mut forward = self.accept_suggestion(parser);
                 self.dismiss(stdout);
                 forward.push(0x0D);
@@ -1296,9 +1314,13 @@ impl InputHandler {
     /// popup). The fallback is gated on a non-empty list so a `Some(0)` index
     /// always points at a real suggestion.
     fn effective_selected(&self) -> Option<usize> {
-        self.overlay
-            .selected
-            .or_else(|| (self.tab_accepts_top && !self.suggestions.is_empty()).then_some(0))
+        self.overlay.selected.or_else(|| {
+            (self.tab_accepts_top
+                && self.suggestions.first().is_some_and(|item| {
+                    item.kind != gc_suggest::SuggestionKind::IntrospectionAction
+                }))
+            .then_some(0)
+        })
     }
 
     /// Accept the current suggestion, with directory chaining for paths ending in '/'.
@@ -1557,13 +1579,18 @@ impl InputHandler {
                 .suggest_sync_with_env(&ctx, &cwd, &buffer, shell_env.as_ref());
 
         match sync_result {
-            Ok(result) if !result.suggestions.is_empty() => {
+            Ok(mut result) if !result.suggestions.is_empty() => {
+                let introspection = self.engine.prepare_introspection(
+                    result.introspection_plan.take(),
+                    shell_env.clone().map(Arc::new),
+                );
                 self.replace_suggestions_and_reset_overlay(result.suggestions);
                 self.visible = true;
                 self.spawn_generators(
                     result.script_generators,
                     result.git_generators,
                     result.provider_generators,
+                    introspection,
                     &ctx,
                     &cwd,
                     shell_env.clone(),
@@ -1571,10 +1598,15 @@ impl InputHandler {
                 self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
                 self.last_trigger_fingerprint = Some(fingerprint);
             }
-            Ok(result) => {
+            Ok(mut result) => {
+                let introspection = self.engine.prepare_introspection(
+                    result.introspection_plan.take(),
+                    shell_env.clone().map(Arc::new),
+                );
                 let has_async = !result.script_generators.is_empty()
                     || !result.git_generators.is_empty()
-                    || !result.provider_generators.is_empty();
+                    || !result.provider_generators.is_empty()
+                    || introspection.is_some();
                 if has_async {
                     // No static suggestions but generators are pending.
                     // If a popup is currently visible (e.g. from a previous
@@ -1593,6 +1625,7 @@ impl InputHandler {
                         result.script_generators,
                         result.git_generators,
                         result.provider_generators,
+                        introspection,
                         &ctx,
                         &cwd,
                         shell_env.clone(),
@@ -1684,7 +1717,7 @@ impl InputHandler {
         self.pending_empty_count = 0;
         self.buffer_generation = self.buffer_generation.wrapping_add(1);
 
-        let result =
+        let mut result =
             match self
                 .engine
                 .suggest_sync_with_env(&ctx, &cwd, &buffer, shell_env.as_ref())
@@ -1699,9 +1732,15 @@ impl InputHandler {
                 }
             };
 
+        let introspection = self.engine.prepare_introspection(
+            result.introspection_plan.take(),
+            shell_env.clone().map(Arc::new),
+        );
+
         let has_async = !result.script_generators.is_empty()
             || !result.git_generators.is_empty()
-            || !result.provider_generators.is_empty();
+            || !result.provider_generators.is_empty()
+            || introspection.is_some();
         let needs_block = block_ms > 0 && has_async && result.has_pending_high_priority();
 
         let sync_suggestions = result.suggestions;
@@ -1720,6 +1759,7 @@ impl InputHandler {
                 result.script_generators,
                 result.git_generators,
                 result.provider_generators,
+                introspection,
                 &ctx,
                 &cwd,
                 shell_env.clone(),
@@ -1916,11 +1956,13 @@ impl InputHandler {
     /// `SyncResult` → `spawn_generators` → `run_generators` chain is a
     /// refcount bump instead of a deep clone of `Vec<Transform>` + argv on
     /// every keystroke trigger.
+    #[allow(clippy::too_many_arguments)] // pre-resolved provider groups plus shared execution context
     fn spawn_generators(
         &mut self,
         script_generators: Vec<std::sync::Arc<gc_suggest::specs::GeneratorSpec>>,
         git_generators: Vec<gc_suggest::git::GitQueryKind>,
         provider_generators: Vec<gc_suggest::providers::ProviderResolution>,
+        introspection: Option<anyhow::Result<gc_suggest::introspection::IntrospectionWaiter>>,
         ctx: &gc_buffer::CommandContext,
         cwd: &std::path::Path,
         shell_env: Option<HashMap<String, String>>,
@@ -1928,6 +1970,7 @@ impl InputHandler {
         if script_generators.is_empty()
             && git_generators.is_empty()
             && provider_generators.is_empty()
+            && introspection.is_none()
         {
             return;
         }
@@ -2025,7 +2068,14 @@ impl InputHandler {
                     )
                     .await
             };
-            let (script_res, git_results, provider_results) = tokio::join!(
+            let introspection_fut = async move {
+                match introspection {
+                    Some(Ok(waiter)) => Some(waiter.wait().await),
+                    Some(Err(error)) => Some(Err(error)),
+                    None => None,
+                }
+            };
+            let (script_res, git_results, provider_results, introspection_result) = tokio::join!(
                 engine.run_generators_with_env(
                     &script_generators,
                     &ctx,
@@ -2035,7 +2085,25 @@ impl InputHandler {
                 ),
                 git_fut,
                 provider_fut,
+                introspection_fut,
             );
+            if let Some(result) = introspection_result {
+                let provider = ProviderTag::Introspection;
+                let message = match result {
+                    Ok(results) if results.is_empty() => DynamicResult::Empty { provider },
+                    Ok(results) => DynamicResult::Loaded {
+                        provider,
+                        suggestions: results,
+                    },
+                    Err(e) => DynamicResult::Error {
+                        provider,
+                        message: e.to_string(),
+                    },
+                };
+                if tx.send(message).await.is_err() {
+                    return;
+                }
+            }
             let should_run_aws_sdk_fallback = !aws_sdk_fallback_generators.is_empty()
                 && provider_results
                     .iter()
@@ -2258,6 +2326,7 @@ impl InputHandler {
         }
 
         let aggregation = AsyncFeedback::aggregate(messages);
+        let introspection_loaded = aggregation.introspection_loaded;
         self.pending_failed.extend(aggregation.failed);
         self.pending_empty_count += aggregation.empty_count;
 
@@ -2342,6 +2411,11 @@ impl InputHandler {
                 MergeFreshness::PoisonedLock => return false,
             };
 
+            if introspection_loaded {
+                self.dynamic_ctx = None;
+                return self.refresh_from_generated_cache(parser, stdout);
+            }
+
             // Activate popup if it wasn't visible yet (async-only path:
             // no static suggestions, generators produced the results).
             if !self.visible {
@@ -2372,6 +2446,51 @@ impl InputHandler {
             self.render(parser, stdout);
             true
         }
+    }
+
+    /// Re-resolve the unchanged completion site after introspection populated
+    /// the generated-spec cache. This deliberately uses the normal synchronous
+    /// resolver so ask and auto converge on identical precedence and action
+    /// suppression semantics.
+    fn refresh_from_generated_cache(
+        &mut self,
+        parser: &Arc<Mutex<TerminalParser>>,
+        stdout: &mut dyn Write,
+    ) -> bool {
+        let (buffer, cursor, cwd, shell_env) = match parser.lock() {
+            Ok(p) => {
+                let state = p.state();
+                (
+                    state.command_buffer().unwrap_or("").to_string(),
+                    state.buffer_cursor(),
+                    state.cwd().cloned().unwrap_or_else(|| PathBuf::from(".")),
+                    state.shell_env().cloned(),
+                )
+            }
+            Err(error) => {
+                tracing::warn!(
+                    "parser mutex poisoned during introspection refresh: {error} — skipping"
+                );
+                return false;
+            }
+        };
+        let ctx = parse_command_context(&buffer, cursor);
+        let Ok(result) = self
+            .engine
+            .suggest_sync_with_env(&ctx, &cwd, &buffer, shell_env.as_ref())
+        else {
+            return false;
+        };
+        if result.suggestions.is_empty() {
+            return false;
+        }
+
+        self.replace_suggestions_and_reset_overlay(result.suggestions);
+        self.visible = true;
+        self.render(parser, stdout);
+        self.last_trigger_fingerprint =
+            Some(buffer_fingerprint(&buffer, cursor, shell_env.as_ref()));
+        true
     }
 
     fn render(&mut self, parser: &Arc<Mutex<TerminalParser>>, stdout: &mut dyn Write) {
@@ -2926,6 +3045,34 @@ impl InputHandler {
 
     fn bump_output_epoch(&mut self) {
         self.output_epoch = self.output_epoch.wrapping_add(1);
+    }
+
+    fn accept_introspection_action(
+        &mut self,
+        parser: &Arc<Mutex<TerminalParser>>,
+        stdout: &mut dyn Write,
+    ) -> bool {
+        let Some(index) = self.overlay.selected else {
+            return false;
+        };
+        if self.suggestions.get(index).map(|s| s.kind)
+            != Some(gc_suggest::SuggestionKind::IntrospectionAction)
+        {
+            return false;
+        }
+        if let Ok(p) = parser.lock() {
+            let state = p.state();
+            let buffer = state.command_buffer().unwrap_or("");
+            let ctx = parse_command_context(buffer, state.buffer_cursor());
+            let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
+            self.engine.request_introspection(&ctx, &cwd);
+        }
+        self.teardown_popup(stdout, true);
+        // The action key is intercepted, so the shell will not emit a buffer
+        // update that could consume `trigger_requested`. Start the requested
+        // lifecycle immediately against the unchanged parser snapshot.
+        self.trigger(parser, stdout);
+        true
     }
 
     /// Compute the accept bytes for the currently-selected suggestion using
@@ -7348,6 +7495,184 @@ mod tests {
             "cached layout must reserve the indicator row (visible={visible_count}, height={})",
             layout.height,
         );
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn cached_introspection_refresh_has_no_async_lifecycle_or_additional_scroll() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let cli = dir.path().join("cached-intro-cli");
+        std::fs::write(
+            &cli,
+            "#!/bin/sh\nprintf 'Commands:\\n  deploy  Deploy it\\n  doctor  Diagnose it\\n'\n",
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&cli, permissions).unwrap();
+
+        let engine = SuggestionEngine::new(&[PathBuf::from(".")])
+            .unwrap()
+            .with_introspection_config(gc_config::IntrospectionConfig {
+                mode: gc_config::IntrospectionMode::Auto,
+                timeout_ms: 500,
+                auto_commands: vec!["cached-intro-cli".to_string()],
+            });
+        let intro_ctx = ctx("cached-intro-cli", &[], None, 1, "");
+        let env = Arc::new(HashMap::from([(
+            "PATH".to_string(),
+            dir.path().display().to_string(),
+        )]));
+        engine
+            .introspect(&intro_ctx, dir.path(), Some(Arc::clone(&env)))
+            .await
+            .unwrap();
+
+        let mut handler = make_handler();
+        handler.engine = Arc::new(engine);
+        handler.terminal_profile = TerminalProfile::for_terminal_app();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        {
+            let mut p = parser.lock().unwrap();
+            p.process_bytes(
+                format!("\x1b]7;file://localhost{}\x07", dir.path().display()).as_bytes(),
+            );
+            p.process_bytes(format!("\x1b]7773;PATH%3D{}\x07", dir.path().display()).as_bytes());
+            p.process_bytes(b"\x1b[23;1H");
+            p.state_mut()
+                .predict_command_buffer("cached-intro-cli ".to_string(), 17);
+        }
+
+        let mut first = Vec::new();
+        handler.trigger(&parser, &mut first);
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+        assert!(matches!(handler.feedback, AsyncFeedback::Idle));
+        assert!(handler.dynamic_rx.is_none());
+        assert!(handler.dynamic_task.is_none());
+        assert!(handler
+            .suggestions
+            .iter()
+            .any(|suggestion| suggestion.text == "deploy"));
+
+        // A real buffer change bypasses the trigger fingerprint. The cached
+        // node must remain synchronous and reuse the already-owned viewport
+        // room: no Loading row and no newline-driven scroll on Terminal.app.
+        {
+            let mut p = parser.lock().unwrap();
+            p.state_mut()
+                .predict_command_buffer("cached-intro-cli d".to_string(), 18);
+        }
+        let mut second = Vec::new();
+        handler.trigger(&parser, &mut second);
+        assert!(matches!(handler.feedback, AsyncFeedback::Idle));
+        assert!(handler.dynamic_rx.is_none());
+        assert!(handler.dynamic_task.is_none());
+        assert!(
+            !second.contains(&b'\n'),
+            "cached refresh must not perform another viewport scroll: {:?}",
+            String::from_utf8_lossy(&second)
+        );
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn ask_action_success_immediately_refreshes_from_generated_cache() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let cli = dir.path().join("ask-intro-cli");
+        std::fs::write(
+            &cli,
+            "#!/bin/sh\nprintf 'Commands:\\n  deploy  Deploy it\\n  doctor  Diagnose it\\n'\n",
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&cli, permissions).unwrap();
+
+        let mut handler = make_handler();
+        handler.engine = Arc::new(
+            SuggestionEngine::new(&[])
+                .unwrap()
+                .with_introspection_config(gc_config::IntrospectionConfig {
+                    mode: gc_config::IntrospectionMode::Ask,
+                    timeout_ms: 500,
+                    auto_commands: Vec::new(),
+                }),
+        );
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        {
+            let mut p = parser.lock().unwrap();
+            p.process_bytes(format!("\x1b]7773;PATH%3D{}\x07", dir.path().display()).as_bytes());
+            p.process_bytes(b"\x1b[10;1H");
+            p.state_mut()
+                .predict_command_buffer("ask-intro-cli ".to_string(), 14);
+        }
+
+        let mut output = Vec::new();
+        handler.trigger(&parser, &mut output);
+        let action_index = handler
+            .suggestions
+            .iter()
+            .position(|item| item.kind == gc_suggest::SuggestionKind::IntrospectionAction)
+            .expect("ask mode should offer generation on a cache miss");
+        handler.overlay.selected = Some(action_index);
+        assert!(handler
+            .process_key(&KeyEvent::Tab, &parser, &mut output)
+            .is_empty());
+        assert!(handler.dynamic_rx.is_some());
+
+        tokio::time::timeout(std::time::Duration::from_secs(2), async {
+            loop {
+                handler.try_merge_dynamic(&parser, &mut output);
+                if handler.suggestions.iter().any(|item| item.text == "deploy") {
+                    break;
+                }
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .expect("introspection should complete and refresh the current menu");
+
+        assert!(handler.visible);
+        assert!(handler.suggestions.iter().any(|item| item.text == "deploy"));
+        assert!(!handler
+            .suggestions
+            .iter()
+            .any(|item| item.kind == gc_suggest::SuggestionKind::IntrospectionAction));
+
+        let ctx = parse_command_context("ask-intro-cli ", 14);
+        let env = parser.lock().unwrap().state().shell_env().cloned();
+        let mut cached = handler
+            .engine
+            .suggest_sync_with_env(&ctx, dir.path(), "ask-intro-cli ", env.as_ref())
+            .unwrap();
+        assert!(handler
+            .engine
+            .prepare_introspection(cached.introspection_plan.take(), env.map(Arc::new))
+            .is_none());
+    }
+
+    #[test]
+    fn introspection_action_is_never_implicitly_accepted_by_tab_accepts_top() {
+        let mut handler = make_handler().with_tab_accepts_top(true);
+        handler.visible = true;
+        handler.suggestions = vec![Suggestion {
+            text: "Generate completions from --help".to_string(),
+            kind: gc_suggest::SuggestionKind::IntrospectionAction,
+            source: gc_suggest::SuggestionSource::Introspection,
+            ..Default::default()
+        }];
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut output = Vec::new();
+
+        assert_eq!(
+            handler.process_key(&KeyEvent::Tab, &parser, &mut output),
+            vec![b'\t']
+        );
+        assert!(!handler.visible);
     }
 
     #[tokio::test]

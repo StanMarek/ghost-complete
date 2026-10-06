@@ -27,6 +27,10 @@ pub enum AsyncFeedback {
 #[derive(Debug, Default)]
 pub struct DynamicAggregation {
     pub loaded: Vec<Suggestion>,
+    /// A successful introspection result populated the generated-spec cache.
+    /// The handler must re-resolve synchronously instead of additively merging
+    /// into the pre-generation suggestion list (which may contain the action).
+    pub introspection_loaded: bool,
     pub empty_count: usize,
     pub failed: Vec<String>,
 }
@@ -36,10 +40,16 @@ impl AsyncFeedback {
         let mut aggregation = DynamicAggregation::default();
         for result in results {
             match result {
-                DynamicResult::Loaded { suggestions, .. } => {
+                DynamicResult::Loaded {
+                    provider,
+                    suggestions,
+                } => {
                     if suggestions.is_empty() {
                         aggregation.empty_count += 1;
                     } else {
+                        if provider == crate::dynamic_result::ProviderTag::Introspection {
+                            aggregation.introspection_loaded = true;
+                        }
                         aggregation.loaded.extend(suggestions);
                     }
                 }
@@ -141,8 +151,18 @@ mod tests {
             },
         ]);
         assert_eq!(aggregation.loaded.len(), 1);
+        assert!(!aggregation.introspection_loaded);
         assert_eq!(aggregation.empty_count, 1);
         assert_eq!(aggregation.failed, vec!["git script"]);
+    }
+
+    #[test]
+    fn aggregate_marks_successful_introspection_for_sync_refresh() {
+        let aggregation = AsyncFeedback::aggregate(vec![DynamicResult::Loaded {
+            provider: ProviderTag::Introspection,
+            suggestions: vec![suggestion("generated")],
+        }]);
+        assert!(aggregation.introspection_loaded);
     }
 
     #[test]
@@ -150,6 +170,7 @@ mod tests {
         let now = Instant::now();
         let aggregation = DynamicAggregation {
             loaded: vec![suggestion("main")],
+            introspection_loaded: false,
             empty_count: 0,
             failed: vec!["git branches".into()],
         };
@@ -164,6 +185,7 @@ mod tests {
         let now = Instant::now();
         let aggregation = DynamicAggregation {
             loaded: Vec::new(),
+            introspection_loaded: false,
             empty_count: 0,
             failed: vec!["git branches".into()],
         };
@@ -178,6 +200,7 @@ mod tests {
         let now = Instant::now();
         let aggregation = DynamicAggregation {
             loaded: Vec::new(),
+            introspection_loaded: false,
             empty_count: 1,
             failed: Vec::new(),
         };
@@ -192,6 +215,7 @@ mod tests {
         let now = Instant::now();
         let aggregation = DynamicAggregation {
             loaded: vec![suggestion("main")],
+            introspection_loaded: false,
             empty_count: 0,
             failed: Vec::new(),
         };

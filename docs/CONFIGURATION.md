@@ -83,6 +83,37 @@ match_mode = "fuzzy"  # or "substring" for contiguous matching
 
 Shell history loads up to 10,000 entries.
 
+### `[suggest.introspection]`
+
+Fallback completions for commands that have no bundled or user spec. The
+conservative default never executes a target command.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `mode` | string | `"off"` | `"off"` disables introspection, `"ask"` offers a generation action, and `"auto"` may run help introspection for explicitly allowed commands. |
+| `timeout_ms` | integer | `750` | Maximum duration of each direct (non-shell) help invocation. |
+| `auto_commands` | string[] | `[]` | Alias-expanded executable names allowed to run automatically in `"auto"` mode. The empty default executes nothing automatically. |
+
+```toml
+[suggest.introspection]
+mode = "off" # "ask" or "auto"
+timeout_ms = 750
+auto_commands = []
+```
+
+Results are cached in memory for five minutes and partitioned by working
+directory, shell PATH, executable identity, and lazy subcommand path. Curated specs always take
+precedence; generated cache hits are resolved synchronously and do not start
+another background-provider lifecycle. Command-resolution misses are negatively
+cached and invalidated when PATH or its search-directory state changes. Timeout,
+execution, and unparseable-help failures are negatively cached for 15 seconds
+before an intentional retry is possible.
+
+Help commands run directly without shell interpolation, with null stdin and
+bounded, captured stdout and stderr. On supported Unix platforms they run in a
+new session without a controlling terminal, preventing access through
+`/dev/tty`.
+
 ### `[suggest.spec_cache]`
 
 Cache eviction policy for parsed completion specs. Eviction is opt-in; the
@@ -421,6 +452,7 @@ If the proxy can't start (a `config.toml` that doesn't parse, an invalid key nam
 | `[suggest]` | All fields | No |
 | `[suggest.providers]` | All fields | No |
 | `[suggest.spec_cache]` | All fields | No |
+| `[suggest.introspection]` | All fields | No |
 | `[paths]` | All fields | No |
 | `[experimental]` | All fields | No |
 

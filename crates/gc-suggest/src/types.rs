@@ -24,6 +24,8 @@ pub enum SuggestionKind {
     /// values surface above environment variables, generic $PATH commands, and
     /// flags but below subcommands and dynamic provider results.
     EnumValue,
+    /// UI-only action that requests help introspection; never inserted.
+    IntrospectionAction,
 }
 
 impl SuggestionKind {
@@ -43,6 +45,7 @@ impl SuggestionKind {
             Self::EnvVar => "env",
             Self::ProviderValue => "provider",
             Self::EnumValue => "enum",
+            Self::IntrospectionAction => "intro_action",
         }
     }
 
@@ -60,6 +63,7 @@ impl SuggestionKind {
             Self::EnvVar => 50,
             Self::Command => 40,
             Self::EnumValue => 65,
+            Self::IntrospectionAction => 0,
             Self::Flag => 30,
             Self::Directory => 25,
             Self::FilePath => 20,
@@ -82,6 +86,7 @@ pub enum SuggestionSource {
     /// `Spec`/`Script` so providers are identifiable in telemetry and
     /// downstream filtering without overlapping the legacy paths.
     Provider,
+    Introspection,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]

@@ -284,6 +284,8 @@ pub struct SuggestConfig {
     pub match_mode: MatchMode,
     pub providers: ProvidersConfig,
     pub spec_cache: SpecCacheConfig,
+    /// Generic completion fallback for commands without a curated spec.
+    pub introspection: IntrospectionConfig,
 }
 
 impl Default for SuggestConfig {
@@ -295,6 +297,36 @@ impl Default for SuggestConfig {
             match_mode: MatchMode::default(),
             providers: ProvidersConfig::default(),
             spec_cache: SpecCacheConfig::default(),
+            introspection: IntrospectionConfig::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum IntrospectionMode {
+    #[default]
+    Off,
+    Ask,
+    Auto,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct IntrospectionConfig {
+    pub mode: IntrospectionMode,
+    /// Maximum runtime of one help invocation.
+    pub timeout_ms: u64,
+    /// Alias-expanded executable names permitted to run automatically.
+    pub auto_commands: Vec<String>,
+}
+
+impl Default for IntrospectionConfig {
+    fn default() -> Self {
+        Self {
+            mode: IntrospectionMode::Off,
+            timeout_ms: 750,
+            auto_commands: Vec::new(),
         }
     }
 }
@@ -686,6 +718,10 @@ pub fn all_field_paths() -> Vec<&'static str> {
         "suggest.spec_cache.sweep_interval_secs",
         "suggest.spec_cache.keep_warm",
         "suggest.spec_cache.max_resident_mb",
+        // [suggest.introspection]
+        "suggest.introspection.mode",
+        "suggest.introspection.timeout_ms",
+        "suggest.introspection.auto_commands",
         // [paths]
         "paths.spec_dirs",
         // [keybindings] — 6 fields
@@ -985,6 +1021,7 @@ mod tests {
             "suggest.",
             "suggest.providers.",
             "suggest.spec_cache.",
+            "suggest.introspection.",
             "paths.",
             "keybindings.",
             "theme.",
@@ -1006,6 +1043,9 @@ mod tests {
         assert!(paths.contains(&"suggest.providers.js_runtime"));
         assert!(paths.contains(&"experimental.brew_search_cap"));
         assert!(paths.contains(&"suggest.spec_cache.idle_ttl_secs"));
+        assert!(paths.contains(&"suggest.introspection.mode"));
+        assert!(paths.contains(&"suggest.introspection.timeout_ms"));
+        assert!(paths.contains(&"suggest.introspection.auto_commands"));
     }
 
     #[test]
@@ -1024,6 +1064,9 @@ mod tests {
         assert!(config.suggest.providers.filesystem);
         assert!(config.suggest.providers.specs);
         assert!(config.suggest.providers.git);
+        assert_eq!(config.suggest.introspection.mode, IntrospectionMode::Off);
+        assert_eq!(config.suggest.introspection.timeout_ms, 750);
+        assert!(config.suggest.introspection.auto_commands.is_empty());
         assert!(config.paths.spec_dirs.is_empty());
         assert_eq!(config.keybindings.accept, "tab");
         assert_eq!(config.keybindings.accept_and_enter, "enter");

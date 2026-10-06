@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -20,6 +20,7 @@ use crate::frecency::FrecencyDb;
 use crate::fuzzy;
 use crate::git;
 use crate::history::{HistoryProvider, DEFAULT_MAX_HISTORY_ENTRIES};
+use crate::introspection::{HelpIntrospector, IntrospectionPlan};
 use crate::js_runtime::{JsExecContext, JsRuntimeAdapter};
 use crate::priority;
 use crate::provider::Provider;
@@ -173,6 +174,9 @@ pub struct SyncResult {
     /// dispatch time so spec-driven providers can read them without a
     /// trait-shape change.
     pub provider_generators: Vec<ProviderResolution>,
+    /// A genuine generated-cache miss that this trigger should start or join.
+    /// The executable/cache identity was already resolved synchronously.
+    pub introspection_plan: Option<IntrospectionPlan>,
 }
 
 impl SyncResult {
@@ -226,6 +230,7 @@ mod sync_result_tests {
             script_generators: vec![],
             git_generators: vec![],
             provider_generators: vec![],
+            introspection_plan: None,
         };
         assert!(!result.has_pending_high_priority());
     }
@@ -237,6 +242,7 @@ mod sync_result_tests {
             script_generators: vec![],
             git_generators: vec![crate::git::GitQueryKind::Branches],
             provider_generators: vec![],
+            introspection_plan: None,
         };
         // No sync suggestions → top_sync = 0 < 80 (GitBranch base)
         assert!(result.has_pending_high_priority());
@@ -253,6 +259,7 @@ mod sync_result_tests {
             script_generators: vec![],
             git_generators: vec![crate::git::GitQueryKind::Branches],
             provider_generators: vec![],
+            introspection_plan: None,
         };
         // top_sync = 80, git_base = 80 → NOT strictly greater → false
         assert!(!result.has_pending_high_priority());
@@ -269,6 +276,7 @@ mod sync_result_tests {
             script_generators: vec![],
             git_generators: vec![crate::git::GitQueryKind::Branches],
             provider_generators: vec![],
+            introspection_plan: None,
         };
         // top_sync = 30 (Flag), git_base = 80 → 80 > 30 → true
         assert!(result.has_pending_high_priority());
@@ -285,6 +293,7 @@ mod sync_result_tests {
             script_generators: vec![],
             git_generators: vec![],
             provider_generators: vec![ProviderKind::DefaultsDomains.into()],
+            introspection_plan: None,
         };
         // top_sync = 30 (Flag), provider_base = 70 (ProviderValue) → 70 > 30 → true
         assert!(result.has_pending_high_priority());
@@ -319,6 +328,7 @@ mod sync_result_tests {
             script_generators: vec![empty_generator_spec()],
             git_generators: vec![],
             provider_generators: vec![],
+            introspection_plan: None,
         };
         // top_sync = 30 (Flag), provider_base = 70 (script → ProviderValue) → 70 > 30 → true
         assert!(result.has_pending_high_priority());
@@ -335,6 +345,7 @@ mod sync_result_tests {
             script_generators: vec![empty_generator_spec()],
             git_generators: vec![],
             provider_generators: vec![],
+            introspection_plan: None,
         };
         // top_sync = 70 (Subcommand), provider_base = 70 → NOT strictly greater → false
         assert!(!result.has_pending_high_priority());
@@ -375,6 +386,11 @@ pub struct SuggestionEngine {
     /// `js_runtime` were missing — they're dropped from the generator
     /// pool. Mirrors `ProvidersConfig::js_runtime` from `gc-config`.
     providers_js_runtime: bool,
+    introspector: Arc<HelpIntrospector>,
+    introspection_mode: gc_config::IntrospectionMode,
+    introspection_timeout_ms: u64,
+    introspection_auto_commands: Arc<HashSet<String>>,
+    requested_introspection: Arc<std::sync::Mutex<Option<(String, PathBuf)>>>,
 }
 
 impl SuggestionEngine {
@@ -421,6 +437,11 @@ impl SuggestionEngine {
             providers_aws_sdk: false,
             aws_sdk_fallback_to_cli: true,
             providers_js_runtime: true,
+            introspector: Arc::new(HelpIntrospector::new()),
+            introspection_mode: gc_config::IntrospectionMode::Off,
+            introspection_timeout_ms: 750,
+            introspection_auto_commands: Arc::new(HashSet::new()),
+            requested_introspection: Arc::new(std::sync::Mutex::new(None)),
         })
     }
 
@@ -498,7 +519,94 @@ impl SuggestionEngine {
             providers_aws_sdk: false,
             aws_sdk_fallback_to_cli: true,
             providers_js_runtime: true,
+            introspector: Arc::new(HelpIntrospector::new()),
+            introspection_mode: gc_config::IntrospectionMode::Off,
+            introspection_timeout_ms: 750,
+            introspection_auto_commands: Arc::new(HashSet::new()),
+            requested_introspection: Arc::new(std::sync::Mutex::new(None)),
         }
+    }
+
+    pub fn with_introspection_config(mut self, config: gc_config::IntrospectionConfig) -> Self {
+        self.introspection_mode = config.mode;
+        self.introspection_timeout_ms = config.timeout_ms;
+        self.introspection_auto_commands = Arc::new(config.auto_commands.into_iter().collect());
+        self
+    }
+
+    #[cfg(test)]
+    fn should_auto_introspect(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        shell_env: Option<&HashMap<String, String>>,
+    ) -> bool {
+        if self.introspection_mode != gc_config::IntrospectionMode::Auto
+            || !self.introspection_eligible(ctx)
+        {
+            return false;
+        }
+        let resolved = self.resolve_ctx_for_spec_walk(ctx);
+        let allowed = resolved
+            .command
+            .as_deref()
+            .is_some_and(|command| self.introspection_auto_commands.contains(command));
+        allowed
+            && self
+                .introspector
+                .plan(&resolved, cwd, shell_env)
+                .is_some_and(|plan| plan.is_cache_miss() && plan.is_resolvable())
+    }
+
+    #[cfg(test)]
+    fn introspection_eligible(&self, ctx: &CommandContext) -> bool {
+        use crate::context::{classify, ClassifyInput, Context};
+        let spec_matched = self.spec_for_ctx(ctx).is_some();
+        matches!(
+            classify(ClassifyInput {
+                current_word: &ctx.current_word,
+                in_redirect: ctx.in_redirect,
+                word_index: ctx.word_index,
+                spec_matched,
+            }),
+            Context::UnspeccedArg | Context::FlagPrefix
+        ) && !spec_matched
+    }
+
+    pub fn request_introspection(&self, ctx: &CommandContext, cwd: &Path) {
+        *self
+            .requested_introspection
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = Some((introspection_key(ctx), cwd.to_path_buf()));
+    }
+
+    /// Start or join the independently-owned operation described by the
+    /// trigger's already-resolved cache-miss plan.
+    pub fn prepare_introspection(
+        &self,
+        plan: Option<IntrospectionPlan>,
+        shell_env: Option<Arc<HashMap<String, String>>>,
+    ) -> Option<Result<crate::introspection::IntrospectionWaiter>> {
+        let plan = plan?;
+        match self
+            .introspector
+            .prepare(plan, self.introspection_timeout_ms, shell_env)
+        {
+            Ok(Some(waiter)) => Some(Ok(waiter)),
+            Ok(None) => None,
+            Err(error) => Some(Err(error)),
+        }
+    }
+
+    pub async fn introspect(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        shell_env: Option<Arc<HashMap<String, String>>>,
+    ) -> Result<Vec<Suggestion>> {
+        self.introspector
+            .suggestions(ctx, cwd, self.introspection_timeout_ms, shell_env)
+            .await
     }
 
     #[doc(hidden)]
@@ -1274,7 +1382,40 @@ impl SuggestionEngine {
             spec_matched,
         });
 
-        match context {
+        // Ask consent is a next-trigger token, not durable command state. Take
+        // it even when this trigger is no longer eligible so a buffer/cwd
+        // change cannot resurrect consent later.
+        let requested = self
+            .requested_introspection
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .take()
+            .is_some_and(|(key, requested_cwd)| {
+                key == introspection_key(ctx) && requested_cwd == cwd
+            });
+        let eligible =
+            !spec_matched && matches!(context, Context::UnspeccedArg | Context::FlagPrefix);
+        let introspection_ctx = eligible.then(|| self.resolve_ctx_for_spec_walk(ctx));
+        let effective_command = introspection_ctx
+            .as_deref()
+            .and_then(|resolved| resolved.command.as_deref());
+        let auto_allowed = effective_command
+            .is_some_and(|command| self.introspection_auto_commands.contains(command));
+        let plan = if self.introspection_mode != gc_config::IntrospectionMode::Off {
+            introspection_ctx
+                .as_deref()
+                .and_then(|resolved| self.introspector.plan(resolved, cwd, shell_env))
+        } else {
+            None
+        };
+        let generated = plan
+            .as_ref()
+            .and_then(IntrospectionPlan::cached_suggestions)
+            .map(<[Suggestion]>::to_vec);
+        let cache_miss = plan.as_ref().is_some_and(IntrospectionPlan::is_cache_miss);
+        let resolvable = plan.as_ref().is_some_and(IntrospectionPlan::is_resolvable);
+
+        let result: Result<SyncResult> = match context {
             Context::CommandPosition => Ok(self.suggest_command_position(ctx, cwd, buffer)),
             Context::Redirect => Ok(self.suggest_redirect(ctx, cwd, buffer)),
             Context::PathPrefix => {
@@ -1287,7 +1428,9 @@ impl SuggestionEngine {
                 // to add here.
                 Ok(self.suggest_filesystem_fallback(ctx, cwd, buffer, Vec::new(), "path"))
             }
-            Context::FlagPrefix => Ok(self.suggest_flag_prefix(ctx, cwd, buffer)),
+            Context::FlagPrefix => {
+                Ok(self.suggest_flag_prefix(ctx, cwd, buffer, generated.clone()))
+            }
             Context::SpecArg => {
                 // Env vars and ssh hosts are situational injections that augment
                 // (but do not replace) spec results — they're allowed inside
@@ -1309,9 +1452,41 @@ impl SuggestionEngine {
                 let mut candidates = Vec::new();
                 self.extend_with_env_vars(ctx, cwd, shell_env, &mut candidates);
                 self.extend_with_ssh_hosts(ctx, &mut candidates);
+                if let Some(generated) = generated.as_ref() {
+                    candidates.extend(generated.iter().cloned());
+                }
                 Ok(self.suggest_filesystem_fallback(ctx, cwd, buffer, candidates, "fallback"))
             }
+        };
+        let mut result = result?;
+
+        if cache_miss
+            && resolvable
+            && (requested
+                || (self.introspection_mode == gc_config::IntrospectionMode::Auto && auto_allowed))
+        {
+            result.introspection_plan = plan;
         }
+
+        // UI actions are pinned after ranking: they are neither fuzzy-filtered
+        // nor counted against the completion result budget.
+        if self.introspection_mode == gc_config::IntrospectionMode::Ask
+            && matches!(context, Context::UnspeccedArg | Context::FlagPrefix)
+            && !spec_matched
+            && cache_miss
+            && resolvable
+        {
+            result.suggestions.push(Suggestion {
+                text: "Generate completions from --help".to_string(),
+                description: Some(
+                    "Run this command's help and cache discovered completions".to_string(),
+                ),
+                kind: SuggestionKind::IntrospectionAction,
+                source: SuggestionSource::Introspection,
+                ..Default::default()
+            });
+        }
+        Ok(result)
     }
 
     /// Complete the command name (`ctx.word_index == 0`). Pulls candidates
@@ -1335,12 +1510,19 @@ impl SuggestionEngine {
             script_generators: Vec::new(),
             git_generators: Vec::new(),
             provider_generators: Vec::new(),
+            introspection_plan: None,
         }
     }
 
     /// Complete a flag-prefixed token (`-` or `--`). Returns spec-declared
     /// flags + subcommands only — never filesystem, never history.
-    fn suggest_flag_prefix(&self, ctx: &CommandContext, cwd: &Path, buffer: &str) -> SyncResult {
+    fn suggest_flag_prefix(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        buffer: &str,
+        generated: Option<Vec<Suggestion>>,
+    ) -> SyncResult {
         let mut candidates = Vec::new();
         if let Some(spec) = self.spec_for_ctx(ctx) {
             // Walk the alias target's spec subtree, not the literal alias name's.
@@ -1348,12 +1530,15 @@ impl SuggestionEngine {
             let resolution = specs::resolve_spec(spec.as_ref(), resolve_ctx.as_ref());
             candidates.extend(resolution.subcommands);
             candidates.extend(resolution.options);
+        } else if let Some(generated) = generated {
+            candidates.extend(generated);
         }
         SyncResult {
             suggestions: self.rank_with_history(ctx, cwd, buffer, candidates, false),
             script_generators: Vec::new(),
             git_generators: Vec::new(),
             provider_generators: Vec::new(),
+            introspection_plan: None,
         }
     }
 
@@ -1373,6 +1558,7 @@ impl SuggestionEngine {
             script_generators: Vec::new(),
             git_generators: Vec::new(),
             provider_generators: Vec::new(),
+            introspection_plan: None,
         }
     }
 
@@ -1546,6 +1732,7 @@ impl SuggestionEngine {
             script_generators,
             git_generators,
             provider_generators,
+            introspection_plan: None,
         })
     }
 
@@ -1687,6 +1874,7 @@ impl SuggestionEngine {
             script_generators: Vec::new(),
             git_generators: Vec::new(),
             provider_generators: Vec::new(),
+            introspection_plan: None,
         }
     }
 
@@ -1801,6 +1989,15 @@ impl SuggestionEngine {
 
         results
     }
+}
+
+fn introspection_key(ctx: &CommandContext) -> String {
+    let mut key = ctx.command.clone().unwrap_or_default();
+    for arg in ctx.args.iter().filter(|arg| !arg.starts_with('-')) {
+        key.push('\0');
+        key.push_str(arg);
+    }
+    key
 }
 
 /// Helper: resolve the cwd argument used by the cache key based on the
@@ -4997,5 +5194,580 @@ mod tests {
             history_count, 0,
             "empty history provider yields no history rows: {results:?}"
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn introspection_modes_and_curated_precedence() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let bin = tempfile::tempdir().unwrap();
+        let executable = bin.path().join("definitely-unspecced-command");
+        std::fs::write(&executable, "#!/bin/sh\nexit 0\n").unwrap();
+        let mut permissions = std::fs::metadata(&executable).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&executable, permissions).unwrap();
+        let env = HashMap::from([("PATH".to_string(), bin.path().display().to_string())]);
+        let unknown = make_ctx(Some("definitely-unspecced-command"), vec![], "", 1);
+        let off = SuggestionEngine::new(&[]).unwrap();
+        assert!(!off.should_auto_introspect(&unknown, bin.path(), Some(&env)));
+        let off_result = off
+            .suggest_sync_with_env(
+                &unknown,
+                bin.path(),
+                "definitely-unspecced-command ",
+                Some(&env),
+            )
+            .unwrap();
+        assert!(!off_result
+            .iter()
+            .any(|s| s.kind == SuggestionKind::IntrospectionAction));
+        assert_eq!(
+            off.introspector.lookup_count(),
+            0,
+            "off mode must not resolve executables or consult the generated cache"
+        );
+
+        let ask = SuggestionEngine::new(&[])
+            .unwrap()
+            .with_introspection_config(gc_config::IntrospectionConfig {
+                mode: gc_config::IntrospectionMode::Ask,
+                timeout_ms: 100,
+                auto_commands: Vec::new(),
+            });
+        let ask_result = ask
+            .suggest_sync_with_env(
+                &unknown,
+                bin.path(),
+                "definitely-unspecced-command ",
+                Some(&env),
+            )
+            .unwrap();
+        assert!(ask_result
+            .iter()
+            .any(|s| s.kind == SuggestionKind::IntrospectionAction));
+        assert_eq!(
+            ask_result.suggestions.last().map(|item| item.kind),
+            Some(SuggestionKind::IntrospectionAction),
+            "the ask action must be pinned after ranked completions"
+        );
+        let flag_buffer = "definitely-unspecced-command --no-match";
+        let flag_ctx = gc_buffer::parse_command_context(flag_buffer, flag_buffer.chars().count());
+        let flag_result = ask
+            .suggest_sync_with_env(&flag_ctx, bin.path(), flag_buffer, Some(&env))
+            .unwrap();
+        assert_eq!(
+            flag_result.suggestions.last().map(|item| item.kind),
+            Some(SuggestionKind::IntrospectionAction),
+            "the pinned action must survive fuzzy filtering in flag context"
+        );
+        let capped_dir = tempfile::tempdir().unwrap();
+        std::fs::write(capped_dir.path().join("candidate"), "x").unwrap();
+        let capped = SuggestionEngine::new(&[])
+            .unwrap()
+            .with_suggest_config(1, true, 0, true, true, true, true)
+            .with_introspection_config(gc_config::IntrospectionConfig {
+                mode: gc_config::IntrospectionMode::Ask,
+                timeout_ms: 100,
+                auto_commands: Vec::new(),
+            });
+        let capped_result = capped
+            .suggest_sync_with_env(
+                &unknown,
+                capped_dir.path(),
+                "definitely-unspecced-command ",
+                Some(&env),
+            )
+            .unwrap();
+        assert_eq!(capped_result.suggestions.len(), 2);
+        assert_eq!(
+            capped_result.suggestions.last().map(|item| item.kind),
+            Some(SuggestionKind::IntrospectionAction)
+        );
+        assert!(!ask.should_auto_introspect(&unknown, bin.path(), Some(&env)));
+
+        let auto = SuggestionEngine::new(&[])
+            .unwrap()
+            .with_introspection_config(gc_config::IntrospectionConfig {
+                mode: gc_config::IntrospectionMode::Auto,
+                timeout_ms: 100,
+                auto_commands: vec!["definitely-unspecced-command".to_string()],
+            });
+        assert!(auto.should_auto_introspect(&unknown, bin.path(), Some(&env)));
+        for buffer in [
+            "definitely-unspecced-command > ",
+            "definitely-unspecced-command ./",
+        ] {
+            let ctx = gc_buffer::parse_command_context(buffer, buffer.chars().count());
+            assert!(
+                !auto.should_auto_introspect(&ctx, bin.path(), Some(&env)),
+                "redirect and path-prefix contexts must not introspect: {buffer}"
+            );
+        }
+        let curated = make_ctx(Some("git"), vec![], "", 1);
+        assert!(
+            !auto.should_auto_introspect(&curated, bin.path(), Some(&env)),
+            "bundled specs must win"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn auto_mode_requires_an_explicit_effective_command_allowlist() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let cli = dir.path().join("unknown-auto-cli");
+        std::fs::write(
+            &cli,
+            "#!/bin/sh\ntouch \"$0.ran\"\nprintf 'Options:\\n  --unsafe  Unsafe\\n'\n",
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&cli, permissions).unwrap();
+        let env = HashMap::from([("PATH".to_string(), dir.path().display().to_string())]);
+        let ctx = make_ctx(Some("unknown-auto-cli"), vec![], "", 1);
+        let engine = SuggestionEngine::new(&[])
+            .unwrap()
+            .with_introspection_config(gc_config::IntrospectionConfig {
+                mode: gc_config::IntrospectionMode::Auto,
+                timeout_ms: 500,
+                auto_commands: Vec::new(),
+            });
+
+        let result = engine
+            .suggest_sync_with_env(&ctx, dir.path(), "unknown-auto-cli ", Some(&env))
+            .unwrap();
+        assert!(result.introspection_plan.is_none());
+        assert!(!PathBuf::from(format!("{}.ran", cli.display())).exists());
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn introspection_expands_aliases_and_hides_unresolvable_ask_actions() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let cli = dir.path().join("alias-target-cli");
+        std::fs::write(
+            &cli,
+            "#!/bin/sh\nprintf 'Options:\\n  --aliased  Alias target\\n'\n",
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&cli, permissions).unwrap();
+        let env = Arc::new(HashMap::from([(
+            "PATH".to_string(),
+            dir.path().display().to_string(),
+        )]));
+        let engine = SuggestionEngine::with_providers(
+            SpecStore::load_from_dirs(&[]).unwrap().store,
+            HistoryProvider::from_entries(Vec::new()),
+            CommandsProvider::from_list(Vec::new()),
+        )
+        .with_aliases(HashMap::from([(
+            "m".to_string(),
+            vec!["alias-target-cli".to_string()],
+        )]))
+        .with_introspection_config(gc_config::IntrospectionConfig {
+            mode: gc_config::IntrospectionMode::Ask,
+            timeout_ms: 500,
+            auto_commands: Vec::new(),
+        });
+        let alias_ctx = make_ctx(Some("m"), vec![], "", 1);
+        let offered = engine
+            .suggest_sync_with_env(&alias_ctx, dir.path(), "m ", Some(env.as_ref()))
+            .unwrap();
+        assert!(offered
+            .iter()
+            .any(|item| item.kind == SuggestionKind::IntrospectionAction));
+
+        engine.request_introspection(&alias_ctx, dir.path());
+        let mut requested = engine
+            .suggest_sync_with_env(&alias_ctx, dir.path(), "m ", Some(env.as_ref()))
+            .unwrap();
+        let requested_plan = requested
+            .introspection_plan
+            .take()
+            .expect("explicit alias consent should produce an introspection plan");
+        engine
+            .prepare_introspection(Some(requested_plan), Some(Arc::clone(&env)))
+            .unwrap()
+            .unwrap()
+            .wait()
+            .await
+            .unwrap();
+        let generated = engine
+            .suggest_sync_with_env(&alias_ctx, dir.path(), "m ", Some(env.as_ref()))
+            .unwrap();
+        assert!(generated.iter().any(|item| item.text == "--aliased"));
+
+        let auto = SuggestionEngine::with_providers(
+            SpecStore::load_from_dirs(&[]).unwrap().store,
+            HistoryProvider::from_entries(Vec::new()),
+            CommandsProvider::from_list(Vec::new()),
+        )
+        .with_aliases(HashMap::from([(
+            "m".to_string(),
+            vec!["alias-target-cli".to_string()],
+        )]))
+        .with_introspection_config(gc_config::IntrospectionConfig {
+            mode: gc_config::IntrospectionMode::Auto,
+            timeout_ms: 500,
+            auto_commands: vec!["alias-target-cli".to_string()],
+        });
+        let auto_result = auto
+            .suggest_sync_with_env(&alias_ctx, dir.path(), "m ", Some(env.as_ref()))
+            .unwrap();
+        assert!(
+            auto_result.introspection_plan.is_some(),
+            "auto allowlisting must use the alias-expanded command name"
+        );
+
+        let function_like = make_ctx(Some("shell-function-only"), vec![], "", 1);
+        let unresolved = engine
+            .suggest_sync_with_env(
+                &function_like,
+                dir.path(),
+                "shell-function-only ",
+                Some(env.as_ref()),
+            )
+            .unwrap();
+        assert!(!unresolved
+            .iter()
+            .any(|item| item.kind == SuggestionKind::IntrospectionAction));
+        assert!(unresolved.introspection_plan.is_none());
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn eligible_trigger_resolves_introspection_identity_once() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let cli = dir.path().join("single-plan-cli");
+        std::fs::write(
+            &cli,
+            "#!/bin/sh\nprintf 'Commands:\\n  once  Resolved once\\n'\n",
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&cli, permissions).unwrap();
+        let env = Arc::new(HashMap::from([(
+            "PATH".to_string(),
+            dir.path().display().to_string(),
+        )]));
+        let ctx = make_ctx(Some("single-plan-cli"), vec![], "", 1);
+        let engine = SuggestionEngine::new(&[])
+            .unwrap()
+            .with_introspection_config(gc_config::IntrospectionConfig {
+                mode: gc_config::IntrospectionMode::Ask,
+                timeout_ms: 500,
+                auto_commands: Vec::new(),
+            });
+
+        engine.request_introspection(&ctx, dir.path());
+        let mut result = engine
+            .suggest_sync_with_env(&ctx, dir.path(), "single-plan-cli ", Some(env.as_ref()))
+            .unwrap();
+        assert_eq!(engine.introspector.lookup_count(), 1);
+        engine
+            .prepare_introspection(result.introspection_plan.take(), Some(Arc::clone(&env)))
+            .unwrap()
+            .unwrap()
+            .wait()
+            .await
+            .unwrap();
+        assert_eq!(
+            engine.introspector.lookup_count(),
+            1,
+            "producer preparation must reuse the trigger's resolved plan"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn ask_consent_is_consumed_by_the_next_trigger_even_when_identity_changes() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let bin = tempfile::tempdir().unwrap();
+        for name in ["consent-a", "consent-b"] {
+            let path = bin.path().join(name);
+            std::fs::write(&path, "#!/bin/sh\nexit 0\n").unwrap();
+            let mut permissions = std::fs::metadata(&path).unwrap().permissions();
+            permissions.set_mode(0o755);
+            std::fs::set_permissions(path, permissions).unwrap();
+        }
+        let first_cwd = tempfile::tempdir().unwrap();
+        let second_cwd = tempfile::tempdir().unwrap();
+        let env = HashMap::from([("PATH".to_string(), bin.path().display().to_string())]);
+        let first = make_ctx(Some("consent-a"), vec![], "", 1);
+        let second = make_ctx(Some("consent-b"), vec![], "", 1);
+        let engine = SuggestionEngine::new(&[])
+            .unwrap()
+            .with_introspection_config(gc_config::IntrospectionConfig {
+                mode: gc_config::IntrospectionMode::Ask,
+                timeout_ms: 500,
+                auto_commands: Vec::new(),
+            });
+
+        engine.request_introspection(&first, first_cwd.path());
+        let changed_command = engine
+            .suggest_sync_with_env(&second, first_cwd.path(), "consent-b ", Some(&env))
+            .unwrap();
+        assert!(changed_command.introspection_plan.is_none());
+        let returned = engine
+            .suggest_sync_with_env(&first, first_cwd.path(), "consent-a ", Some(&env))
+            .unwrap();
+        assert!(returned.introspection_plan.is_none());
+
+        engine.request_introspection(&first, first_cwd.path());
+        let changed_cwd = engine
+            .suggest_sync_with_env(&first, second_cwd.path(), "consent-a ", Some(&env))
+            .unwrap();
+        assert!(changed_cwd.introspection_plan.is_none());
+        let returned = engine
+            .suggest_sync_with_env(&first, first_cwd.path(), "consent-a ", Some(&env))
+            .unwrap();
+        assert!(returned.introspection_plan.is_none());
+        assert!(returned
+            .suggestions
+            .iter()
+            .any(|suggestion| suggestion.kind == SuggestionKind::IntrospectionAction));
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn generated_cache_is_synchronous_and_does_not_reenter_async_lifecycle() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let cli = dir.path().join("cached-cli");
+        std::fs::write(
+            &cli,
+            "#!/bin/sh\nprintf 'Commands:\\n  deploy  Deploy it\\n'\n",
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&cli, permissions).unwrap();
+
+        let engine = SuggestionEngine::new(&[])
+            .unwrap()
+            .with_introspection_config(gc_config::IntrospectionConfig {
+                mode: gc_config::IntrospectionMode::Auto,
+                timeout_ms: 500,
+                auto_commands: vec!["cached-cli".to_string()],
+            });
+        let ctx = make_ctx(Some("cached-cli"), vec![], "", 1);
+        let env = Arc::new(HashMap::from([(
+            "PATH".to_string(),
+            dir.path().display().to_string(),
+        )]));
+        assert!(engine.should_auto_introspect(&ctx, dir.path(), Some(env.as_ref())));
+        let generated = engine
+            .introspect(&ctx, dir.path(), Some(Arc::clone(&env)))
+            .await
+            .unwrap();
+        assert!(generated.iter().any(|s| s.text == "deploy"));
+
+        assert!(
+            !engine.should_auto_introspect(&ctx, dir.path(), Some(env.as_ref())),
+            "a generated-cache hit must not start another provider lifecycle"
+        );
+        let result = engine
+            .suggest_sync_with_env(&ctx, dir.path(), "cached-cli ", Some(env.as_ref()))
+            .unwrap();
+        assert!(result
+            .iter()
+            .any(|s| { s.text == "deploy" && s.source == SuggestionSource::Introspection }));
+        assert!(result.script_generators.is_empty());
+        assert!(result.git_generators.is_empty());
+        assert!(result.provider_generators.is_empty());
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn ask_generation_converges_and_failure_retries_after_negative_ttl() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let cli = dir.path().join("ask-cli");
+        std::fs::write(
+            &cli,
+            "#!/bin/sh\nprintf 'Commands:\\n  deploy  Deploy it\\n'\n",
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&cli, permissions).unwrap();
+        let env = Arc::new(HashMap::from([(
+            "PATH".to_string(),
+            dir.path().display().to_string(),
+        )]));
+        let ctx = make_ctx(Some("ask-cli"), vec![], "", 1);
+        let engine = SuggestionEngine::new(&[])
+            .unwrap()
+            .with_introspection_config(gc_config::IntrospectionConfig {
+                mode: gc_config::IntrospectionMode::Ask,
+                timeout_ms: 500,
+                auto_commands: Vec::new(),
+            });
+
+        let initial = engine
+            .suggest_sync_with_env(&ctx, dir.path(), "ask-cli ", Some(env.as_ref()))
+            .unwrap();
+        assert!(initial
+            .iter()
+            .any(|item| item.kind == SuggestionKind::IntrospectionAction));
+
+        engine.request_introspection(&ctx, dir.path());
+        let mut requested = engine
+            .suggest_sync_with_env(&ctx, dir.path(), "ask-cli ", Some(env.as_ref()))
+            .unwrap();
+        engine
+            .prepare_introspection(requested.introspection_plan.take(), Some(Arc::clone(&env)))
+            .expect("ask consent should produce a plan")
+            .unwrap()
+            .wait()
+            .await
+            .unwrap();
+        let generated = engine
+            .suggest_sync_with_env(&ctx, dir.path(), "ask-cli ", Some(env.as_ref()))
+            .unwrap();
+        assert!(generated.iter().any(|item| item.text == "deploy"));
+        assert!(!generated
+            .iter()
+            .any(|item| item.kind == SuggestionKind::IntrospectionAction));
+        assert!(!engine.should_auto_introspect(&ctx, dir.path(), Some(env.as_ref())));
+
+        let empty_cli = dir.path().join("empty-cli");
+        std::fs::write(&empty_cli, "#!/bin/sh\nexit 0\n").unwrap();
+        let mut permissions = std::fs::metadata(&empty_cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&empty_cli, permissions).unwrap();
+        let empty_ctx = make_ctx(Some("empty-cli"), vec![], "", 1);
+        engine.request_introspection(&empty_ctx, dir.path());
+        let mut empty_request = engine
+            .suggest_sync_with_env(&empty_ctx, dir.path(), "empty-cli ", Some(env.as_ref()))
+            .unwrap();
+        assert!(engine
+            .prepare_introspection(
+                empty_request.introspection_plan.take(),
+                Some(Arc::clone(&env)),
+            )
+            .expect("ask consent should produce a retryable plan")
+            .unwrap()
+            .wait()
+            .await
+            .is_err());
+        let after_empty = engine
+            .suggest_sync_with_env(&empty_ctx, dir.path(), "empty-cli ", Some(env.as_ref()))
+            .unwrap();
+        assert!(!after_empty
+            .iter()
+            .any(|item| item.kind == SuggestionKind::IntrospectionAction));
+        assert!(
+            after_empty.introspection_plan.is_none(),
+            "ask failure must not silently start another producer without new consent"
+        );
+        assert!(!engine.should_auto_introspect(&empty_ctx, dir.path(), Some(env.as_ref())));
+
+        engine.introspector.expire_failures();
+        let after_expiry = engine
+            .suggest_sync_with_env(&empty_ctx, dir.path(), "empty-cli ", Some(env.as_ref()))
+            .unwrap();
+        assert!(after_expiry
+            .iter()
+            .any(|item| item.kind == SuggestionKind::IntrospectionAction));
+
+        let slow_cli = dir.path().join("slow-cli");
+        std::fs::write(
+            &slow_cli,
+            "#!/bin/sh\necho started > \"$0.started\"\nwhile [ ! -f \"$0.release\" ]; do sleep 0.01; done\nprintf 'Commands:\\n  later  Later\\n'\n",
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&slow_cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&slow_cli, permissions).unwrap();
+        let slow_ctx = make_ctx(Some("slow-cli"), vec![], "", 1);
+        engine.request_introspection(&slow_ctx, dir.path());
+        let mut slow_request = engine
+            .suggest_sync_with_env(&slow_ctx, dir.path(), "slow-cli ", Some(env.as_ref()))
+            .unwrap();
+        let waiter = engine
+            .prepare_introspection(
+                slow_request.introspection_plan.take(),
+                Some(Arc::clone(&env)),
+            )
+            .expect("ask consent should start introspection")
+            .expect("help process should start");
+        let started = PathBuf::from(format!("{}.started", slow_cli.display()));
+        tokio::time::timeout(Duration::from_secs(2), async {
+            while !started.exists() {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .expect("help producer did not start");
+        drop(waiter);
+        std::fs::write(format!("{}.release", slow_cli.display()), "go").unwrap();
+        tokio::time::timeout(Duration::from_secs(2), async {
+            while engine
+                .introspector
+                .cached_suggestions(&slow_ctx, dir.path(), Some(env.as_ref()))
+                .is_none()
+            {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .expect("producer was cancelled with its waiter");
+        let after_cancel = engine
+            .suggest_sync_with_env(&slow_ctx, dir.path(), "slow-cli ", Some(env.as_ref()))
+            .unwrap();
+        assert!(after_cancel.iter().any(|item| item.text == "later"));
+        assert!(!engine.should_auto_introspect(&slow_ctx, dir.path(), Some(env.as_ref())));
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn curated_spec_remains_authoritative_over_generated_cache() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("priority-cli.json"),
+            r#"{"name":"priority-cli","subcommands":[{"name":"curated"}]}"#,
+        )
+        .unwrap();
+        let cli = dir.path().join("priority-cli");
+        std::fs::write(
+            &cli,
+            "#!/bin/sh\nprintf 'Commands:\\n  generated  Generated only\\n'\n",
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&cli, permissions).unwrap();
+        let env = Arc::new(HashMap::from([(
+            "PATH".to_string(),
+            dir.path().display().to_string(),
+        )]));
+        let ctx = make_ctx(Some("priority-cli"), vec![], "", 1);
+        let engine = SuggestionEngine::new(&[dir.path().to_path_buf()]).unwrap();
+        engine
+            .introspect(&ctx, dir.path(), Some(Arc::clone(&env)))
+            .await
+            .unwrap();
+
+        let result = engine
+            .suggest_sync_with_env(&ctx, dir.path(), "priority-cli ", Some(env.as_ref()))
+            .unwrap();
+        assert!(result.iter().any(|item| item.text == "curated"));
+        assert!(!result.iter().any(|item| item.text == "generated"));
     }
 }
