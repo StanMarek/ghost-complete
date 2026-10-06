@@ -122,6 +122,12 @@ _gc_load_hooks() {
   for hook in ${precmd_functions:|before}; do
     $hook
   done
+  # Ghostty's and kitty's precmd hooks mark the prompt in PS1 only when they
+  # run last, and their own first-prompt hook put them there. Keep them last.
+  hook=${before[-1]-}
+  if [[ $hook == (_ghostty_precmd|_ksi_precmd) ]]; then
+    precmd_functions=(${precmd_functions:#$hook} $hook)
+  fi
 }
 
 # This shell runs behind the proxy: load the hooks at its first prompt.

@@ -298,3 +298,33 @@ fn fallback_shell_loads_no_hooks() {
     });
     assert_no_hooks(&run);
 }
+
+#[test]
+fn terminal_precmd_hook_stays_last() {
+    // Ghostty's and kitty's precmd hooks mark the prompt in PS1 only when
+    // they run last; otherwise they move themselves back and leave that
+    // prompt unmarked. Their first-prompt hook, registered before .zshrc,
+    // puts them last, so the hooks loaded after it must not land behind.
+    for (deferred, hook) in [
+        ("_ghostty_deferred_init", "_ghostty_precmd"),
+        ("_ksi_deferred_init", "_ksi_precmd"),
+    ] {
+        let integration = format!(
+            r#"{hook}() {{ [[ ${{precmd_functions[-1]}} == {hook} ]] && print -r -- '<last>' || print -r -- '<not-last>'; }}
+{deferred}() {{ precmd_functions=(${{precmd_functions:#{deferred}}} {hook}); {hook}; }}
+precmd_functions+=({deferred})"#
+        );
+        let run = run(Setup {
+            before_init: &integration,
+            ..Setup::default()
+        });
+        let out = run.prompts.concat();
+        assert!(!out.contains("<not-last>"), "{hook}: {out:?}");
+        assert_eq!(out.matches("<last>").count(), 4, "{hook}: {out:?}");
+        assert_eq!(
+            run.state.split(' ').next().unwrap(),
+            format!("precmd=_gc_precmd,_gc_osc7,{hook}"),
+            "{hook}"
+        );
+    }
+}
