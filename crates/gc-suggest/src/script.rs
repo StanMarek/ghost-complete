@@ -61,12 +61,12 @@ fn shell_run_error_to_anyhow(e: &ShellRunError, argv: &[&str]) -> anyhow::Error 
 /// captured stdout/stderr and real exit code), spawn failure, and argv
 /// validation failure.
 ///
-/// Stdout is read into a 1 MiB-bounded buffer (`MAX_GENERATOR_STDOUT_BYTES`).
-/// If the cap is hit the child is killed, a warning is logged, and the
+/// Stdout and stderr are each read into 1 MiB-bounded buffers
+/// (`MAX_GENERATOR_STDOUT_BYTES`). If either cap is hit the child is killed, a warning is logged, and the
 /// truncated bytes are still returned (`exit_code: None`) so the downstream
 /// transform pipeline can process what was collected.
 ///
-/// Stderr is drained concurrently (also capped at 1 MiB) to avoid pipe-fill
+/// Stderr is drained concurrently to avoid pipe-fill
 /// deadlock. On non-zero exit with non-empty stderr, the stderr contents
 /// are logged at `warn!` — this is the primary diagnostic path for
 /// generator failures like `gh auth status` without credentials. On
@@ -140,6 +140,9 @@ pub async fn run_script_full_with_env(
     }
     cmd.stdout(std::process::Stdio::piped());
     cmd.stderr(std::process::Stdio::piped());
+    // Completion subprocesses are background data providers. They must never
+    // consume keystrokes from the user's terminal.
+    cmd.stdin(std::process::Stdio::null());
 
     cmd.kill_on_drop(true);
 
@@ -150,7 +153,7 @@ pub async fn run_script_full_with_env(
     let mut stdout = child.stdout.take().expect("stdout was configured as piped");
     let mut stderr = child.stderr.take().expect("stderr was configured as piped");
 
-    // Drive stdout and stderr concurrently with a hard byte cap on stdout.
+    // Drive stdout and stderr concurrently with a hard byte cap on each.
     // Stderr must be drained in parallel — otherwise a chatty generator can
     // fill the stderr pipe and block on its next stderr write, deadlocking
     // our stdout reader. `kill_on_drop(true)` reaps the child if the future
@@ -186,12 +189,12 @@ pub async fn run_script_full_with_env(
                     if n == 0 {
                         stderr_done = true;
                     } else {
-                        // Drain the pipe but cap retained bytes so a
-                        // chatty stderr can't grow unbounded either.
                         let cap = MAX_GENERATOR_STDOUT_BYTES;
-                        if stderr_buf.len() < cap {
-                            let take = n.min(cap - stderr_buf.len());
-                            stderr_buf.extend_from_slice(&err_chunk[..take]);
+                        let remaining = cap.saturating_sub(stderr_buf.len());
+                        let take = n.min(remaining);
+                        stderr_buf.extend_from_slice(&err_chunk[..take]);
+                        if stderr_buf.len() >= cap {
+                            truncated = true;
                         }
                     }
                 }
@@ -205,7 +208,7 @@ pub async fn run_script_full_with_env(
         Ok(Ok((stdout_buf, stderr_buf, truncated))) => {
             if truncated {
                 tracing::warn!(
-                    "script generator stdout exceeded {} bytes; truncating and killing process: {:?}",
+                    "script generator output exceeded {} bytes; truncating and killing process: {:?}",
                     MAX_GENERATOR_STDOUT_BYTES,
                     argv
                 );
@@ -282,7 +285,11 @@ pub async fn run_script_full_with_env(
                 exit_code: Some(0),
             })
         }
-        Ok(Err(e)) => Err(ShellRunError::Internal(format!("I/O error: {e}"))),
+        Ok(Err(e)) => {
+            let _ = child.kill().await;
+            let _ = child.wait().await;
+            Err(ShellRunError::Internal(format!("I/O error: {e}")))
+        }
         Err(_) => {
             // Explicit kill + reap for belt-and-suspenders safety alongside
             // kill_on_drop(true). Dropping the future on timeout cancellation
@@ -535,6 +542,33 @@ mod tests {
         .unwrap();
 
         assert_eq!(result.len(), 1024);
+    }
+
+    #[tokio::test]
+    async fn test_run_script_stderr_is_bounded() {
+        let result = run_script_full(&["sh", "-c", "yes error >&2"], Path::new("/tmp"), 10_000)
+            .await
+            .expect("the output limit is represented by an incomplete successful result");
+
+        assert_eq!(result.stderr.len(), MAX_GENERATOR_STDOUT_BYTES);
+        assert_eq!(result.exit_code, None);
+    }
+
+    #[tokio::test]
+    async fn test_run_script_stdin_is_null() {
+        let result = run_script(
+            &[
+                "sh",
+                "-c",
+                "if read value; then echo inherited; else echo closed; fi",
+            ],
+            Path::new("/tmp"),
+            5_000,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(result.trim(), "closed");
     }
 
     #[tokio::test]

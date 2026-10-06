@@ -543,6 +543,7 @@ impl SuggestionEngine {
     pub fn should_auto_introspect(
         &self,
         ctx: &CommandContext,
+        cwd: &Path,
         shell_env: Option<&HashMap<String, String>>,
     ) -> bool {
         let requested = self
@@ -553,11 +554,19 @@ impl SuggestionEngine {
         (requested || self.introspection_mode == gc_config::IntrospectionMode::Auto)
             && ctx.word_index > 0
             && self.spec_for_ctx(ctx).is_none()
-            && (requested
-                || self
-                    .introspector
-                    .cached_suggestions(ctx, shell_env)
-                    .is_none())
+            && (requested || self.cached_introspection(ctx, cwd, shell_env).is_none())
+    }
+
+    fn cached_introspection(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        shell_env: Option<&HashMap<String, String>>,
+    ) -> Option<Vec<Suggestion>> {
+        if self.introspection_mode == gc_config::IntrospectionMode::Off {
+            return None;
+        }
+        self.introspector.cached_suggestions(ctx, cwd, shell_env)
     }
 
     pub fn request_introspection(&self, ctx: &CommandContext) {
@@ -1390,7 +1399,7 @@ impl SuggestionEngine {
                 let mut candidates = Vec::new();
                 self.extend_with_env_vars(ctx, cwd, shell_env, &mut candidates);
                 self.extend_with_ssh_hosts(ctx, &mut candidates);
-                let generated = self.introspector.cached_suggestions(ctx, shell_env);
+                let generated = self.cached_introspection(ctx, cwd, shell_env);
                 if let Some(generated) = generated.as_ref() {
                     candidates.extend(generated.iter().cloned());
                 }
@@ -1453,7 +1462,7 @@ impl SuggestionEngine {
             let resolution = specs::resolve_spec(spec.as_ref(), resolve_ctx.as_ref());
             candidates.extend(resolution.subcommands);
             candidates.extend(resolution.options);
-        } else if let Some(generated) = self.introspector.cached_suggestions(ctx, shell_env) {
+        } else if let Some(generated) = self.cached_introspection(ctx, cwd, shell_env) {
             candidates.extend(generated);
         }
         SyncResult {
@@ -5119,13 +5128,18 @@ mod tests {
     fn introspection_modes_and_curated_precedence() {
         let unknown = make_ctx(Some("definitely-unspecced-command"), vec![], "", 1);
         let off = SuggestionEngine::new(&[]).unwrap();
-        assert!(!off.should_auto_introspect(&unknown, None));
+        assert!(!off.should_auto_introspect(&unknown, Path::new("/tmp"), None));
         let off_result = off
             .suggest_sync(&unknown, Path::new("/tmp"), "definitely-unspecced-command ")
             .unwrap();
         assert!(!off_result
             .iter()
             .any(|s| s.kind == SuggestionKind::IntrospectionAction));
+        assert_eq!(
+            off.introspector.lookup_count(),
+            0,
+            "off mode must not resolve executables or consult the generated cache"
+        );
 
         let ask = SuggestionEngine::new(&[])
             .unwrap()
@@ -5139,7 +5153,7 @@ mod tests {
         assert!(ask_result
             .iter()
             .any(|s| s.kind == SuggestionKind::IntrospectionAction));
-        assert!(!ask.should_auto_introspect(&unknown, None));
+        assert!(!ask.should_auto_introspect(&unknown, Path::new("/tmp"), None));
 
         let auto = SuggestionEngine::new(&[])
             .unwrap()
@@ -5147,10 +5161,10 @@ mod tests {
                 mode: gc_config::IntrospectionMode::Auto,
                 timeout_ms: 100,
             });
-        assert!(auto.should_auto_introspect(&unknown, None));
+        assert!(auto.should_auto_introspect(&unknown, Path::new("/tmp"), None));
         let curated = make_ctx(Some("git"), vec![], "", 1);
         assert!(
-            !auto.should_auto_introspect(&curated, None),
+            !auto.should_auto_introspect(&curated, Path::new("/tmp"), None),
             "bundled specs must win"
         );
     }
@@ -5182,7 +5196,7 @@ mod tests {
             "PATH".to_string(),
             dir.path().display().to_string(),
         )]));
-        assert!(engine.should_auto_introspect(&ctx, Some(env.as_ref())));
+        assert!(engine.should_auto_introspect(&ctx, dir.path(), Some(env.as_ref())));
         let generated = engine
             .introspect(&ctx, dir.path(), Some(Arc::clone(&env)))
             .await
@@ -5190,7 +5204,7 @@ mod tests {
         assert!(generated.iter().any(|s| s.text == "deploy"));
 
         assert!(
-            !engine.should_auto_introspect(&ctx, Some(env.as_ref())),
+            !engine.should_auto_introspect(&ctx, dir.path(), Some(env.as_ref())),
             "a generated-cache hit must not start another provider lifecycle"
         );
         let result = engine
@@ -5239,7 +5253,7 @@ mod tests {
             .any(|item| item.kind == SuggestionKind::IntrospectionAction));
 
         engine.request_introspection(&ctx);
-        assert!(engine.should_auto_introspect(&ctx, Some(env.as_ref())));
+        assert!(engine.should_auto_introspect(&ctx, dir.path(), Some(env.as_ref())));
         engine
             .introspect(&ctx, dir.path(), Some(Arc::clone(&env)))
             .await
@@ -5251,7 +5265,7 @@ mod tests {
         assert!(!generated
             .iter()
             .any(|item| item.kind == SuggestionKind::IntrospectionAction));
-        assert!(!engine.should_auto_introspect(&ctx, Some(env.as_ref())));
+        assert!(!engine.should_auto_introspect(&ctx, dir.path(), Some(env.as_ref())));
 
         let empty_cli = dir.path().join("empty-cli");
         std::fs::write(&empty_cli, "#!/bin/sh\nexit 0\n").unwrap();
@@ -5270,7 +5284,7 @@ mod tests {
         assert!(after_empty
             .iter()
             .any(|item| item.kind == SuggestionKind::IntrospectionAction));
-        assert!(!engine.should_auto_introspect(&empty_ctx, Some(env.as_ref())));
+        assert!(!engine.should_auto_introspect(&empty_ctx, dir.path(), Some(env.as_ref())));
 
         let slow_cli = dir.path().join("slow-cli");
         std::fs::write(
@@ -5295,7 +5309,7 @@ mod tests {
         assert!(after_cancel
             .iter()
             .any(|item| item.kind == SuggestionKind::IntrospectionAction));
-        assert!(!engine.should_auto_introspect(&slow_ctx, Some(env.as_ref())));
+        assert!(!engine.should_auto_introspect(&slow_ctx, dir.path(), Some(env.as_ref())));
     }
 
     #[cfg(unix)]

@@ -1576,7 +1576,9 @@ impl InputHandler {
 
         match sync_result {
             Ok(result) if !result.suggestions.is_empty() => {
-                let introspect = self.engine.should_auto_introspect(&ctx, shell_env.as_ref());
+                let introspect = self
+                    .engine
+                    .should_auto_introspect(&ctx, &cwd, shell_env.as_ref());
                 self.replace_suggestions_and_reset_overlay(result.suggestions);
                 self.visible = true;
                 self.spawn_generators(
@@ -1595,7 +1597,9 @@ impl InputHandler {
                 let has_async = !result.script_generators.is_empty()
                     || !result.git_generators.is_empty()
                     || !result.provider_generators.is_empty()
-                    || self.engine.should_auto_introspect(&ctx, shell_env.as_ref());
+                    || self
+                        .engine
+                        .should_auto_introspect(&ctx, &cwd, shell_env.as_ref());
                 if has_async {
                     // No static suggestions but generators are pending.
                     // If a popup is currently visible (e.g. from a previous
@@ -1614,7 +1618,8 @@ impl InputHandler {
                         result.script_generators,
                         result.git_generators,
                         result.provider_generators,
-                        self.engine.should_auto_introspect(&ctx, shell_env.as_ref()),
+                        self.engine
+                            .should_auto_introspect(&ctx, &cwd, shell_env.as_ref()),
                         &ctx,
                         &cwd,
                         shell_env.clone(),
@@ -1724,7 +1729,9 @@ impl InputHandler {
         let has_async = !result.script_generators.is_empty()
             || !result.git_generators.is_empty()
             || !result.provider_generators.is_empty()
-            || self.engine.should_auto_introspect(&ctx, shell_env.as_ref());
+            || self
+                .engine
+                .should_auto_introspect(&ctx, &cwd, shell_env.as_ref());
         let needs_block = block_ms > 0 && has_async && result.has_pending_high_priority();
 
         let sync_suggestions = result.suggestions;
@@ -1743,7 +1750,8 @@ impl InputHandler {
                 result.script_generators,
                 result.git_generators,
                 result.provider_generators,
-                self.engine.should_auto_introspect(&ctx, shell_env.as_ref()),
+                self.engine
+                    .should_auto_introspect(&ctx, &cwd, shell_env.as_ref()),
                 &ctx,
                 &cwd,
                 shell_env.clone(),
@@ -3098,10 +3106,6 @@ impl InputHandler {
         let buffer = state.command_buffer().unwrap_or("");
         let cursor = state.buffer_cursor();
         let ctx = parse_command_context(buffer, cursor);
-        if selected.kind == gc_suggest::SuggestionKind::IntrospectionAction {
-            self.engine.request_introspection(&ctx);
-            return None;
-        }
         let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
         // Construct the newtypes directly from the parser tuples at the read
         // site so the bare-`u16` window where a row/col (or rows/cols) swap is
@@ -7614,7 +7618,9 @@ mod tests {
             .position(|item| item.kind == gc_suggest::SuggestionKind::IntrospectionAction)
             .expect("ask mode should offer generation on a cache miss");
         handler.overlay.selected = Some(action_index);
-        assert!(handler.accept_introspection_action(&parser, &mut output));
+        assert!(handler
+            .process_key(&KeyEvent::Tab, &parser, &mut output)
+            .is_empty());
         assert!(handler.dynamic_rx.is_some());
 
         tokio::time::timeout(std::time::Duration::from_secs(2), async {
@@ -7638,7 +7644,9 @@ mod tests {
 
         let ctx = parse_command_context("ask-intro-cli ", 14);
         let env = parser.lock().unwrap().state().shell_env().cloned();
-        assert!(!handler.engine.should_auto_introspect(&ctx, env.as_ref()));
+        assert!(!handler
+            .engine
+            .should_auto_introspect(&ctx, dir.path(), env.as_ref()));
     }
 
     #[tokio::test]
