@@ -1,6 +1,14 @@
 # Ghost Complete — terminal init (sourced near the top of .zshrc)
 # Detects the terminal emulator and exec's ghost-complete as a PTY proxy.
 
+# True if a `ps -o comm` value, which on macOS is argv0, names the proxy: by
+# name or by path, with or without the leading dash of a login-style launch
+# (a terminal that starts its command the way login(1) starts a shell).
+_gc_is_proxy_comm() {
+  local name=${1##*/}
+  [[ "${name#-}" == "ghost-complete" ]]
+}
+
 # Walk PPID ancestry looking for the ghost-complete binary. Returns 0 if
 # found, 1 if confirmed absent (walk reached init/root), 2 if the walk could
 # not complete (ps failure, disappeared PID, pathological depth). Callers
@@ -13,7 +21,7 @@ _gc_ancestor_is_proxy() {
       return 2
     fi
     [[ -z "$comm" ]] && return 2
-    [[ "${comm##*/}" == "ghost-complete" ]] && return 0
+    _gc_is_proxy_comm "$comm" && return 0
     if ! pid=$(ps -o ppid= -p "$pid" 2>/dev/null); then
       return 2
     fi
@@ -42,6 +50,46 @@ _gc_is_self_or_ancestor() {
     (( depth > 32 )) && return 2
   done
   return 1
+}
+
+# A terminal that injects its zsh integration through ZDOTDIR (Ghostty,
+# kitty) loses it in the shell behind the proxy: its .zshenv already ran here
+# and put the user's ZDOTDIR back, and the hook it left for the first prompt
+# never runs, because we exec before that prompt. Point ZDOTDIR at the
+# integration again so the shell the proxy starts loads it too. A no-op in
+# shells the terminal didn't inject, such as tmux panes.
+_gc_rearm_terminal_integration() {
+  emulate -L zsh
+  local hook var dir
+  # Each terminal's first-prompt hook, and the variable its .zshenv restores
+  # the user's ZDOTDIR from.
+  for hook var in \
+      _ghostty_deferred_init GHOSTTY_ZSH_ZDOTDIR \
+      _ksi_deferred_init KITTY_ORIG_ZDOTDIR; do
+    # Still pending: the terminal injected this shell, no prompt has run yet.
+    (( ${precmd_functions[(Ie)$hook]:-0} )) || continue
+    dir=${functions_source[$hook]:A:h}
+    # That .zshenv is what puts the user's ZDOTDIR back. Without it zsh would
+    # look for the user's startup files in the integration directory.
+    [[ -n $dir && -r $dir/.zshenv ]] || return
+    # Hand over only the ZDOTDIR the new shell would inherit anyway. One set
+    # without export (typically by ~/.zshenv) is not inherited: the new shell
+    # must find ~/.zshenv again to set it.
+    if [[ ${parameters[ZDOTDIR]-} == *export* ]]; then
+      export $var="$ZDOTDIR"
+    else
+      unset $var
+    fi
+    export ZDOTDIR=$dir
+    return
+  done
+}
+
+# Replace this shell with the proxy.
+_gc_exec_proxy() {
+  export GHOST_COMPLETE_ACTIVE=1
+  _gc_rearm_terminal_integration
+  exec ghost-complete
 }
 
 __ghost_complete_init() {
@@ -74,7 +122,7 @@ __ghost_complete_init() {
     # We cannot use GHOST_COMPLETE_ACTIVE here because it is always present
     # in tmux — set by proxy.rs (tmux setenv) for future-pane propagation,
     # and inherited from the outer terminal shell that launched tmux.
-    [[ "$(ps -o comm= -p "$PPID" 2>/dev/null)" == "ghost-complete" ]] && return
+    _gc_is_proxy_comm "$(ps -o comm= -p "$PPID" 2>/dev/null)" && return
     [[ -n "$GHOST_COMPLETE_PANE" && "$GHOST_COMPLETE_PANE" == "$TMUX_PANE" ]] && return
     if [[ -n "$GHOSTTY_RESOURCES_DIR" ]] || \
        [[ -n "$KITTY_WINDOW_ID" ]] || \
@@ -86,8 +134,7 @@ __ghost_complete_init() {
        [[ "$TERM_PROGRAM" == "rio" ]] || \
        [[ "$TERM_PROGRAM" == "otty" ]]; then
       if command -v ghost-complete >/dev/null 2>&1; then
-        export GHOST_COMPLETE_ACTIVE=1
-        exec ghost-complete
+        _gc_exec_proxy
       fi
     fi
   else
@@ -124,8 +171,7 @@ __ghost_complete_init() {
       esac
     fi
     if [[ $supported -eq 1 ]] && command -v ghost-complete >/dev/null 2>&1; then
-      export GHOST_COMPLETE_ACTIVE=1
-      exec ghost-complete
+      _gc_exec_proxy
     fi
   fi
 }
