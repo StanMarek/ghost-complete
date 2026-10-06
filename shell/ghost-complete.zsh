@@ -3,8 +3,9 @@
 #
 # Provides prompt boundary markers so the proxy can detect prompt
 # boundaries and track the current command buffer.
-# OSC 133: native semantic prompts (Ghostty, iTerm2 partial)
-# OSC 7771: terminal-agnostic prompt boundary for Ghost Complete
+# OSC 133: semantic prompts, for terminals that parse them (Ghostty, kitty,
+#   WezTerm, ...). Left to the terminal when its own zsh integration is loaded.
+# OSC 7771: Ghost Complete's private prompt boundary, stripped by the proxy
 # OSC 7: current working directory reporting
 
 # Percent-encode a path for use in file:// URIs (RFC 8089).
@@ -158,17 +159,36 @@ _gc_native_osc133() {
     return 1
 }
 
+# True when the terminal's own zsh integration is loaded in this shell
+# (Ghostty, kitty; init.zsh re-arms it for the shell behind the proxy). The
+# terminal then marks prompts itself, and its precmd hook moves itself to
+# run last, so our 133;A would reach the terminal ahead of its 133;D for the
+# previous command. Leave the OSC 133 stream to the terminal and give the
+# proxy our marks on the private OSC 7771, which it strips from the output.
+_gc_terminal_marks_prompts() {
+    (( ${+functions[_ghostty_precmd]} || ${+functions[_ghostty_deferred_init]} \
+        || ${+functions[_ksi_precmd]} || ${+functions[_ksi_deferred_init]} ))
+}
+
 _gc_precmd() {
     # Mark: prompt is about to be displayed
-    printf '\e]133;A\a'
-    _gc_native_osc133 || printf '\e]7771;A\a'
+    if _gc_terminal_marks_prompts; then
+        printf '\e]7771;A\a'
+    else
+        printf '\e]133;A\a'
+        _gc_native_osc133 || printf '\e]7771;A\a'
+    fi
     _gc_report_env
 }
 
 _gc_preexec() {
     # Mark: command is about to execute
-    printf '\e]133;C\a'
-    _gc_native_osc133 || printf '\e]7771;C\a'
+    if _gc_terminal_marks_prompts; then
+        printf '\e]7771;C\a'
+    else
+        printf '\e]133;C\a'
+        _gc_native_osc133 || printf '\e]7771;C\a'
+    fi
 }
 
 # Use add-zsh-hook (which dedups) rather than `precmd_functions+=(…)` /
