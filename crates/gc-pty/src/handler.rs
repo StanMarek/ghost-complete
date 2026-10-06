@@ -1576,7 +1576,7 @@ impl InputHandler {
 
         match sync_result {
             Ok(result) if !result.suggestions.is_empty() => {
-                let introspect = self.engine.should_auto_introspect(&ctx);
+                let introspect = self.engine.should_auto_introspect(&ctx, shell_env.as_ref());
                 self.replace_suggestions_and_reset_overlay(result.suggestions);
                 self.visible = true;
                 self.spawn_generators(
@@ -1595,7 +1595,7 @@ impl InputHandler {
                 let has_async = !result.script_generators.is_empty()
                     || !result.git_generators.is_empty()
                     || !result.provider_generators.is_empty()
-                    || self.engine.should_auto_introspect(&ctx);
+                    || self.engine.should_auto_introspect(&ctx, shell_env.as_ref());
                 if has_async {
                     // No static suggestions but generators are pending.
                     // If a popup is currently visible (e.g. from a previous
@@ -1614,7 +1614,7 @@ impl InputHandler {
                         result.script_generators,
                         result.git_generators,
                         result.provider_generators,
-                        self.engine.should_auto_introspect(&ctx),
+                        self.engine.should_auto_introspect(&ctx, shell_env.as_ref()),
                         &ctx,
                         &cwd,
                         shell_env.clone(),
@@ -1724,7 +1724,7 @@ impl InputHandler {
         let has_async = !result.script_generators.is_empty()
             || !result.git_generators.is_empty()
             || !result.provider_generators.is_empty()
-            || self.engine.should_auto_introspect(&ctx);
+            || self.engine.should_auto_introspect(&ctx, shell_env.as_ref());
         let needs_block = block_ms > 0 && has_async && result.has_pending_high_priority();
 
         let sync_suggestions = result.suggestions;
@@ -1743,7 +1743,7 @@ impl InputHandler {
                 result.script_generators,
                 result.git_generators,
                 result.provider_generators,
-                self.engine.should_auto_introspect(&ctx),
+                self.engine.should_auto_introspect(&ctx, shell_env.as_ref()),
                 &ctx,
                 &cwd,
                 shell_env.clone(),
@@ -1838,6 +1838,7 @@ impl InputHandler {
             self.dynamic_task = None;
         }
         let aggregation = AsyncFeedback::aggregate(messages);
+        let introspection_loaded = aggregation.introspection_loaded;
         self.pending_failed.extend(aggregation.failed);
         self.pending_empty_count += aggregation.empty_count;
         if aggregation.loaded.is_empty() {
@@ -1913,6 +1914,11 @@ impl InputHandler {
             MergeFreshness::PoisonedLock => return,
         };
 
+        if introspection_loaded && self.refresh_from_generated_cache(parser, stdout) {
+            self.last_trigger_fingerprint = Some(fingerprint);
+            return;
+        }
+
         let mut all = sync_suggestions;
         let extras = merge_dedup_against(&all, async_results);
         all.extend(extras);
@@ -1940,6 +1946,7 @@ impl InputHandler {
     /// `SyncResult` → `spawn_generators` → `run_generators` chain is a
     /// refcount bump instead of a deep clone of `Vec<Transform>` + argv on
     /// every keystroke trigger.
+    #[allow(clippy::too_many_arguments)] // pre-resolved provider groups plus shared execution context
     fn spawn_generators(
         &mut self,
         script_generators: Vec<std::sync::Arc<gc_suggest::specs::GeneratorSpec>>,
@@ -2054,11 +2061,12 @@ impl InputHandler {
             let introspection_engine = Arc::clone(&engine);
             let introspection_ctx = ctx.clone();
             let introspection_cwd = cwd.clone();
+            let introspection_env = script_env.clone();
             let introspection_fut = async move {
                 if introspect {
                     Some(
                         introspection_engine
-                            .introspect(&introspection_ctx, &introspection_cwd)
+                            .introspect(&introspection_ctx, &introspection_cwd, introspection_env)
                             .await,
                     )
                 } else {
@@ -2078,7 +2086,7 @@ impl InputHandler {
                 introspection_fut,
             );
             if let Some(result) = introspection_result {
-                let provider = ProviderTag::Script("help introspection".into());
+                let provider = ProviderTag::Introspection;
                 let message = match result {
                     Ok(results) if results.is_empty() => DynamicResult::Empty { provider },
                     Ok(results) => DynamicResult::Loaded {
@@ -2316,6 +2324,7 @@ impl InputHandler {
         }
 
         let aggregation = AsyncFeedback::aggregate(messages);
+        let introspection_loaded = aggregation.introspection_loaded;
         self.pending_failed.extend(aggregation.failed);
         self.pending_empty_count += aggregation.empty_count;
 
@@ -2400,6 +2409,10 @@ impl InputHandler {
                 MergeFreshness::PoisonedLock => return false,
             };
 
+            if introspection_loaded && self.refresh_from_generated_cache(parser, stdout) {
+                return true;
+            }
+
             // Activate popup if it wasn't visible yet (async-only path:
             // no static suggestions, generators produced the results).
             if !self.visible {
@@ -2430,6 +2443,51 @@ impl InputHandler {
             self.render(parser, stdout);
             true
         }
+    }
+
+    /// Re-resolve the unchanged completion site after introspection populated
+    /// the generated-spec cache. This deliberately uses the normal synchronous
+    /// resolver so ask and auto converge on identical precedence and action
+    /// suppression semantics.
+    fn refresh_from_generated_cache(
+        &mut self,
+        parser: &Arc<Mutex<TerminalParser>>,
+        stdout: &mut dyn Write,
+    ) -> bool {
+        let (buffer, cursor, cwd, shell_env) = match parser.lock() {
+            Ok(p) => {
+                let state = p.state();
+                (
+                    state.command_buffer().unwrap_or("").to_string(),
+                    state.buffer_cursor(),
+                    state.cwd().cloned().unwrap_or_else(|| PathBuf::from(".")),
+                    state.shell_env().cloned(),
+                )
+            }
+            Err(error) => {
+                tracing::warn!(
+                    "parser mutex poisoned during introspection refresh: {error} — skipping"
+                );
+                return false;
+            }
+        };
+        let ctx = parse_command_context(&buffer, cursor);
+        let Ok(result) = self
+            .engine
+            .suggest_sync_with_env(&ctx, &cwd, &buffer, shell_env.as_ref())
+        else {
+            return false;
+        };
+        if result.suggestions.is_empty() {
+            return false;
+        }
+
+        self.replace_suggestions_and_reset_overlay(result.suggestions);
+        self.visible = true;
+        self.render(parser, stdout);
+        self.last_trigger_fingerprint =
+            Some(buffer_fingerprint(&buffer, cursor, shell_env.as_ref()));
+        true
     }
 
     fn render(&mut self, parser: &Arc<Mutex<TerminalParser>>, stdout: &mut dyn Write) {
@@ -3006,7 +3064,10 @@ impl InputHandler {
             self.engine.request_introspection(&ctx);
         }
         self.teardown_popup(stdout, true);
-        self.trigger_requested = true;
+        // The action key is intercepted, so the shell will not emit a buffer
+        // update that could consume `trigger_requested`. Start the requested
+        // lifecycle immediately against the unchanged parser snapshot.
+        self.trigger(parser, stdout);
         true
     }
 
@@ -7434,6 +7495,150 @@ mod tests {
             "cached layout must reserve the indicator row (visible={visible_count}, height={})",
             layout.height,
         );
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn cached_introspection_refresh_has_no_async_lifecycle_or_additional_scroll() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let cli = dir.path().join("cached-intro-cli");
+        std::fs::write(
+            &cli,
+            "#!/bin/sh\nprintf 'Commands:\\n  deploy  Deploy it\\n  doctor  Diagnose it\\n'\n",
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&cli, permissions).unwrap();
+
+        let engine = SuggestionEngine::new(&[PathBuf::from(".")])
+            .unwrap()
+            .with_introspection_config(gc_config::IntrospectionConfig {
+                mode: gc_config::IntrospectionMode::Auto,
+                timeout_ms: 500,
+            });
+        let intro_ctx = ctx("cached-intro-cli", &[], None, 1, "");
+        let env = Arc::new(HashMap::from([(
+            "PATH".to_string(),
+            dir.path().display().to_string(),
+        )]));
+        engine
+            .introspect(&intro_ctx, dir.path(), Some(Arc::clone(&env)))
+            .await
+            .unwrap();
+
+        let mut handler = make_handler();
+        handler.engine = Arc::new(engine);
+        handler.terminal_profile = TerminalProfile::for_terminal_app();
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        {
+            let mut p = parser.lock().unwrap();
+            p.process_bytes(format!("\x1b]7773;PATH%3D{}\x07", dir.path().display()).as_bytes());
+            p.process_bytes(b"\x1b[23;1H");
+            p.state_mut()
+                .predict_command_buffer("cached-intro-cli ".to_string(), 17);
+        }
+
+        let mut first = Vec::new();
+        handler.trigger(&parser, &mut first);
+        handler.commit_overlay_write(handler.overlay_write_ticket());
+        assert!(matches!(handler.feedback, AsyncFeedback::Idle));
+        assert!(handler.dynamic_rx.is_none());
+        assert!(handler.dynamic_task.is_none());
+        assert!(handler
+            .suggestions
+            .iter()
+            .any(|suggestion| suggestion.text == "deploy"));
+
+        // A real buffer change bypasses the trigger fingerprint. The cached
+        // node must remain synchronous and reuse the already-owned viewport
+        // room: no Loading row and no newline-driven scroll on Terminal.app.
+        {
+            let mut p = parser.lock().unwrap();
+            p.state_mut()
+                .predict_command_buffer("cached-intro-cli d".to_string(), 18);
+        }
+        let mut second = Vec::new();
+        handler.trigger(&parser, &mut second);
+        assert!(matches!(handler.feedback, AsyncFeedback::Idle));
+        assert!(handler.dynamic_rx.is_none());
+        assert!(handler.dynamic_task.is_none());
+        assert!(
+            !second.contains(&b'\n'),
+            "cached refresh must not perform another viewport scroll: {:?}",
+            String::from_utf8_lossy(&second)
+        );
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn ask_action_success_immediately_refreshes_from_generated_cache() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let cli = dir.path().join("ask-intro-cli");
+        std::fs::write(
+            &cli,
+            "#!/bin/sh\nprintf 'Commands:\\n  deploy  Deploy it\\n  doctor  Diagnose it\\n'\n",
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&cli, permissions).unwrap();
+
+        let mut handler = make_handler();
+        handler.engine = Arc::new(
+            SuggestionEngine::new(&[])
+                .unwrap()
+                .with_introspection_config(gc_config::IntrospectionConfig {
+                    mode: gc_config::IntrospectionMode::Ask,
+                    timeout_ms: 500,
+                }),
+        );
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        {
+            let mut p = parser.lock().unwrap();
+            p.process_bytes(format!("\x1b]7773;PATH%3D{}\x07", dir.path().display()).as_bytes());
+            p.process_bytes(b"\x1b[10;1H");
+            p.state_mut()
+                .predict_command_buffer("ask-intro-cli ".to_string(), 14);
+        }
+
+        let mut output = Vec::new();
+        handler.trigger(&parser, &mut output);
+        let action_index = handler
+            .suggestions
+            .iter()
+            .position(|item| item.kind == gc_suggest::SuggestionKind::IntrospectionAction)
+            .expect("ask mode should offer generation on a cache miss");
+        handler.overlay.selected = Some(action_index);
+        assert!(handler.accept_introspection_action(&parser, &mut output));
+        assert!(handler.dynamic_rx.is_some());
+
+        tokio::time::timeout(std::time::Duration::from_secs(2), async {
+            loop {
+                handler.try_merge_dynamic(&parser, &mut output);
+                if handler.suggestions.iter().any(|item| item.text == "deploy") {
+                    break;
+                }
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .expect("introspection should complete and refresh the current menu");
+
+        assert!(handler.visible);
+        assert!(handler.suggestions.iter().any(|item| item.text == "deploy"));
+        assert!(!handler
+            .suggestions
+            .iter()
+            .any(|item| item.kind == gc_suggest::SuggestionKind::IntrospectionAction));
+
+        let ctx = parse_command_context("ask-intro-cli ", 14);
+        let env = parser.lock().unwrap().state().shell_env().cloned();
+        assert!(!handler.engine.should_auto_introspect(&ctx, env.as_ref()));
     }
 
     #[tokio::test]

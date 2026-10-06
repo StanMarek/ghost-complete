@@ -99,9 +99,11 @@ mode = "off" # "ask" or "auto"
 timeout_ms = 750
 ```
 
-Results are cached in memory by executable path, modification time, size, and
-lazy subcommand path. Failed attempts are also cached for the daemon lifetime.
-Curated specs always take precedence.
+Results are cached in memory by shell PATH, executable identity, and lazy
+subcommand path. Curated specs always take precedence; generated cache hits are
+resolved synchronously and do not start another background-provider lifecycle.
+Failures are negatively cached and invalidated when PATH or its search-directory
+state changes.
 
 ### `[suggest.spec_cache]`
 

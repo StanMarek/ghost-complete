@@ -382,6 +382,22 @@ pub struct SuggestionEngine {
     requested_introspection: Arc<std::sync::Mutex<std::collections::HashSet<String>>>,
 }
 
+/// Clears a one-shot ask request whether introspection completes, errors, or
+/// its future is cancelled by a newer completion request.
+struct IntrospectionRequestGuard {
+    requested: Arc<std::sync::Mutex<std::collections::HashSet<String>>>,
+    key: String,
+}
+
+impl Drop for IntrospectionRequestGuard {
+    fn drop(&mut self) {
+        self.requested
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .remove(&self.key);
+    }
+}
+
 impl SuggestionEngine {
     pub fn new(spec_dirs: &[PathBuf]) -> Result<Self> {
         Self::new_with_embedded(spec_dirs, spec_dirs.is_empty())
@@ -524,15 +540,24 @@ impl SuggestionEngine {
         self
     }
 
-    pub fn should_auto_introspect(&self, ctx: &CommandContext) -> bool {
-        (self.introspection_mode == gc_config::IntrospectionMode::Auto
-            || self
-                .requested_introspection
-                .lock()
-                .unwrap_or_else(|e| e.into_inner())
-                .contains(&introspection_key(ctx)))
+    pub fn should_auto_introspect(
+        &self,
+        ctx: &CommandContext,
+        shell_env: Option<&HashMap<String, String>>,
+    ) -> bool {
+        let requested = self
+            .requested_introspection
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .contains(&introspection_key(ctx));
+        (requested || self.introspection_mode == gc_config::IntrospectionMode::Auto)
             && ctx.word_index > 0
             && self.spec_for_ctx(ctx).is_none()
+            && (requested
+                || self
+                    .introspector
+                    .cached_suggestions(ctx, shell_env)
+                    .is_none())
     }
 
     pub fn request_introspection(&self, ctx: &CommandContext) {
@@ -542,9 +567,18 @@ impl SuggestionEngine {
             .insert(introspection_key(ctx));
     }
 
-    pub async fn introspect(&self, ctx: &CommandContext, cwd: &Path) -> Result<Vec<Suggestion>> {
+    pub async fn introspect(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        shell_env: Option<Arc<HashMap<String, String>>>,
+    ) -> Result<Vec<Suggestion>> {
+        let _request_guard = IntrospectionRequestGuard {
+            requested: Arc::clone(&self.requested_introspection),
+            key: introspection_key(ctx),
+        };
         self.introspector
-            .suggestions(ctx, cwd, self.introspection_timeout_ms)
+            .suggestions(ctx, cwd, self.introspection_timeout_ms, shell_env)
             .await
     }
 
@@ -1334,7 +1368,7 @@ impl SuggestionEngine {
                 // to add here.
                 Ok(self.suggest_filesystem_fallback(ctx, cwd, buffer, Vec::new(), "path"))
             }
-            Context::FlagPrefix => Ok(self.suggest_flag_prefix(ctx, cwd, buffer)),
+            Context::FlagPrefix => Ok(self.suggest_flag_prefix(ctx, cwd, buffer, shell_env)),
             Context::SpecArg => {
                 // Env vars and ssh hosts are situational injections that augment
                 // (but do not replace) spec results — they're allowed inside
@@ -1356,7 +1390,13 @@ impl SuggestionEngine {
                 let mut candidates = Vec::new();
                 self.extend_with_env_vars(ctx, cwd, shell_env, &mut candidates);
                 self.extend_with_ssh_hosts(ctx, &mut candidates);
-                if self.introspection_mode == gc_config::IntrospectionMode::Ask {
+                let generated = self.introspector.cached_suggestions(ctx, shell_env);
+                if let Some(generated) = generated.as_ref() {
+                    candidates.extend(generated.iter().cloned());
+                }
+                if self.introspection_mode == gc_config::IntrospectionMode::Ask
+                    && generated.as_ref().is_none_or(Vec::is_empty)
+                {
                     candidates.push(Suggestion {
                         text: "Generate completions from --help".to_string(),
                         description: Some(
@@ -1399,7 +1439,13 @@ impl SuggestionEngine {
 
     /// Complete a flag-prefixed token (`-` or `--`). Returns spec-declared
     /// flags + subcommands only — never filesystem, never history.
-    fn suggest_flag_prefix(&self, ctx: &CommandContext, cwd: &Path, buffer: &str) -> SyncResult {
+    fn suggest_flag_prefix(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        buffer: &str,
+        shell_env: Option<&HashMap<String, String>>,
+    ) -> SyncResult {
         let mut candidates = Vec::new();
         if let Some(spec) = self.spec_for_ctx(ctx) {
             // Walk the alias target's spec subtree, not the literal alias name's.
@@ -1407,6 +1453,8 @@ impl SuggestionEngine {
             let resolution = specs::resolve_spec(spec.as_ref(), resolve_ctx.as_ref());
             candidates.extend(resolution.subcommands);
             candidates.extend(resolution.options);
+        } else if let Some(generated) = self.introspector.cached_suggestions(ctx, shell_env) {
+            candidates.extend(generated);
         }
         SyncResult {
             suggestions: self.rank_with_history(ctx, cwd, buffer, candidates, false),
@@ -5071,7 +5119,7 @@ mod tests {
     fn introspection_modes_and_curated_precedence() {
         let unknown = make_ctx(Some("definitely-unspecced-command"), vec![], "", 1);
         let off = SuggestionEngine::new(&[]).unwrap();
-        assert!(!off.should_auto_introspect(&unknown));
+        assert!(!off.should_auto_introspect(&unknown, None));
         let off_result = off
             .suggest_sync(&unknown, Path::new("/tmp"), "definitely-unspecced-command ")
             .unwrap();
@@ -5091,7 +5139,7 @@ mod tests {
         assert!(ask_result
             .iter()
             .any(|s| s.kind == SuggestionKind::IntrospectionAction));
-        assert!(!ask.should_auto_introspect(&unknown));
+        assert!(!ask.should_auto_introspect(&unknown, None));
 
         let auto = SuggestionEngine::new(&[])
             .unwrap()
@@ -5099,11 +5147,192 @@ mod tests {
                 mode: gc_config::IntrospectionMode::Auto,
                 timeout_ms: 100,
             });
-        assert!(auto.should_auto_introspect(&unknown));
+        assert!(auto.should_auto_introspect(&unknown, None));
         let curated = make_ctx(Some("git"), vec![], "", 1);
         assert!(
-            !auto.should_auto_introspect(&curated),
+            !auto.should_auto_introspect(&curated, None),
             "bundled specs must win"
         );
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn generated_cache_is_synchronous_and_does_not_reenter_async_lifecycle() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let cli = dir.path().join("cached-cli");
+        std::fs::write(
+            &cli,
+            "#!/bin/sh\nprintf 'Commands:\\n  deploy  Deploy it\\n'\n",
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&cli, permissions).unwrap();
+
+        let engine = SuggestionEngine::new(&[])
+            .unwrap()
+            .with_introspection_config(gc_config::IntrospectionConfig {
+                mode: gc_config::IntrospectionMode::Auto,
+                timeout_ms: 500,
+            });
+        let ctx = make_ctx(Some("cached-cli"), vec![], "", 1);
+        let env = Arc::new(HashMap::from([(
+            "PATH".to_string(),
+            dir.path().display().to_string(),
+        )]));
+        assert!(engine.should_auto_introspect(&ctx, Some(env.as_ref())));
+        let generated = engine
+            .introspect(&ctx, dir.path(), Some(Arc::clone(&env)))
+            .await
+            .unwrap();
+        assert!(generated.iter().any(|s| s.text == "deploy"));
+
+        assert!(
+            !engine.should_auto_introspect(&ctx, Some(env.as_ref())),
+            "a generated-cache hit must not start another provider lifecycle"
+        );
+        let result = engine
+            .suggest_sync_with_env(&ctx, dir.path(), "cached-cli ", Some(env.as_ref()))
+            .unwrap();
+        assert!(result
+            .iter()
+            .any(|s| { s.text == "deploy" && s.source == SuggestionSource::Introspection }));
+        assert!(result.script_generators.is_empty());
+        assert!(result.git_generators.is_empty());
+        assert!(result.provider_generators.is_empty());
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn ask_generation_converges_to_sync_cache_and_failure_remains_retryable() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let cli = dir.path().join("ask-cli");
+        std::fs::write(
+            &cli,
+            "#!/bin/sh\nprintf 'Commands:\\n  deploy  Deploy it\\n'\n",
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&cli, permissions).unwrap();
+        let env = Arc::new(HashMap::from([(
+            "PATH".to_string(),
+            dir.path().display().to_string(),
+        )]));
+        let ctx = make_ctx(Some("ask-cli"), vec![], "", 1);
+        let engine = SuggestionEngine::new(&[])
+            .unwrap()
+            .with_introspection_config(gc_config::IntrospectionConfig {
+                mode: gc_config::IntrospectionMode::Ask,
+                timeout_ms: 500,
+            });
+
+        let initial = engine
+            .suggest_sync_with_env(&ctx, dir.path(), "ask-cli ", Some(env.as_ref()))
+            .unwrap();
+        assert!(initial
+            .iter()
+            .any(|item| item.kind == SuggestionKind::IntrospectionAction));
+
+        engine.request_introspection(&ctx);
+        assert!(engine.should_auto_introspect(&ctx, Some(env.as_ref())));
+        engine
+            .introspect(&ctx, dir.path(), Some(Arc::clone(&env)))
+            .await
+            .unwrap();
+        let generated = engine
+            .suggest_sync_with_env(&ctx, dir.path(), "ask-cli ", Some(env.as_ref()))
+            .unwrap();
+        assert!(generated.iter().any(|item| item.text == "deploy"));
+        assert!(!generated
+            .iter()
+            .any(|item| item.kind == SuggestionKind::IntrospectionAction));
+        assert!(!engine.should_auto_introspect(&ctx, Some(env.as_ref())));
+
+        let empty_cli = dir.path().join("empty-cli");
+        std::fs::write(&empty_cli, "#!/bin/sh\nexit 0\n").unwrap();
+        let mut permissions = std::fs::metadata(&empty_cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&empty_cli, permissions).unwrap();
+        let empty_ctx = make_ctx(Some("empty-cli"), vec![], "", 1);
+        engine.request_introspection(&empty_ctx);
+        assert!(engine
+            .introspect(&empty_ctx, dir.path(), Some(Arc::clone(&env)))
+            .await
+            .is_err());
+        let after_empty = engine
+            .suggest_sync_with_env(&empty_ctx, dir.path(), "empty-cli ", Some(env.as_ref()))
+            .unwrap();
+        assert!(after_empty
+            .iter()
+            .any(|item| item.kind == SuggestionKind::IntrospectionAction));
+        assert!(!engine.should_auto_introspect(&empty_ctx, Some(env.as_ref())));
+
+        let slow_cli = dir.path().join("slow-cli");
+        std::fs::write(
+            &slow_cli,
+            "#!/bin/sh\nsleep 1\nprintf 'Commands:\\n  later  Later\\n'\n",
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&slow_cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&slow_cli, permissions).unwrap();
+        let slow_ctx = make_ctx(Some("slow-cli"), vec![], "", 1);
+        engine.request_introspection(&slow_ctx);
+        assert!(tokio::time::timeout(
+            Duration::from_millis(10),
+            engine.introspect(&slow_ctx, dir.path(), Some(Arc::clone(&env)))
+        )
+        .await
+        .is_err());
+        let after_cancel = engine
+            .suggest_sync_with_env(&slow_ctx, dir.path(), "slow-cli ", Some(env.as_ref()))
+            .unwrap();
+        assert!(after_cancel
+            .iter()
+            .any(|item| item.kind == SuggestionKind::IntrospectionAction));
+        assert!(!engine.should_auto_introspect(&slow_ctx, Some(env.as_ref())));
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn curated_spec_remains_authoritative_over_generated_cache() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("priority-cli.json"),
+            r#"{"name":"priority-cli","subcommands":[{"name":"curated"}]}"#,
+        )
+        .unwrap();
+        let cli = dir.path().join("priority-cli");
+        std::fs::write(
+            &cli,
+            "#!/bin/sh\nprintf 'Commands:\\n  generated  Generated only\\n'\n",
+        )
+        .unwrap();
+        let mut permissions = std::fs::metadata(&cli).unwrap().permissions();
+        permissions.set_mode(0o755);
+        std::fs::set_permissions(&cli, permissions).unwrap();
+        let env = Arc::new(HashMap::from([(
+            "PATH".to_string(),
+            dir.path().display().to_string(),
+        )]));
+        let ctx = make_ctx(Some("priority-cli"), vec![], "", 1);
+        let engine = SuggestionEngine::new(&[dir.path().to_path_buf()]).unwrap();
+        engine
+            .introspect(&ctx, dir.path(), Some(Arc::clone(&env)))
+            .await
+            .unwrap();
+
+        let result = engine
+            .suggest_sync_with_env(&ctx, dir.path(), "priority-cli ", Some(env.as_ref()))
+            .unwrap();
+        assert!(result.iter().any(|item| item.text == "curated"));
+        assert!(!result.iter().any(|item| item.text == "generated"));
     }
 }

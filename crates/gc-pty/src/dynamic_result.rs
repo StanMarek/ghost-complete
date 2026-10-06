@@ -19,6 +19,7 @@ pub enum DynamicResult {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProviderTag {
+    Introspection,
     Script(String),
     Git(GitQueryKind),
     Provider(ProviderKind),
@@ -27,6 +28,7 @@ pub enum ProviderTag {
 impl fmt::Display for ProviderTag {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Introspection => f.write_str("help introspection"),
             Self::Script(command) if command.is_empty() => f.write_str("script"),
             Self::Script(command) => write!(f, "{command} script"),
             Self::Git(kind) => write!(f, "git {}", git_kind_name(*kind)),
@@ -51,6 +53,7 @@ mod tests {
     #[test]
     fn provider_tag_display_is_stable() {
         assert_eq!(ProviderTag::Script("git".into()).to_string(), "git script");
+        assert_eq!(ProviderTag::Introspection.to_string(), "help introspection");
         assert_eq!(
             ProviderTag::Git(GitQueryKind::Branches).to_string(),
             "git branches"

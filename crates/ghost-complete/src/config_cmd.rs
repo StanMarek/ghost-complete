@@ -137,6 +137,9 @@ mod tests {
             emitted.starts_with("# No config file found; showing defaults."),
             "fallback banner must be first line, got: {emitted:?}"
         );
+        assert!(emitted.contains("[suggest.introspection]"));
+        assert!(emitted.contains("mode = \"off\""));
+        assert!(emitted.contains("timeout_ms = 750"));
         assert!(
             !emitted.contains('\x1b') && !emitted.contains('\x07') && !emitted.contains('\x00'),
             "default dump must not contain any control bytes"

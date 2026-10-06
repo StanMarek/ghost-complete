@@ -1017,6 +1017,7 @@ mod tests {
             "suggest.",
             "suggest.providers.",
             "suggest.spec_cache.",
+            "suggest.introspection.",
             "paths.",
             "keybindings.",
             "theme.",
@@ -1038,6 +1039,8 @@ mod tests {
         assert!(paths.contains(&"suggest.providers.js_runtime"));
         assert!(paths.contains(&"experimental.brew_search_cap"));
         assert!(paths.contains(&"suggest.spec_cache.idle_ttl_secs"));
+        assert!(paths.contains(&"suggest.introspection.mode"));
+        assert!(paths.contains(&"suggest.introspection.timeout_ms"));
     }
 
     #[test]
@@ -1056,6 +1059,8 @@ mod tests {
         assert!(config.suggest.providers.filesystem);
         assert!(config.suggest.providers.specs);
         assert!(config.suggest.providers.git);
+        assert_eq!(config.suggest.introspection.mode, IntrospectionMode::Off);
+        assert_eq!(config.suggest.introspection.timeout_ms, 750);
         assert!(config.paths.spec_dirs.is_empty());
         assert_eq!(config.keybindings.accept, "tab");
         assert_eq!(config.keybindings.accept_and_enter, "enter");
