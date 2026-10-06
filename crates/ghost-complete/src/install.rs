@@ -76,8 +76,9 @@ const DEFAULT_CONFIG_TOML: &str = "\
 # max_resident_mb = 0  # LRU backstop in MB after TTL eviction; 0 disables
 
 # [suggest.introspection]
-# mode = \"off\"  # \"off\" disables help discovery; \"ask\" offers it as an action; \"auto\" runs it for commands without a spec
+# mode = \"off\"  # \"off\" disables help discovery; \"ask\" offers it as an action; \"auto\" runs only commands listed below
 # timeout_ms = 750  # Maximum runtime (ms) for each help invocation
+# auto_commands = []  # Alias-expanded command names allowed to run automatically in \"auto\" mode
 
 # [paths]
 # spec_dirs = []  # Additional spec source directories searched at startup (highest precedence first)
@@ -1334,6 +1335,7 @@ mod tests {
         assert!(content.contains("# [suggest.introspection]"));
         assert!(content.contains("# mode = \"off\""));
         assert!(content.contains("# timeout_ms = 750"));
+        assert!(content.contains("# auto_commands = []"));
         // Should parse as valid TOML config (all theme fields are commented out)
         let parsed: gc_config::GhostConfig = toml::from_str(&content).unwrap();
         assert_eq!(parsed.keybindings.accept, "tab");
@@ -1342,6 +1344,7 @@ mod tests {
             gc_config::IntrospectionMode::Off
         );
         assert_eq!(parsed.suggest.introspection.timeout_ms, 750);
+        assert!(parsed.suggest.introspection.auto_commands.is_empty());
         // Commented-out theme overrides leave the fields as None (inherit preset).
         assert_eq!(parsed.theme.selected, None);
         assert_eq!(parsed.theme.description, None);

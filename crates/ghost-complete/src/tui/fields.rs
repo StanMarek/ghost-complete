@@ -322,6 +322,14 @@ pub fn all_fields() -> Vec<FieldMeta> {
             reload: ReloadBehavior::RequiresRestart,
             help: "Maximum runtime in milliseconds for each help invocation",
         },
+        FieldMeta {
+            section: "suggest.introspection",
+            key: "auto_commands",
+            field_type: FieldType::StringArray,
+            default: "[]",
+            reload: ReloadBehavior::RequiresRestart,
+            help: "Alias-expanded executable names allowed to run automatically",
+        },
         // keybindings
         FieldMeta {
             section: "keybindings",
@@ -551,7 +559,7 @@ mod tests {
             .filter(|field| field.section == "suggest.introspection")
             .map(|field| field.key)
             .collect();
-        assert_eq!(keys, ["mode", "timeout_ms"]);
+        assert_eq!(keys, ["mode", "timeout_ms", "auto_commands"]);
     }
 
     #[test]
@@ -635,6 +643,7 @@ mod tests {
             ("suggest.providers", "js_runtime"),
             ("suggest.introspection", "mode"),
             ("suggest.introspection", "timeout_ms"),
+            ("suggest.introspection", "auto_commands"),
             ("experimental", "aws_sdk_provider"),
             ("experimental", "aws_sdk_fallback_to_cli"),
             ("experimental", "brew_search_cap"),
@@ -661,6 +670,7 @@ mod tests {
             ("suggest.providers", "js_runtime"),
             ("suggest.introspection", "mode"),
             ("suggest.introspection", "timeout_ms"),
+            ("suggest.introspection", "auto_commands"),
             ("experimental", "aws_sdk_provider"),
             ("experimental", "aws_sdk_fallback_to_cli"),
             ("experimental", "brew_search_cap"),
