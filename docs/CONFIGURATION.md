@@ -99,17 +99,17 @@ mode = "off" # "ask" or "auto"
 timeout_ms = 750
 ```
 
-Results are cached in memory for the lifetime of the proxy by shell PATH,
-executable identity, and lazy subcommand path. Curated specs always take
+Results are cached in memory for five minutes and partitioned by working
+directory, shell PATH, executable identity, and lazy subcommand path. Curated specs always take
 precedence; generated cache hits are resolved synchronously and do not start
 another background-provider lifecycle. Command-resolution misses are negatively
 cached and invalidated when PATH or its search-directory state changes. Timeout,
 execution, and unparseable-help failures remain retryable.
 
 Help commands run directly without shell interpolation, with null stdin and
-bounded, captured stdout and stderr. They retain the proxy's process session, so
-a program that explicitly opens `/dev/tty` is not prevented from interacting
-with the controlling terminal.
+bounded, captured stdout and stderr. On supported Unix platforms they run in a
+new session without a controlling terminal, preventing access through
+`/dev/tty`.
 
 ### `[suggest.spec_cache]`
 

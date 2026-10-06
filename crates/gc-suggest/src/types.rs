@@ -63,7 +63,7 @@ impl SuggestionKind {
             Self::EnvVar => 50,
             Self::Command => 40,
             Self::EnumValue => 65,
-            Self::IntrospectionAction => 90,
+            Self::IntrospectionAction => 0,
             Self::Flag => 30,
             Self::Directory => 25,
             Self::FilePath => 20,

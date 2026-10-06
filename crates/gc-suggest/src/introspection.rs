@@ -3,21 +3,29 @@
 use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::time::SystemTime;
+use std::time::{Duration, Instant, SystemTime};
 
 use anyhow::{anyhow, Context, Result};
 use gc_buffer::CommandContext;
 use gc_jsrt::ShellRunError;
 
-use crate::script::{run_script_full_with_env, MAX_GENERATOR_STDOUT_BYTES};
+use crate::script::{run_introspection_with_env, MAX_GENERATOR_STDOUT_BYTES};
 use crate::{Suggestion, SuggestionKind, SuggestionSource};
 
 const MAX_CACHE_ENTRIES: usize = 256;
+const GENERATED_CACHE_TTL: Duration = Duration::from_secs(300);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct LogicalKey {
     command: String,
     path: Vec<String>,
+    cwd: PathBuf,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct OperationKey {
+    logical: LogicalKey,
+    resolution: ResolutionKey,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -46,16 +54,29 @@ enum Cached {
 struct CacheEntry {
     resolution: ResolutionKey,
     value: Cached,
+    expires_at: Instant,
 }
 
 #[derive(Debug, Default)]
 struct CacheState {
     entries: HashMap<LogicalKey, CacheEntry>,
     insertion_order: VecDeque<LogicalKey>,
+    in_flight: HashMap<OperationKey, tokio::sync::watch::Receiver<Option<SharedOutcome>>>,
 }
 
+type SharedOutcome = std::result::Result<Arc<Vec<Suggestion>>, Arc<String>>;
+
 impl CacheState {
-    fn get(&self, key: &LogicalKey, resolution: &ResolutionKey) -> Option<&Cached> {
+    fn get(&mut self, key: &LogicalKey, resolution: &ResolutionKey) -> Option<&Cached> {
+        if self
+            .entries
+            .get(key)
+            .is_some_and(|entry| Instant::now() >= entry.expires_at)
+        {
+            self.entries.remove(key);
+            self.insertion_order.retain(|queued| queued != key);
+            return None;
+        }
         self.entries
             .get(key)
             .filter(|entry| &entry.resolution == resolution)
@@ -63,10 +84,15 @@ impl CacheState {
     }
 
     fn insert(&mut self, key: LogicalKey, resolution: ResolutionKey, value: Cached) {
-        if let std::collections::hash_map::Entry::Occupied(mut entry) =
+        let new_entry = CacheEntry {
+            resolution,
+            value,
+            expires_at: Instant::now() + GENERATED_CACHE_TTL,
+        };
+        if let std::collections::hash_map::Entry::Occupied(mut occupied) =
             self.entries.entry(key.clone())
         {
-            entry.insert(CacheEntry { resolution, value });
+            occupied.insert(new_entry);
             return;
         }
         while self.entries.len() >= MAX_CACHE_ENTRIES {
@@ -76,7 +102,7 @@ impl CacheState {
             self.entries.remove(&oldest);
         }
         self.insertion_order.push_back(key.clone());
-        self.entries.insert(key, CacheEntry { resolution, value });
+        self.entries.insert(key, new_entry);
     }
 }
 
@@ -87,11 +113,56 @@ struct Lookup {
     executable: Option<PathBuf>,
 }
 
+struct ResolvedCommand {
+    command: String,
+    resolution: ResolutionKey,
+    executable: Option<PathBuf>,
+}
+
+/// A single trigger's resolved command/cache state. Constructing this performs
+/// the PATH/filesystem work; starting or joining the producer consumes it
+/// without resolving the command again.
+#[derive(Debug)]
+pub struct IntrospectionPlan {
+    lookup: Lookup,
+    cached: Option<Vec<Suggestion>>,
+}
+
+impl IntrospectionPlan {
+    pub(crate) fn cached_suggestions(&self) -> Option<&[Suggestion]> {
+        self.cached.as_deref()
+    }
+
+    pub(crate) fn is_cache_miss(&self) -> bool {
+        self.cached.is_none()
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct HelpIntrospector {
-    cache: Mutex<CacheState>,
+    cache: Arc<Mutex<CacheState>>,
     #[cfg(test)]
     lookup_count: std::sync::atomic::AtomicUsize,
+}
+
+pub struct IntrospectionWaiter {
+    receiver: tokio::sync::watch::Receiver<Option<SharedOutcome>>,
+}
+
+impl IntrospectionWaiter {
+    pub async fn wait(mut self) -> Result<Vec<Suggestion>> {
+        loop {
+            if let Some(outcome) = self.receiver.borrow().clone() {
+                return outcome
+                    .map(|suggestions| (*suggestions).clone())
+                    .map_err(|message| anyhow!(message.as_str().to_string()));
+            }
+            self.receiver
+                .changed()
+                .await
+                .map_err(|_| anyhow!("help introspection producer stopped without a result"))?;
+        }
+    }
 }
 
 impl HelpIntrospector {
@@ -107,40 +178,56 @@ impl HelpIntrospector {
         cwd: &Path,
         shell_env: Option<&HashMap<String, String>>,
     ) -> Option<Vec<Suggestion>> {
+        self.plan(ctx, cwd, shell_env).and_then(|plan| plan.cached)
+    }
+
+    /// Resolve one trigger's command identity and inspect its generated cache
+    /// exactly once. Filesystem work happens before the cache lock is taken.
+    pub(crate) fn plan(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        shell_env: Option<&HashMap<String, String>>,
+    ) -> Option<IntrospectionPlan> {
         #[cfg(test)]
         self.lookup_count
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
-        let lookup = lookup(ctx, cwd, shell_env, &cache)?;
-        cache
+        let resolved = resolve_command(ctx, cwd, shell_env)?;
+        let mut cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
+        let lookup = lookup(ctx, cwd, resolved, &mut cache);
+        let cached = cache
             .get(&lookup.key, &lookup.resolution)
             .map(|hit| match hit {
                 Cached::Success(v) => (**v).clone(),
                 Cached::Failed => Vec::new(),
-            })
+            });
+        Some(IntrospectionPlan { lookup, cached })
     }
 
-    pub async fn suggestions(
+    pub fn prepare(
         &self,
-        ctx: &CommandContext,
-        cwd: &Path,
+        plan: IntrospectionPlan,
         timeout_ms: u64,
         shell_env: Option<Arc<HashMap<String, String>>>,
-    ) -> Result<Vec<Suggestion>> {
-        let lookup = {
-            let cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
-            lookup(ctx, cwd, shell_env.as_deref(), &cache).context("missing command")?
+    ) -> Result<Option<IntrospectionWaiter>> {
+        if plan.cached.is_some() {
+            return Ok(None);
+        }
+        let lookup = plan.lookup;
+        let operation_key = OperationKey {
+            logical: lookup.key.clone(),
+            resolution: lookup.resolution.clone(),
         };
-        if let Some(hit) = self
-            .cache
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .get(&lookup.key, &lookup.resolution)
         {
-            return match hit {
-                Cached::Success(v) => Ok((**v).clone()),
-                Cached::Failed => Ok(Vec::new()),
-            };
+            let mut cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
+            if cache.get(&lookup.key, &lookup.resolution).is_some() {
+                return Ok(None);
+            }
+            if let Some(receiver) = cache.in_flight.get(&operation_key) {
+                return Ok(Some(IntrospectionWaiter {
+                    receiver: receiver.clone(),
+                }));
+            }
         }
 
         let executable = match lookup.executable.clone() {
@@ -151,35 +238,72 @@ impl HelpIntrospector {
                     lookup.resolution,
                     Cached::Failed,
                 );
-                anyhow::bail!("command not found on shell PATH")
+                anyhow::bail!("command not found on shell PATH");
             }
         };
-
-        let result = run_help(
-            &executable,
-            &lookup.key.path,
-            cwd,
-            timeout_ms,
-            shell_env.as_deref(),
-        )
-        .await
-        .map(|text| parse_help(&text));
-        match result {
-            Ok(output) if !output.is_empty() => {
-                self.cache.lock().unwrap_or_else(|e| e.into_inner()).insert(
-                    lookup.key,
-                    lookup.resolution,
-                    Cached::Success(Arc::new(output.clone())),
-                );
-                Ok(output)
+        let (sender, receiver) = tokio::sync::watch::channel(None);
+        {
+            let mut cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(existing) = cache.in_flight.get(&operation_key) {
+                return Ok(Some(IntrospectionWaiter {
+                    receiver: existing.clone(),
+                }));
             }
-            // An executable that produced no parseable help may produce useful
-            // output later (or for a corrected invocation). Do not turn that
-            // transient outcome into a generated spec or a negative cache hit.
-            Ok(output) => Ok(output),
-            // Resolution misses are negatively cached above. Execution and
-            // parsing failures remain retryable, especially for ask mode.
-            Err(error) => Err(error),
+            cache
+                .in_flight
+                .insert(operation_key.clone(), receiver.clone());
+        }
+        let cache = Arc::clone(&self.cache);
+        let path = lookup.key.path.clone();
+        let cwd = lookup.key.cwd.clone();
+        let logical = lookup.key;
+        let resolution = lookup.resolution;
+        tokio::spawn(async move {
+            let result = run_help(&executable, &path, &cwd, timeout_ms, shell_env.as_deref()).await;
+            let shared = match result {
+                Ok(output) if !output.is_empty() => {
+                    let output = Arc::new(output);
+                    cache.lock().unwrap_or_else(|e| e.into_inner()).insert(
+                        logical,
+                        resolution,
+                        Cached::Success(Arc::clone(&output)),
+                    );
+                    Ok(output)
+                }
+                Ok(_) => Err(Arc::new(
+                    "help introspection produced no usable completions".to_string(),
+                )),
+                Err(error) => Err(Arc::new(error.to_string())),
+            };
+            cache
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .in_flight
+                .remove(&operation_key);
+            let _ = sender.send(Some(shared));
+        });
+        Ok(Some(IntrospectionWaiter { receiver }))
+    }
+
+    pub async fn suggestions(
+        &self,
+        ctx: &CommandContext,
+        cwd: &Path,
+        timeout_ms: u64,
+        shell_env: Option<Arc<HashMap<String, String>>>,
+    ) -> Result<Vec<Suggestion>> {
+        let plan = self
+            .plan(ctx, cwd, shell_env.as_deref())
+            .context("missing command")?;
+        if let Some(cached) = plan.cached.clone() {
+            return Ok(cached);
+        }
+        let cache_env = shell_env.clone();
+        match self.prepare(plan, timeout_ms, shell_env)? {
+            Some(waiter) => waiter.wait().await,
+            None => self
+                .cached_suggestions(ctx, cwd, cache_env.as_deref())
+                .context("generated cache became unavailable"),
         }
     }
 
@@ -204,7 +328,7 @@ async fn run_help(
     cwd: &Path,
     timeout_ms: u64,
     shell_env: Option<&HashMap<String, String>>,
-) -> Result<String> {
+) -> Result<Vec<Suggestion>> {
     // Prefer the ubiquitous `subcommand --help`; try `help subcommand` only
     // when it did not produce usable output. No shell is involved.
     let mut attempts = Vec::with_capacity(2);
@@ -223,7 +347,7 @@ async fn run_help(
         let mut argv = Vec::with_capacity(args.len() + 1);
         argv.push(executable.as_str());
         argv.extend(args.iter().map(String::as_str));
-        match run_script_full_with_env(&argv, cwd, timeout_ms.max(1), shell_env).await {
+        match run_introspection_with_env(&argv, cwd, timeout_ms.max(1), shell_env).await {
             Ok(output) => {
                 if output.exit_code.is_none()
                     || output.stdout.len() >= MAX_GENERATOR_STDOUT_BYTES
@@ -236,8 +360,9 @@ async fn run_help(
                     continue;
                 }
                 let text = combined_output(&output.stdout, &output.stderr);
-                if !parse_help(&text).is_empty() {
-                    return Ok(text);
+                let parsed = parse_help(&text);
+                if !parsed.is_empty() {
+                    return Ok(parsed);
                 }
                 failures.push(format!("{}: produced no parseable help", args.join(" ")));
             }
@@ -247,8 +372,9 @@ async fn run_help(
                 stderr,
             }) => {
                 let text = combined_output(&stdout, &stderr);
-                if !parse_help(&text).is_empty() {
-                    return Ok(text);
+                let parsed = parse_help(&text);
+                if !parsed.is_empty() {
+                    return Ok(parsed);
                 }
                 failures.push(format!(
                     "{}: exited with status {} without parseable help",
@@ -361,12 +487,11 @@ fn push_unique(out: &mut Vec<Suggestion>, text: &str, desc: &str, kind: Suggesti
     });
 }
 
-fn lookup(
+fn resolve_command(
     ctx: &CommandContext,
     cwd: &Path,
     shell_env: Option<&HashMap<String, String>>,
-    cache: &CacheState,
-) -> Option<Lookup> {
+) -> Option<ResolvedCommand> {
     let command = ctx.command.as_deref()?.to_string();
     let path_value = shell_env
         .and_then(|env| env.get("PATH").cloned())
@@ -405,6 +530,24 @@ fn lookup(
         }
     };
 
+    Some(ResolvedCommand {
+        command,
+        resolution,
+        executable,
+    })
+}
+
+fn lookup(
+    ctx: &CommandContext,
+    cwd: &Path,
+    resolved: ResolvedCommand,
+    cache: &mut CacheState,
+) -> Lookup {
+    let ResolvedCommand {
+        command,
+        resolution,
+        executable,
+    } = resolved;
     // Only descend through tokens that a successfully generated parent node
     // explicitly identified as subcommands. Ordinary positional arguments are
     // never guessed to be command-path components.
@@ -413,6 +556,7 @@ fn lookup(
         let parent = LogicalKey {
             command: command.clone(),
             path: path.clone(),
+            cwd: cwd.to_path_buf(),
         };
         let Some(Cached::Success(suggestions)) = cache.get(&parent, &resolution) else {
             break;
@@ -425,11 +569,15 @@ fn lookup(
             break;
         }
     }
-    Some(Lookup {
-        key: LogicalKey { command, path },
+    Lookup {
+        key: LogicalKey {
+            command,
+            path,
+            cwd: cwd.to_path_buf(),
+        },
         resolution,
         executable,
-    })
+    }
 }
 
 fn resolve_executable(command: &str, path_value: Option<&str>, cwd: &Path) -> Option<PathBuf> {
@@ -693,6 +841,31 @@ fi"#,
             "the same PATH and directory state must be a synchronous negative hit"
         );
 
+        {
+            let resolved =
+                resolve_command(&ctx, missing_dir.path(), Some(missing_env.as_ref())).unwrap();
+            let mut cache = introspector.cache.lock().unwrap();
+            let lookup = lookup(&ctx, missing_dir.path(), resolved, &mut cache);
+            cache.entries.get_mut(&lookup.key).unwrap().expires_at = Instant::now();
+        }
+        assert!(
+            introspector
+                .cached_suggestions(&ctx, missing_dir.path(), Some(missing_env.as_ref()))
+                .is_none(),
+            "negative resolution entries must expire under the generated-cache TTL"
+        );
+
+        // Recreate the negative entry before exercising metadata invalidation.
+        assert!(introspector
+            .suggestions(
+                &ctx,
+                missing_dir.path(),
+                500,
+                Some(Arc::clone(&missing_env))
+            )
+            .await
+            .is_err());
+
         // Installing into the same PATH directory changes its metadata and
         // must invalidate the negative entry even though PATH is unchanged.
         use std::os::unix::fs::PermissionsExt;
@@ -809,5 +982,143 @@ fi"#,
             .await
             .unwrap_err();
         assert!(error.to_string().contains("exceeded the capture limit"));
+
+        let (dir, cli) = fake_cli(
+            "head -c 1100000 /dev/zero >&2\nprintf 'Options:\\n  --too-late  Too late\\n'",
+        );
+        let buffer = format!("{} ", cli.display());
+        let ctx = parse_command_context(&buffer, buffer.chars().count());
+        let error = HelpIntrospector::new()
+            .suggestions(&ctx, dir.path(), 2_000, None)
+            .await
+            .unwrap_err();
+        assert!(error.to_string().contains("exceeded the capture limit"));
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn cache_is_partitioned_by_cwd_and_entries_expire() {
+        let (bin, cli) = fake_cli(
+            "echo run >> \"$PWD/invocations\"\nprintf 'Options:\\n  --project  Project\\n'",
+        );
+        let first_cwd = tempfile::tempdir().unwrap();
+        let second_cwd = tempfile::tempdir().unwrap();
+        let env = Arc::new(HashMap::from([(
+            "PATH".to_string(),
+            bin.path().display().to_string(),
+        )]));
+        let buffer = format!("{} ", cli.file_name().unwrap().to_string_lossy());
+        let ctx = parse_command_context(&buffer, buffer.chars().count());
+        let introspector = HelpIntrospector::new();
+        for cwd in [first_cwd.path(), second_cwd.path()] {
+            introspector
+                .suggestions(&ctx, cwd, 500, Some(Arc::clone(&env)))
+                .await
+                .unwrap();
+            assert_eq!(
+                std::fs::read_to_string(cwd.join("invocations")).unwrap(),
+                "run\n"
+            );
+        }
+        assert_eq!(introspector.cache_len(), 2);
+
+        let resolved = resolve_command(&ctx, first_cwd.path(), Some(env.as_ref())).unwrap();
+        let mut cache = introspector.cache.lock().unwrap();
+        let lookup = lookup(&ctx, first_cwd.path(), resolved, &mut cache);
+        cache.entries.get_mut(&lookup.key).unwrap().expires_at = Instant::now();
+        drop(cache);
+        assert!(introspector
+            .cached_suggestions(&ctx, first_cwd.path(), Some(env.as_ref()))
+            .is_none());
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn dropping_all_waiters_preserves_the_shared_producer() {
+        let (dir, cli) = fake_cli(
+            "echo run >> \"$0.count\"\necho started > \"$0.started\"\nwhile [ ! -f \"$0.release\" ]; do sleep 0.01; done\nprintf 'Commands:\\n  shared  Shared\\n'",
+        );
+        let buffer = format!("{} ", cli.display());
+        let ctx = parse_command_context(&buffer, buffer.chars().count());
+        let introspector = HelpIntrospector::new();
+        let first_plan = introspector.plan(&ctx, dir.path(), None).unwrap();
+        let first = introspector
+            .prepare(first_plan, 2_000, None)
+            .unwrap()
+            .unwrap();
+        let second_plan = introspector.plan(&ctx, dir.path(), None).unwrap();
+        let second = introspector
+            .prepare(second_plan, 2_000, None)
+            .unwrap()
+            .unwrap();
+        drop(first);
+        drop(second);
+        tokio::time::timeout(Duration::from_secs(2), async {
+            while !PathBuf::from(format!("{}.started", cli.display())).exists() {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        std::fs::write(format!("{}.release", cli.display()), "go").unwrap();
+        tokio::time::timeout(Duration::from_secs(2), async {
+            while introspector
+                .cached_suggestions(&ctx, dir.path(), None)
+                .is_none()
+            {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .expect("producer was cancelled after every external waiter was dropped");
+        assert!(introspector
+            .cached_suggestions(&ctx, dir.path(), None)
+            .unwrap()
+            .iter()
+            .any(|s| s.text == "shared"));
+        assert_eq!(
+            std::fs::read_to_string(format!("{}.count", cli.display())).unwrap(),
+            "run\n"
+        );
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn failed_producer_is_removed_and_a_new_request_can_retry() {
+        let (dir, cli) = fake_cli(
+            "echo run >> \"$0.count\"\nif [ -f \"$0.succeed\" ]; then printf 'Commands:\\n  recovered  Recovered\\n'; fi",
+        );
+        let buffer = format!("{} ", cli.display());
+        let ctx = parse_command_context(&buffer, buffer.chars().count());
+        let introspector = HelpIntrospector::new();
+
+        let first_plan = introspector.plan(&ctx, dir.path(), None).unwrap();
+        let first = introspector
+            .prepare(first_plan, 500, None)
+            .unwrap()
+            .unwrap();
+        assert!(first.wait().await.is_err());
+        assert!(
+            introspector.cache.lock().unwrap().in_flight.is_empty(),
+            "failed producer must remove its in-flight entry"
+        );
+
+        std::fs::write(format!("{}.succeed", cli.display()), "yes").unwrap();
+        let retry_plan = introspector.plan(&ctx, dir.path(), None).unwrap();
+        let retry = introspector
+            .prepare(retry_plan, 500, None)
+            .unwrap()
+            .expect("failure must leave the operation retryable");
+        assert!(retry
+            .wait()
+            .await
+            .unwrap()
+            .iter()
+            .any(|suggestion| suggestion.text == "recovered"));
+        assert_eq!(
+            std::fs::read_to_string(format!("{}.count", cli.display())).unwrap(),
+            "run\nrun\nrun\n",
+            "the failed producer tries both help forms and the retry starts once"
+        );
     }
 }

@@ -1314,9 +1314,13 @@ impl InputHandler {
     /// popup). The fallback is gated on a non-empty list so a `Some(0)` index
     /// always points at a real suggestion.
     fn effective_selected(&self) -> Option<usize> {
-        self.overlay
-            .selected
-            .or_else(|| (self.tab_accepts_top && !self.suggestions.is_empty()).then_some(0))
+        self.overlay.selected.or_else(|| {
+            (self.tab_accepts_top
+                && self.suggestions.first().is_some_and(|item| {
+                    item.kind != gc_suggest::SuggestionKind::IntrospectionAction
+                }))
+            .then_some(0)
+        })
     }
 
     /// Accept the current suggestion, with directory chaining for paths ending in '/'.
@@ -1575,17 +1579,18 @@ impl InputHandler {
                 .suggest_sync_with_env(&ctx, &cwd, &buffer, shell_env.as_ref());
 
         match sync_result {
-            Ok(result) if !result.suggestions.is_empty() => {
-                let introspect = self
-                    .engine
-                    .should_auto_introspect(&ctx, &cwd, shell_env.as_ref());
+            Ok(mut result) if !result.suggestions.is_empty() => {
+                let introspection = self.engine.prepare_introspection(
+                    result.introspection_plan.take(),
+                    shell_env.clone().map(Arc::new),
+                );
                 self.replace_suggestions_and_reset_overlay(result.suggestions);
                 self.visible = true;
                 self.spawn_generators(
                     result.script_generators,
                     result.git_generators,
                     result.provider_generators,
-                    introspect,
+                    introspection,
                     &ctx,
                     &cwd,
                     shell_env.clone(),
@@ -1593,13 +1598,15 @@ impl InputHandler {
                 self.render_at(stdout, cursor_row, cursor_col, screen_rows, screen_cols);
                 self.last_trigger_fingerprint = Some(fingerprint);
             }
-            Ok(result) => {
+            Ok(mut result) => {
+                let introspection = self.engine.prepare_introspection(
+                    result.introspection_plan.take(),
+                    shell_env.clone().map(Arc::new),
+                );
                 let has_async = !result.script_generators.is_empty()
                     || !result.git_generators.is_empty()
                     || !result.provider_generators.is_empty()
-                    || self
-                        .engine
-                        .should_auto_introspect(&ctx, &cwd, shell_env.as_ref());
+                    || introspection.is_some();
                 if has_async {
                     // No static suggestions but generators are pending.
                     // If a popup is currently visible (e.g. from a previous
@@ -1618,8 +1625,7 @@ impl InputHandler {
                         result.script_generators,
                         result.git_generators,
                         result.provider_generators,
-                        self.engine
-                            .should_auto_introspect(&ctx, &cwd, shell_env.as_ref()),
+                        introspection,
                         &ctx,
                         &cwd,
                         shell_env.clone(),
@@ -1711,7 +1717,7 @@ impl InputHandler {
         self.pending_empty_count = 0;
         self.buffer_generation = self.buffer_generation.wrapping_add(1);
 
-        let result =
+        let mut result =
             match self
                 .engine
                 .suggest_sync_with_env(&ctx, &cwd, &buffer, shell_env.as_ref())
@@ -1726,12 +1732,15 @@ impl InputHandler {
                 }
             };
 
+        let introspection = self.engine.prepare_introspection(
+            result.introspection_plan.take(),
+            shell_env.clone().map(Arc::new),
+        );
+
         let has_async = !result.script_generators.is_empty()
             || !result.git_generators.is_empty()
             || !result.provider_generators.is_empty()
-            || self
-                .engine
-                .should_auto_introspect(&ctx, &cwd, shell_env.as_ref());
+            || introspection.is_some();
         let needs_block = block_ms > 0 && has_async && result.has_pending_high_priority();
 
         let sync_suggestions = result.suggestions;
@@ -1750,8 +1759,7 @@ impl InputHandler {
                 result.script_generators,
                 result.git_generators,
                 result.provider_generators,
-                self.engine
-                    .should_auto_introspect(&ctx, &cwd, shell_env.as_ref()),
+                introspection,
                 &ctx,
                 &cwd,
                 shell_env.clone(),
@@ -1846,7 +1854,6 @@ impl InputHandler {
             self.dynamic_task = None;
         }
         let aggregation = AsyncFeedback::aggregate(messages);
-        let introspection_loaded = aggregation.introspection_loaded;
         self.pending_failed.extend(aggregation.failed);
         self.pending_empty_count += aggregation.empty_count;
         if aggregation.loaded.is_empty() {
@@ -1922,11 +1929,6 @@ impl InputHandler {
             MergeFreshness::PoisonedLock => return,
         };
 
-        if introspection_loaded && self.refresh_from_generated_cache(parser, stdout) {
-            self.last_trigger_fingerprint = Some(fingerprint);
-            return;
-        }
-
         let mut all = sync_suggestions;
         let extras = merge_dedup_against(&all, async_results);
         all.extend(extras);
@@ -1960,7 +1962,7 @@ impl InputHandler {
         script_generators: Vec<std::sync::Arc<gc_suggest::specs::GeneratorSpec>>,
         git_generators: Vec<gc_suggest::git::GitQueryKind>,
         provider_generators: Vec<gc_suggest::providers::ProviderResolution>,
-        introspect: bool,
+        introspection: Option<anyhow::Result<gc_suggest::introspection::IntrospectionWaiter>>,
         ctx: &gc_buffer::CommandContext,
         cwd: &std::path::Path,
         shell_env: Option<HashMap<String, String>>,
@@ -1968,7 +1970,7 @@ impl InputHandler {
         if script_generators.is_empty()
             && git_generators.is_empty()
             && provider_generators.is_empty()
-            && !introspect
+            && introspection.is_none()
         {
             return;
         }
@@ -2066,19 +2068,11 @@ impl InputHandler {
                     )
                     .await
             };
-            let introspection_engine = Arc::clone(&engine);
-            let introspection_ctx = ctx.clone();
-            let introspection_cwd = cwd.clone();
-            let introspection_env = script_env.clone();
             let introspection_fut = async move {
-                if introspect {
-                    Some(
-                        introspection_engine
-                            .introspect(&introspection_ctx, &introspection_cwd, introspection_env)
-                            .await,
-                    )
-                } else {
-                    None
+                match introspection {
+                    Some(Ok(waiter)) => Some(waiter.wait().await),
+                    Some(Err(error)) => Some(Err(error)),
+                    None => None,
                 }
             };
             let (script_res, git_results, provider_results, introspection_result) = tokio::join!(
@@ -2417,8 +2411,9 @@ impl InputHandler {
                 MergeFreshness::PoisonedLock => return false,
             };
 
-            if introspection_loaded && self.refresh_from_generated_cache(parser, stdout) {
-                return true;
+            if introspection_loaded {
+                self.dynamic_ctx = None;
+                return self.refresh_from_generated_cache(parser, stdout);
             }
 
             // Activate popup if it wasn't visible yet (async-only path:
@@ -3057,7 +3052,7 @@ impl InputHandler {
         parser: &Arc<Mutex<TerminalParser>>,
         stdout: &mut dyn Write,
     ) -> bool {
-        let Some(index) = self.effective_selected() else {
+        let Some(index) = self.overlay.selected else {
             return false;
         };
         if self.suggestions.get(index).map(|s| s.kind)
@@ -3069,7 +3064,8 @@ impl InputHandler {
             let state = p.state();
             let buffer = state.command_buffer().unwrap_or("");
             let ctx = parse_command_context(buffer, state.buffer_cursor());
-            self.engine.request_introspection(&ctx);
+            let cwd = state.cwd().cloned().unwrap_or_else(|| PathBuf::from("."));
+            self.engine.request_introspection(&ctx, &cwd);
         }
         self.teardown_popup(stdout, true);
         // The action key is intercepted, so the shell will not emit a buffer
@@ -7539,6 +7535,9 @@ mod tests {
         let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
         {
             let mut p = parser.lock().unwrap();
+            p.process_bytes(
+                format!("\x1b]7;file://localhost{}\x07", dir.path().display()).as_bytes(),
+            );
             p.process_bytes(format!("\x1b]7773;PATH%3D{}\x07", dir.path().display()).as_bytes());
             p.process_bytes(b"\x1b[23;1H");
             p.state_mut()
@@ -7644,9 +7643,34 @@ mod tests {
 
         let ctx = parse_command_context("ask-intro-cli ", 14);
         let env = parser.lock().unwrap().state().shell_env().cloned();
-        assert!(!handler
+        let mut cached = handler
             .engine
-            .should_auto_introspect(&ctx, dir.path(), env.as_ref()));
+            .suggest_sync_with_env(&ctx, dir.path(), "ask-intro-cli ", env.as_ref())
+            .unwrap();
+        assert!(handler
+            .engine
+            .prepare_introspection(cached.introspection_plan.take(), env.map(Arc::new))
+            .is_none());
+    }
+
+    #[test]
+    fn introspection_action_is_never_implicitly_accepted_by_tab_accepts_top() {
+        let mut handler = make_handler().with_tab_accepts_top(true);
+        handler.visible = true;
+        handler.suggestions = vec![Suggestion {
+            text: "Generate completions from --help".to_string(),
+            kind: gc_suggest::SuggestionKind::IntrospectionAction,
+            source: gc_suggest::SuggestionSource::Introspection,
+            ..Default::default()
+        }];
+        let parser = Arc::new(Mutex::new(gc_parser::TerminalParser::new(24, 80)));
+        let mut output = Vec::new();
+
+        assert_eq!(
+            handler.process_key(&KeyEvent::Tab, &parser, &mut output),
+            vec![b'\t']
+        );
+        assert!(!handler.visible);
     }
 
     #[tokio::test]
