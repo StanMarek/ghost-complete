@@ -98,10 +98,14 @@ fn doctor_warns_on_stale_init_block() {
     let tmp = TempDir::new().unwrap();
     let home = tmp.path();
     let zshrc = home.join(".zshrc");
-    // Write a managed block with no matching managed files.
+    // Write a managed block with no matching managed files, its path
+    // single-quoted and absolute as install writes it.
     std::fs::write(
         &zshrc,
-        "# >>> ghost-complete initialize >>>\nsource ~/.config/ghost-complete/missing-init.zsh\n# <<< ghost-complete initialize <<<\n",
+        format!(
+            "# >>> ghost-complete initialize >>>\nsource '{}/.config/ghost-complete/missing-init.zsh'\n# <<< ghost-complete initialize <<<\n",
+            home.display()
+        ),
     )
     .unwrap();
 
@@ -121,26 +125,23 @@ fn doctor_warns_on_stale_init_block() {
     let combined = format!("{stderr}{stdout}");
     // Discriminates from the older check that emitted only a generic
     // "managed block present" Ok without naming the missing managed-file
-    // path. The missing SHELL_BEGIN block is a Fail (exit 1), not a Warn —
-    // pin both the exit code and a [FAIL] marker so a regression that
-    // demotes the severity is caught.
+    // path. The init block sources a file that doesn't exist: a Fail
+    // (exit 1), not a Warn — pin both the exit code and a [FAIL] marker so
+    // a regression that demotes the severity is caught.
     assert_eq!(
         output.status.code(),
         Some(1),
-        "doctor must exit 1 when the shell-integration managed block is \
-         missing.\ncombined:\n{combined}",
+        "doctor must exit 1 when the init block sources a missing file.\n\
+         combined:\n{combined}",
     );
     assert!(
         combined.contains("[FAIL]"),
         "doctor must emit a [FAIL] line for the missing managed block; \
          got:\n{combined}",
     );
-    let lower = combined.to_lowercase();
     assert!(
-        lower.contains("init.zsh")
-            || lower.contains("shell-integration managed block")
-            || lower.contains("ghost-complete.zsh"),
-        "doctor must reference the missing managed-file path or block by name; got:\n{combined}",
+        combined.contains("missing-init.zsh"),
+        "doctor must name the missing file; got:\n{combined}",
     );
 }
 
@@ -157,8 +158,8 @@ fn doctor_passes_when_shell_integration_files_present_at_correct_path() {
     // [FAIL] lines.
     //
     // The managed-block source line format mirrors what
-    // install.rs::init_block / shell_integration_block actually
-    // writes: single-quoted, absolute paths. The parser ignores
+    // install.rs::init_block, and the bottom block older installs
+    // wrote, contain: single-quoted, absolute paths. The parser ignores
     // non-`source` lines so the `if [[ -f '<path>' ]]; then` guard
     // around `builtin source '<path>'` is also covered here.
     use std::process::Command;
@@ -185,7 +186,8 @@ fn doctor_passes_when_shell_integration_files_present_at_correct_path() {
     std::fs::write(&init_path, &zsh_init).unwrap();
     std::fs::write(&script_path, &zsh_integration).unwrap();
 
-    // .zshrc must contain BOTH managed blocks for check 1 to pass.
+    // A .zshrc from an older install, with the bottom block that sourced
+    // the hooks script before init.zsh loaded it, still passes.
     // Marker strings mirror install.rs INIT_BEGIN/SHELL_BEGIN constants.
     // Source paths are single-quoted absolute paths exactly as
     // install.rs::shell_safe_path renders them.
@@ -229,6 +231,81 @@ fn doctor_passes_when_shell_integration_files_present_at_correct_path() {
         !combined.contains("[FAIL]"),
         "doctor must not report any [FAIL] lines on a clean install at the correct \
          path; got:\n{combined}",
+    );
+}
+
+/// Lays down the installed scripts and a `.zshrc` with only the init block,
+/// as `ghost-complete install` writes them, and runs `doctor`. Returns the
+/// exit code and the combined output.
+fn doctor_with_init_block_only(hooks_script: bool) -> (Option<i32>, String) {
+    let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(2)
+        .expect("repo root");
+    let tmp = tempfile::TempDir::new().unwrap();
+    let home = tmp.path();
+    let shell_dir = home.join(".config/ghost-complete/shell");
+    std::fs::create_dir_all(&shell_dir).unwrap();
+    let init_path = shell_dir.join("init.zsh");
+    std::fs::copy(repo_root.join("shell/init.zsh"), &init_path).unwrap();
+    if hooks_script {
+        std::fs::copy(
+            repo_root.join("shell/ghost-complete.zsh"),
+            shell_dir.join("ghost-complete.zsh"),
+        )
+        .unwrap();
+    }
+    std::fs::write(
+        home.join(".zshrc"),
+        format!(
+            "# >>> ghost-complete initialize >>>\n\
+             if [[ -f '{init}' ]]; then\n  \
+             builtin source '{init}'\n\
+             fi\n\
+             # <<< ghost-complete initialize <<<\n\
+             alias g=git\n",
+            init = init_path.display(),
+        ),
+    )
+    .unwrap();
+    let cfg = home.join("config.toml");
+    std::fs::write(&cfg, "").unwrap();
+
+    let output = Command::new(ghost_bin())
+        .arg("--config")
+        .arg(&cfg)
+        .arg("doctor")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete");
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr),
+    );
+    (output.status.code(), combined)
+}
+
+#[test]
+fn doctor_passes_with_only_the_init_block() {
+    // install writes only the init block: init.zsh loads the hooks script
+    // that sits next to it.
+    let (code, combined) = doctor_with_init_block_only(true);
+    assert_eq!(code, Some(0), "combined:\n{combined}");
+    assert!(
+        combined.contains("shell integration looks healthy"),
+        "shell integration must be healthy; got:\n{combined}",
+    );
+}
+
+#[test]
+fn doctor_fails_when_the_hooks_script_next_to_init_is_missing() {
+    let (code, combined) = doctor_with_init_block_only(false);
+    assert_eq!(code, Some(1), "combined:\n{combined}");
+    assert!(combined.contains("[FAIL]"), "got:\n{combined}");
+    assert!(
+        combined.contains("ghost-complete.zsh"),
+        "doctor must name the missing hooks script; got:\n{combined}",
     );
 }
 
@@ -1146,5 +1223,37 @@ fn doctor_fails_on_duplicate_source_lines_in_managed_block() {
         combined.contains("init block"),
         "doctor must name the init block specifically when only that block \
          has multiple source lines; got:\n{combined}",
+    );
+}
+
+#[test]
+fn doctor_is_healthy_after_install() {
+    // Whatever layout install writes, doctor must accept it.
+    let tmp = tempfile::TempDir::new().unwrap();
+    let home = tmp.path();
+    let install = Command::new(ghost_bin())
+        .arg("install")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete install");
+    assert!(
+        install.status.success(),
+        "install failed: {}",
+        String::from_utf8_lossy(&install.stderr)
+    );
+
+    let output = Command::new(ghost_bin())
+        .arg("doctor")
+        .env("HOME", home)
+        .output()
+        .expect("spawn ghost-complete doctor");
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr),
+    );
+    assert!(
+        combined.contains("shell integration looks healthy"),
+        "got:\n{combined}"
     );
 }

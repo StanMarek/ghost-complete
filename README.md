@@ -73,8 +73,8 @@ ghost-complete install
 
 ### What `ghost-complete install` does
 
-- Adds shell integration to `~/.zshrc` (auto-wraps your shell via PTY proxy)
-- Deploys shell scripts for bash/fish to `~/.config/ghost-complete/shell/`
+- Adds one block to the top of `~/.zshrc`. It starts Ghost Complete as a PTY proxy around your shell, and in the shell behind the proxy it loads the hooks that report prompts and the command line
+- Writes the zsh scripts that block uses to `~/.config/ghost-complete/shell/`
 - Installs 711 completion specs to `~/.config/ghost-complete/specs/`
 - Creates default config at `~/.config/ghost-complete/config.toml` (never overwrites existing)
 

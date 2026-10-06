@@ -92,6 +92,50 @@ _gc_exec_proxy() {
   exec ghost-complete
 }
 
+# This file's directory, as .zshrc names it: install puts the hooks script
+# next to it. Not resolved through symlinks, which may point elsewhere.
+typeset -g _GC_SHELL_DIR=${${(%):-%x}:a:h}
+
+# Load the hooks that report prompts, the working directory and the command
+# line to the proxy. Runs as a precmd hook, so the hooks load at the first
+# prompt, after the rest of .zshrc, where a second .zshrc block used to
+# load them.
+_gc_load_hooks() {
+  emulate -L zsh
+  add-zsh-hook -d precmd _gc_load_hooks
+  # Already loaded, by a .zshrc that still sources ghost-complete.zsh or
+  # when .zshrc is sourced again. Loading them again would wrap whatever
+  # wrapped our zle widget since.
+  (( ${+functions[_gc_precmd]} )) && return
+  local script=$_GC_SHELL_DIR/ghost-complete.zsh
+  if [[ ! -r $script ]]; then
+    print -ru2 -- "ghost-complete: hooks script missing: $script"
+    print -ru2 -- "ghost-complete: run 'ghost-complete install' to restore it"
+    return
+  fi
+  local -a before=($precmd_functions)
+  builtin source $script
+  # zsh runs a prompt's precmd hooks from the list as it was before the
+  # first one ran, so the ones just added would first run at the next
+  # prompt. Run them for this one.
+  local hook
+  for hook in ${precmd_functions:|before}; do
+    $hook
+  done
+  # Ghostty's and kitty's precmd hooks mark the prompt in PS1 only when they
+  # run last, and their own first-prompt hook put them there. Keep them last.
+  hook=${before[-1]-}
+  if [[ $hook == (_ghostty_precmd|_ksi_precmd) ]]; then
+    precmd_functions=(${precmd_functions:#$hook} $hook)
+  fi
+}
+
+# This shell runs behind the proxy: load the hooks at its first prompt.
+_gc_load_hooks_at_first_prompt() {
+  autoload -Uz add-zsh-hook
+  add-zsh-hook precmd _gc_load_hooks
+}
+
 __ghost_complete_init() {
   # A proxy that fails to start execs the shell in its place, marked with
   # its pid. That shell (exec keeps the pid), and any zsh it starts on the
@@ -122,8 +166,11 @@ __ghost_complete_init() {
     # We cannot use GHOST_COMPLETE_ACTIVE here because it is always present
     # in tmux — set by proxy.rs (tmux setenv) for future-pane propagation,
     # and inherited from the outer terminal shell that launched tmux.
-    _gc_is_proxy_comm "$(ps -o comm= -p "$PPID" 2>/dev/null)" && return
-    [[ -n "$GHOST_COMPLETE_PANE" && "$GHOST_COMPLETE_PANE" == "$TMUX_PANE" ]] && return
+    if _gc_is_proxy_comm "$(ps -o comm= -p "$PPID" 2>/dev/null)" || \
+       [[ -n "$GHOST_COMPLETE_PANE" && "$GHOST_COMPLETE_PANE" == "$TMUX_PANE" ]]; then
+      _gc_load_hooks_at_first_prompt
+      return
+    fi
     if [[ -n "$GHOSTTY_RESOURCES_DIR" ]] || \
        [[ -n "$KITTY_WINDOW_ID" ]] || \
        [[ -n "$WEZTERM_UNIX_SOCKET" ]] || \
@@ -153,9 +200,9 @@ __ghost_complete_init() {
     if [[ -n "$GHOST_COMPLETE_ACTIVE" ]]; then
       _gc_ancestor_is_proxy
       case $? in
-        0) return ;;
+        0) _gc_load_hooks_at_first_prompt; return ;;
         1) unset GHOST_COMPLETE_ACTIVE ;;
-        *) return ;;
+        *) _gc_load_hooks_at_first_prompt; return ;;
       esac
     fi
     local supported=0

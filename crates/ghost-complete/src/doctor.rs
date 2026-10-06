@@ -296,7 +296,6 @@ fn extract_block_source_path(content: &str, begin: &str, end: &str) -> BlockSour
 ///
 /// Beyond verifying the init marker is present, this also surfaces:
 ///
-/// * a stray init block with no shell-integration block (half-installed),
 /// * duplicate init OR shell-integration blocks (a botched manual edit),
 /// * a managed block whose `source` line cannot be parsed (hand-edited
 ///   beyond recognition),
@@ -313,13 +312,17 @@ fn extract_block_source_path(content: &str, begin: &str, end: &str) -> BlockSour
 /// Order (each step returns on its first finding so the output stays
 /// focused on the most pressing issue):
 ///
-/// 1. both managed blocks present (else half-installed Fail / clean Skip),
+/// 1. init block present (else clean Skip). The shell-integration block is
+///    optional: init.zsh loads the hooks script next to it, and only older
+///    installs also sourced it from a block at the bottom of .zshrc,
 /// 2. no duplicate managed blocks (else hand-edit Fail),
 /// 3. `source` line in each block is parseable (else class-specific Fail
 ///    for unterminated / unrecognized quoting / multiple sources / one
 ///    block missing the source line; both blocks missing is the pre-v0.9
 ///    install style and Warn-with-migration-nudge),
-/// 4. referenced script files exist + are readable (else Fail),
+/// 4. init.zsh and the hooks script exist + are readable (else Fail): the
+///    one the bottom block sources, or without one, `ghost-complete.zsh`
+///    next to init.zsh,
 /// 5. legacy OSC 7770 reporter Warn (checked before content drift so an
 ///    upgrading user with a pre-OSC 7772 file on disk still gets the
 ///    migration-specific hint),
@@ -327,8 +330,7 @@ fn extract_block_source_path(content: &str, begin: &str, end: &str) -> BlockSour
 /// 7. non-canonical path Warn.
 ///
 /// A clean system that never ran `install` (no managed blocks present)
-/// uses `Skip` so the doctor still exits 0; partial installs (one block
-/// but not the other) are escalated to `Fail` with concrete remediation.
+/// uses `Skip` so the doctor still exits 0.
 fn check_shell_integration() -> CheckResult {
     let Some(home) = dirs::home_dir() else {
         return CheckResult::skip("no $HOME — cannot check shell integration");
@@ -349,15 +351,10 @@ fn check_shell_integration() -> CheckResult {
         }
     };
 
-    // 1. Both managed blocks present?
+    // 1. Init block present? A shell-integration block is optional.
     if !content.contains(INIT_BEGIN) {
         return CheckResult::skip(
             "no ghost-complete managed block in .zshrc — run `ghost-complete install`",
-        );
-    }
-    if !content.contains(SHELL_BEGIN) {
-        return CheckResult::fail(
-            "missing shell-integration managed block — run `ghost-complete install` to repair",
         );
     }
 
@@ -393,6 +390,12 @@ fn check_shell_integration() -> CheckResult {
 
     let (init_path, script_path) = match (init_source, script_source) {
         (BlockSource::Parsed(init), BlockSource::Parsed(script)) => (init, script),
+        // The layout install writes: init.zsh loads the hooks script that
+        // sits next to it.
+        (BlockSource::Parsed(init), BlockSource::BlockNotFound) => {
+            let script = init.with_file_name("ghost-complete.zsh");
+            (init, script)
+        }
         (BlockSource::NoSourceLine, BlockSource::NoSourceLine) => {
             return CheckResult::warn(
                 "ghost-complete managed blocks present in .zshrc but neither references \
@@ -451,8 +454,8 @@ fn check_shell_integration() -> CheckResult {
                  `source` line — run `ghost-complete uninstall` then reinstall",
             );
         }
-        (BlockSource::BlockNotFound, _) | (_, BlockSource::BlockNotFound) => {
-            // Gated above by `content.contains(BEGIN)` checks; encoded for
+        (BlockSource::BlockNotFound, _) => {
+            // Gated above by `content.contains(INIT_BEGIN)`; encoded for
             // exhaustiveness only.
             return CheckResult::fail(
                 "ghost-complete managed block in .zshrc disappeared between checks — \

@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`install` writes one block to `.zshrc` instead of two.** The block at the
+  top of `.zshrc` now also loads the hooks that report prompts, the working
+  directory and the command line to Ghost Complete, at the first prompt of
+  every shell running behind it. That was the only job of the block at the
+  bottom, which `install` now removes. Until you run `install` again, the
+  old bottom block keeps working and the new loader stays out of its way.
+  Once the bottom block is gone, shells running without Ghost Complete (the
+  shell it falls back to, terminals it doesn't support) no longer load the
+  hooks. If several machines share one `.zshrc`, upgrade Ghost Complete on
+  all of them before running `install`: an older version doesn't load the
+  hooks without the bottom block (#186).
 - **The installed shell scripts now update themselves.** `install` copies
   `init.zsh` and `ghost-complete.zsh` into `~/.config/ghost-complete/shell/`,
   and until now only another `install` refreshed them, so a binary upgrade

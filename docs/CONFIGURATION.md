@@ -404,7 +404,7 @@ By default, `ghost-complete install` starts Ghost Complete from your `.zshrc`: t
 - is a real login shell, so `.zprofile` and `.zlogin` run in the shell you type into;
 - gets the terminal's own shell integration where the terminal provides one.
 
-Keep the `ghost-complete install` setup in place. Inside Ghost Complete, the block at the top of `.zshrc` sees it is already running and does nothing, and it still starts Ghost Complete in tmux panes and in terminals you haven't configured. The block at the bottom installs the hooks that report prompts and the command line to Ghost Complete, so it is still needed.
+Keep the `ghost-complete install` setup in place. Inside Ghost Complete, the block in `.zshrc` sees it is already running, so it only loads the hooks that report prompts and the command line to Ghost Complete. It still starts Ghost Complete in tmux panes and in terminals you haven't configured.
 
 Three rules apply to every terminal:
 

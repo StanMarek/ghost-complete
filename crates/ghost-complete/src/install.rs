@@ -107,6 +107,9 @@ const DEFAULT_CONFIG_TOML: &str = "\
 
 pub(crate) const INIT_BEGIN: &str = "# >>> ghost-complete initialize >>>";
 pub(crate) const INIT_END: &str = "# <<< ghost-complete initialize <<<";
+// The block older installs appended to source the hooks script, which
+// init.zsh now loads itself. install and uninstall remove it; doctor still
+// checks one that is left.
 pub(crate) const SHELL_BEGIN: &str = "# >>> ghost-complete shell integration >>>";
 pub(crate) const SHELL_END: &str = "# <<< ghost-complete shell integration <<<";
 const MANAGED_WARNING: &str =
@@ -117,7 +120,7 @@ const MANAGED_WARNING: &str =
 ///
 /// Also strips ASCII/C1 control characters (ESC, BEL, NUL, CSI, etc.) from
 /// the path text before quoting. The resulting snippet is later printed to
-/// the user's terminal by `print_shell_blocks`, so a `$HOME`/config-derived
+/// the user's terminal by `print_init_block`, so a `$HOME`/config-derived
 /// path containing crafted control bytes would otherwise be evaluated by
 /// the terminal — single-quoting does not neutralise terminal escapes, only
 /// shell metacharacters. Single-quote escaping happens after sanitisation
@@ -140,16 +143,6 @@ fn init_block(script_path: &Path) -> String {
          echo \"ghost-complete: run 'ghost-complete install' to restore it\" >&2\n\
          fi\n\
          {INIT_END}"
-    )
-}
-
-fn shell_integration_block(script_path: &Path) -> String {
-    format!(
-        "{SHELL_BEGIN}\n\
-         {MANAGED_WARNING}\n\
-         source {}\n\
-         {SHELL_END}",
-        shell_safe_path(script_path)
     )
 }
 
@@ -210,20 +203,13 @@ fn copy_specs(config_dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn print_shell_blocks(init_path: &Path, script_path: &Path) {
-    let init = init_block(init_path);
-    let shell = shell_integration_block(script_path);
-    let indented_init = init.replace('\n', "\n    ");
-    let indented_shell = shell.replace('\n', "\n    ");
+fn print_init_block(init_path: &Path) {
+    let indented_init = init_block(init_path).replace('\n', "\n    ");
 
     println!(
         "  \x1b[36m\u{2139}\x1b[0m  Add the following \x1b[1mNEAR THE TOP\x1b[0m of your shell config:\n"
     );
     println!("    \x1b[36m{indented_init}\x1b[0m\n");
-    println!(
-        "  \x1b[36m\u{2139}\x1b[0m  Add the following \x1b[1mNEAR THE BOTTOM\x1b[0m of your shell config:\n"
-    );
-    println!("    \x1b[36m{indented_shell}\x1b[0m\n");
 }
 
 fn post_install_summary(config_dir: &Path, wrote_zshrc: bool) -> String {
@@ -255,7 +241,7 @@ fn post_install_summary(config_dir: &Path, wrote_zshrc: bool) -> String {
     } else {
         writeln!(
             out,
-            "  1. Restart your shell after pasting the blocks above."
+            "  1. Restart your shell after pasting the block above."
         )
         .unwrap();
     }
@@ -411,7 +397,7 @@ fn install_to_with_cache_hooks(
         }
         println!("  Would update {}\n", sanitize_path(zshrc_path));
         println!("  \x1b[36m\u{2139}\x1b[0m  The following would be added to your shell config:\n");
-        print_shell_blocks(&init_path, &script_path);
+        print_init_block(&init_path);
         return Ok(());
     }
 
@@ -524,11 +510,12 @@ fn install_to_with_cache_hooks(
         }
     }
 
-    // 4. Strip existing managed blocks (idempotent)
+    // 4. Strip existing managed blocks (idempotent), including the bottom
+    // block older installs wrote: init.zsh loads the hooks itself now.
     let (content, _) = remove_block(&existing, INIT_BEGIN, INIT_END);
     let (content, _) = remove_block(&content, SHELL_BEGIN, SHELL_END);
 
-    // 5. Prepend init block, append shell integration block.
+    // 5. Prepend the init block.
     // We preserve user .zshrc bytes outside managed blocks byte-for-byte:
     // do NOT trim() the deduped middle, and only add a trailing newline
     // when the user's content does not already end with one. Reinstalls
@@ -545,8 +532,6 @@ fn install_to_with_cache_hooks(
             new_zshrc.push('\n');
         }
     }
-    new_zshrc.push_str(&shell_integration_block(&script_path));
-    new_zshrc.push('\n');
 
     // 6. Write .zshrc — graceful fallback if permission denied (e.g. nix-managed).
     //
@@ -565,7 +550,7 @@ fn install_to_with_cache_hooks(
                 "\n  \x1b[33m\u{26a0}  Could not write to {} (permission denied)\x1b[0m\n",
                 sanitize_path(zshrc_path)
             );
-            print_shell_blocks(&init_path, &script_path);
+            print_init_block(&init_path);
             print!("\n{}", post_install_summary(config_dir, false));
         }
         Err(e) => {
@@ -997,16 +982,6 @@ mod tests {
     }
 
     #[test]
-    fn test_shell_integration_block_content() {
-        let path = Path::new("/some/path/ghost-complete.zsh");
-        let block = shell_integration_block(path);
-        assert!(block.contains(SHELL_BEGIN));
-        assert!(block.contains(SHELL_END));
-        assert!(block.contains(MANAGED_WARNING));
-        assert!(block.contains("source '/some/path/ghost-complete.zsh'"));
-    }
-
-    #[test]
     fn test_shell_safe_path_escapes_metacharacters() {
         // Dollar sign — would trigger variable expansion in double quotes
         let path = Path::new("/home/$USER/config/init.zsh");
@@ -1076,28 +1051,20 @@ mod tests {
     }
 
     #[test]
-    fn test_print_shell_blocks_sanitizes_paths() {
-        // End-to-end: a `$HOME`/config-derived path containing ESC bytes
-        // must not appear verbatim in the snippet emitted by the install
-        // blocks. Covers both `init_block` and `shell_integration_block`,
-        // which are the two places `print_shell_blocks` prints.
-        let init = Path::new("/home/\x1b[31mbad/init.zsh");
-        let script = Path::new("/home/\x07evil/ghost-complete.zsh");
+    fn test_printed_init_block_sanitizes_paths() {
+        // End-to-end: a `$HOME`/config-derived path containing ESC or BEL
+        // bytes must not appear verbatim in the snippet `print_init_block`
+        // prints.
+        let init = Path::new("/home/\x1b[31mbad/\x07evil/init.zsh");
 
         let rendered_init = init_block(init);
-        let rendered_shell = shell_integration_block(script);
 
         assert!(
-            !rendered_init.contains('\x1b'),
-            "init_block must strip ESC: {rendered_init:?}"
-        );
-        assert!(
-            !rendered_shell.contains('\x07'),
-            "shell_integration_block must strip BEL: {rendered_shell:?}"
+            !rendered_init.contains('\x1b') && !rendered_init.contains('\x07'),
+            "init_block must strip ESC and BEL: {rendered_init:?}"
         );
         // Printable surroundings remain (literal `[31m` / `bad` survive).
-        assert!(rendered_init.contains("[31mbad/init.zsh"));
-        assert!(rendered_shell.contains("evil/ghost-complete.zsh"));
+        assert!(rendered_init.contains("[31mbad/evil/init.zsh"));
     }
 
     #[test]
@@ -1126,12 +1093,13 @@ mod tests {
 
         install_to(&zshrc, &config, false).unwrap();
 
-        // .zshrc should exist with both blocks
+        // .zshrc should exist with the init block only: init.zsh loads the
+        // hooks script itself.
         let content = fs::read_to_string(&zshrc).unwrap();
         assert!(content.contains(INIT_BEGIN));
         assert!(content.contains(INIT_END));
-        assert!(content.contains(SHELL_BEGIN));
-        assert!(content.contains(SHELL_END));
+        assert!(!content.contains(SHELL_BEGIN));
+        assert!(!content.contains(SHELL_END));
         // Init script should be written and sourced
         let init_script = config.join("shell/init.zsh");
         assert!(init_script.exists());
@@ -1144,16 +1112,15 @@ mod tests {
             expected_init_source
         );
 
-        // Zsh shell integration script should be written and sourced
+        // The hooks script is written next to init.zsh, which sources it;
+        // .zshrc doesn't.
         let script = config.join("shell/ghost-complete.zsh");
         assert!(script.exists());
         let script_content = fs::read_to_string(&script).unwrap();
         assert_eq!(script_content, ZSH_INTEGRATION);
-        let expected_source = format!("source {}", shell_safe_path(&script));
         assert!(
-            content.contains(&expected_source),
-            "source path mismatch: .zshrc does not contain '{}'",
-            expected_source
+            !content.contains("ghost-complete.zsh"),
+            ".zshrc must not source the hooks script:\n{content}"
         );
 
         // Bash/fish are not deployed
@@ -1173,7 +1140,7 @@ mod tests {
 
         let content = fs::read_to_string(&zshrc).unwrap();
         assert!(content.contains(INIT_BEGIN));
-        assert!(content.contains(SHELL_BEGIN));
+        assert!(!content.contains(SHELL_BEGIN));
     }
 
     #[test]
@@ -1191,14 +1158,13 @@ mod tests {
         assert!(content.contains("export PATH=\"/usr/local/bin:$PATH\""));
         assert!(content.contains("alias ll='ls -la'"));
         assert!(content.contains(INIT_BEGIN));
-        assert!(content.contains(SHELL_BEGIN));
+        assert!(!content.contains(SHELL_BEGIN));
 
-        // Init block should be before user content
+        // Init block should be before user content, which ends the file
         let init_pos = content.find(INIT_BEGIN).unwrap();
         let user_pos = content.find("export PATH").unwrap();
-        let shell_pos = content.find(SHELL_BEGIN).unwrap();
         assert!(init_pos < user_pos);
-        assert!(user_pos < shell_pos);
+        assert!(content.ends_with(existing));
     }
 
     #[test]
@@ -1217,8 +1183,7 @@ mod tests {
 
         let after_init_end =
             after.find(INIT_END).expect("init end marker present") + INIT_END.len();
-        let user_region =
-            &after[after_init_end..after.find(SHELL_BEGIN).expect("shell begin marker present")];
+        let user_region = &after[after_init_end..];
         assert!(
             user_region.contains("# top comment")
                 && user_region.contains("alias g=git")
@@ -1269,6 +1234,38 @@ mod tests {
     }
 
     #[test]
+    fn install_removes_the_bottom_block_of_an_older_install() {
+        // Older installs also sourced ghost-complete.zsh from a block at the
+        // bottom of .zshrc. Reinstalling leaves exactly what a fresh install
+        // writes.
+        let dir = TempDir::new().unwrap();
+        let config = dir.path().join("config");
+        let user = "export FOO=bar\n\nalias g=git\n";
+
+        let fresh = dir.path().join("fresh.zshrc");
+        fs::write(&fresh, user).unwrap();
+        install_to(&fresh, &config, false).unwrap();
+
+        let upgraded = dir.path().join("upgraded.zshrc");
+        let script = config.join("shell/ghost-complete.zsh");
+        fs::write(
+            &upgraded,
+            format!(
+                "{}\n{user}{SHELL_BEGIN}\n{MANAGED_WARNING}\nsource {}\n{SHELL_END}\n",
+                init_block(&config.join("shell/init.zsh")),
+                shell_safe_path(&script),
+            ),
+        )
+        .unwrap();
+        install_to(&upgraded, &config, false).unwrap();
+
+        assert_eq!(
+            fs::read_to_string(&upgraded).unwrap(),
+            fs::read_to_string(&fresh).unwrap()
+        );
+    }
+
+    #[test]
     fn test_uninstall_removes_blocks() {
         let dir = TempDir::new().unwrap();
         let zshrc = dir.path().join(".zshrc");
@@ -1277,8 +1274,13 @@ mod tests {
         let existing = "export FOO=bar\n";
         fs::write(&zshrc, existing).unwrap();
 
-        // Install then uninstall
+        // Install, add the bottom block an older install wrote, uninstall
         install_to(&zshrc, &config, false).unwrap();
+        let mut content = fs::read_to_string(&zshrc).unwrap();
+        content.push_str(&format!(
+            "{SHELL_BEGIN}\nsource '/old/ghost-complete.zsh'\n{SHELL_END}\n"
+        ));
+        fs::write(&zshrc, content).unwrap();
         uninstall_from(&zshrc, &config).unwrap();
 
         // Blocks should be gone
@@ -1726,7 +1728,7 @@ mod tests {
     #[test]
     fn test_post_install_summary_manual_fallback_omits_source_zshrc() {
         let summary = post_install_summary(Path::new("/tmp/cfg"), false);
-        assert!(summary.contains("after pasting the blocks above"));
+        assert!(summary.contains("after pasting the block above"));
         assert!(
             !summary.contains("source ~/.zshrc"),
             "manual-fallback summary must not instruct user to source a file \
