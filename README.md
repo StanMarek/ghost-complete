@@ -120,7 +120,7 @@ Ghost Complete auto-detects your terminal and selects the best rendering strateg
 - Ghostty's and Kitty's own zsh integration (cursor shape, titles, jump to prompt) keeps working behind the proxy.
 - Terminal.app inside tmux is not detected (it sets no env var that leaks through tmux).
 - Alacritty does not support OSC 133 natively; Ghost Complete uses its own shell integration markers instead. No functional difference — just a different detection path.
-- VSCode detection covers **all Electron-based VSCode forks**: VSCodium, Cursor, Windsurf, Positron, Trae. They share the xterm.js frontend and shell integration model. Ghost Complete coexists with VSCode's own shell integration (OSC 633) — the proxy forwards editor sequences untouched so command decorations, sticky scroll, and "run recent command" continue to work.
+- VSCode detection covers **all Electron-based VSCode forks**: VSCodium, Cursor, Windsurf, Positron, Trae. They share the xterm.js frontend and shell integration model. The proxy forwards VSCode's own shell-integration sequences (OSC 633) untouched, but with the default `.zshrc` setup VSCode's zsh integration doesn't load in the shell behind the proxy yet, so command decorations and sticky scroll are missing ([#212](https://github.com/StanMarek/ghost-complete/issues/212)).
 - Unsupported terminals can be enabled with `[experimental] multi_terminal = true` in config.
 
 <div align="center">

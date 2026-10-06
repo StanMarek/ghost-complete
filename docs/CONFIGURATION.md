@@ -537,7 +537,7 @@ The automation profile keeps tasks and debug sessions out of Ghost Complete. VS 
 [[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
 ```
 
-Forks such as Cursor use the same `terminal.integrated.*` settings in their own settings file.
+Forks such as Cursor use the same `terminal.integrated.*` settings in their own settings file. In the line above, use the fork's own command in place of `code` (for example `cursor` or `codium`). It has to be on your `PATH`, or the line fails at every shell start.
 
 ### If something goes wrong
 
